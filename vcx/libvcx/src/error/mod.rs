@@ -208,6 +208,9 @@ pub enum VcxErrorKind {
     #[fail(display = "Could not create WalletBackup")]
     CreateWalletBackup,
 
+    #[fail(display = "Failed to retrieve exported wallet")]
+    RetrieveExportedWallet,
+
 }
 
 #[derive(Debug)]
@@ -372,6 +375,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::Common(num) => num,
             VcxErrorKind::LiibndyError(num) => num,
             VcxErrorKind::CreateWalletBackup => error::CREATE_WALLET_BACKUP.code_num,
+            VcxErrorKind::RetrieveExportedWallet => error::RETRIEVE_EXPORTED_WALLET.code_num,
         }
     }
 }

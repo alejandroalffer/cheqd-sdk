@@ -11,6 +11,7 @@ pub mod wallet;
 pub mod logger;
 pub mod return_types_u32;
 pub mod extensions;
+pub mod wallet_backup;
 
 use std::fmt;
 

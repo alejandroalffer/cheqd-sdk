@@ -8,7 +8,10 @@ use settings;
 //use messages::get_message::{Message, MessagePayload};
 use object_cache::ObjectCache;
 use error::prelude::*;
-//use utils::error;
+use utils::error;
+use utils::libindy::wallet::{export, get_wallet_handle};
+use std::path::Path;
+use std::fs;
 //use utils::constants::DEFAULT_SERIALIZE_VERSION;
 //use utils::json::KeyMatch;
 //use std::collections::HashMap;
@@ -44,6 +47,18 @@ impl WalletBackup {
             uuid: None,
         })
     }
+
+    fn _retrieve_exported_wallet(backup_key: &str, exported_wallet_path: &str) -> VcxResult<Vec<u8>> {
+
+        let path = Path::new(exported_wallet_path);
+        export(get_wallet_handle(), &path, backup_key)?;
+        fs::read(&path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))
+    }
+
+    fn backup(&mut self, backup_key: &str, exported_wallet_path: &str) -> VcxResult<u32> {
+        let wallet_data = WalletBackup::_retrieve_exported_wallet(backup_key, exported_wallet_path)?;
+        Ok(error::SUCCESS.code_num)
+    }
 }
 
 pub fn create_wallet_backup(source_id: &str) -> VcxResult<u32> {
@@ -55,10 +70,27 @@ pub fn create_wallet_backup(source_id: &str) -> VcxResult<u32> {
         .or(Err(VcxError::from(VcxErrorKind::CreateWalletBackup)))
 }
 
+/*
+    Todo: exported_wallet_path is needed because the only exposed libindy functionality for exporting
+    an encrypted wallet, writes it to the file system. A possible better way is for libindy's export_wallet
+    to optionally return an encrypted stream of bytes instead of writing it to the fs. This could also
+    be done in a separate libindy api call if necessary.
+ */
+pub fn backup_wallet(handle: u32, backup_key: &str, exported_wallet_path: &str) -> VcxResult<u32> {
+    WALLET_BACKUP_MAP.get_mut(handle, |wb| {
+        wb.backup(backup_key, exported_wallet_path)
+    })
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use utils::devsetup::tests::setup_wallet_env;
+
+    static FILE_PATH: &str = r#"/tmp/tmp_wallet"#;
+    static BACKUP_KEY: &str = r#"12345"#;
+
+    fn cleanup_exported_wallet() { fs::remove_file(Path::new(FILE_PATH)).unwrap(); }
 
     mod create_backup_wallet {
        use super::*;
@@ -70,23 +102,53 @@ mod tests {
         }
 
     }
-    mod backup_wallet {
-//        use super::*;
 
-//        #[test]
-//        fn backup_wallet_succeeds() {
-//            assert!(backup_wallet().is_ok())
-//        }
-//
-//        #[test]
-//        fn backup_wallet_fails_with_no_wallet() {
-//
-//        }
-//
-//        #[test]
-//        fn backup_fails_with_agency_error_response() {
-//
-//        }
+    mod backup_wallet {
+        use super::*;
+
+        mod retrieve_exported_wallet {
+            use super::*;
+
+            #[test]
+            fn retrieving_exported_wallet_data_successful() {
+                init!("true");
+                setup_wallet_env(settings::DEFAULT_WALLET_NAME).unwrap();
+
+                let data = WalletBackup::_retrieve_exported_wallet(BACKUP_KEY, FILE_PATH);
+
+                assert!(data.unwrap().len() > 0);
+
+                cleanup_exported_wallet()
+            }
+        }
+
+
+        #[test]
+        fn backup_wallet_fails_with_wrong_obj_handle() {
+            init!("true");
+            assert_eq!(backup_wallet(0, BACKUP_KEY, FILE_PATH).unwrap_err().kind(), VcxErrorKind::InvalidHandle)
+        }
+
+        #[test]
+        fn backup_wallet_succeeds() {
+            init!("true");
+            setup_wallet_env(settings::DEFAULT_WALLET_NAME).unwrap();
+
+            let wallet_backup = create_wallet_backup("my id").unwrap();
+            assert!(backup_wallet(wallet_backup, BACKUP_KEY, FILE_PATH).is_ok());
+
+            cleanup_exported_wallet()
+        }
+
+        #[test]
+        fn backup_wallet_fails_with_no_wallet() {
+
+        }
+
+        #[test]
+        fn backup_fails_with_agency_error_response() {
+
+        }
     }
 }
 

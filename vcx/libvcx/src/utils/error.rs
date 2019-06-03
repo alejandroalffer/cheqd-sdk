@@ -108,6 +108,7 @@ pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1093, message:
 pub static UNKNOWN_SCHEMA_REJECTION: Error = Error{ code_num: 1094, message: "Unknown Rejection of Schema Creation, refer to libindy documentation"};
 pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1095, message: "Failed to create Revocation Registration Definition"};
 pub static CREATE_WALLET_BACKUP: Error = Error{ code_num: 1096, message: "Failed to create Wallet Backup"};
+pub static RETRIEVE_EXPORTED_WALLET: Error = Error{ code_num: 1097, message: "Failed to retrieve exported wallet"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
