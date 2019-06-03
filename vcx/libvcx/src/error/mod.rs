@@ -203,6 +203,11 @@ pub enum VcxErrorKind {
     LiibndyError(u32),
     #[fail(display = "Unknown libindy error")]
     UnknownLiibndyError,
+
+    // Wallet Backup
+    #[fail(display = "Could not create WalletBackup")]
+    CreateWalletBackup,
+
 }
 
 #[derive(Debug)]
@@ -366,6 +371,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::UnknownLiibndyError => error::UNKNOWN_LIBINDY_ERROR.code_num,
             VcxErrorKind::Common(num) => num,
             VcxErrorKind::LiibndyError(num) => num,
+            VcxErrorKind::CreateWalletBackup => error::CREATE_WALLET_BACKUP.code_num,
         }
     }
 }
