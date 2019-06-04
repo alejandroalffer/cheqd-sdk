@@ -85,7 +85,23 @@ pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
     pushd ../android
         npm install
     popd
+
+    # This pushd/popd block is for running the tests
     pushd ..
+        # ANDROID_JNI_LIB=android/src/main/jniLibs
+        # for arch in arm arm64 armv7 x86 x86_64
+        # do
+        #     arch_folder=${arch}
+        #     if [ "${arch}" = "armv7" ]; then
+        #         arch_folder="armeabi-v7a"
+        #     elif [ "${arch}" = "arm64" ]; then
+        #         arch_folder="arm64-v8a"
+        #     fi
+        #     rm ${ANDROID_JNI_LIB}/${arch_folder}/libgnustl_shared.so
+        # done
+
+        echo "Running :assembleDebugAndroidTest to see if it passes..."
+
         # Run the tests first
         ./gradlew --no-daemon :assembleDebugAndroidTest --project-dir=android -x test
 
@@ -109,6 +125,17 @@ pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
         echo "Starting the tests of the aar library..."
         ./gradlew --full-stacktrace --debug --no-daemon :connectedCheck --project-dir=android
         cat ./android/build/reports/androidTests/connected/me.connect.VcxWrapperTests.html
+
+        # for arch in arm arm64 armv7 x86 x86_64
+        # do
+        #     arch_folder=${arch}
+        #     if [ "${arch}" = "armv7" ]; then
+        #         arch_folder="armeabi-v7a"
+        #     elif [ "${arch}" = "arm64" ]; then
+        #         arch_folder="arm64-v8a"
+        #     fi
+        #     cp -v ../../../runtime_android_build/libvcx_${arch}/libgnustl_shared.so ${ANDROID_JNI_LIB}/${arch_folder}/libgnustl_shared.so
+        # done
     popd
 popd
 
