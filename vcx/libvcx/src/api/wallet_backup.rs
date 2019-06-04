@@ -61,7 +61,8 @@ pub extern fn vcx_wallet_backup_create(command_handle: u32,
     be done in a separate libindy api call if necessary.
  */
 /// Todo: path will not be necessary when libindy functionality for wallet export functionality is expanded
-/// path: Path to export wallet to User's File System.
+/// Todo: path must be different than other exported wallets because this instance is deleted after its uploaded to the cloud
+/// path: Path to export wallet to User's File System. (This instance of the export
 /// backup_key: String representing the User's Key for securing (encrypting) the exported Wallet.
 /// cb: Callback that provides the success/failure of the api call.
 /// #Returns
@@ -176,7 +177,5 @@ mod tests {
         cb.receive(Some(Duration::from_secs(50))).unwrap();
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
-        fs::remove_file(Path::new(&dir)).unwrap();
-        assert!(!Path::new(&dir).exists());
     }
 }

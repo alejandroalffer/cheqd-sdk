@@ -52,7 +52,10 @@ impl WalletBackup {
 
         let path = Path::new(exported_wallet_path);
         export(get_wallet_handle(), &path, backup_key)?;
-        fs::read(&path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))
+        let data = fs::read(&path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
+        fs::remove_file(path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
+
+        Ok(data)
     }
 
     fn backup(&mut self, backup_key: &str, exported_wallet_path: &str) -> VcxResult<u32> {
@@ -91,8 +94,6 @@ mod tests {
     static FILE_PATH: &str = r#"/tmp/tmp_wallet"#;
     static BACKUP_KEY: &str = r#"12345"#;
 
-    fn cleanup_exported_wallet() { fs::remove_file(Path::new(FILE_PATH)).unwrap(); }
-
     mod create_backup_wallet {
        use super::*;
 
@@ -118,8 +119,6 @@ mod tests {
                 let data = WalletBackup::_retrieve_exported_wallet(BACKUP_KEY, FILE_PATH);
 
                 assert!(data.unwrap().len() > 0);
-
-                cleanup_exported_wallet()
             }
         }
 
@@ -137,8 +136,6 @@ mod tests {
 
             let wallet_backup = create_wallet_backup("my id").unwrap();
             assert!(backup_wallet(wallet_backup, BACKUP_KEY, FILE_PATH).is_ok());
-
-            cleanup_exported_wallet()
         }
 
         #[test]
