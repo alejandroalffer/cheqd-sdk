@@ -57,6 +57,7 @@ impl WalletBackup {
 
     fn backup(&mut self, backup_key: &str, exported_wallet_path: &str) -> VcxResult<u32> {
         let wallet_data = WalletBackup::_retrieve_exported_wallet(backup_key, exported_wallet_path)?;
+        // Todo: Agency Message Posting to deliver wallet_data to the user agent
         Ok(error::SUCCESS.code_num)
     }
 }
