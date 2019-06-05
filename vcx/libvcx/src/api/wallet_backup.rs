@@ -49,6 +49,10 @@ pub extern fn vcx_wallet_backup_create(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+// vcx_initialize_wallet_protocol(wallet_backup_handle) -> Sends message
+
+//vcx_retry_backup_init()
+
 /// Wallet Backup to the Cloud
 ///
 /// #Params:
@@ -105,6 +109,11 @@ pub extern fn vcx_backup_wallet(command_handle: u32,
 
     error::SUCCESS.code_num
 }
+
+// Todo: Functionality for providing the WalletBackupInitResp to change the state of the WalletBackup struct
+
+// Connect.me Steps
+    // 1. create -> WalletBackupUploa
 
 #[cfg(test)]
 mod tests {

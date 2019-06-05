@@ -48,6 +48,17 @@ impl WalletBackup {
         })
     }
 
+    fn initialize_wallet_backup(&mut self) -> VcxResult<u32> {
+        //Todo: Agency Message for Initializing Wallet Protocol
+       Ok(error::SUCCESS.code_num)
+    }
+
+    fn backup(&mut self, backup_key: &str, exported_wallet_path: &str) -> VcxResult<u32> {
+        let wallet_data = WalletBackup::_retrieve_exported_wallet(backup_key, exported_wallet_path)?;
+        // Todo: Agency Message Posting to deliver wallet_data to the user agent
+        Ok(error::SUCCESS.code_num)
+    }
+
     fn _retrieve_exported_wallet(backup_key: &str, exported_wallet_path: &str) -> VcxResult<Vec<u8>> {
 
         let path = Path::new(exported_wallet_path);
@@ -57,21 +68,22 @@ impl WalletBackup {
 
         Ok(data)
     }
-
-    fn backup(&mut self, backup_key: &str, exported_wallet_path: &str) -> VcxResult<u32> {
-        let wallet_data = WalletBackup::_retrieve_exported_wallet(backup_key, exported_wallet_path)?;
-        // Todo: Agency Message Posting to deliver wallet_data to the user agent
-        Ok(error::SUCCESS.code_num)
-    }
 }
 
 pub fn create_wallet_backup(source_id: &str) -> VcxResult<u32> {
     trace!("create_wallet_backup >>> source_id: {}", source_id);
 
+    // Send WalletBackupInit -> Agency
     let wb = WalletBackup::create(source_id)?;
 
     WALLET_BACKUP_MAP.add(wb)
         .or(Err(VcxError::from(VcxErrorKind::CreateWalletBackup)))
+}
+
+pub fn initialize_wallet_backup(handle: u32) -> VcxResult<u32> {
+    WALLET_BACKUP_MAP.get_mut(handle, |wb| {
+        wb.initialize_wallet_backup()
+    })
 }
 
 /*
@@ -91,6 +103,7 @@ mod tests {
     use super::*;
     use utils::devsetup::tests::setup_wallet_env;
 
+    static SOURCE_ID: &str = r#"12345"#;
     static FILE_PATH: &str = r#"/tmp/tmp_wallet"#;
     static BACKUP_KEY: &str = r#"12345"#;
 
@@ -100,8 +113,29 @@ mod tests {
         #[test]
         fn create_wallet_backup_succeeds() {
             init!("true");
-            assert!(create_wallet_backup("my id").is_ok())
+            assert!(create_wallet_backup(SOURCE_ID).is_ok())
         }
+
+    }
+
+    mod initialize_wallet_backup_protocol {
+        use super::*;
+
+        #[test]
+        fn initialize_protocol_fails_with_invalid_handle() {
+            init!("true");
+            assert_eq!(initialize_wallet_backup(0).unwrap_err().kind(), VcxErrorKind::InvalidHandle)
+        }
+
+        #[test]
+        fn initialize_protocol_success() {
+            init!("true");
+            let handle = create_wallet_backup(SOURCE_ID).unwrap();
+            assert!(initialize_wallet_backup(handle).is_ok())
+        }
+    }
+
+    mod wallet_backup_init_response {
 
     }
 
@@ -124,7 +158,7 @@ mod tests {
 
 
         #[test]
-        fn backup_wallet_fails_with_wrong_obj_handle() {
+        fn backup_wallet_fails_with_invalid_handle() {
             init!("true");
             assert_eq!(backup_wallet(0, BACKUP_KEY, FILE_PATH).unwrap_err().kind(), VcxErrorKind::InvalidHandle)
         }
@@ -134,7 +168,7 @@ mod tests {
             init!("true");
             setup_wallet_env(settings::DEFAULT_WALLET_NAME).unwrap();
 
-            let wallet_backup = create_wallet_backup("my id").unwrap();
+            let wallet_backup = create_wallet_backup(SOURCE_ID).unwrap();
             assert!(backup_wallet(wallet_backup, BACKUP_KEY, FILE_PATH).is_ok());
         }
 

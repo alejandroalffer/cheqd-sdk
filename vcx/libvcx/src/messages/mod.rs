@@ -10,6 +10,7 @@ pub mod update_connection;
 pub mod update_message;
 pub mod message_type;
 pub mod payload;
+pub mod wallet_backup;
 
 use std::u8;
 use settings;
@@ -26,6 +27,7 @@ use self::send_message::SendMessageBuilder;
 use self::update_message::{UpdateMessageStatusByConnections, UpdateMessageStatusByConnectionsResponse};
 use self::proofs::proof_request::ProofRequestMessage;
 use self::agent_utils::{Connect, ConnectResponse, SignUp, SignUpResponse, CreateAgent, CreateAgentResponse, UpdateComMethod, ComMethodUpdated};
+use self::wallet_backup::{WalletBackupInitReq, WalletBackupInitReqResp, WalletBackupInitReqBuilder};
 use self::message_type::*;
 use error::prelude::*;
 
@@ -70,6 +72,10 @@ pub enum A2AMessageV1 {
     UpdateConfigsResponse(UpdateConfigsResponse),
     UpdateComMethod(UpdateComMethod),
     ComMethodUpdated(ComMethodUpdated),
+
+    // Wallet Backup
+    WalletBackupInitReq(WalletBackupInitReq),
+    WalletBackupInitResp(WalletBackupInitReqResp),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV1 {
@@ -203,6 +209,16 @@ impl<'de> Deserialize<'de> for A2AMessageV1 {
                     .map(|msg| A2AMessageV1::UpdateConfigsResponse(msg))
                     .map_err(de::Error::custom)
             }
+            "WALLET_BACKUP_INIT_REQ" => {
+                WalletBackupInitReq::deserialize(value)
+                    .map(|msg| A2AMessageV1::WalletBackupInitReq(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_INIT_REQ_RESP" => {
+                WalletBackupInitReqResp::deserialize(value)
+                    .map(|msg| A2AMessageV1::WalletBackupInitResp(msg))
+                    .map_err(de::Error::custom)
+            }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
         }
     }
@@ -249,6 +265,10 @@ pub enum A2AMessageV2 {
     UpdateConfigsResponse(UpdateConfigsResponse),
     UpdateComMethod(UpdateComMethod),
     ComMethodUpdated(ComMethodUpdated),
+
+    // Wallet Backup
+    WalletBackupInitReq(WalletBackupInitReq),
+    WalletBackupInitResp(WalletBackupInitReqResp),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV2 {
@@ -390,6 +410,16 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "COM_METHOD_UPDATED" => {
                 ComMethodUpdated::deserialize(value)
                     .map(|msg| A2AMessageV2::ComMethodUpdated(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_INIT_REQ" => {
+                WalletBackupInitReq::deserialize(value)
+                    .map(|msg| A2AMessageV2::WalletBackupInitReq(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_INIT_REQ_RESP" => {
+                WalletBackupInitReqResp::deserialize(value)
+                    .map(|msg| A2AMessageV2::WalletBackupInitResp(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -674,6 +704,8 @@ pub enum A2AMessageKinds {
     ConnectionRequestAnswer,
     SendRemoteMessage,
     SendRemoteMessageResponse,
+    WalletBackupInitReq,
+    WalletBackupInitReqResp,
 }
 
 impl A2AMessageKinds {
@@ -706,6 +738,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::ComMethodUpdated => MessageFamilies::Configs,
             A2AMessageKinds::SendRemoteMessage => MessageFamilies::Routing,
             A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Routing,
+            A2AMessageKinds::WalletBackupInitReq => MessageFamilies::WalletBackup,
+            A2AMessageKinds::WalletBackupInitReqResp => MessageFamilies::WalletBackup,
         }
     }
 
@@ -738,6 +772,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::ComMethodUpdated => "COM_METHOD_UPDATED".to_string(),
             A2AMessageKinds::SendRemoteMessage => "SEND_REMOTE_MSG".to_string(),
             A2AMessageKinds::SendRemoteMessageResponse => "REMOTE_MSG_SENT".to_string(),
+            A2AMessageKinds::WalletBackupInitReq => "WALLET_BACKUP_INIT_REQ".to_string(),
+            A2AMessageKinds::WalletBackupInitReqResp => "WALLET_BACKUP_INIT_REQ_RESP".to_string(),
         }
     }
 }
@@ -1017,6 +1053,8 @@ pub fn get_messages() -> GetMessagesBuilder { GetMessagesBuilder::create() }
 pub fn send_message() -> SendMessageBuilder { SendMessageBuilder::create() }
 
 pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
+
+pub fn wallet_backup_init_req() -> WalletBackupInitReqBuilder { WalletBackupInitReqBuilder::create() }
 
 #[cfg(test)]
 pub mod tests {

@@ -109,13 +109,13 @@ pub mod tests {
     pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";*/
 
     /* dummy */
-    pub const AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
-    pub const AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
-    pub const AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
+    pub const AGENCY_ENDPOINT: &'static str = "https://eas-team2.pdev.evernym.com";
+    pub const AGENCY_DID: &'static str = "CV65RFpeCtPu82hNF9i61G";
+    pub const AGENCY_VERKEY: &'static str = "7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2";
 
-    pub const C_AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
-    pub const C_AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
-    pub const C_AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
+    pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team2.pdev.evernym.com";
+    pub const C_AGENCY_DID: &'static str = "TGLBMTcW9fHdkSqown9jD8";
+    pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR";
 
     pub fn set_trustee_did() {
         let (my_did, my_vk) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
@@ -364,7 +364,7 @@ pub mod tests {
             "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
             "name": "another_institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
-            "path": constants::GENESIS_PATH.to_string()
+            "path": constants::GENESIS_PATH.to_string(),
         }).to_string();
         let config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
