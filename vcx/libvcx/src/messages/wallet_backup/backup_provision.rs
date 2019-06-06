@@ -8,7 +8,7 @@ use utils::{httpclient};
 use error::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct WalletBackupInitReq {
+pub struct BackupProvision {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     #[serde(rename = "fromDID")]
@@ -18,14 +18,14 @@ pub struct WalletBackupInitReq {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct WalletBackupInitReqBuilder {
+pub struct BackupProvisionBuilder {
     from_did: String,
     from_vk: String,
 }
 
-impl WalletBackupInitReqBuilder {
-    pub fn create() -> WalletBackupInitReqBuilder {
-        WalletBackupInitReqBuilder {
+impl BackupProvisionBuilder {
+    pub fn create() -> BackupProvisionBuilder {
+        BackupProvisionBuilder {
             from_did: String::new(),
             from_vk: String::new(),
         }
@@ -42,7 +42,7 @@ impl WalletBackupInitReqBuilder {
     }
 
     pub fn send_secure(&mut self) -> VcxResult<()> {
-        trace!("WalletBackupInitReq::send >>>");
+        trace!("WalletBackupProvision::send >>>");
 
         let data = self.prepare_request()?;
 
@@ -55,9 +55,9 @@ impl WalletBackupInitReqBuilder {
         let message = match settings::get_protocol_type() {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
-                    A2AMessageV1::WalletBackupInitReq(
-                        WalletBackupInitReq {
-                            msg_type: MessageTypes::build(A2AMessageKinds::WalletBackupInitReq),
+                    A2AMessageV1::BackupProvision(
+                        BackupProvision {
+                            msg_type: MessageTypes::build(A2AMessageKinds::BackupProvision),
                             from_did: self.from_did.clone(),
                             from_vk: self.from_vk.clone(),
                         }
@@ -65,9 +65,9 @@ impl WalletBackupInitReqBuilder {
                 ),
             settings::ProtocolTypes::V2 =>
                 A2AMessage::Version2(
-                    A2AMessageV2::WalletBackupInitReq(
-                        WalletBackupInitReq {
-                            msg_type: MessageTypes::build(A2AMessageKinds::WalletBackupInitReq),
+                    A2AMessageV2::BackupProvision(
+                        BackupProvision {
+                            msg_type: MessageTypes::build(A2AMessageKinds::BackupProvision),
                             from_did: self.from_did.clone(),
                             from_vk: self.from_vk.clone(),
                         }
@@ -77,7 +77,6 @@ impl WalletBackupInitReqBuilder {
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-        println!("message: {:?}", message);
         prepare_message_for_agency(&message, &agency_did)
     }
 
@@ -87,16 +86,22 @@ impl WalletBackupInitReqBuilder {
         let mut response = parse_response_from_agency(&response)?;
 
         match response.remove(0) {
-            A2AMessage::Version1(A2AMessageV1::WalletBackupInitResp(res)) => Ok(()),
-            A2AMessage::Version2(A2AMessageV2::WalletBackupInitResp(res)) => Ok(()),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of WalletBackupInitResp"))
+            A2AMessage::Version1(A2AMessageV1::BackupProvision(res)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::BackupProvision(res)) => Ok(()),
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of WalletBackupProvision"))
         }
     }
 
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct WalletBackupInitReqResp {
+pub struct BackupProvisionResp {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypes,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BackupProvisioned {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
 }
@@ -105,20 +110,30 @@ pub struct WalletBackupInitReqResp {
 
 #[cfg(test)]
 mod tests {
-    use messages::wallet_backup_init_req;
+    use super::*;
+    use messages::wallet_backup_provision;
+    use settings::{CONFIG_PROTOCOL_TYPE, CONFIG_REMOTE_TO_SDK_DID, CONFIG_REMOTE_TO_SDK_VERKEY};
+    use utils::libindy::signus::create_and_store_my_did;
+    use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
 
-    #[cfg(feature = "agency")]
-    #[cfg(feature = "pool_tests")]
     #[test]
-    fn test_wallet_backup_init_req() {
-        init!("true");
+    fn test_wallet_backup_provision() {
+        init!("false");
 
-        let my_did = "Ab8TvZa3Q19VNkQVzAWVL7";
-        let my_vk = "5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf";
+        let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
+        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
+        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
+        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
-        let msg = wallet_backup_init_req()
-            .from_did(my_did)
-            .from_vk(my_vk)
+        settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
+        settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
+        settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY, &my_vk);
+
+        settings::set_config_value(CONFIG_PROTOCOL_TYPE, &settings::ProtocolTypes::V2.to_string());
+
+        let msg = wallet_backup_provision()
+            .from_did(&settings::get_config_value(CONFIG_REMOTE_TO_SDK_DID).unwrap())
+            .from_vk(&settings::get_config_value(CONFIG_REMOTE_TO_SDK_VERKEY).unwrap())
             .prepare_request().unwrap();
         assert!(msg.len() > 0);
 

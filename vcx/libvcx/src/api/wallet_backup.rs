@@ -74,32 +74,31 @@ pub extern fn vcx_wallet_backup_create(command_handle: u32,
 /// is scheduled to begin in a separate thread.
 
 #[no_mangle]
-pub extern fn vcx_backup_wallet(command_handle: u32,
-                                wallet_backup_handle: u32,
-                                path: *const c_char,
-                                backup_key: *const c_char,
-                                cb: Option<extern fn(xcommand_handle: u32,
-                                                     err: u32)>) -> u32 {
-    info!("vcx_backup_wallet >>>");
+pub extern fn vcx_wallet_backup_backup(command_handle: u32,
+                                       wallet_backup_handle: u32,
+                                       path: *const c_char,
+                                       backup_key: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_wallet_backup_backup >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(path,  VcxErrorKind::InvalidOption);
     check_useful_c_str!(backup_key, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_backup_wallet(command_handle: {}, wallet_backup_handle: {}, path: {}, backup_key: ****)",
+    trace!("vcx_wallet_backup_backup(command_handle: {}, wallet_backup_handle: {}, path: {}, backup_key: ****)",
            command_handle, wallet_backup_handle, path);
 
     spawn(move|| {
-        trace!("vcx_backup_wallet(command_handle: {}, wallet_backup_handle: {}, path: {}, backup_key: ****)",
+        trace!("vcx_wallet_backup_backup(command_handle: {}, wallet_backup_handle: {}, path: {}, backup_key: ****)",
                command_handle, wallet_backup_handle, path);
         match backup_wallet(wallet_backup_handle, &backup_key, &path) {
             Ok(_) => {
                 let return_code = error::SUCCESS.code_num;
-                trace!("vcx_backup_wallet(command_handle: {}, rc: {})", command_handle, return_code);
+                trace!("vcx_wallet_backup_backup(command_handle: {}, rc: {})", command_handle, return_code);
                 cb(command_handle, return_code);
             }
             Err(e) => {
-                warn!("vcx_backup_wallet(command_handle: {}, rc: {})", command_handle, e);
+                warn!("vcx_wallet_backup_backup(command_handle: {}, rc: {})", command_handle, e);
                 cb(command_handle, e.into());
             }
         };
@@ -178,7 +177,7 @@ mod tests {
         let wallet_handle = cb.receive(Some(Duration::from_secs(50))).unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
-        assert_eq!(vcx_backup_wallet(cb.command_handle,
+        assert_eq!(vcx_wallet_backup_backup(cb.command_handle,
                                      wallet_handle,
                                      dir_c_str.as_ptr(),
                                      CString::new(backup_key).unwrap().into_raw(),
