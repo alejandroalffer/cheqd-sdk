@@ -3,7 +3,8 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use error::prelude::*;
-use wallet_backup::{create_wallet_backup, backup_wallet};
+use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, is_valid_handle, get_state};
+use messages::get_message::Message;
 
 /// -> Create a Wallet Backup object that provides a Cloud wallet backup
 ///
@@ -48,10 +49,6 @@ pub extern fn vcx_wallet_backup_create(command_handle: u32,
 
     error::SUCCESS.code_num
 }
-
-// vcx_initialize_wallet_protocol(wallet_backup_handle) -> Sends message
-
-//vcx_retry_backup_init()
 
 /// Wallet Backup to the Cloud
 ///
@@ -109,10 +106,66 @@ pub extern fn vcx_wallet_backup_backup(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-// Todo: Functionality for providing the WalletBackupInitResp to change the state of the WalletBackup struct
+/// Checks the message any state change and updates the the state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// wallet_backup_handle: was provided during creation. Used to identify connection object
+///
+/// message: message to process
+///
+/// cb: Callback that provides most current state of the wallet_backup and error status of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_wallet_backup_update_state_with_message(command_handle: u32,
+                                                          wallet_backup_handle: u32,
+                                                          message: *const c_char,
+                                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+    info!("vcx_wallet_backup_update_state_with_message >>>");
 
-// Connect.me Steps
-    // 1. create -> WalletBackupUploa
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(message, VcxErrorKind::InvalidOption);
+
+    let source_id = get_source_id(wallet_backup_handle).unwrap_or_default();
+    trace!("vcx_wallet_backup_update_state_with_message(command_handle: {}, wallet_backup: {}), source_id: {:?}",
+           command_handle, wallet_backup_handle, source_id);
+
+    if !is_valid_handle(wallet_backup_handle) {
+        error!("vcx_wallet_backup_update_state_with_message - invalid handle");
+        return VcxError::from(VcxErrorKind::InvalidHandle).into()
+    }
+
+    let message: Message = match serde_json::from_str(&message) {
+        Ok(x) => x,
+        Err(_) => return VcxError::from(VcxErrorKind::InvalidJson).into(),
+    };
+
+    spawn(move|| {
+//        let rc = match process_acceptance_message(wallet_backup_handle, message) {
+//            Ok(x) => {
+//                trace!("vcx_wallet_backup_update_state_with_message(command_handle: {}, rc: {}, wallet_backup_handle: {}, state: {}), source_id: {:?}",
+//                       command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);
+//                x
+//            },
+//            Err(x) => {
+//                warn!("vcx_wallet_backup_update_state_with_message(command_handle: {}, rc: {}, wallet_backup_handle: {}, state: {}), source_id: {:?}",
+//                      command_handle, x, connection_handle, get_state(connection_handle), source_id);
+//                x.into()
+//            },
+//        };
+        // Todo: Remove
+        let rc = 0; // Temporary for testing
+        let state = get_state(wallet_backup_handle);
+        cb(command_handle, rc, state);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
 
 #[cfg(test)]
 mod tests {

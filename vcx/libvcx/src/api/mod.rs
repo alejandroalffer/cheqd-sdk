@@ -90,6 +90,15 @@ enum_number!(ProofStateType
     ProofInvalid = 2,
 });
 
+enum_number!(WalletBackupState
+{
+    Uninitialized = 0,
+    Initialized = 1,
+    BackupInProgress = 2,
+    WalletBackupStored = 3,
+});
+
+
 #[repr(C)]
 pub struct VcxStatus {
     pub handle: libc::c_int,

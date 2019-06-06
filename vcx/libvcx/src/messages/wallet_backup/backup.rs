@@ -6,26 +6,29 @@ use utils::httpclient;
 use error::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct BackupProvision {
+pub struct Backup {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     #[serde(rename = "fromDID")]
     from_did: String,
     #[serde(rename = "fromDIDVerKey")]
     from_vk: String,
+    wallet_data: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct BackupProvisionBuilder {
+pub struct BackupBuilder {
     from_did: String,
     from_vk: String,
+    wallet_data: Vec<u8>,
 }
 
-impl BackupProvisionBuilder {
-    pub fn create() -> BackupProvisionBuilder {
-        BackupProvisionBuilder {
+impl BackupBuilder {
+    pub fn create() -> BackupBuilder {
+        BackupBuilder {
             from_did: String::new(),
             from_vk: String::new(),
+            wallet_data: Vec::new(),
         }
     }
 
@@ -39,8 +42,13 @@ impl BackupProvisionBuilder {
         self
     }
 
+    pub fn wallet_data(&mut self, wallet_data: Vec<u8>) -> &mut Self {
+        self.wallet_data = wallet_data;
+        self
+    }
+
     pub fn send_secure(&mut self) -> VcxResult<()> {
-        trace!("WalletBackupProvision::send >>>");
+        trace!("WalletBackup::send >>>");
 
         let data = self.prepare_request()?;
 
@@ -53,21 +61,23 @@ impl BackupProvisionBuilder {
         let message = match settings::get_protocol_type() {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
-                    A2AMessageV1::BackupProvision(
-                        BackupProvision {
-                            msg_type: MessageTypes::build(A2AMessageKinds::BackupProvision),
+                    A2AMessageV1::Backup(
+                        Backup {
+                            msg_type: MessageTypes::build(A2AMessageKinds::Backup),
                             from_did: self.from_did.clone(),
                             from_vk: self.from_vk.clone(),
+                            wallet_data: self.wallet_data.clone(),
                         }
                     )
                 ),
             settings::ProtocolTypes::V2 =>
                 A2AMessage::Version2(
-                    A2AMessageV2::BackupProvision(
-                        BackupProvision {
-                            msg_type: MessageTypes::build(A2AMessageKinds::BackupProvision),
+                    A2AMessageV2::Backup(
+                        Backup {
+                            msg_type: MessageTypes::build(A2AMessageKinds::Backup),
                             from_did: self.from_did.clone(),
                             from_vk: self.from_vk.clone(),
+                            wallet_data: self.wallet_data.clone(),
                         }
                     )
                 )
@@ -84,8 +94,8 @@ impl BackupProvisionBuilder {
         let mut response = parse_response_from_agency(&response)?;
 
         match response.remove(0) {
-            A2AMessage::Version1(A2AMessageV1::BackupProvision(res)) => Ok(()),
-            A2AMessage::Version2(A2AMessageV2::BackupProvision(res)) => Ok(()),
+            A2AMessage::Version1(A2AMessageV1::Backup(res)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::Backup(res)) => Ok(()),
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of WalletBackupProvision"))
         }
     }
@@ -93,13 +103,13 @@ impl BackupProvisionBuilder {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct BackupProvisionResp {
+pub struct BackupResp {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct BackupProvisioned {
+pub struct BackupAck {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
 }
@@ -109,13 +119,13 @@ pub struct BackupProvisioned {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use messages::wallet_backup_provision;
+    use messages::backup_wallet;
     use settings::{CONFIG_PROTOCOL_TYPE, CONFIG_REMOTE_TO_SDK_DID, CONFIG_REMOTE_TO_SDK_VERKEY};
     use utils::libindy::signus::create_and_store_my_did;
     use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
 
     #[test]
-    fn test_wallet_backup_provision() {
+    fn test_wallet_backup() {
         init!("false");
 
         let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
@@ -129,9 +139,10 @@ mod tests {
 
         settings::set_config_value(CONFIG_PROTOCOL_TYPE, &settings::ProtocolTypes::V2.to_string());
 
-        let msg = wallet_backup_provision()
+        let msg = backup_wallet()
             .from_did(&settings::get_config_value(CONFIG_REMOTE_TO_SDK_DID).unwrap())
             .from_vk(&settings::get_config_value(CONFIG_REMOTE_TO_SDK_VERKEY).unwrap())
+            .wallet_data(vec![1, 2, 3])
             .prepare_request().unwrap();
         assert!(msg.len() > 0);
 

@@ -2,8 +2,9 @@
 //use serde_json::Value;
 
 //use api::{VcxStateType};
+use api::WalletBackupState;
 use settings;
-//use messages;
+use messages;
 //use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion};
 //use messages::get_message::{Message, MessagePayload};
 use object_cache::ObjectCache;
@@ -12,6 +13,7 @@ use utils::error;
 use utils::libindy::wallet::{export, get_wallet_handle};
 use std::path::Path;
 use std::fs;
+use settings::{CONFIG_REMOTE_TO_SDK_DID, CONFIG_REMOTE_TO_SDK_VERKEY};
 //use utils::constants::DEFAULT_SERIALIZE_VERSION;
 //use utils::json::KeyMatch;
 //use std::collections::HashMap;
@@ -19,14 +21,6 @@ use std::fs;
 
 lazy_static! {
     static ref WALLET_BACKUP_MAP: ObjectCache<WalletBackup> = Default::default();
-}
-
- #[derive(Clone, Debug, Serialize, Deserialize)]
-enum WalletBackupState {
-    Uninitialized(),
-    Initialized(),
-    BackupInProgress(),
-    WalletBackupStored(),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -39,17 +33,31 @@ struct WalletBackup {
 
 impl WalletBackup {
 
+    fn get_source_id(&self) -> &String { &self.source_id }
+
+    fn get_state(&self) -> u32 {
+        trace!("WalletBackup::get_state >>>");
+        self.state as u32
+    }
+
     fn create(source_id: &str) -> VcxResult<WalletBackup> {
         Ok(WalletBackup {
             source_id: source_id.to_string(),
-            state: WalletBackupState::Uninitialized(),
+            state: WalletBackupState::Uninitialized,
             to_did: settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?,
             uuid: None,
         })
     }
 
     fn provision_backup(&mut self) -> VcxResult<u32> {
-        //Todo: Agency Message for Initializing Wallet Protocol
+        trace!("provision_backup >>> ");
+
+        messages::wallet_backup_provision()
+            .from_did(&settings::get_config_value(CONFIG_REMOTE_TO_SDK_DID)?)
+            .from_vk(&settings::get_config_value(CONFIG_REMOTE_TO_SDK_VERKEY)?)
+//            .send_secure()?
+            ;
+
        Ok(error::SUCCESS.code_num)
     }
 
@@ -73,17 +81,12 @@ impl WalletBackup {
 pub fn create_wallet_backup(source_id: &str) -> VcxResult<u32> {
     trace!("create_wallet_backup >>> source_id: {}", source_id);
 
-    // Send WalletBackupInit -> Agency
-    let wb = WalletBackup::create(source_id)?;
+    let mut wb = WalletBackup::create(source_id)?;
+
+    wb.provision_backup()?;
 
     WALLET_BACKUP_MAP.add(wb)
         .or(Err(VcxError::from(VcxErrorKind::CreateWalletBackup)))
-}
-
-pub fn provision_backup(handle: u32) -> VcxResult<u32> {
-    WALLET_BACKUP_MAP.get_mut(handle, |wb| {
-        wb.provision_backup()
-    })
 }
 
 /*
@@ -96,6 +99,21 @@ pub fn backup_wallet(handle: u32, backup_key: &str, exported_wallet_path: &str) 
     WALLET_BACKUP_MAP.get_mut(handle, |wb| {
         wb.backup(backup_key, exported_wallet_path)
     })
+}
+
+pub fn is_valid_handle(handle: u32) -> bool { WALLET_BACKUP_MAP.has_handle(handle) }
+
+pub fn get_state(handle: u32) -> u32 {
+    WALLET_BACKUP_MAP.get(handle, |wb| {
+        debug!("get state for wallet_backup {}", wb.get_source_id());
+        Ok(wb.get_state().clone())
+    }).unwrap_or(WalletBackupState::Uninitialized as u32)
+}
+
+pub fn get_source_id(handle: u32) -> VcxResult<String> {
+    WALLET_BACKUP_MAP.get(handle, |wb| {
+        Ok(wb.get_source_id().clone())
+    }).or(Err(VcxError::from(VcxErrorKind::InvalidHandle)))
 }
 
 #[cfg(test)]
@@ -116,23 +134,6 @@ mod tests {
             assert!(create_wallet_backup(SOURCE_ID).is_ok())
         }
 
-    }
-
-    mod provision_backup_protocol {
-        use super::*;
-
-        #[test]
-        fn provision_protocol_fails_with_invalid_handle() {
-            init!("true");
-            assert_eq!(provision_backup(0).unwrap_err().kind(), VcxErrorKind::InvalidHandle)
-        }
-
-        #[test]
-        fn provision_protocol_success() {
-            init!("true");
-            let handle = create_wallet_backup(SOURCE_ID).unwrap();
-            assert!(provision_backup(handle).is_ok())
-        }
     }
 
     mod wallet_backup_init_response {

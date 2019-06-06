@@ -28,6 +28,7 @@ use self::update_message::{UpdateMessageStatusByConnections, UpdateMessageStatus
 use self::proofs::proof_request::ProofRequestMessage;
 use self::agent_utils::{Connect, ConnectResponse, SignUp, SignUpResponse, CreateAgent, CreateAgentResponse, UpdateComMethod, ComMethodUpdated};
 use self::wallet_backup::backup_provision::{BackupProvision, BackupProvisionResp, BackupProvisionBuilder};
+use self::wallet_backup::backup::{Backup, BackupResp, BackupBuilder};
 use self::message_type::*;
 use error::prelude::*;
 
@@ -76,6 +77,8 @@ pub enum A2AMessageV1 {
     // Wallet Backup
     BackupProvision(BackupProvision),
     BackupProvisionResp(BackupProvisionResp),
+    Backup(Backup),
+    BackupResp(BackupResp),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV1 {
@@ -219,6 +222,16 @@ impl<'de> Deserialize<'de> for A2AMessageV1 {
                     .map(|msg| A2AMessageV1::BackupProvisionResp(msg))
                     .map_err(de::Error::custom)
             }
+            "WALLET_BACKUP" => {
+                Backup::deserialize(value)
+                    .map(|msg| A2AMessageV1::Backup(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_RESP" => {
+                BackupResp::deserialize(value)
+                    .map(|msg| A2AMessageV1::BackupResp(msg))
+                    .map_err(de::Error::custom)
+            }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
         }
     }
@@ -266,9 +279,11 @@ pub enum A2AMessageV2 {
     UpdateComMethod(UpdateComMethod),
     ComMethodUpdated(ComMethodUpdated),
 
-    // Wallet Backup
+    /// Wallet Backup
     BackupProvision(BackupProvision),
     BackupProvisionResp(BackupProvisionResp),
+    Backup(Backup),
+    BackupResp(BackupResp),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV2 {
@@ -420,6 +435,16 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "WALLET_BACKUP_PROVISION_RESP" => {
                 BackupProvisionResp::deserialize(value)
                     .map(|msg| A2AMessageV2::BackupProvisionResp(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP" => {
+                Backup::deserialize(value)
+                    .map(|msg| A2AMessageV2::Backup(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_RESP" => {
+                BackupResp::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupResp(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -706,6 +731,8 @@ pub enum A2AMessageKinds {
     SendRemoteMessageResponse,
     BackupProvision,
     BackupProvisionResp,
+    Backup,
+    BackupResp,
 }
 
 impl A2AMessageKinds {
@@ -740,6 +767,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Routing,
             A2AMessageKinds::BackupProvision => MessageFamilies::WalletBackup,
             A2AMessageKinds::BackupProvisionResp => MessageFamilies::WalletBackup,
+            A2AMessageKinds::Backup => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupResp => MessageFamilies::WalletBackup,
         }
     }
 
@@ -774,6 +803,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::SendRemoteMessageResponse => "REMOTE_MSG_SENT".to_string(),
             A2AMessageKinds::BackupProvision => "WALLET_BACKUP_PROVISION".to_string(),
             A2AMessageKinds::BackupProvisionResp => "WALLET_BACKUP_PROVISION_RESP".to_string(),
+            A2AMessageKinds::Backup => "WALLET_BACKUP".to_string(),
+            A2AMessageKinds::BackupResp => "WALLET_BACKUP_RESP".to_string(),
         }
     }
 }
@@ -1055,6 +1086,8 @@ pub fn send_message() -> SendMessageBuilder { SendMessageBuilder::create() }
 pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
 
 pub fn wallet_backup_provision() -> BackupProvisionBuilder { BackupProvisionBuilder::create() }
+
+pub fn backup_wallet() -> BackupBuilder { BackupBuilder::create() }
 
 #[cfg(test)]
 pub mod tests {
