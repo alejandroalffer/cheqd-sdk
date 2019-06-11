@@ -9,37 +9,19 @@ use error::prelude::*;
 pub struct Backup {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
-    #[serde(rename = "fromDID")]
-    from_did: String,
-    #[serde(rename = "fromDIDVerKey")]
-    from_vk: String,
     wallet_data: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BackupBuilder {
-    from_did: String,
-    from_vk: String,
     wallet_data: Vec<u8>,
 }
 
 impl BackupBuilder {
     pub fn create() -> BackupBuilder {
         BackupBuilder {
-            from_did: String::new(),
-            from_vk: String::new(),
             wallet_data: Vec::new(),
         }
-    }
-
-    pub fn from_did(&mut self, did: &str) -> &mut Self {
-        self.from_did = did.to_string();
-        self
-    }
-
-    pub fn from_vk(&mut self, did: &str) -> &mut Self {
-        self.from_vk = did.to_string();
-        self
     }
 
     pub fn wallet_data(&mut self, wallet_data: Vec<u8>) -> &mut Self {
@@ -64,8 +46,6 @@ impl BackupBuilder {
                     A2AMessageV1::Backup(
                         Backup {
                             msg_type: MessageTypes::build(A2AMessageKinds::Backup),
-                            from_did: self.from_did.clone(),
-                            from_vk: self.from_vk.clone(),
                             wallet_data: self.wallet_data.clone(),
                         }
                     )
@@ -75,8 +55,6 @@ impl BackupBuilder {
                     A2AMessageV2::Backup(
                         Backup {
                             msg_type: MessageTypes::build(A2AMessageKinds::Backup),
-                            from_did: self.from_did.clone(),
-                            from_vk: self.from_vk.clone(),
                             wallet_data: self.wallet_data.clone(),
                         }
                     )
@@ -120,7 +98,7 @@ pub struct BackupAck {
 mod tests {
     use super::*;
     use messages::backup_wallet;
-    use settings::{CONFIG_PROTOCOL_TYPE, CONFIG_REMOTE_TO_SDK_DID, CONFIG_REMOTE_TO_SDK_VERKEY};
+    use settings::{CONFIG_PROTOCOL_TYPE};
     use utils::libindy::signus::create_and_store_my_did;
     use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
 
@@ -140,8 +118,6 @@ mod tests {
         settings::set_config_value(CONFIG_PROTOCOL_TYPE, &settings::ProtocolTypes::V2.to_string());
 
         let msg = backup_wallet()
-            .from_did(&settings::get_config_value(CONFIG_REMOTE_TO_SDK_DID).unwrap())
-            .from_vk(&settings::get_config_value(CONFIG_REMOTE_TO_SDK_VERKEY).unwrap())
             .wallet_data(vec![1, 2, 3])
             .prepare_request().unwrap();
         assert!(msg.len() > 0);

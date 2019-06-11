@@ -13,7 +13,6 @@ use utils::error;
 use utils::libindy::wallet::{export, get_wallet_handle};
 use std::path::Path;
 use std::fs;
-use settings::{CONFIG_REMOTE_TO_SDK_DID, CONFIG_REMOTE_TO_SDK_VERKEY};
 //use utils::constants::DEFAULT_SERIALIZE_VERSION;
 //use utils::json::KeyMatch;
 //use std::collections::HashMap;
@@ -53,8 +52,6 @@ impl WalletBackup {
         trace!("provision_backup >>> ");
 
         messages::wallet_backup_provision()
-            .from_did(&settings::get_config_value(CONFIG_REMOTE_TO_SDK_DID)?)
-            .from_vk(&settings::get_config_value(CONFIG_REMOTE_TO_SDK_VERKEY)?)
 //            .send_secure()?
             ;
 
