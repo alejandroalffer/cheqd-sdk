@@ -196,6 +196,8 @@ pub enum VcxErrorKind {
     NoEndpoint,
     #[fail(display = "Error Retrieving messages from API")]
     InvalidMessages,
+    #[fail(display = "Invalid A2A Message version")]
+    InvalidMsgVersion,
 
     #[fail(display = "Common error {}", 0)]
     Common(u32),
@@ -376,6 +378,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::LiibndyError(num) => num,
             VcxErrorKind::CreateWalletBackup => error::CREATE_WALLET_BACKUP.code_num,
             VcxErrorKind::RetrieveExportedWallet => error::RETRIEVE_EXPORTED_WALLET.code_num,
+            VcxErrorKind::InvalidMsgVersion => error::INVALID_MSG_VERSION.code_num,
         }
     }
 }

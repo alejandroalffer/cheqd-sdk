@@ -73,12 +73,6 @@ pub enum A2AMessageV1 {
     UpdateConfigsResponse(UpdateConfigsResponse),
     UpdateComMethod(UpdateComMethod),
     ComMethodUpdated(ComMethodUpdated),
-
-    // Wallet Backup
-    BackupProvision(BackupProvision),
-    BackupProvisionResp(BackupProvisionResp),
-    Backup(Backup),
-    BackupResp(BackupResp),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV1 {
@@ -210,26 +204,6 @@ impl<'de> Deserialize<'de> for A2AMessageV1 {
             "CONFIGS_UPDATED" => {
                 UpdateConfigsResponse::deserialize(value)
                     .map(|msg| A2AMessageV1::UpdateConfigsResponse(msg))
-                    .map_err(de::Error::custom)
-            }
-            "WALLET_BACKUP_PROVISION" => {
-                BackupProvision::deserialize(value)
-                    .map(|msg| A2AMessageV1::BackupProvision(msg))
-                    .map_err(de::Error::custom)
-            }
-            "WALLET_BACKUP_PROVISION_RESP" => {
-                BackupProvisionResp::deserialize(value)
-                    .map(|msg| A2AMessageV1::BackupProvisionResp(msg))
-                    .map_err(de::Error::custom)
-            }
-            "WALLET_BACKUP" => {
-                Backup::deserialize(value)
-                    .map(|msg| A2AMessageV1::Backup(msg))
-                    .map_err(de::Error::custom)
-            }
-            "WALLET_BACKUP_RESP" => {
-                BackupResp::deserialize(value)
-                    .map(|msg| A2AMessageV1::BackupResp(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
