@@ -89,7 +89,7 @@ pub struct BackupAck {
 mod tests {
     use super::*;
     use messages::backup_wallet;
-    use settings::{CONFIG_PROTOCOL_TYPE};
+    use settings::{CONFIG_PROTOCOL_TYPE, CONFIG_PROTOCOL_VERSION};
     use utils::libindy::signus::create_and_store_my_did;
     use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
 
@@ -113,5 +113,15 @@ mod tests {
             .prepare_request().unwrap();
         assert!(msg.len() > 0);
 
+    }
+
+    #[test]
+    fn test_wallet_backup_not_supported_for_version_1() {
+        init!("false");
+
+        settings::set_config_value(CONFIG_PROTOCOL_TYPE, &settings::ProtocolTypes::V1.to_string());
+        settings::set_config_value(CONFIG_PROTOCOL_VERSION, "1.0");
+
+        assert_eq!(backup_wallet().prepare_request().unwrap_err().kind(), VcxErrorKind::InvalidMsgVersion);
     }
 }
