@@ -64,7 +64,7 @@ pub static MASK_VALUE: &str = "********";
 pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "RAW";
 pub static DEFAULT_PAYMENT_PLUGIN: &str = "libsovtoken.so";
 pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "sovtoken_init";
-pub static DEFAULT_PAYMENT_METHOD: &str = "null";
+pub static DEFAULT_PAYMENT_METHOD: &str = "sov";
 pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
 
