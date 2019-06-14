@@ -776,7 +776,7 @@ pub mod tests {
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
 
-        let cost = 45;
+        let cost = get_txn_price(::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
         let start_wallet = get_wallet_token_info().unwrap();
         let remaining_balance = start_wallet.balance - cost;
         let (remainder, inputs, refund_address) = inputs(cost).unwrap();
