@@ -6,7 +6,7 @@ use error::prelude::*;
 use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state};
 use messages::get_message::Message;
 
-/// -> Create a Wallet Backup object that provides a Cloud wallet backup
+/// -> Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

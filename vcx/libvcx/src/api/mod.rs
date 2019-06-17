@@ -94,8 +94,10 @@ enum_number!(WalletBackupState
 {
     Uninitialized = 0,
     Initialized = 1,
-    BackupInProgress = 2,
-    WalletBackupStored = 3,
+    BackupProvisionRequested = 2,
+    ReadyToExportWallet = 3,
+    BackupInProgress = 4,
+    BackupStored = 5,
 });
 
 
