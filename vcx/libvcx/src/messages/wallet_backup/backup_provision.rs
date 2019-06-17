@@ -1,5 +1,5 @@
 use settings;
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency, A2AMessageV1};
 use messages::message_type::MessageTypes;
 use error::VcxResult;
 use utils::httpclient;
@@ -30,6 +30,14 @@ impl BackupProvisionBuilder {
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
         let message = match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 =>
+                A2AMessage::Version1(
+                    A2AMessageV1::BackupProvision(
+                        BackupProvision {
+                            msg_type: MessageTypes::build(A2AMessageKinds::BackupProvision),
+                        }
+                    )
+                ),
             settings::ProtocolTypes::V2 =>
                 A2AMessage::Version2(
                     A2AMessageV2::BackupProvision(
@@ -38,7 +46,6 @@ impl BackupProvisionBuilder {
                         }
                     )
                 ),
-            _ => return Err(VcxError::from(VcxErrorKind::InvalidMsgVersion))
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -53,6 +60,7 @@ impl BackupProvisionBuilder {
 
         match response.remove(0) {
             A2AMessage::Version2(A2AMessageV2::BackupProvision(res)) => Ok(()),
+            A2AMessage::Version1(A2AMessageV1::BackupProvision(res)) => Ok(()),
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of WalletBackupProvision"))
         }
     }
@@ -110,5 +118,18 @@ mod tests {
         settings::set_config_value(CONFIG_PROTOCOL_VERSION, "1.0");
 
         assert_eq!(wallet_backup_provision().prepare_request().unwrap_err().kind(), VcxErrorKind::InvalidMsgVersion);
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_backup_provision_real() {
+        init!("agency");
+        ::utils::devsetup::tests::set_consumer();
+        // Todo: why is V2 failing with an encryption error????
+//        settings::set_config_value(CONFIG_PROTOCOL_TYPE, &settings::ProtocolTypes::V2.to_string());
+
+        assert!(wallet_backup_provision().send_secure().is_ok());
+        teardown!("agency")
     }
 }

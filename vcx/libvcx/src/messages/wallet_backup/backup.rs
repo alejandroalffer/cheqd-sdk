@@ -1,5 +1,5 @@
 use settings;
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
+use messages::{A2AMessage, A2AMessageV1, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
 use messages::message_type::MessageTypes;
 use error::VcxResult;
 use utils::httpclient;
@@ -41,6 +41,15 @@ impl BackupBuilder {
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
         let message = match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 =>
+                A2AMessage::Version1(
+                    A2AMessageV1::Backup(
+                        Backup {
+                            msg_type: MessageTypes::build(A2AMessageKinds::Backup),
+                            wallet_data: self.wallet_data.clone(),
+                        }
+                    )
+                ),
             settings::ProtocolTypes::V2 =>
                 A2AMessage::Version2(
                     A2AMessageV2::Backup(
@@ -50,7 +59,6 @@ impl BackupBuilder {
                         }
                     )
                 ),
-            _ => return Err(VcxError::from(VcxErrorKind::InvalidMsgVersion))
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -65,6 +73,7 @@ impl BackupBuilder {
 
         match response.remove(0) {
             A2AMessage::Version2(A2AMessageV2::Backup(res)) => Ok(()),
+            A2AMessage::Version1(A2AMessageV1::Backup(res)) => Ok(()),
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of WalletBackupProvision"))
         }
     }
@@ -89,7 +98,7 @@ pub struct BackupAck {
 mod tests {
     use super::*;
     use messages::backup_wallet;
-    use settings::{CONFIG_PROTOCOL_TYPE, CONFIG_PROTOCOL_VERSION};
+    use settings::{CONFIG_PROTOCOL_TYPE};
     use utils::libindy::signus::create_and_store_my_did;
     use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
 
@@ -115,13 +124,26 @@ mod tests {
 
     }
 
+//    #[test]
+//    fn test_wallet_backup_not_supported_for_version_1() {
+//        init!("false");
+//
+//        settings::set_config_value(CONFIG_PROTOCOL_TYPE, &settings::ProtocolTypes::V1.to_string());
+//        settings::set_config_value(CONFIG_PROTOCOL_VERSION, "1.0");
+//
+//        assert_eq!(backup_wallet().prepare_request().unwrap_err().kind(), VcxErrorKind::InvalidMsgVersion);
+//    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
     #[test]
-    fn test_wallet_backup_not_supported_for_version_1() {
-        init!("false");
+    fn test_backup_real() {
+        init!("agency");
+        ::utils::devsetup::tests::set_consumer();
+        // Todo: why is V2 failing with an encryption error????
+//        settings::set_config_value(::settings::CONFIG_PROTOCOL_TYPE, &settings::ProtocolTypes::V2.to_string());
+//        settings::set_config_value(::settings::CONFIG_PROTOCOL_VERSION, "2.0");
 
-        settings::set_config_value(CONFIG_PROTOCOL_TYPE, &settings::ProtocolTypes::V1.to_string());
-        settings::set_config_value(CONFIG_PROTOCOL_VERSION, "1.0");
-
-        assert_eq!(backup_wallet().prepare_request().unwrap_err().kind(), VcxErrorKind::InvalidMsgVersion);
+        assert!(backup_wallet().wallet_data(vec![1, 2, 3]).send_secure().is_ok());
     }
 }
