@@ -1,21 +1,13 @@
-//use serde_json;
-//use serde_json::Value;
-
-//use api::{VcxStateType};
 use api::WalletBackupState;
 use settings;
 use messages;
-//use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion};
-//use messages::get_message::{Message, MessagePayload};
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
 use utils::libindy::wallet::{export, get_wallet_handle};
+use utils::constants::{DEFAULT_SERIALIZE_VERSION};
 use std::path::Path;
 use std::fs;
-//use utils::constants::DEFAULT_SERIALIZE_VERSION;
-//use utils::json::KeyMatch;
-//use std::collections::HashMap;
 
 
 lazy_static! {
@@ -73,6 +65,19 @@ impl WalletBackup {
 
         Ok(data)
     }
+
+    fn to_string(&self) -> VcxResult<String> {
+        trace!("WalletBackup::to_string >>>");
+        messages::ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
+            .serialize()
+            .map_err(|err| err.extend("Cannot serialize WalletBackup"))
+    }
+    fn from_str(data: &str) -> VcxResult<WalletBackup> {
+        trace!("WalletBackup::from_str >>> data: {}", secret!(&data));
+        messages::ObjectWithVersion::deserialize(data)
+            .map(|obj: messages::ObjectWithVersion<WalletBackup>| obj.data)
+            .map_err(|err| err.extend("Cannot deserialize WalletBackup"))
+    }
 }
 
 pub fn create_wallet_backup(source_id: &str) -> VcxResult<u32> {
@@ -113,10 +118,28 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
     }).or(Err(VcxError::from(VcxErrorKind::InvalidHandle)))
 }
 
+pub fn to_string(handle: u32) -> VcxResult<String> {
+    WALLET_BACKUP_MAP.get(handle, |obj| {
+        WalletBackup::to_string(&obj)
+    })
+}
+
+pub fn from_string(wallet_backup_data: &str) -> VcxResult<u32> {
+    let wallet_backup: WalletBackup = WalletBackup::from_str(wallet_backup_data)?;
+
+    let new_handle = WALLET_BACKUP_MAP.add(wallet_backup)?;
+
+    info!("inserting handle {} into wallet backup table", new_handle);
+
+    Ok(new_handle)
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use utils::devsetup::tests::setup_wallet_env;
+    use serde_json::Value;
 
     static SOURCE_ID: &str = r#"12345"#;
     static FILE_PATH: &str = r#"/tmp/tmp_wallet"#;
@@ -133,8 +156,23 @@ mod tests {
 
     }
 
-    mod wallet_backup_init_response {
+    mod serialization {
+        use super::*;
 
+        #[test]
+        fn to_string_test() {
+            init!("true");
+            let handle = create_wallet_backup(SOURCE_ID).unwrap();
+            let serialized = to_string(handle).unwrap();
+            let j: Value = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(j["version"], "1.0");
+            WalletBackup::from_str(&serialized).unwrap();
+        }
+
+        #[test]
+        fn test_deserialize_fails() {
+            assert_eq!(from_string("{}").unwrap_err().kind(), VcxErrorKind::InvalidJson);
+        }
     }
 
     mod backup_wallet {

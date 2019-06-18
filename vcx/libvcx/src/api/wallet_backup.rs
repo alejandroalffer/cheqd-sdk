@@ -3,8 +3,9 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use error::prelude::*;
-use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state};
+use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state, from_string, to_string};
 use messages::get_message::Message;
+use std::ptr;
 
 /// -> Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent
 ///
@@ -196,6 +197,95 @@ pub extern fn vcx_wallet_backup_update_state_with_message(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Takes the wallet backup object and returns a json string of all its attributes
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// handle: Wallet Backup handle that was provided during creation. Used to identify the wallet backup object
+///
+/// cb: Callback that provides json string of the wallet backup's attributes and provides error status
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_wallet_backup_serialize(command_handle: u32,
+                                          wallet_backup_handle: u32,
+                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, data: *const c_char)>) -> u32 {
+    info!("vcx_wallet_backup_serialize >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    let source_id = get_source_id(wallet_backup_handle).unwrap_or_default();
+    trace!("vcx_wallet_backup_serialize(command_handle: {}, proof_handle: {}) source_id: {}",
+           command_handle, wallet_backup_handle, source_id);
+
+    spawn(move || {
+        match to_string(wallet_backup_handle) {
+            Ok(x) => {
+                trace!("vcx_wallet_backup_serialize_cb(command_handle: {}, rc: {}, data: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, x, source_id);
+                let msg = CStringUtils::string_to_cstring(x);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            }
+            Err(x) => {
+                error!("vcx_wallet_backup_serialize_cb(command_handle: {}, rc: {}, data: {}) source_id: {}",
+                       command_handle, x, 0, source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Takes a json string representing an wallet backup object and recreates an object matching the json
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// data: json string representing a wallet backup object
+///
+///
+/// cb: Callback that provides handle and provides error status
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_wallet_backup_deserialize(command_handle: u32,
+                                            wallet_backup_str: *const c_char,
+                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, handle: u32)>) -> u32 {
+    info!("vcx_wallet_backup_deserialize >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(wallet_backup_str, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_wallet_backup_deserialize(command_handle: {}, proof_data: {})",
+           command_handle, wallet_backup_str);
+
+    spawn(move || {
+        match from_string(&wallet_backup_str) {
+            Ok(x) => {
+                trace!("vcx_wallet_backup_deserialize_cb(command_handle: {}, rc: {}, wallet_backup_handle: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, x, get_source_id(x).unwrap_or_default());
+
+                cb(command_handle, 0, x);
+            }
+            Err(x) => {
+                error!("vcx_wallet_backup_deserialize_cb(command_handle: {}, rc: {}, wallet_backup_handle: {}) source_id: {}",
+                       command_handle, x, 0, "");
+                cb(command_handle, x.into(), 0);
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -204,6 +294,8 @@ mod tests {
     use utils::error;
     use std::time::Duration;
     use api::{return_types_u32};
+    use serde_json::Value;
+    use wallet_backup;
 
     #[test]
     fn test_vcx_wallet_backup_create() {
@@ -267,5 +359,27 @@ mod tests {
         cb.receive(Some(Duration::from_secs(50))).unwrap();
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
+    }
+
+    #[test]
+    fn test_vcx_wallet_backup_serialize_and_deserialize() {
+        init!("true");
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let handle = wallet_backup::create_wallet_backup("abc").unwrap();
+        assert_eq!(vcx_wallet_backup_serialize(cb.command_handle,
+                                                 handle,
+                                                 Some(cb.get_callback())), error::SUCCESS.code_num);
+        let s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+        let j: Value = serde_json::from_str(&s).unwrap();
+        assert_eq!(j["version"], ::utils::constants::DEFAULT_SERIALIZE_VERSION);
+
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_wallet_backup_deserialize(cb.command_handle,
+                                                   CString::new(s).unwrap().into_raw(),
+                                                   Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+
+        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        assert!(handle > 0);
     }
 }
