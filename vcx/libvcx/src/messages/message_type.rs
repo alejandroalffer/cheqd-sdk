@@ -81,7 +81,7 @@ impl MessageFamilies {
             MessageFamilies::Pairwise => "1.0",
             MessageFamilies::Configs => "1.0",
             MessageFamilies::CredentialExchange => "1.0",
-            MessageFamilies::WalletBackup => "0.1",
+            MessageFamilies::WalletBackup => "0.1.0",
             _ => "1.0"
         }
     }
@@ -95,7 +95,7 @@ impl From<String> for MessageFamilies {
             "pairwise" => MessageFamilies::Pairwise,
             "configs" => MessageFamilies::Configs,
             "credential-exchange" => MessageFamilies::CredentialExchange,
-            "wallet_backup" => MessageFamilies::WalletBackup,
+            "wallet-backup" => MessageFamilies::WalletBackup,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -109,7 +109,7 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::Pairwise => "pairwise".to_string(),
             MessageFamilies::CredentialExchange => "credential_exchange".to_string(),
             MessageFamilies::Configs => "configs".to_string(),
-            MessageFamilies::WalletBackup => "wallet_backup".to_string(),
+            MessageFamilies::WalletBackup => "wallet-backup".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }
