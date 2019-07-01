@@ -25,6 +25,7 @@ pub fn get_wallet_backup_messages() -> VcxResult<Vec<Message>> {
 // Eventually, WalletBackup can use the general prepare_message_for_agency
 // This is all Duplicate code that can be found in messages/mod.rs -> 'pack_for_agency_v2' and 'prepare_forward_message'
 pub fn prepare_message_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u8>> {
+    if settings::test_indy_mode_enabled() { return Ok(Vec::new()) }
 
     let message = _pack_for_agency_v2_without_fwd(message, agency_did)?;
     _prepare_fwd_v2(message, agency_did)

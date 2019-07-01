@@ -206,6 +206,7 @@ mod tests {
         #[test]
         fn create_backup_succeeds() {
             init!("true");
+
             ::utils::httpclient::set_next_u8_response(WALLET_PROVISION_AGENT_RESPONSE.to_vec());
 
             assert!(create_wallet_backup(SOURCE_ID).is_ok())
@@ -229,6 +230,7 @@ mod tests {
         #[test]
         fn update_state_success() {
             init!("true");
+            ::utils::httpclient::set_next_u8_response(WALLET_PROVISION_AGENT_RESPONSE.to_vec());
 
             let handle = create_wallet_backup(SOURCE_ID).unwrap();
             assert!(update_state(handle).is_ok());

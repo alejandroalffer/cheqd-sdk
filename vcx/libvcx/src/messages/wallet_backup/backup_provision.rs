@@ -45,7 +45,8 @@ impl BackupProvisionBuilder {
 }
 
 pub fn received_provisioned_response() -> VcxResult<bool> {
-    // Todo: Does any WALLET_BACKUP_PROVISIONED work? There is no ref_msg_id associated with it
+    //Todo: Does any WALLET_BACKUP_PROVISIONED work?
+    // There is no ref_msg_id associated with it so how does the Provisioned Ack map to the Provision
     let messages = get_wallet_backup_messages()?;
     for msg in messages.iter() {
         if msg.msg_type == RemoteMessageType::WalletBackupProvisioned { return Ok(true) };
@@ -63,19 +64,17 @@ pub struct BackupProvisioned {
 mod tests {
     use super::*;
     use messages::{wallet_backup_provision};
-    use utils::libindy::signus::create_and_store_my_did;
-    use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
     use std::thread;
     use std::time::Duration;
+    use utils::libindy::signus::create_and_store_my_did;
 
     #[test]
     fn test_wallet_backup_provision() {
-        init!("false");
-
+        init!("ledger");
         let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
-        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let (agent_did, agent_vk) = create_and_store_my_did(Some(::utils::constants::MY2_SEED)).unwrap();
+        let (my_did, my_vk) = create_and_store_my_did(Some(::utils::constants::MY1_SEED)).unwrap();
+        let (agency_did, agency_vk) = create_and_store_my_did(Some(::utils::constants::MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
