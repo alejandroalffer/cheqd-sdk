@@ -324,25 +324,7 @@ mod tests {
 
     #[test]
     fn test_wallet_backup() {
-        use utils::libindy::wallet::delete_wallet;
-        use utils::devsetup::tests::setup_wallet_env;
-        use std::env;
-        use std::fs;
-        use std::path::Path;
-        use std::time::Duration;
-        use settings;
-
-        settings::set_defaults();
-        let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
-        let backup_key = "backup_key";
-        let mut dir = env::temp_dir();
-        dir.push("tmp_exported_wallet");
-        if Path::new(&dir).exists() {
-            fs::remove_file(Path::new(&dir)).unwrap();
-        }
-        let dir_c_str = CString::new(dir.to_str().unwrap()).unwrap();
-
-       setup_wallet_env(&wallet_name).unwrap();
+        init!("true");
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_wallet_backup_create(cb.command_handle,
@@ -353,12 +335,11 @@ mod tests {
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_wallet_backup_backup(cb.command_handle,
                                      wallet_handle,
-                                     dir_c_str.as_ptr(),
-                                     CString::new(backup_key).unwrap().into_raw(),
+                                     CString::new("path").unwrap().into_raw(),
+                                     CString::new("key").unwrap().into_raw(),
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(50))).unwrap();
 
-        delete_wallet(&wallet_name, None, None, None).unwrap();
     }
 
     #[test]

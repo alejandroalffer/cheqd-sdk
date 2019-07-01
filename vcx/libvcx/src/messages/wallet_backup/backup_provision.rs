@@ -87,6 +87,7 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_backup_provision_real() {
         init!("agency");
@@ -98,6 +99,7 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_received_provisioned_response_true() {
         init!("agency");
@@ -112,6 +114,7 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_received_provisioned_response_false() {
         init!("agency");

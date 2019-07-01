@@ -91,6 +91,7 @@ impl WalletBackup {
     }
 
     fn _retrieve_exported_wallet(backup_key: &str, exported_wallet_path: &str) -> VcxResult<Vec<u8>> {
+        if settings::test_indy_mode_enabled() { return Ok(Vec::new()) }
 
         let path = Path::new(exported_wallet_path);
         export(get_wallet_handle(), &path, backup_key)?;
@@ -214,6 +215,7 @@ mod tests {
 
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
+        #[cfg(feature = "wallet_backup")]
         #[test]
         fn create_backup_succeeds_real() {
             init!("agency");
@@ -239,6 +241,7 @@ mod tests {
 
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
+        #[cfg(feature = "wallet_backup")]
         #[test]
         fn update_state_with_provisioned_msg_changes_state_to_ready_to_export() {
             init!("agency");
@@ -253,6 +256,7 @@ mod tests {
 
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
+        #[cfg(feature = "wallet_backup")]
         #[test]
         fn update_state_with_backup_ack_msg_changes_state_to_ready_to_export() {
             init!("agency");
@@ -314,6 +318,7 @@ mod tests {
 
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
+        #[cfg(feature = "wallet_backup")]
         #[test]
         fn backup_wallet_succeeds_real() {
             init!("agency");
