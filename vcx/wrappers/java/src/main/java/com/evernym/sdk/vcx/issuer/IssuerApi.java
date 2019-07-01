@@ -102,10 +102,20 @@ public class IssuerApi extends VcxJava.API {
 
     public static CompletableFuture<Integer> issuerCredntialUpdateState(int credentialHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
-        logger.debug("issuerCredntialUpdateState() called with: credentialHandle = [" + credentialHandle + "]");
+        logger.debug("issuerCredentialUpdateState() called with: credentialHandle = [" + credentialHandle + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
         int result = LibVcx.api.vcx_credential_update_state(issue, credentialHandle, issuerCredntialUpdateStateCB);
+        checkResult(result);
+        return future;
+    }
+
+    public static CompletableFuture<Integer> issuerCredentialUpdateStateWithMessage(int credentialHandle, String message) throws VcxException {
+        ParamGuard.notNull(credentialHandle, "credentialHandle");
+        logger.debug("issuerCredentialUpdateStateWithMessage() called with: credentialHandle = [" + credentialHandle + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        int issue = addFuture(future);
+        int result = LibVcx.api.vcx_issuer_credential_update_state_with_message(issue, credentialHandle, message, issuerCredntialUpdateStateCB);
         checkResult(result);
         return future;
     }
