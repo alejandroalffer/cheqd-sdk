@@ -59,6 +59,7 @@ mod tests {
     use utils::libindy::signus::create_and_store_my_did;
     use messages::wallet_backup::received_expected_message;
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_wallet_backup_provision() {
         init!("ledger");
