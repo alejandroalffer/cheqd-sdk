@@ -8,8 +8,9 @@ use utils::libindy::wallet::{export, get_wallet_handle};
 use utils::constants::{DEFAULT_SERIALIZE_VERSION};
 use std::path::Path;
 use std::fs;
-use messages::wallet_backup::backup_provision::received_provisioned_response;
-use messages::wallet_backup::backup::received_backup_ack;
+use messages::RemoteMessageType;
+use messages::wallet_backup::received_expected_message;
+use messages::get_message::Message;
 
 
 lazy_static! {
@@ -44,18 +45,22 @@ impl WalletBackup {
         self.state as u32
     }
 
-    fn update_state(&mut self) -> VcxResult<u32> {
+    fn update_state(&mut self, message: Option<Message>) -> VcxResult<u32> {
         debug!("updating state for wallet_backup {}", self.source_id);
 
         match self.state {
-            WalletBackupState::ProvisionRequested => if received_provisioned_response()? { self.state = WalletBackupState::ReadyToExportWallet },
-            WalletBackupState::BackupInProgress => if received_backup_ack()? {
-                self.has_stored_backup = true;
-                self.state = WalletBackupState::ReadyToExportWallet
-            },
+            WalletBackupState::ProvisionRequested =>
+                if received_expected_message(message, RemoteMessageType::WalletBackupProvisioned)? {
+                    self.state = WalletBackupState::ReadyToExportWallet
+                },
+            WalletBackupState::BackupInProgress =>
+                if received_expected_message(message, RemoteMessageType::WalletBackupAck)? {
+                    self.has_stored_backup = true;
+                    self.state = WalletBackupState::ReadyToExportWallet
+                },
             _ => ()
         }
-        Ok(error::SUCCESS.code_num)
+        Ok(self.get_state())
     }
 
     fn create(source_id: &str) -> VcxResult<WalletBackup> {
@@ -176,9 +181,9 @@ pub fn set_state(handle: u32, state: WalletBackupState) -> VcxResult<()> {
     })
 }
 
-pub fn update_state(handle: u32) -> VcxResult<u32> {
+pub fn update_state(handle: u32, message: Option<Message>) -> VcxResult<u32> {
     WALLET_BACKUP_MAP.get_mut(handle, |wb| {
-        wb.update_state()
+        wb.update_state(message.clone())
     })
 }
 
@@ -235,7 +240,7 @@ mod tests {
             ::utils::httpclient::set_next_u8_response(WALLET_PROVISION_AGENT_RESPONSE.to_vec());
 
             let handle = create_wallet_backup(SOURCE_ID).unwrap();
-            assert!(update_state(handle).is_ok());
+            assert!(update_state(handle, None).is_ok());
             assert_eq!(get_state(handle), WalletBackupState::ProvisionRequested as u32);
         }
 
@@ -250,7 +255,7 @@ mod tests {
             let handle = create_wallet_backup(SOURCE_ID).unwrap();
             thread::sleep(Duration::from_millis(2000));
 
-            assert!(update_state(handle).is_ok());
+            assert!(update_state(handle, None).is_ok());
             assert_eq!(get_state(handle), WalletBackupState::ReadyToExportWallet as u32);
         }
 
@@ -265,13 +270,13 @@ mod tests {
             let handle = create_wallet_backup(SOURCE_ID).unwrap();
             thread::sleep(Duration::from_millis(2000));
 
-            assert!(update_state(handle).is_ok());
+            assert!(update_state(handle, None).is_ok());
             assert_eq!(get_state(handle), WalletBackupState::ReadyToExportWallet as u32);
 
             backup_wallet(handle, BACKUP_KEY, FILE_PATH).unwrap();
             assert_eq!(get_state(handle), WalletBackupState::BackupInProgress as u32);
 
-            assert!(update_state(handle).is_ok());
+            assert!(update_state(handle, None).is_ok());
             assert_eq!(get_state(handle), WalletBackupState::ReadyToExportWallet as u32);
         }
     }
@@ -327,12 +332,12 @@ mod tests {
             thread::sleep(Duration::from_millis(2000));
 
             assert_eq!(get_state(wallet_backup), WalletBackupState::ProvisionRequested as u32);
-            assert!(update_state(wallet_backup).is_ok());
+            assert!(update_state(wallet_backup, None).is_ok());
 
             backup_wallet(wallet_backup, BACKUP_KEY, FILE_PATH).unwrap();
             assert_eq!(get_state(wallet_backup), WalletBackupState::BackupInProgress as u32);
 
-            assert!(update_state(wallet_backup).is_ok());
+            assert!(update_state(wallet_backup, None).is_ok());
             assert_eq!(get_state(wallet_backup), WalletBackupState::ReadyToExportWallet as u32);
             assert!(has_known_cloud_backup(wallet_backup))
         }

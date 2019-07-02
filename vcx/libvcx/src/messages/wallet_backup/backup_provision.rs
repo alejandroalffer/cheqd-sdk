@@ -1,6 +1,6 @@
 use settings;
-use messages::wallet_backup::{get_wallet_backup_messages, prepare_message_for_agency_v2};
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, RemoteMessageType};
+use messages::wallet_backup::{prepare_message_for_agency_v2};
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
 use messages::message_type::{ MessageTypes };
 use error::VcxResult;
 use utils::httpclient;
@@ -44,16 +44,6 @@ impl BackupProvisionBuilder {
     }
 }
 
-pub fn received_provisioned_response() -> VcxResult<bool> {
-    //Todo: Does any WALLET_BACKUP_PROVISIONED work?
-    // There is no ref_msg_id associated with it so how does the Provisioned Ack map to the Provision
-    let messages = get_wallet_backup_messages()?;
-    for msg in messages.iter() {
-        if msg.msg_type == RemoteMessageType::WalletBackupProvisioned { return Ok(true) };
-    }
-    Ok(false)
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BackupProvisioned {
     #[serde(rename = "@type")]
@@ -63,10 +53,11 @@ pub struct BackupProvisioned {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use messages::{wallet_backup_provision};
+    use messages::{wallet_backup_provision, RemoteMessageType};
     use std::thread;
     use std::time::Duration;
     use utils::libindy::signus::create_and_store_my_did;
+    use messages::wallet_backup::received_expected_message;
 
     #[test]
     fn test_wallet_backup_provision() {
@@ -108,7 +99,7 @@ mod tests {
         wallet_backup_provision().send_secure().unwrap();
         thread::sleep(Duration::from_millis(2000));
 
-        assert_eq!(received_provisioned_response().unwrap(), true);
+        assert_eq!(received_expected_message(None, RemoteMessageType::WalletBackupProvisioned).unwrap(), true);
         teardown!("agency")
     }
 
@@ -120,7 +111,7 @@ mod tests {
         init!("agency");
         ::utils::devsetup::tests::set_institution();
 
-        assert_eq!(received_provisioned_response().unwrap(), false);
+        assert_eq!(received_expected_message(None, RemoteMessageType::WalletBackupProvisioned).unwrap(), false);
         teardown!("agency")
     }
 }

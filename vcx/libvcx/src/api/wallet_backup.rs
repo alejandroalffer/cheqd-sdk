@@ -3,7 +3,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use error::prelude::*;
-use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state, from_string, to_string};
+use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state, from_string, to_string, update_state};
 use messages::get_message::Message;
 use std::ptr;
 
@@ -131,16 +131,25 @@ pub extern fn vcx_wallet_backup_update_state(command_handle: u32,
            command_handle, wallet_backup_handle, source_id);
 
     spawn(move|| {
-        // Todo: Remove
-        let rc = 0; // Temporary for testing
-        let state = get_state(wallet_backup_handle);
-        cb(command_handle, rc, state);
+        match update_state(wallet_backup_handle, None) {
+            Ok(x) => {
+                trace!("vcx_wallet_backup_update_state(command_handle: {}, rc: {}, wallet_backup_handle: {}, state: {}), source_id: {:?}",
+                       command_handle, error::SUCCESS.message, wallet_backup_handle, get_state(wallet_backup_handle), source_id);
+                cb(command_handle, error::SUCCESS.code_num, x);
+            },
+            Err(x) => {
+                warn!("vcx_wallet_backup_update_state(command_handle: {}, rc: {}, wallet_backup_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, x, wallet_backup_handle, get_state(wallet_backup_handle), source_id);
+                cb(command_handle, x.into(), 0);
+            },
+        }
 
         Ok(())
     });
 
     error::SUCCESS.code_num
 }
+
 /// Checks the message any state change and updates the the state attribute
 ///
 /// #Params
@@ -174,22 +183,18 @@ pub extern fn vcx_wallet_backup_update_state_with_message(command_handle: u32,
     };
 
     spawn(move|| {
-//        let rc = match process_acceptance_message(wallet_backup_handle, message) {
-//            Ok(x) => {
-//                trace!("vcx_wallet_backup_update_state_with_message(command_handle: {}, rc: {}, wallet_backup_handle: {}, state: {}), source_id: {:?}",
-//                       command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);
-//                x
-//            },
-//            Err(x) => {
-//                warn!("vcx_wallet_backup_update_state_with_message(command_handle: {}, rc: {}, wallet_backup_handle: {}, state: {}), source_id: {:?}",
-//                      command_handle, x, connection_handle, get_state(connection_handle), source_id);
-//                x.into()
-//            },
-//        };
-        // Todo: Remove
-        let rc = 0; // Temporary for testing
-        let state = get_state(wallet_backup_handle);
-        cb(command_handle, rc, state);
+        match update_state(wallet_backup_handle, Some(message)) {
+            Ok(x) => {
+                trace!("vcx_wallet_backup_update_state_with_message(command_handle: {}, rc: {}, wallet_backup_handle: {}, state: {}), source_id: {:?}",
+                       command_handle, error::SUCCESS.message, wallet_backup_handle, get_state(wallet_backup_handle), source_id);
+                cb(command_handle, error::SUCCESS.code_num, x);
+            },
+            Err(x) => {
+                warn!("vcx_wallet_backup_update_state_with_message(command_handle: {}, rc: {}, wallet_backup_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, x, wallet_backup_handle, get_state(wallet_backup_handle), source_id);
+                cb(command_handle, x.into(), 0);
+            },
+        }
 
         Ok(())
     });
@@ -362,5 +367,24 @@ mod tests {
 
         let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
         assert!(handle > 0);
+    }
+
+    #[test]
+    fn test_vcx_wallet_backup_update_state() {
+        init!("true");
+
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_wallet_backup_create(cb.command_handle,
+                                          CString::new("test_create").unwrap().into_raw(),
+                                          Some(cb.get_callback()));
+        let wallet_handle = cb.receive(Some(Duration::from_secs(50))).unwrap();
+
+        ::utils::httpclient::set_next_u8_response(Vec::new());
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_wallet_backup_update_state(cb.command_handle,
+                                                  wallet_handle,
+                                            Some(cb.get_callback())), error::SUCCESS.code_num);
+        let state = cb.receive(Some(Duration::from_secs(50))).unwrap();
+        assert_eq!(state, ::api::WalletBackupState::ProvisionRequested as u32)
     }
 }

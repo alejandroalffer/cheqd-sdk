@@ -6,7 +6,7 @@ use messages;
 use messages::get_message::Message;
 use settings::get_config_value;
 use error::prelude::*;
-use messages::{GeneralMessage, A2AMessage, prepare_forward_message_for_agency_v2, ForwardV2, A2AMessageKinds};
+use messages::{GeneralMessage, A2AMessage, prepare_forward_message_for_agency_v2, ForwardV2, A2AMessageKinds, RemoteMessageType};
 use utils::libindy::crypto;
 use messages::message_type::MessageTypes;
 
@@ -57,4 +57,18 @@ fn _prepare_fwd_v2(message: Vec<u8>, did: &str) -> VcxResult<Vec<u8>> {
     };
 
     prepare_forward_message_for_agency_v2(&message, &agency_vk)
+}
+
+pub fn received_expected_message(message: Option<Message>, expected_type: RemoteMessageType) -> VcxResult<bool> {
+    // Todo: If multiple responses have the same type, how to know which one corresponds to the request?? MSG_ID??
+    if let Some(msg) = message {
+        if msg.msg_type == expected_type { return Ok(true) };
+    } else {
+        let messages = get_wallet_backup_messages()?;
+        for msg in messages.iter() {
+            // Todo: This will return ok if it finds any matching type... FIX
+            if msg.msg_type == expected_type { return Ok(true) };
+        }
+    }
+    Ok(false)
 }

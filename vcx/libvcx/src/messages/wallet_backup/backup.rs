@@ -1,9 +1,9 @@
 use settings;
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, RemoteMessageType};
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
 use messages::message_type::MessageTypes;
 use error::VcxResult;
 use utils::httpclient;
-use messages::wallet_backup::{prepare_message_for_agency_v2, get_wallet_backup_messages};
+use messages::wallet_backup::{prepare_message_for_agency_v2};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Backup {
@@ -61,24 +61,16 @@ pub struct BackupAck {
     msg_type: MessageTypes,
 }
 
-pub fn received_backup_ack() -> VcxResult<bool> {
-    // Todo: How to knwalletow which Backup was acknowledged?? MSG_ID somehow?
-    let messages = get_wallet_backup_messages()?;
-    for msg in messages.iter() {
-        if msg.msg_type == RemoteMessageType::WalletBackupAck { return Ok(true) };
-    }
-    Ok(false)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use messages::backup_wallet;
+    use messages::{backup_wallet, RemoteMessageType};
     use settings::{CONFIG_PROTOCOL_TYPE};
     use utils::libindy::signus::create_and_store_my_did;
     use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
     use std::thread;
     use std::time::Duration;
+    use messages::wallet_backup::received_expected_message;
 
     #[test]
     fn test_wallet_backup() {
@@ -130,7 +122,7 @@ mod tests {
         assert!(backup_wallet().wallet_data(vec![1, 2, 3]).send_secure().is_ok());
         thread::sleep(Duration::from_millis(2000));
 
-        assert_eq!(received_backup_ack().unwrap(), true);
+        assert_eq!(received_expected_message(None, RemoteMessageType::WalletBackupAck).unwrap(), true);
 
         teardown!("agency")
     }
