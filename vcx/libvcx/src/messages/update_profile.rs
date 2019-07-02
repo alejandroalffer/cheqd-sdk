@@ -107,7 +107,6 @@ impl UpdateProfileDataBuilder {
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-        println!("message: {:?}", message);
         prepare_message_for_agency(&message, &agency_did)
     }
 
