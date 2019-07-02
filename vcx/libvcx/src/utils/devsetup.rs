@@ -364,7 +364,7 @@ pub mod tests {
             "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
             "name": "another_institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
-            "path": constants::GENESIS_PATH.to_string()
+            "path": constants::GENESIS_PATH.to_string(),
         }).to_string();
         let config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 

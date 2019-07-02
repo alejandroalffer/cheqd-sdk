@@ -10,6 +10,7 @@ pub mod update_connection;
 pub mod update_message;
 pub mod message_type;
 pub mod payload;
+pub mod wallet_backup;
 
 use std::u8;
 use settings;
@@ -26,6 +27,8 @@ use self::send_message::SendMessageBuilder;
 use self::update_message::{UpdateMessageStatusByConnections, UpdateMessageStatusByConnectionsResponse};
 use self::proofs::proof_request::ProofRequestMessage;
 use self::agent_utils::{Connect, ConnectResponse, SignUp, SignUpResponse, CreateAgent, CreateAgentResponse, UpdateComMethod, ComMethodUpdated};
+use self::wallet_backup::backup_provision::{BackupProvision, BackupProvisioned, BackupProvisionBuilder};
+use self::wallet_backup::backup::{Backup, BackupAck, BackupBuilder};
 use self::message_type::*;
 use error::prelude::*;
 
@@ -249,6 +252,12 @@ pub enum A2AMessageV2 {
     UpdateConfigsResponse(UpdateConfigsResponse),
     UpdateComMethod(UpdateComMethod),
     ComMethodUpdated(ComMethodUpdated),
+
+    /// Wallet Backup
+    BackupProvision(BackupProvision),
+    BackupProvisioned(BackupProvisioned),
+    Backup(Backup),
+    BackupAck(BackupAck),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV2 {
@@ -390,6 +399,26 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "COM_METHOD_UPDATED" => {
                 ComMethodUpdated::deserialize(value)
                     .map(|msg| A2AMessageV2::ComMethodUpdated(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_PROVISION" => {
+                BackupProvision::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupProvision(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_PROVISIONED" => {
+                BackupProvisioned::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupProvisioned(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP" => {
+                Backup::deserialize(value)
+                    .map(|msg| A2AMessageV2::Backup(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_ACK" => {
+                BackupAck::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupAck(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -571,6 +600,8 @@ pub enum RemoteMessageType {
     Cred,
     ProofReq,
     Proof,
+    WalletBackupProvisioned,
+    WalletBackupAck,
 }
 
 impl Serialize for RemoteMessageType {
@@ -583,6 +614,8 @@ impl Serialize for RemoteMessageType {
             RemoteMessageType::Cred => "cred",
             RemoteMessageType::ProofReq => "proofReq",
             RemoteMessageType::Proof => "proof",
+            RemoteMessageType::WalletBackupProvisioned => "WALLET_BACKUP_PROVISIONED",
+            RemoteMessageType::WalletBackupAck => "WALLET_BACKUP_ACK",
             RemoteMessageType::Other(_type) => _type,
         };
         Value::String(value.to_string()).serialize(serializer)
@@ -600,6 +633,8 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
             Some("cred") => Ok(RemoteMessageType::Cred),
             Some("proofReq") => Ok(RemoteMessageType::ProofReq),
             Some("proof") => Ok(RemoteMessageType::Proof),
+            Some("WALLET_BACKUP_PROVISIONED") => Ok(RemoteMessageType::WalletBackupProvisioned),
+            Some("WALLET_BACKUP_ACK") => Ok(RemoteMessageType::WalletBackupAck),
             Some(_type) => Ok(RemoteMessageType::Other(_type.to_string())),
             _ => Err(de::Error::custom("Unexpected message type."))
         }
@@ -674,6 +709,10 @@ pub enum A2AMessageKinds {
     ConnectionRequestAnswer,
     SendRemoteMessage,
     SendRemoteMessageResponse,
+    BackupProvision,
+    BackupProvisioned,
+    Backup,
+    BackupAck,
 }
 
 impl A2AMessageKinds {
@@ -706,6 +745,10 @@ impl A2AMessageKinds {
             A2AMessageKinds::ComMethodUpdated => MessageFamilies::Configs,
             A2AMessageKinds::SendRemoteMessage => MessageFamilies::Routing,
             A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Routing,
+            A2AMessageKinds::BackupProvision => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupProvisioned => MessageFamilies::WalletBackup,
+            A2AMessageKinds::Backup => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupAck => MessageFamilies::WalletBackup,
         }
     }
 
@@ -738,6 +781,10 @@ impl A2AMessageKinds {
             A2AMessageKinds::ComMethodUpdated => "COM_METHOD_UPDATED".to_string(),
             A2AMessageKinds::SendRemoteMessage => "SEND_REMOTE_MSG".to_string(),
             A2AMessageKinds::SendRemoteMessageResponse => "REMOTE_MSG_SENT".to_string(),
+            A2AMessageKinds::BackupProvision => "WALLET_BACKUP_PROVISION".to_string(),
+            A2AMessageKinds::BackupProvisioned => "WALLET_BACKUP_PROVISIONED".to_string(),
+            A2AMessageKinds::Backup => "WALLET_BACKUP".to_string(),
+            A2AMessageKinds::BackupAck => "WALLET_BACKUP_ACK".to_string(),
         }
     }
 }
@@ -1017,6 +1064,10 @@ pub fn get_messages() -> GetMessagesBuilder { GetMessagesBuilder::create() }
 pub fn send_message() -> SendMessageBuilder { SendMessageBuilder::create() }
 
 pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
+
+pub fn wallet_backup_provision() -> BackupProvisionBuilder { BackupProvisionBuilder::create() }
+
+pub fn backup_wallet() -> BackupBuilder { BackupBuilder::create() }
 
 #[cfg(test)]
 pub mod tests {

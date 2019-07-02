@@ -11,6 +11,7 @@ pub mod wallet;
 pub mod logger;
 pub mod return_types_u32;
 pub mod extensions;
+pub mod wallet_backup;
 
 use std::fmt;
 
@@ -88,6 +89,16 @@ enum_number!(ProofStateType
     ProofValidated = 1,
     ProofInvalid = 2,
 });
+
+enum_number!(WalletBackupState
+{
+    Uninitialized = 0,
+    ProvisionRequested = 1,
+    ReadyToExportWallet = 2,
+    BackupInProgress = 3,
+    BackupStored = 4,
+});
+
 
 #[repr(C)]
 pub struct VcxStatus {
