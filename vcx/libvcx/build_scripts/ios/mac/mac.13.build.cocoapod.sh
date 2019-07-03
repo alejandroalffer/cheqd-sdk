@@ -62,7 +62,8 @@ done
 #export PATH=${GEM_HOME}/bin:$PATH
 # Test the libvcx.a file if the ${IOS_ARCHS} contains i386 or x86_64
 if [[ "${IOS_ARCHS}" == *"i386"* ]] || [[ "${IOS_ARCHS}" == *"x86_64"* ]]; then
-    xcodebuild -project vcx.xcodeproj -scheme vcx-demo -sdk iphonesimulator build-for-testing
+    #xcodebuild -project vcx.xcodeproj -scheme vcx-demo -sdk iphonesimulator build-for-testing
+    xcodebuild -project vcx.xcodeproj -scheme vcx-demo -destination 'platform=iOS Simulator,name=iPhone 5s' test
     ## Need to do:
     ## a) gem install cocoapods -- sudo may be needed
     #if [ -z "$(which pod)" ]; then
@@ -73,10 +74,10 @@ if [[ "${IOS_ARCHS}" == *"i386"* ]] || [[ "${IOS_ARCHS}" == *"x86_64"* ]]; then
         pod setup
     fi
     ## c) brew install xctool
-    if [ -z "$(which xctool)" ]; then
-        brew install xctool
-    fi
-    xctool -project vcx.xcodeproj -scheme vcx-demo run-tests -sdk iphonesimulator
+    #if [ -z "$(which xctool)" ]; then
+    #    brew install xctool
+    #fi
+    #xctool -project vcx.xcodeproj -scheme vcx-demo run-tests -sdk iphonesimulator
 fi
 
 #mv lib/libvcx.a.original lib/libvcx.a
