@@ -12,9 +12,9 @@ variables:
   rustVersion: "1.34.1"
   libsovtokenVersion: "0.10.0"
   indyBranch: 'stable'
-  libindyVersion: "1.9.0"
+  libindyVersion: "1.10.0"
   nullBranch: 'stable'
-  libnullVersion: "1.9.0"
+  libnullVersion: "1.10.0"
   androidSovtokenArtifact: "libsovtoken_0.10.0-201905312046-e820bba_all.zip"
   iosSovtokenArtifact: "libsovtoken_0.10.0-201905312039-e820bba_all.zip"
 
@@ -354,7 +354,7 @@ publish-android:
       - master@dev/vcx/indy-sdk
   script:
     - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
-    - chmod +x vcx/ci/scripts/androidPublish.sh
+    - sudo chmod +x vcx/ci/scripts/androidPublish.sh
     - vcx/ci/scripts/androidPublish.sh ${vcxVersion}-${vcxRevision}
 
 publish-ios:
@@ -367,13 +367,13 @@ publish-ios:
   dependencies:
     - build-ios
   script:
-    - find IOSBuilds/libvcxpartial/ -type f -name 'vcx.libvcxpartial_*_universal.zip' \
+    - find ./IOSBuilds/libvcxpartial/ -type f -name 'vcx.libvcxpartial_*_universal.zip' \
       -exec curl -u "${KRAKEN_CREDENTIALS}" -X POST https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \;
-    - find IOSBuilds/libvcxpartial/ -type f -name 'libvcx.a.libvcxpartial_*_universal.tar.gz' \
+    - find ./IOSBuilds/libvcxpartial/ -type f -name 'libvcx.a.libvcxpartial_*_universal.tar.gz' \
       -exec curl -u "${KRAKEN_CREDENTIALS}" -X POST https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \;
-    - find IOSBuilds/libvcxall/ -type f -name 'vcx.libvcxall_*_universal.zip' \
+    - find ./IOSBuilds/libvcxall/ -type f -name 'vcx.libvcxall_*_universal.zip' \
       -exec curl -u "${KRAKEN_CREDENTIALS}" -X POST https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \;
-    - find IOSBuilds/libvcxall/ -type f -name 'libvcx.a.libvcxall_*_universal.tar.gz' \
+    - find ./IOSBuilds/libvcxall/ -type f -name 'libvcx.a.libvcxall_*_universal.tar.gz' \
       -exec curl -u "${KRAKEN_CREDENTIALS}" -X POST https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \;
 
 
