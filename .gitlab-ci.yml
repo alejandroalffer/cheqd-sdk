@@ -367,6 +367,8 @@ publish-ios:
   dependencies:
     - build-ios
   script:
+    #https://gitlab.com/gitlab-org/gitlab-ce/issues/27436
+    - export KRAKEN_CREDENTIALS=$(echo ${KRAKEN_CREDENTIALS_B64} | base64 -d)
     - find ./IOSBuilds/libvcxpartial/ -type f -name 'vcx.libvcxpartial_*_universal.zip' -exec curl -u "${KRAKEN_CREDENTIALS}" -X POST https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \;
     - find ./IOSBuilds/libvcxpartial/ -type f -name 'libvcx.a.libvcxpartial_*_universal.tar.gz' -exec curl -u "${KRAKEN_CREDENTIALS}" -X POST https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \;
     - find ./IOSBuilds/libvcxall/ -type f -name 'vcx.libvcxall_*_universal.zip' -exec curl -u "${KRAKEN_CREDENTIALS}" -X POST https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \;
@@ -382,6 +384,8 @@ publish-packages:
       - master@dev/vcx/indy-sdk
   script:
     - ls -al ${CI_PROJECT_DIR}/output
+    #https://gitlab.com/gitlab-org/gitlab-ce/issues/27436
+    - export KRAKEN_CREDENTIALS=$(echo ${KRAKEN_CREDENTIALS_B64} | base64 -d)
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" output/libvcx*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" output/libvcx*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" output/node-vcx-*.tgz https://kraken.corp.evernym.com/repo/npm/upload
