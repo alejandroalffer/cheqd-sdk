@@ -1074,6 +1074,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     ret = vcx_ledger_get_fees(handle, VcxWrapperCommonStringCallback);
 
+
     if (ret != 0)
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -1082,6 +1083,137 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
             completion([NSError errorFromVcxError: ret], nil);
         });
     }
+}
+
+//vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id,
+//                                     void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
+
+- (void) createWalletBackup:(NSString *)sourceID
+                 completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * source_id = [sourceID cStringUsingEncoding:NSUTF8StringEncoding];
+
+    ret = vcx_wallet_backup_create(handle, source_id, VcxWrapperCommonNumberCallback);
+    
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+//vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path, const char *backup_key,
+//    void (*cb)(vcx_command_handle_t, vcx_error_t));
+- (void) backupWalletBackup:(vcx_wallet_backup_handle_t) walletBackupHandle
+                   path:(NSString *)path
+                   backupKey:(NSString *)backupKey
+                   completion:(void(^)(NSError *error))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * new_path = [path cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * backup_key = [backupKey cStringUsingEncoding:NSUTF8StringEncoding];
+
+    ret = vcx_wallet_backup_backup(handle, walletBackupHandle, new_path, backup_key, VcxWrapperCommonCallback);
+    
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+    
+}
+
+//vcx_error_t vcx_wallet_backup_update_state(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+//                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+- (void) updateWalletBackupState:(vcx_wallet_backup_handle_t) walletBackupHandle
+                      completion:(void (^)(NSError *error, NSInteger state))completion {
+   
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_wallet_backup_update_state(handle, walletBackupHandle, VcxWrapperCommonNumberCallback);
+    
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+    
+}
+
+//vcx_error_t vcx_wallet_backup_update_state_with_message(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *message,
+//                                                        void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+- (void) updateWalletBackupStateWithMessage:(vcx_wallet_backup_handle_t) walletBackupHandle
+                      message:(NSString *)message
+                      completion:(void (^)(NSError *error, NSInteger state))completion {
+    
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * new_message = [message cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_wallet_backup_update_state_with_message(handle, walletBackupHandle, new_message, VcxWrapperCommonNumberCallback);
+    
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+    
+}
+
+//vcx_error_t vcx_wallet_backup_serialize(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+//                                        void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+- (void) serializeBackupWallet:(vcx_wallet_backup_handle_t) walletBackupHandle
+                      completion:(void (^)(NSError *error, NSString *data))completion {
+    
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_wallet_backup_serialize(handle, walletBackupHandle, VcxWrapperCommonStringCallback);
+    
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+    
+}
+
+
+//vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, const char *wallet_backup_str,
+//                                          void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
+- (void) deserializeBackupWallet:(NSString *) walletBackupStr
+              completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion {
+    
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * wallet_backup_str = [walletBackupStr cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_wallet_backup_deserialize(handle, wallet_backup_str, VcxWrapperCommonNumberCallback);
+    
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+    
 }
 
 @end
