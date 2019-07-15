@@ -26,14 +26,6 @@ export interface IUnpackMessageData {
 }
 
 export class Extensions {
-  public getWalletHandle (): number {
-    return rustAPI().vcx_wallet_get_handle()
-  }
-
-  public getPoolHandle (): number {
-    return rustAPI().vcx_pool_get_handle()
-  }
-
   /**
    * Pack message.
    *

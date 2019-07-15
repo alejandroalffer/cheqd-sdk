@@ -122,6 +122,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
 
   protected _releaseFn = rustAPI().vcx_connection_release
   protected _updateStFn = rustAPI().vcx_connection_update_state
+  protected _updateStWithMessageFn = rustAPI().vcx_connection_update_state_with_message
   protected _getStFn = rustAPI().vcx_connection_get_state
   protected _serializeFn = rustAPI().vcx_connection_serialize
   protected _deserializeFn = rustAPI().vcx_connection_deserialize
