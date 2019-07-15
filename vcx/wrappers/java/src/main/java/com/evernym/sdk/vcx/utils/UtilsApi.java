@@ -158,11 +158,6 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
-    public static void vcxMockSetAgencyResponse(int messageIndex) {
-        logger.debug("vcxMockSetAgencyResponse() called");
-        LibVcx.api.vcx_set_next_agency_response(messageIndex);
-    }
-
     public static CompletableFuture<String> getLedgerAuthorAgreement() throws VcxException {
         logger.debug("getLedgerAuthorAgreement() called");
         CompletableFuture<String> future = new CompletableFuture<>();
@@ -176,7 +171,6 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
-
     public static void setActiveTxnAuthorAgreementMeta(String text, String version,
                                                          String hash, String accMechType, long timeOfAcceptance) throws VcxException {
         ParamGuard.notNull(accMechType, "accMechType");
@@ -186,4 +180,12 @@ public class UtilsApi extends VcxJava.API {
         checkResult(result);
     }
 
+    public static void vcxMockSetAgencyResponse(int messageIndex) {
+        logger.debug("vcxMockSetAgencyResponse() called");
+        LibVcx.api.vcx_set_next_agency_response(messageIndex);
+    }
+
+    public static void setPoolHandle(int handle) {
+        LibVcx.api.vcx_pool_set_handle(handle);
+    }
 }
