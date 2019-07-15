@@ -162,6 +162,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
 
   protected _releaseFn = rustAPI().vcx_proof_release
   protected _updateStFn = rustAPI().vcx_proof_update_state
+  protected _updateStWithMessageFn = rustAPI(). vcx_proof_update_state_with_message
   protected _getStFn = rustAPI().vcx_proof_get_state
   protected _serializeFn = rustAPI().vcx_proof_serialize
   protected _deserializeFn = rustAPI().vcx_proof_deserialize
@@ -250,7 +251,50 @@ export class Proof extends VCXBaseWithState<IProofData> {
       throw new VCXInternalError(err)
     }
   }
-
+  /**
+   * Generates the proof request message for sending.
+   *
+   * Example:
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.getProofRequestMessage()
+   * ```
+   */
+  public async getProofRequestMessage (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_proof_get_request_msg(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`proof ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
   /**
    * Returns the requested proof if available
    *
