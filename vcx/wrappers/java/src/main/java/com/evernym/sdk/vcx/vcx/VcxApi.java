@@ -85,6 +85,17 @@ public class VcxApi extends VcxJava.API {
         return future;
     }
 
+    public static int vcxInitMinimal(String configJson) throws VcxException {
+        ParamGuard.notNullOrWhiteSpace(configJson, "config");
+        logger.debug("vcxInitMinimal() called with: configJson = [" + configJson + "]");
+
+        int result = LibVcx.api.vcx_init_minimal(
+                configJson);
+        checkResult(result);
+
+        return result;
+    }
+
     public static int vcxShutdown(Boolean deleteWallet) throws VcxException {
         logger.debug("vcxShutdown() called with: deleteWallet = [" + deleteWallet + "]");
         int result = LibVcx.api.vcx_shutdown(deleteWallet);
@@ -232,34 +243,4 @@ public class VcxApi extends VcxJava.API {
         return future;
     }
 
-    /** Evernym extensions */
-    public static int vcxGetWalletHandle() {
-        logger.debug("vcxGetWalletHandle() called");
-        int handle = LibVcx.api.vcx_wallet_get_handle();
-        return handle;
-    }
-
-    public static int vcxGetPoolHandle() {
-        logger.debug("vcxGetPoolHandle() called");
-        int handle = LibVcx.api.vcx_pool_get_handle();
-        return handle;
-    }
-
-    public static int vcxSetPoolHandle(int handle) {
-        logger.debug("vcxSetPoolHandle() called");
-        handle = LibVcx.api.vcx_pool_set_handle(handle);
-        return handle;
-    }
-
-    public static int vcxSetWalletHandle(int handle) {
-        logger.debug("vcxSetWalletHandle() called");
-        handle = LibVcx.api.vcx_wallet_set_handle(handle);
-        return handle;
-    }
-
-    public static int vcxInitPostIndy(String config) {
-        logger.debug("vcxInitPostIndy() called");
-        int error = LibVcx.api.vcx_init_post_indy(config);
-        return error;
-    }
 }
