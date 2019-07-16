@@ -466,9 +466,11 @@ package-python-wrapper-from-latest:
   artifacts:
     expire_in: 1 week
     paths:
-      - output/*
+      - vcx/wrappers/java/artifacts/
   script:
     - sudo dpkg -i ${CI_PROJECT_DIR}/output/libvcx_*.deb
+    - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
+    - cd -
     - vcx/wrappers/java/ci/buildJar.sh $(python3 vcx/ci/scripts/toml_utils.py vcx/libvcx/Cargo.toml)
 package-java-wrapper-from-branch:
   extends: .package-java-wrapper
