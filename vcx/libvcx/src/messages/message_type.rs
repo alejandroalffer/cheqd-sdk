@@ -78,7 +78,7 @@ impl MessageFamilies {
         match self {
             MessageFamilies::Routing => "1.0",
             MessageFamilies::Onboarding => "1.0",
-            MessageFamilies::Pairwise => "1.0",
+            MessageFamilies::Pairwise => "0.6",
             MessageFamilies::Configs => "1.0",
             MessageFamilies::CredentialExchange => "1.0",
             MessageFamilies::WalletBackup => "0.1.0",
