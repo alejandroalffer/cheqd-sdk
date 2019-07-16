@@ -346,6 +346,11 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map(|msg| A2AMessageV2::ConnectionRequestAnswer(msg))
                     .map_err(de::Error::custom)
             }
+            "ACCEPT_CONN_REQ" => {
+                ConnectionRequestAnswer::deserialize(value)
+                    .map(|msg| A2AMessageV2::ConnectionRequestAnswer(msg))
+                    .map_err(de::Error::custom)
+            }
             "CONN_REQUEST_ANSWER_RESP" => {
                 ConnectionRequestAnswerResponse::deserialize(value)
                     .map(|msg| A2AMessageV2::ConnectionRequestAnswerResponse(msg))
@@ -719,14 +724,14 @@ impl A2AMessageKinds {
     pub fn family(&self) -> MessageFamilies {
         match self {
             A2AMessageKinds::Forward => MessageFamilies::Routing,
-            A2AMessageKinds::Connect => MessageFamilies::Onboarding,
-            A2AMessageKinds::Connected => MessageFamilies::Onboarding,
-            A2AMessageKinds::CreateAgent => MessageFamilies::Onboarding,
-            A2AMessageKinds::AgentCreated => MessageFamilies::Onboarding,
-            A2AMessageKinds::SignUp => MessageFamilies::Onboarding,
-            A2AMessageKinds::SignedUp => MessageFamilies::Onboarding,
-            A2AMessageKinds::CreateKey => MessageFamilies::Pairwise,
-            A2AMessageKinds::KeyCreated => MessageFamilies::Pairwise,
+            A2AMessageKinds::Connect => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::Connected => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::CreateAgent => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::AgentCreated => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::SignUp => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::SignedUp => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::CreateKey => MessageFamilies::Connecting,
+            A2AMessageKinds::KeyCreated => MessageFamilies::Connecting,
             A2AMessageKinds::CreateMessage => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageDetail => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageCreated => MessageFamilies::Pairwise,
@@ -735,8 +740,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::GetMessagesByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::Messages => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConnectionStatus => MessageFamilies::Pairwise,
-            A2AMessageKinds::ConnectionRequest => MessageFamilies::Pairwise,
-            A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequest => MessageFamilies::Connecting,
+            A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Connecting,
             A2AMessageKinds::UpdateMessageStatusByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageStatusUpdatedByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConfigs => MessageFamilies::Configs,
@@ -774,7 +779,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Messages => "MSGS".to_string(),
             A2AMessageKinds::UpdateConnectionStatus => "UPDATE_CONN_STATUS".to_string(),
             A2AMessageKinds::ConnectionRequest => "CONN_REQUEST".to_string(),
-            A2AMessageKinds::ConnectionRequestAnswer => "CONN_REQUEST_ANSWER".to_string(),
+            A2AMessageKinds::ConnectionRequestAnswer => "ACCEPT_CONN_REQ".to_string(),
             A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
             A2AMessageKinds::UpdateComMethod => "UPDATE_COM_METHOD".to_string(),
