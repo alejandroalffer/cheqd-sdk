@@ -12,7 +12,7 @@ import java9.util.concurrent.CompletableFuture;
 public class IndyApi extends VcxJava.API {
 
   	/**
-	 * Callback used when buildRequest completes.
+	 * Callback used when buildRequest completes
 	 */
 	private static Callback buildRequestCb = new Callback() {
 
