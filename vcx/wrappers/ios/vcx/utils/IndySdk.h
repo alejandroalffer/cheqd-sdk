@@ -29,15 +29,6 @@
 ///
 /// #Errors
 /// Common*
-//extern indy_error_t indy_build_txn_author_agreement_request(indy_handle_t command_handle,
-//                                                            const char *  submitter_did,
-//                                                            const char *  text,
-//                                                            const char *  version,
-//
-//                                                            void           (*cb)(indy_handle_t command_handle_,
-//                                                                                 indy_error_t  err,
-//                                                                                 const char*   request_json)
-//                                                            );
 + (void)addTxnAuthorAgreement:(NSString *)text
                   withVersion:(NSString *)version
                 fromRequester:(NSString *)requesterDID
@@ -151,14 +142,14 @@
 
 /**
  Encrypts a message by anonymous-encryption scheme.
- 
+
  Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
  Only the Recipient can decrypt these messages, using its private key.
  While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
- 
+
  Note to use DID keys with this function you can call keyForDid to get key id (verkey)
  for specific DID.
- 
+
  @param theirKey verkey of message recipient
  @param message a message to be encrypted
  Returns encrypted message
@@ -169,14 +160,14 @@
 
 /**
  Decrypts a message by anonymous-encryption scheme.
- 
+
  Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
  Only the Recipient can decrypt these messages, using its private key.
  While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
- 
+
  Note to use DID keys with this function you can call keyForDid to get key id (verkey)
  for specific DID.
- 
+
  @param walletHandle       The wallet.
  @param myKey  Id (verkey) of my key. The key must be created by calling createKey or createAndStoreMyDid
  @param encryptedMessage encrypted message
