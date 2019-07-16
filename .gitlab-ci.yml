@@ -523,9 +523,6 @@ publish-android:
   stage: publish
   image: ${CI_REGISTRY_IMAGE}/vcx-android:${CI_COMMIT_REF_SLUG}
   extends: .tags_micro
-  only:
-    refs:
-      - master@dev/vcx/indy-sdk
   script:
     - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
     - sudo chmod +x vcx/ci/scripts/androidPublish.sh
@@ -535,9 +532,6 @@ publish-ios:
   stage: publish
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy:${CI_COMMIT_REF_SLUG}
   extends: .tags_micro
-  only:
-    refs:
-      - master@dev/vcx/indy-sdk
   dependencies:
     - build-ios
   script:
