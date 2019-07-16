@@ -227,6 +227,13 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
 - (void) getLedgerFees:(void(^)(NSError *error, NSString *fees)) completion;
 
+- (void) getTxnAuthorAgreement:(void(^)(NSError *error, NSString *authorAgreement)) completion;
+
+- (vcx_error_t) activateTxnAuthorAgreement:(NSString *)text
+                               withVersion:(NSString *)version
+                                  withHash:(NSString *)hash
+                             withMechanism:(NSString *)mechanism
+                             withTimestamp:(NSNumber *)timestamp;
 @end
 
 #endif /* init_h */
