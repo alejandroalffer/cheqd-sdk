@@ -607,6 +607,24 @@ public abstract class LibVcx {
 
         /** Set wallet handle manually */
         public int vcx_wallet_set_handle(int handle);
+        
+        /** Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent */
+        public int vcx_wallet_backup_create(int command_handle, String sourceID, Callback cb);
+
+        /** Wallet Backup to the Cloud */
+        public int vcx_wallet_backup_backup(int command_handle, int walletBackupHandle, String path, String backupKey, Callback cb);
+
+        /** Checks for any state change and updates the the state attribute */
+        public int vcx_wallet_backup_update_state(int commandHandle, int walletBackupHandle, Callback cb);
+
+        /* Checks the message any state change and updates the the state attribute */
+        public int vcx_wallet_backup_update_state_with_message(int commandHandle, int walletBackupHandle,  String message, Callback cb);
+
+        /** Takes the wallet backup object and returns a json string of all its attributes */
+        public int vcx_wallet_backup_serialize(int commandHandle, int walletBackupHandle, Callback cb);
+
+        /* Takes a json string representing an wallet backup object and recreates an object matching the json */
+        public int vcx_wallet_backup_deserialize(int commandHandle, String walletBackupStr, Callback cb);
 
         /**
          * token object

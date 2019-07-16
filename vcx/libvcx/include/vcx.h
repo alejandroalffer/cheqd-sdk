@@ -18,6 +18,7 @@ typedef unsigned int vcx_proof_handle_t;
 typedef unsigned int vcx_command_handle_t;
 typedef unsigned int vcx_payment_handle_t;
 typedef unsigned int vcx_wallet_search_handle_t;
+typedef unsigned int vcx_wallet_backup_handle_t;
 typedef unsigned bool vcx_bool_t;
 typedef unsigned int count_t;
 typedef unsigned long vcx_price_t;
@@ -1673,6 +1674,119 @@ vcx_error_t vcx_get_ledger_author_agreement(vcx_u32_t command_handle,
 /// #Returns
 /// Error code as a u32
 vcx_error_t vcx_set_active_txn_author_agreement_meta(const char *text, const char *version, const char *hash, const char *acc_mech_type, vcx_u64_t type_);
+
+
+/// -> Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the user
+///
+/// cb: Callback that provides wallet_backup handle and error status of request
+///
+/// #Returns
+/// Error code as a u32
+///
+vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id, 
+                                      void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
+
+/// Wallet Backup to the Cloud
+///
+/// #Params:
+/// command_handle: Handle for User's Reference only.
+/// wallet_backup_handle: Wallet Backup handle that was provided during creation. Used to access object
+/*
+    Todo: path is needed because the only exposed libindy functionality for exporting
+    an encrypted wallet, writes it to the file system. A possible better way is for libindy's export_wallet
+    to optionally return an encrypted stream of bytes instead of writing it to the fs. This could also
+    be done in a separate libindy api call if necessary.
+ */
+/// Todo: path will not be necessary when libindy functionality for wallet export functionality is expanded
+/// Todo: path must be different than other exported wallets because this instance is deleted after its uploaded to the cloud
+/// path: Path to export wallet to User's File System. (This instance of the export
+/// backup_key: String representing the User's Key for securing (encrypting) the exported Wallet.
+/// cb: Callback that provides the success/failure of the api call.
+/// #Returns
+/// Error code - success indicates that the api call was successfully created and execution
+/// is scheduled to begin in a separate thread.
+///
+vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path, const char *backup_key,
+                                      void (*cb)(vcx_command_handle_t, vcx_error_t)); 
+
+/// Checks for any state change and updates the the state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// wallet_backup_handle: was provided during creation. Used to identify connection object
+///
+/// cb: Callback that provides most current state of the wallet_backup and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_wallet_backup_update_state(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+                                            void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t)); 
+// pub extern fn vcx_wallet_backup_update_state(command_handle: u32,
+//                                              wallet_backup_handle: u32,
+//                                              cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32
+
+/// Checks the message any state change and updates the the state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// wallet_backup_handle: was provided during creation. Used to identify connection object
+///
+/// message: message to process
+///
+/// cb: Callback that provides most current state of the wallet_backup and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_wallet_backup_update_state_with_message(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *message,
+                                                        void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t)); 
+// pub extern fn vcx_wallet_backup_update_state_with_message(command_handle: u32,
+//                                                           wallet_backup_handle: u32,
+//                                                           message: *const c_char,
+//                                                           cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+
+
+
+/// Takes the wallet backup object and returns a json string of all its attributes
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// handle: Wallet Backup handle that was provided during creation. Used to identify the wallet backup object
+///
+/// cb: Callback that provides json string of the wallet backup's attributes and provides error status
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_wallet_backup_serialize(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+                                        void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));  
+// pub extern fn vcx_wallet_backup_serialize(command_handle: u32,
+//                                           wallet_backup_handle: u32,
+//                                           cb: Option<extern fn(xcommand_handle: u32, err: u32, data: *const c_char)>) -> u32 {
+
+/// Takes a json string representing an wallet backup object and recreates an object matching the json
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// data: json string representing a wallet backup object
+///
+///
+/// cb: Callback that provides handle and provides error status
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, const char *wallet_backup_str,
+                                          void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));  
+// pub extern fn vcx_wallet_backup_deserialize(command_handle: u32,
+//                                             wallet_backup_str: *const c_char,
+//                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, handle: u32)>) -> u32 {  
 
 #ifdef __cplusplus
 } // extern "C"

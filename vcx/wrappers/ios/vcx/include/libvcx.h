@@ -35,6 +35,7 @@ typedef unsigned int vcx_u32_t;
 typedef SInt32 VcxHandle;
 typedef const uint8_t vcx_data_t;
 typedef unsigned long long vcx_u64_t;
+typedef unsigned int vcx_wallet_backup_handle_t;
 
 typedef struct
 {
@@ -486,6 +487,28 @@ vcx_error_t vcx_get_ledger_author_agreement(vcx_u32_t command_handle,
 /// Error code as a u32
 vcx_error_t vcx_set_active_txn_author_agreement_meta(const char *text, const char *version, const char *hash, const char *acc_mech_type, vcx_u64_t type_);
 
+vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id,
+              void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
+
+/// Wallet Backup to the Cloud
+vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path, const char *backup_key,
+                                      void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Checks for any state change and updates the the state attribute
+vcx_error_t vcx_wallet_backup_update_state(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+                                            void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Checks the message any state change and updates the the state attribute
+vcx_error_t vcx_wallet_backup_update_state_with_message(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *message,
+                                                        void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Takes the wallet backup object and returns a json string of all its attributes
+vcx_error_t vcx_wallet_backup_serialize(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+                                        void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+/// Takes a json string representing an wallet backup object and recreates an object matching the json
+vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, const char *wallet_backup_str,
+                                          void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
 
 /** For testing purposes only */
 void vcx_set_next_agency_response(int);
