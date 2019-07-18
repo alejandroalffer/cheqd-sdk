@@ -23,6 +23,14 @@ pub struct PayloadV1 {
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+pub struct PayloadV12 {
+    #[serde(rename = "@type")]
+    type_: PayloadTypeV2,
+    #[serde(rename = "@msg")]
+    pub msg: Vec<u8>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct PayloadV2 {
     #[serde(rename = "@type")]
     type_: PayloadTypeV2,
@@ -216,7 +224,9 @@ impl PayloadTypes {
 pub struct Thread {
     pub thid: Option<String>,
     pub pthid: Option<String>,
+    #[serde(rename = "senderOrder")]
     pub sender_order: u32,
+    #[serde(rename = "receivedOrders")]
     pub received_orders: HashMap<String, u32>,
 }
 
