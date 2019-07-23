@@ -1,8 +1,8 @@
 use settings;
 use messages::*;
-use messages::message_type::MessageTypes;
+use messages::message_type::{MessageTypes, MessageTypeV2 };
 use utils::httpclient;
-use utils::constants::CREATE_KEYS_RESPONSE;
+use utils::constants::{DEFAULT_CREATE_KEYS_VERSION, CREATE_KEYS_RESPONSE, CREATE_KEYS_V2_RESPONSE};
 use error::prelude::*;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -26,6 +26,16 @@ impl CreateKey {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub struct CreateKeyReq {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypeV2,
+    #[serde(rename = "forDID")]
+    for_did: String,
+    #[serde(rename = "forDIDVerKey")]
+    for_verkey: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateKeyResponse {
     #[serde(rename = "@type")]
@@ -40,6 +50,7 @@ pub struct CreateKeyResponse {
 pub struct CreateKeyBuilder {
     for_did: String,
     for_verkey: String,
+    version: settings::ProtocolTypes
 }
 
 impl CreateKeyBuilder {
@@ -49,6 +60,7 @@ impl CreateKeyBuilder {
         CreateKeyBuilder {
             for_did: String::new(),
             for_verkey: String::new(),
+            version: DEFAULT_CREATE_KEYS_VERSION.clone()
         }
     }
 
@@ -64,11 +76,22 @@ impl CreateKeyBuilder {
         Ok(self)
     }
 
+    pub fn version(&mut self, version: &Option<String>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => settings::ProtocolTypes::from(version.to_string()),
+            None => DEFAULT_CREATE_KEYS_VERSION.clone()
+        };
+        Ok(self)
+    }
+
     pub fn send_secure(&self) -> VcxResult<(String, String)> {
         trace!("CreateKeyMsg::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return self.parse_response(&CREATE_KEYS_RESPONSE.to_vec());
+            match self.version {
+                settings::ProtocolTypes::V1 => return self.parse_response(&CREATE_KEYS_RESPONSE.to_vec()),
+                settings::ProtocolTypes::V2 => return self.parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()),
+            }
         }
 
         let data = self.prepare_request()?;
@@ -79,26 +102,31 @@ impl CreateKeyBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
                 ),
-            settings::ProtocolTypes::V2 =>
-                A2AMessage::Version2(
-                    A2AMessageV2::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
-                )
+            settings::ProtocolTypes::V2 => {
+                let msg = CreateKeyReq {
+                    msg_type: MessageTypes::build_v2(A2AMessageKinds::CreateKey),
+                    for_did: self.for_did.clone(),
+                    for_verkey: self.for_verkey.clone()
+                };
+
+                A2AMessage::Version2(A2AMessageV2::CreateKey(msg))
+            },
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-        prepare_message_for_agency(&message, &agency_did)
+        prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<(String, String)> {
         trace!("parse_response >>>");
 
-        let mut response = parse_response_from_agency(response)?;
+        let mut response = parse_response_from_agency(response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),
@@ -146,15 +174,27 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_create_keys_response() {
+    fn test_parse_create_keys_v1_response() {
+        init!("true");
+
+        let mut builder = create_keys();
+
+        let (for_did, for_verkey) = builder.version(&Some("1.0".to_string())).unwrap().parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
+
+        assert_eq!(for_did, "U5LXs4U7P9msh647kToezy");
+        assert_eq!(for_verkey, "FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq");
+    }
+
+    #[test]
+    fn test_parse_create_keys_v2_response() {
         init!("true");
 
         let builder = create_keys();
 
-        let (for_did, for_verkey) = builder.parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
+        let (for_did, for_verkey) = builder.parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()).unwrap();
 
-        assert_eq!(for_did, "U5LXs4U7P9msh647kToezy");
-        assert_eq!(for_verkey, "FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq");
+        assert_eq!(for_did, "MNepeSWtGfhnv8jLB1sFZC");
+        assert_eq!(for_verkey, "C73MRnns4qUjR5N4LRwTyiXVPKPrA5q4LCT8PZzxVdt9");
     }
 
     #[test]

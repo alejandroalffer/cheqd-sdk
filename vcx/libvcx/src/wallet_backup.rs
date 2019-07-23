@@ -193,6 +193,7 @@ pub fn has_known_cloud_backup(handle: u32) -> bool {
     }).unwrap_or(false)
 }
 
+#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -220,7 +221,6 @@ mod tests {
 
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
-        #[cfg(feature = "wallet_backup")]
         #[test]
         fn create_backup_succeeds_real() {
             init!("agency");
@@ -246,7 +246,6 @@ mod tests {
 
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
-        #[cfg(feature = "wallet_backup")]
         #[test]
         fn update_state_with_provisioned_msg_changes_state_to_ready_to_export() {
             init!("agency");
@@ -261,7 +260,6 @@ mod tests {
 
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
-        #[cfg(feature = "wallet_backup")]
         #[test]
         fn update_state_with_backup_ack_msg_changes_state_to_ready_to_export() {
             init!("agency");
@@ -323,7 +321,6 @@ mod tests {
 
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
-        #[cfg(feature = "wallet_backup")]
         #[test]
         fn backup_wallet_succeeds_real() {
             init!("agency");
