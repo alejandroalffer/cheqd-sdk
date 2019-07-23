@@ -7,7 +7,7 @@ use settings;
 use messages;
 use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion, to_u8};
 use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
-use messages::payload::{Payloads, Thread, PayloadV12};
+use messages::payload::{Payloads, Thread};
 use messages::get_message::{Message, MessagePayload};
 use object_cache::ObjectCache;
 use error::prelude::*;
@@ -504,23 +504,9 @@ pub fn force_v2_parse_acceptance_details(handle: u32, message: &Message) -> VcxR
             let vec = to_u8(payload);
             let json: Value = serde_json::from_slice(&vec[..])
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;;
-            let payload = ::serde_json::to_vec(&json)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
-            let unpacked_msg = crypto::unpack_message(&payload[..]).map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("could not unpack message: {}", err)))?;
 
-            let message: ::serde_json::Value = ::serde_json::from_slice(unpacked_msg.as_slice())
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err)))?;
-
-            let message = message["message"].as_str()
-                .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
-
-            let mut my_payload: PayloadV12 = serde_json::from_str(&message)
-                .map_err(|err| {
-                    error!("could not deserialize bundle with i8 or u8: {}", err);
-                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
-                })?;
-
-            let response: AcceptanceDetails = serde_json::from_value(my_payload.msg)
+            let payload = Payloads::decrypt_payload_v12(&my_vk, &json)?;
+            let response:AcceptanceDetails = serde_json::from_value(payload.msg)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
 
             set_their_pw_did(handle, &response.sender_detail.did).ok();
@@ -560,7 +546,7 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
             .to_vk(&pw_vk)?
             .agent_did(&agent_did)?
             .agent_vk(&agent_vk)?
-            .version(&version)?
+//            .version(&version)?
             .send_secure()
             .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, format!("Could not update state for handle {}", handle)))?;
 
@@ -1068,7 +1054,7 @@ pub mod tests {
     fn test_create_with_valid_invite_details() {
         init!("true");
 
-        let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
+        let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there", "version":"2.0"}"#;
         let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
         let details = serde_json::to_string(&unabbrv_details).unwrap();
 

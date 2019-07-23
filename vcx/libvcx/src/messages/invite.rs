@@ -581,13 +581,20 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_send_invite_response() {
+    fn test_parse_send_invite_v1_response() {
         init!("indy");
-        let (result, url) = SendInviteBuilder::create().parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
+        let (result, url) = SendInviteBuilder::create().version(&Some("1.0".to_string())).unwrap().parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
         let invite = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();
 
         assert_eq!(result, invite);
         assert_eq!(url, "http://localhost:9001/agency/invite/WRUzXXuFVTYkT8CjSZpFvT?uid=NjcwOWU");
+    }
+
+    #[test]
+    fn test_parse_send_invite_v2_response() {
+        init!("indy");
+        let (result, url) = SendInviteBuilder::create().parse_response(SEND_INVITE_V2_RESPONSE.to_vec()).unwrap();
+        let invite: InviteDetail = serde_json::from_str(INVITE_DETAIL_V2_STRING).unwrap();
     }
 
     #[test]

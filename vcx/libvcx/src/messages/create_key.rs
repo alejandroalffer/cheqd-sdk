@@ -2,7 +2,7 @@ use settings;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV2 };
 use utils::httpclient;
-use utils::constants::{DEFAULT_CREATE_KEYS_VERSION, CREATE_KEYS_V2_RESPONSE};
+use utils::constants::{DEFAULT_CREATE_KEYS_VERSION, CREATE_KEYS_RESPONSE, CREATE_KEYS_V2_RESPONSE};
 use error::prelude::*;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -88,7 +88,10 @@ impl CreateKeyBuilder {
         trace!("CreateKeyMsg::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return self.parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec());
+            match self.version {
+                settings::ProtocolTypes::V1 => return self.parse_response(&CREATE_KEYS_RESPONSE.to_vec()),
+                settings::ProtocolTypes::V2 => return self.parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()),
+            }
         }
 
         let data = self.prepare_request()?;
@@ -171,7 +174,19 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_create_keys_response() {
+    fn test_parse_create_keys_v1_response() {
+        init!("true");
+
+        let mut builder = create_keys();
+
+        let (for_did, for_verkey) = builder.version(&Some("1.0".to_string())).unwrap().parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
+
+        assert_eq!(for_did, "U5LXs4U7P9msh647kToezy");
+        assert_eq!(for_verkey, "FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq");
+    }
+
+    #[test]
+    fn test_parse_create_keys_v2_response() {
         init!("true");
 
         let builder = create_keys();
