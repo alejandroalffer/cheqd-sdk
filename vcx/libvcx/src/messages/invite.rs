@@ -394,7 +394,10 @@ impl AcceptInviteBuilder {
         trace!("AcceptInvite::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return self.parse_response(ACCEPT_INVITE_V2_RESPONSE.to_vec());
+            match self.version {
+                settings::ProtocolTypes::V1 => return self.parse_response(ACCEPT_INVITE_RESPONSE.to_vec()),
+                settings::ProtocolTypes::V2 => return self.parse_response(ACCEPT_INVITE_V2_RESPONSE.to_vec()),
+            }
         }
 
         let data = self.prepare_request()?;
