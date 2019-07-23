@@ -520,7 +520,7 @@ pub fn force_v2_parse_acceptance_details(handle: u32, message: &Message) -> VcxR
                 VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
                 })?;
 
-            let response: AcceptanceDetails = serde_json::from_slice(&my_payload.msg[..])
+            let response: AcceptanceDetails = serde_json::from_value(my_payload.msg)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
 
             set_their_pw_did(handle, &response.sender_detail.did).ok();

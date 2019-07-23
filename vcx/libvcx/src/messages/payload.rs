@@ -6,6 +6,7 @@ use utils::libindy::crypto;
 use error::prelude::*;
 
 use std::collections::HashMap;
+use serde_json::Value;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(untagged)]
@@ -27,7 +28,7 @@ pub struct PayloadV12 {
     #[serde(rename = "@type")]
     type_: PayloadTypeV2,
     #[serde(rename = "@msg")]
-    pub msg: Vec<u8>,
+    pub msg: Value
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
