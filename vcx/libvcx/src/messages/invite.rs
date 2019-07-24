@@ -40,7 +40,7 @@ pub struct ConnectionRequest {
     target_name: Option<String>,
     #[serde(rename = "phoneNo")]
     phone_no: Option<String>,
-    #[serde(rename = "usePublicDID")]
+    #[serde(rename = "includePublicDID")]
     include_public_did: bool,
     #[serde(rename = "~thread")]
     pub thread: Thread,
