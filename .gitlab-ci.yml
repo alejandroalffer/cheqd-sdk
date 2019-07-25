@@ -499,6 +499,8 @@ package-java-wrapper-from-latest:
       - output/*
   script:
     - sudo dpkg -i ${CI_PROJECT_DIR}/output/libvcx_*.deb
+    - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
+    - cd -
     - vcx/wrappers/node/ci/package.sh
 package-node-wrapper-from-branch:
   extends: .package-node-wrapper
