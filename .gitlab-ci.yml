@@ -15,8 +15,8 @@ variables:
   libindyVersion: "1.10.1"
   nullBranch: 'stable'
   libnullVersion: "1.10.1"
-  androidSovtokenArtifact: "libsovtoken_1.0.0-201907031231-e7dde6e_all.zip "
-  iosSovtokenArtifact: "libsovtoken_1.0.0-201907031239-e7dde6e_all.zip "
+  androidSovtokenArtifact: "libsovtoken_1.0.0-201907031231-e7dde6e_all.zip"
+  iosSovtokenArtifact: "libsovtoken_1.0.0-201907031239-e7dde6e_all.zip"
 
 ## - Anchors - ##
 .tags_micro:
