@@ -1105,6 +1105,8 @@ mod tests {
     #[test]
     fn test_proof_verification_restrictions() {
         init!("ledger");
+        use utils::logger::LibvcxDefaultLogger;
+        LibvcxDefaultLogger::init_testing_logger();
         let proof_req = json!({
            "nonce":"123432421212",
            "name":"proof_req_1",
