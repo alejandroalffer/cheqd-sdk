@@ -609,10 +609,10 @@ public abstract class LibVcx {
         public int vcx_wallet_set_handle(int handle);
         
         /** Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent */
-        public int vcx_wallet_backup_create(int command_handle, String sourceID, Callback cb);
+        public int vcx_wallet_backup_create(int command_handle, String sourceID, String backupKey, Callback cb);
 
         /** Wallet Backup to the Cloud */
-        public int vcx_wallet_backup_backup(int command_handle, int walletBackupHandle, String path, String backupKey, Callback cb);
+        public int vcx_wallet_backup_backup(int command_handle, int walletBackupHandle, String path, Callback cb);
 
         /** Checks for any state change and updates the the state attribute */
         public int vcx_wallet_backup_update_state(int commandHandle, int walletBackupHandle, Callback cb);

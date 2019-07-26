@@ -1105,16 +1105,18 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 }
 
 
-//vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id,
+//vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id, const char *backup_key,
 //                                     void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
 
 - (void) createWalletBackup:(NSString *)sourceID
+                 backupKey:(NSString *)backupKey
                  completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion{
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     const char * source_id = [sourceID cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * backup_key = [backupKey cStringUsingEncoding:NSUTF8StringEncoding];
 
-    ret = vcx_wallet_backup_create(handle, source_id, VcxWrapperCommonNumberCallback);
+    ret = vcx_wallet_backup_create(handle, source_id, backup_key, VcxWrapperCommonNumberCallback);
 
     if (ret != 0)
     {
@@ -1125,18 +1127,16 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
         });
     }
 }
-//vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path, const char *backup_key,
+//vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path,
 //    void (*cb)(vcx_command_handle_t, vcx_error_t));
 - (void) backupWalletBackup:(vcx_wallet_backup_handle_t) walletBackupHandle
                    path:(NSString *)path
-                   backupKey:(NSString *)backupKey
                    completion:(void(^)(NSError *error))completion{
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     const char * new_path = [path cStringUsingEncoding:NSUTF8StringEncoding];
-    const char * backup_key = [backupKey cStringUsingEncoding:NSUTF8StringEncoding];
 
-    ret = vcx_wallet_backup_backup(handle, walletBackupHandle, new_path, backup_key, VcxWrapperCommonCallback);
+    ret = vcx_wallet_backup_backup(handle, walletBackupHandle, new_path, VcxWrapperCommonCallback);
 
     if (ret != 0)
     {

@@ -490,11 +490,11 @@ vcx_error_t vcx_get_ledger_author_agreement(vcx_u32_t command_handle,
 /// Error code as a u32
 vcx_error_t vcx_set_active_txn_author_agreement_meta(const char *text, const char *version, const char *hash, const char *acc_mech_type, vcx_u64_t type_);
 
-vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id,
+vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id, const char *backup_key,
               void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
 
 /// Wallet Backup to the Cloud
-vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path, const char *backup_key,
+vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path,
                                       void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 /// Checks for any state change and updates the the state attribute

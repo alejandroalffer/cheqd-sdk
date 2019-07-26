@@ -1703,12 +1703,14 @@ vcx_error_t vcx_set_active_txn_author_agreement_meta(const char *text, const cha
 ///
 /// source_id: institution's personal identification for the user
 ///
+/// backup_key: String representing the User's Key for securing (encrypting) the exported Wallet.
+///
 /// cb: Callback that provides wallet_backup handle and error status of request
 ///
 /// #Returns
 /// Error code as a u32
 ///
-vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id, 
+vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id, const char *backup_key,
                                       void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
 
 /// Wallet Backup to the Cloud
@@ -1725,13 +1727,12 @@ vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const 
 /// Todo: path will not be necessary when libindy functionality for wallet export functionality is expanded
 /// Todo: path must be different than other exported wallets because this instance is deleted after its uploaded to the cloud
 /// path: Path to export wallet to User's File System. (This instance of the export
-/// backup_key: String representing the User's Key for securing (encrypting) the exported Wallet.
 /// cb: Callback that provides the success/failure of the api call.
 /// #Returns
 /// Error code - success indicates that the api call was successfully created and execution
 /// is scheduled to begin in a separate thread.
 ///
-vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path, const char *backup_key,
+vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path,
                                       void (*cb)(vcx_command_handle_t, vcx_error_t)); 
 
 /// Checks for any state change and updates the the state attribute

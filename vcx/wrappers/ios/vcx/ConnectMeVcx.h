@@ -225,6 +225,10 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
             pwdidsJson:(NSString *)pwdidsJson
             completion:(void (^)(NSError *error))completion;
 
+- (void)downloadAgentMessages:(NSString *)messageStatus
+                    uid_s:(NSString *)uid_s
+                    completion:(void (^)(NSError *error, NSString* messages))completion;
+
 - (void) getLedgerFees:(void(^)(NSError *error, NSString *fees)) completion;
 
 - (void) getTxnAuthorAgreement:(void(^)(NSError *error, NSString *authorAgreement)) completion;
@@ -235,11 +239,11 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                              withMechanism:(NSString *)mechanism
                              withTimestamp:(NSNumber *)timestamp;
 - (void) createWalletBackup:(NSString *)sourceID
+                  backupKey:(NSString *)backupKey
                  completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion;
 
 - (void) backupWalletBackup:(vcx_wallet_backup_handle_t) walletBackupHandle
                        path:(NSString *)path
-                  backupKey:(NSString *)backupKey
                  completion:(void(^)(NSError *error))completion;
 
 - (void) updateWalletBackupState:(vcx_wallet_backup_handle_t) walletBackupHandle

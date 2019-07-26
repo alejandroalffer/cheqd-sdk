@@ -109,13 +109,13 @@ pub mod tests {
     pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";*/
 
     /* dummy */
-    pub const AGENCY_ENDPOINT: &'static str = "https://eas-team2.pdev.evernym.com";
-    pub const AGENCY_DID: &'static str = "CV65RFpeCtPu82hNF9i61G";
-    pub const AGENCY_VERKEY: &'static str = "7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2";
+    pub const AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
+    pub const AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
+    pub const AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
 
-    pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team2.pdev.evernym.com";
-    pub const C_AGENCY_DID: &'static str = "TGLBMTcW9fHdkSqown9jD8";
-    pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR";
+    pub const C_AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
+    pub const C_AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
+    pub const C_AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
 
     pub fn set_trustee_did() {
         let (my_did, my_vk) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
@@ -209,7 +209,7 @@ pub mod tests {
         unsafe {
             CONFIG_STRING.get(INSTITUTION_CONFIG, |t| {
                 settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
-                settings::process_config_string(&t, true)
+                settings::process_config_string(&t)
             }).unwrap();
         }
         change_wallet_handle();
@@ -220,7 +220,7 @@ pub mod tests {
         unsafe {
             CONFIG_STRING.get(CONSUMER_CONFIG, |t| {
                 settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
-                settings::process_config_string(&t, true)
+                settings::process_config_string(&t)
             }).unwrap();
         }
         change_wallet_handle();

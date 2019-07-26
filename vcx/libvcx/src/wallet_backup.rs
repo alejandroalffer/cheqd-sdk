@@ -342,24 +342,20 @@ mod tests {
         #[cfg(feature = "pool_tests")]
         #[test]
         fn update_state_with_backup_ack_msg_changes_state_to_ready_to_export() {
+            init!("agency");
 
-            println!("BEFORE LOOP");
-            loop {
-                init!("agency");
-                thread::sleep(Duration::from_millis(500));
-                ::utils::devsetup::tests::set_consumer();
-                let handle = create_wallet_backup(SOURCE_ID, BACKUP_KEY).unwrap();
-                thread::sleep(Duration::from_millis(2000));
+            ::utils::devsetup::tests::set_consumer();
+            let handle = create_wallet_backup(SOURCE_ID, BACKUP_KEY).unwrap();
+            thread::sleep(Duration::from_millis(2000));
 
-                assert!(update_state(handle, None).is_ok());
-                assert_eq!(get_state(handle), WalletBackupState::ReadyToExportWallet as u32);
+            assert!(update_state(handle, None).is_ok());
+            assert_eq!(get_state(handle), WalletBackupState::ReadyToExportWallet as u32);
 
-                backup_wallet(handle, FILE_PATH).unwrap();
-                assert_eq!(get_state(handle), WalletBackupState::BackupInProgress as u32);
+            backup_wallet(handle, FILE_PATH).unwrap();
+            assert_eq!(get_state(handle), WalletBackupState::BackupInProgress as u32);
 
-                assert!(update_state(handle, None).is_ok());
-                assert_eq!(get_state(handle), WalletBackupState::ReadyToExportWallet as u32);
-            }
+            assert!(update_state(handle, None).is_ok());
+            assert_eq!(get_state(handle), WalletBackupState::ReadyToExportWallet as u32);
         }
     }
 

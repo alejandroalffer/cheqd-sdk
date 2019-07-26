@@ -203,15 +203,16 @@ public class WalletApi extends VcxJava.API {
         }
     };
     public static CompletableFuture<Integer> createWalletBackup(
-        String sourceID
-
+        String sourceID,
+        String backupKey
     ) throws VcxException {
         ParamGuard.notNull(sourceID, "sourceID");
-        logger.debug("createWalletBackup() called with: sourceID = [" + sourceID + "]");
+        ParamGuard.notNull(backupKey, "backupKey ");
+        logger.debug("createWalletBackup() called with: sourceID = [" + sourceID + "], backupKey = [" + backupKey + "]");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_backup_create(commandHandle, sourceID, vcxCreateWalletBackupCB);
+        int result = LibVcx.api.vcx_wallet_backup_create(commandHandle, sourceID, backupKey, vcxCreateWalletBackupCB);
         checkResult(result);
 
         return future;
@@ -233,16 +234,14 @@ public class WalletApi extends VcxJava.API {
     public static CompletableFuture<Integer> backupWalletBackup(
         int walletBackupHandle, // is this a int?
         String path,
-        String backupKey
     )  throws VcxException {
         ParamGuard.notNull(walletBackupHandle, "walletBackupHandle");
         ParamGuard.notNull(path, "path");
-        ParamGuard.notNull(backupKey, "backupKey ");
-        logger.debug("backupWalletBackup() called with: walletBackupHandle = [" + walletBackupHandle + "], path = [" + path + "], backupKey = [" + backupKey + "]");
+        logger.debug("backupWalletBackup() called with: walletBackupHandle = [" + walletBackupHandle + "], path = [" + path + "]");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_backup_backup(commandHandle, walletBackupHandle, path, backupKey, vcxBackupWalletBackupBackupCB);
+        int result = LibVcx.api.vcx_wallet_backup_backup(commandHandle, walletBackupHandle, path, vcxBackupWalletBackupBackupCB);
         checkResult(result);
 
         return future;
