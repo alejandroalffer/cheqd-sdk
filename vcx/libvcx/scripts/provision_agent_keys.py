@@ -57,7 +57,7 @@ def register_agent(args):
 
     agency_info = get_agency_info(args.AGENCY_URL)
     json_str = json.dumps({'agency_url':args.AGENCY_URL,
-        'agency_did':agency_info['DID'],
+        'agency_did':agency_info['did'],
         'agency_verkey':agency_info['verKey'],
         'wallet_key':args.WALLET_KEY,
         'wallet_name':args.wallet_name,
