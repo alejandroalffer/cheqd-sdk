@@ -133,7 +133,9 @@ impl From<RemoteMessageType> for PayloadKinds {
 pub struct Thread {
     pub thid: Option<String>,
     pub pthid: Option<String>,
+    #[serde(rename = "senderOrder")]
     pub sender_order: u32,
+    #[serde(rename = "receivedOrders")]
     pub received_orders: HashMap<String, u32>,
 }
 

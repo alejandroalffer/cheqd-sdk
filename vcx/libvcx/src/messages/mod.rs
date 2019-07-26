@@ -22,7 +22,7 @@ use self::invite::{
     SendInviteBuilder, ConnectionRequest, SendInviteMessageDetails, SendInviteMessageDetailsResponse, ConnectionRequestResponse,
     AcceptInviteBuilder, ConnectionRequestAnswer, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse
 };
-use self::get_message::{GetMessagesBuilder, GetMessages, GetMessagesResponse, MessagesByConnections};
+use self::get_message::{GetMessagesBuilder, GetMessagesReq, GetMessages, GetMessagesResponse, MessagesByConnections};
 use self::send_message::SendMessageBuilder;
 use self::update_message::{UpdateMessageStatusByConnections, UpdateMessageStatusByConnectionsResponse};
 use self::proofs::proof_request::ProofRequestMessage;
@@ -34,6 +34,8 @@ use error::prelude::*;
 
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
+use settings::ProtocolTypes;
+use messages::create_key::CreateKeyReq;
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -226,7 +228,7 @@ pub enum A2AMessageV2 {
     CreateAgentResponse(CreateAgentResponse),
 
     /// PW Connection
-    CreateKey(CreateKey),
+    CreateKey(CreateKeyReq),
     CreateKeyResponse(CreateKeyResponse),
     ConnectionRequest(ConnectionRequest),
     ConnectionRequestResponse(ConnectionRequestResponse),
@@ -234,7 +236,7 @@ pub enum A2AMessageV2 {
     SendRemoteMessage(SendRemoteMessage),
     SendRemoteMessageResponse(SendRemoteMessageResponse),
 
-    GetMessages(GetMessages),
+    GetMessages(GetMessagesReq),
     GetMessagesResponse(GetMessagesResponse),
     GetMessagesByConnections(GetMessages),
     GetMessagesByConnectionsResponse(MessagesByConnections),
@@ -302,7 +304,7 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map_err(de::Error::custom)
             }
             "CREATE_KEY" => {
-                CreateKey::deserialize(value)
+                CreateKeyReq::deserialize(value)
                     .map(|msg| A2AMessageV2::CreateKey(msg))
                     .map_err(de::Error::custom)
             }
@@ -312,7 +314,7 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map_err(de::Error::custom)
             }
             "GET_MSGS" => {
-                GetMessages::deserialize(value)
+                GetMessagesReq::deserialize(value)
                     .map(|msg| A2AMessageV2::GetMessages(msg))
                     .map_err(de::Error::custom)
             }
@@ -346,7 +348,17 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map(|msg| A2AMessageV2::ConnectionRequestAnswer(msg))
                     .map_err(de::Error::custom)
             }
+            "ACCEPT_CONN_REQ" => {
+                ConnectionRequestAnswer::deserialize(value)
+                    .map(|msg| A2AMessageV2::ConnectionRequestAnswer(msg))
+                    .map_err(de::Error::custom)
+            }
             "CONN_REQUEST_ANSWER_RESP" => {
+                ConnectionRequestAnswerResponse::deserialize(value)
+                    .map(|msg| A2AMessageV2::ConnectionRequestAnswerResponse(msg))
+                    .map_err(de::Error::custom)
+            }
+            "ACCEPT_CONN_REQ_RESP" => {
                 ConnectionRequestAnswerResponse::deserialize(value)
                     .map(|msg| A2AMessageV2::ConnectionRequestAnswerResponse(msg))
                     .map_err(de::Error::custom)
@@ -480,8 +492,8 @@ pub struct ForwardV2 {
 }
 
 impl Forward {
-    fn new(fwd: String, msg: Vec<u8>) -> VcxResult<A2AMessage> {
-        match settings::get_protocol_type() {
+    fn new(fwd: String, msg: Vec<u8>, version: ProtocolTypes) -> VcxResult<A2AMessage> {
+        match version {
             settings::ProtocolTypes::V1 => {
                 Ok(A2AMessage::Version1(A2AMessageV1::Forward(
                     Forward {
@@ -719,14 +731,14 @@ impl A2AMessageKinds {
     pub fn family(&self) -> MessageFamilies {
         match self {
             A2AMessageKinds::Forward => MessageFamilies::Routing,
-            A2AMessageKinds::Connect => MessageFamilies::Onboarding,
-            A2AMessageKinds::Connected => MessageFamilies::Onboarding,
-            A2AMessageKinds::CreateAgent => MessageFamilies::Onboarding,
-            A2AMessageKinds::AgentCreated => MessageFamilies::Onboarding,
-            A2AMessageKinds::SignUp => MessageFamilies::Onboarding,
-            A2AMessageKinds::SignedUp => MessageFamilies::Onboarding,
-            A2AMessageKinds::CreateKey => MessageFamilies::Pairwise,
-            A2AMessageKinds::KeyCreated => MessageFamilies::Pairwise,
+            A2AMessageKinds::Connect => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::Connected => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::CreateAgent => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::AgentCreated => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::SignUp => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::SignedUp => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::CreateKey => MessageFamilies::Connecting,
+            A2AMessageKinds::KeyCreated => MessageFamilies::Connecting,
             A2AMessageKinds::CreateMessage => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageDetail => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageCreated => MessageFamilies::Pairwise,
@@ -735,8 +747,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::GetMessagesByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::Messages => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConnectionStatus => MessageFamilies::Pairwise,
-            A2AMessageKinds::ConnectionRequest => MessageFamilies::Pairwise,
-            A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequest => MessageFamilies::Connecting,
+            A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Connecting,
             A2AMessageKinds::UpdateMessageStatusByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageStatusUpdatedByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConfigs => MessageFamilies::Configs,
@@ -774,7 +786,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Messages => "MSGS".to_string(),
             A2AMessageKinds::UpdateConnectionStatus => "UPDATE_CONN_STATUS".to_string(),
             A2AMessageKinds::ConnectionRequest => "CONN_REQUEST".to_string(),
-            A2AMessageKinds::ConnectionRequestAnswer => "CONN_REQUEST_ANSWER".to_string(),
+            A2AMessageKinds::ConnectionRequestAnswer => "ACCEPT_CONN_REQ".to_string(),
             A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
             A2AMessageKinds::UpdateComMethod => "UPDATE_COM_METHOD".to_string(),
@@ -789,8 +801,8 @@ impl A2AMessageKinds {
     }
 }
 
-pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u8>> {
-    match settings::get_protocol_type() {
+pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
+    match version {
         settings::ProtocolTypes::V1 => bundle_for_agency_v1(message, &agency_did),
         settings::ProtocolTypes::V2 => pack_for_agency_v2(message, agency_did)
     }
@@ -807,7 +819,7 @@ fn bundle_for_agency_v1(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec
 
     let message = crypto::prep_msg(&my_vk, &agent_vk, &message[..])?;
 
-    prepare_forward_message(message, agency_did)
+    prepare_forward_message(message, agency_did, ProtocolTypes::V1)
 }
 
 fn pack_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u8>> {
@@ -822,11 +834,11 @@ fn pack_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u
 
     let message = crypto::pack_message(Some(&my_vk), &receiver_keys, message.as_bytes())?;
 
-    prepare_forward_message(message, agency_did)
+    prepare_forward_message(message, agency_did, ProtocolTypes::V2)
 }
 
-fn parse_response_from_agency(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage>> {
-    match settings::get_protocol_type() {
+fn parse_response_from_agency(response: &Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<A2AMessage>> {
+    match version {
         settings::ProtocolTypes::V1 => parse_response_from_agency_v1(response),
         settings::ProtocolTypes::V2 => parse_response_from_agency_v2(response)
     }
@@ -915,10 +927,10 @@ pub fn bundle_from_u8(data: Vec<u8>) -> VcxResult<Bundled<Vec<u8>>> {
         })
 }
 
-fn prepare_forward_message(message: Vec<u8>, did: &str) -> VcxResult<Vec<u8>> {
+fn prepare_forward_message(message: Vec<u8>, did: &str, version: ProtocolTypes) -> VcxResult<Vec<u8>> {
     let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
 
-    let message = Forward::new(did.to_string(), message)?;
+    let message = Forward::new(did.to_string(), message, version)?;
 
     match message {
         A2AMessage::Version1(A2AMessageV1::Forward(msg)) => prepare_forward_message_for_agency_v1(&msg, &agency_vk),
@@ -944,8 +956,8 @@ fn prepare_forward_message_for_agency_v2(message: &ForwardV2, agency_vk: &str) -
     crypto::pack_message(None, &receiver_keys, message.as_bytes())
 }
 
-pub fn prepare_message_for_agent(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> VcxResult<Vec<u8>> {
-    match settings::get_protocol_type() {
+pub fn prepare_message_for_agent(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
+    match version {
         settings::ProtocolTypes::V1 => prepare_message_for_agent_v1(messages, pw_vk, agent_did, agent_vk),
         settings::ProtocolTypes::V2 => prepare_message_for_agent_v2(messages, pw_vk, agent_did, agent_vk)
     }
@@ -963,7 +975,7 @@ fn prepare_message_for_agent_v1(messages: Vec<A2AMessage>, pw_vk: &str, agent_di
     let message = crypto::prep_msg(&pw_vk, agent_vk, &message[..])?;
 
     /* forward to did */
-    let message = Forward::new(agent_did.to_owned(), message)?;
+    let message = Forward::new(agent_did.to_owned(), message, ProtocolTypes::V1)?;
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
@@ -983,7 +995,7 @@ fn prepare_message_for_agent_v2(messages: Vec<A2AMessage>, pw_vk: &str, agent_di
     let message = crypto::pack_message(Some(pw_vk), &receiver_keys, message.as_bytes())?;
 
     /* forward to did */
-    let message = Forward::new(agent_did.to_owned(), message)?;
+    let message = Forward::new(agent_did.to_owned(), message, ProtocolTypes::V2)?;
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 

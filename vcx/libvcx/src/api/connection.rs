@@ -392,7 +392,7 @@ pub extern fn vcx_connection_update_state_with_message(command_handle: u32,
     };
 
     spawn(move|| {
-        let rc = match process_acceptance_message(connection_handle, message) {
+        let rc = match process_acceptance_message(connection_handle, &message) {
             Ok(x) => {
                 trace!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
                       command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);

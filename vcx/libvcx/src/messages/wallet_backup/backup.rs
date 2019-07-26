@@ -61,6 +61,7 @@ pub struct BackupAck {
     msg_type: MessageTypes,
 }
 
+#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -96,7 +97,6 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_backup_real() {
         init!("agency");
@@ -114,7 +114,6 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_received_backup_ack_true() {
         init!("agency");

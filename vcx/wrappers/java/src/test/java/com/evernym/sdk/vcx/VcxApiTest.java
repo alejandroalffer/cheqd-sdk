@@ -1,6 +1,9 @@
 package com.evernym.sdk.vcx;
 
+import com.evernym.sdk.vcx.utils.UtilsApi;
 import com.evernym.sdk.vcx.vcx.VcxApi;
+import com.evernym.sdk.vcx.wallet.WalletApi;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,40 +50,12 @@ public class VcxApiTest {
         assert (errorCMessage.equals("Unknown Error"));
     }
 
-    /** Evernym extensions */
     @Test
-    @DisplayName("get wallet handle")
-    void vcxGetWalletHandle() {
-        int Handle = VcxApi.vcxGetWalletHandle();
-        assert (Handle == 1);
-    }
-
-    @Test
-    @DisplayName("get pool handle")
-    void vcxGetPoolHandle() {
-        int Handle = VcxApi.vcxGetPoolHandle();
-        assert (Handle == 0);
-    }
-
-    @Test
-    @DisplayName("set pool handle")
-    void vcxSetPoolHandle() {
-        int Handle = VcxApi.vcxSetPoolHandle(1);
-        assert (Handle == 1);
-    }
-
-    @Test
-    @DisplayName("set pool handle")
-    void vcxSetWalletHandle() {
-        int Handle = VcxApi.vcxSetWalletHandle(1);
-        assert (Handle == 1);
-    }
-
-    @Test
-    @DisplayName("init with pool/wallet already set")
-    void vcxInitPostIndy() {
-        int error = VcxApi.vcxInitPostIndy("ENABLE_TEST_MODE");;
-        assert (error == 0);
+    @DisplayName("init minimal")
+    void initMinimal() throws VcxException {
+        WalletApi.setWalletHandle(1);
+        UtilsApi.setPoolHandle(1);
+        assert (VcxApi.vcxInitMinimal("{\"institution_name\":\"f\",\"institution_did\":\"4\", \"institution_verkey\":\"4\"}") == 0);
     }
 
 }

@@ -15,21 +15,21 @@ def vcx_nodejs
 // DEPRECATED ( NO LONGER PRODUCED ) libvcx.tar.gz (libvcx.so file and provision_agent_keys.py) ----> archived with Jenkins
 class Globals {
 
-    static String rustVersion = "1.34.1"
+    static String rustVersion = "1.36.0"
 
-    static String libindyVersion = "1.9.0"
+    static String libindyVersion = "1.10.1"
 
     static String libindyTag = ""
 
-    static String libnullVersion = "1.9.0"
+    static String libnullVersion = "1.10.1"
 
     static String nullpayTag = ""
 
-    static String libsovtokenVersion = "0.10.0"
+    static String libsovtokenVersion = "1.0.0"
 
-    static String androidSovtokenArtifact = "libsovtoken_0.10.0-201905312046-e820bba_all.zip"
+    static String androidSovtokenArtifact = "libsovtoken_1.0.0-201907031231-e7dde6e_all.zip "
 
-    static String iosSovtokenArtifact = "libsovtoken_0.10.0-201905312039-e820bba_all.zip"
+    static String iosSovtokenArtifact = "libsovtoken_1.0.0-201907031239-e7dde6e_all.zip"
 
     static String indyBranch = 'stable'
 

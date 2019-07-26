@@ -1,11 +1,11 @@
-use serde_json;
+        use serde_json;
 use serde_json::Value;
 use rmp_serde;
 
 use api::VcxStateType;
 use settings;
 use messages;
-use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion};
+use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion, to_u8};
 use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
 use messages::payload::{Payloads, Thread};
 use messages::get_message::{Message, MessagePayload};
@@ -15,7 +15,7 @@ use utils::error;
 use utils::libindy::signus::create_and_store_my_did;
 use utils::libindy::crypto;
 use utils::json::mapped_key_rewrite;
-use utils::constants::DEFAULT_SERIALIZE_VERSION;
+use utils::constants::{ DEFAULT_SERIALIZE_VERSION, DEFAULT_ACK_CONNECTION_VERSION, DEFAULT_REQ_CONNECTION_VERSION };
 use utils::json::KeyMatch;
 use std::collections::HashMap;
 
@@ -60,6 +60,8 @@ struct Connection {
     // used by proofs/credentials when sending to edge device
     public_did: Option<String>,
     their_public_did: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<String>
 }
 
 
@@ -118,6 +120,7 @@ impl Connection {
             .answer_status_code(&MessageStatusCode::Accepted)?
             .reply_to(&details.conn_req_id)?
             .thread(&self._build_thread(&details))?
+            .version(&self.version)?
             .send_secure()
             .map_err(|err| err.extend("Cannot accept invite"))?;
 
@@ -189,7 +192,17 @@ impl Connection {
     fn set_endpoint(&mut self, endpoint: &str) { self.endpoint = endpoint.to_string(); }
 
     fn get_invite_detail(&self) -> &Option<InviteDetail> { &self.invite_detail }
-    fn set_invite_detail(&mut self, invite_detail: InviteDetail) { self.invite_detail = Some(invite_detail); }
+    fn set_invite_detail(&mut self, id: InviteDetail) {
+        self.version = match id.version.is_some() {
+            true => id.version.clone(),
+            false => Some(DEFAULT_ACK_CONNECTION_VERSION.to_string()),
+        };
+        self.invite_detail = Some(id);
+    }
+
+    fn get_version(&self) -> Option<String> {
+        self.version.clone()
+    }
 
     fn get_source_id(&self) -> &String { &self.source_id }
 
@@ -215,6 +228,7 @@ impl Connection {
         let (for_did, for_verkey) = messages::create_keys()
             .for_did(&self.pw_did)?
             .for_verkey(&self.pw_verkey)?
+            .version(&self.version)?
             .send_secure()
             .map_err(|err| err.extend("Cannot create pairwise keys"))?;
 
@@ -378,6 +392,12 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
+pub fn get_version(handle: u32) -> VcxResult<Option<String>> {
+    CONNECTION_MAP.get(handle, |cxn| {
+        Ok(cxn.get_version())
+    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
+}
+
 pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     trace!("create_connection >>> source_id: {}", source_id);
 
@@ -400,6 +420,7 @@ pub fn create_connection(source_id: &str) -> VcxResult<u32> {
         their_pw_verkey: String::new(),
         public_did: None,
         their_public_did: None,
+        version: Some(DEFAULT_REQ_CONNECTION_VERSION.to_string()),
     };
 
     CONNECTION_MAP.add(c)
@@ -470,6 +491,40 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> VcxResult<Sen
     }
 }
 
+pub fn force_v2_parse_acceptance_details(handle: u32, message: &Message) -> VcxResult<SenderDetail> {
+    debug!("forcing connection {} parsing acceptance details for message {:?}", get_source_id(handle).unwrap_or_default(), message);
+    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
+
+    let payload = message.payload
+        .as_ref()
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Payload not found"))?;
+
+    match payload {
+        MessagePayload::V1(payload) => {
+            let vec = to_u8(payload);
+            let json: Value = serde_json::from_slice(&vec[..])
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;;
+
+            let payload = Payloads::decrypt_payload_v12(&my_vk, &json)?;
+            let response:AcceptanceDetails = serde_json::from_value(payload.msg)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
+
+            set_their_pw_did(handle, &response.sender_detail.did).ok();
+            set_their_pw_verkey(handle, &response.sender_detail.verkey).ok();
+            set_state(handle, VcxStateType::VcxStateAccepted).ok();
+
+            Ok(response.sender_detail)
+        }
+        MessagePayload::V2(payload) => {
+            let payload = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
+            let response: AcceptanceDetails = serde_json::from_str(&payload.msg)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
+
+            Ok(response.sender_detail)
+        }
+    }
+}
+
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     debug!("updating state for connection {}", get_source_id(handle).unwrap_or_default());
     let state = get_state(handle);
@@ -483,6 +538,7 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     let pw_vk = get_pw_verkey(handle)?;
     let agent_did = get_agent_did(handle)?;
     let agent_vk = get_agent_verkey(handle)?;
+    let version = get_version(handle)?;
 
     let response =
         messages::get_messages()
@@ -490,6 +546,7 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
             .to_vk(&pw_vk)?
             .agent_did(&agent_did)?
             .agent_vk(&agent_vk)?
+//            .version(&version)?
             .send_secure()
             .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, format!("Could not update state for handle {}", handle)))?;
 
@@ -497,7 +554,11 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     if get_state(handle) == VcxStateType::VcxStateOfferSent as u32 || get_state(handle) == VcxStateType::VcxStateInitialized as u32 {
         for message in response {
             if message.status_code == MessageStatusCode::Accepted && message.msg_type == RemoteMessageType::ConnReqAnswer {
-                process_acceptance_message(handle, message)?;
+                let rc = process_acceptance_message(handle, &message);
+
+                if rc.is_err() {
+                    force_v2_parse_acceptance_details(handle, &message)?;
+                }
             }
         }
     };
@@ -505,7 +566,7 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     Ok(error::SUCCESS.code_num)
 }
 
-pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u32> {
+pub fn process_acceptance_message(handle: u32, message: &Message) -> VcxResult<u32> {
     let details = parse_acceptance_details(handle, &message)
         .map_err(|err| err.extend("Cannot parse acceptance details"))?;
 
@@ -796,6 +857,7 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
+            version: None
         };
 
         let handle = CONNECTION_MAP.add(c).unwrap();
@@ -881,6 +943,7 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
+            version: None
         };
 
         let handle = CONNECTION_MAP.add(c).unwrap();
@@ -991,7 +1054,7 @@ pub mod tests {
     fn test_create_with_valid_invite_details() {
         init!("true");
 
-        let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
+        let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there", "version":"2.0"}"#;
         let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
         let details = serde_json::to_string(&unabbrv_details).unwrap();
 
@@ -1009,7 +1072,7 @@ pub mod tests {
         init!("true");
         let handle = create_connection("test_process_acceptance_message").unwrap();
         let message = serde_json::from_str(INVITE_ACCEPTED_RESPONSE).unwrap();
-        assert_eq!(error::SUCCESS.code_num, process_acceptance_message(handle, message).unwrap());
+        assert_eq!(error::SUCCESS.code_num, process_acceptance_message(handle, &message).unwrap());
     }
 
     #[test]
@@ -1042,6 +1105,7 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
+            version: None
         };
 
         let handle = CONNECTION_MAP.add(c).unwrap();
@@ -1087,5 +1151,24 @@ pub mod tests {
         let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
         let handle = create_connection_with_invite("alice", &details).unwrap();
         assert_eq!(release(handle).unwrap(), ());
+    }
+    #[test]
+    fn test_different_protocol_version() {
+        init!("true");
+
+        let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
+        let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
+        let details = serde_json::to_string(&unabbrv_details).unwrap();
+
+        let handle = create_connection_with_invite("alice", &details).unwrap();
+        let serialized = to_string(handle).unwrap();
+        println!("{}", serialized);
+        let details = r#"{"version":"2.0","id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
+                let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
+        let details = serde_json::to_string(&unabbrv_details).unwrap();
+
+        let handle = create_connection_with_invite("alice", &details).unwrap();
+        let serialized = to_string(handle).unwrap();
+        println!("{}", serialized);
     }
 }
