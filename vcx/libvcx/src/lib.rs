@@ -9,6 +9,7 @@ extern crate rand;
 extern crate reqwest;
 extern crate url;
 extern crate openssl;
+extern crate hex;
 extern crate indyrs as indy;
 extern crate futures;
 

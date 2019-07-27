@@ -5,16 +5,14 @@ use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
 use utils::libindy::wallet::{export, get_wallet_handle};
-use utils::libindy::crypto::{sign, pack_message};
-//use utils::libindy::crypto::{create_key, sign, pack_message};
-use utils::openssl;
+use utils::libindy::crypto::{create_key, sign, pack_message};
 use utils::constants::{DEFAULT_SERIALIZE_VERSION};
 use std::path::Path;
 use std::fs;
 use messages::RemoteMessageType;
 use messages::wallet_backup::received_expected_message;
 use messages::get_message::Message;
-
+use utils::openssl::sha256_hex;
 
 lazy_static! {
     static ref WALLET_BACKUP_MAP: ObjectCache<WalletBackup> = Default::default();
@@ -28,10 +26,16 @@ struct CloudAddress {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+struct DeadDropAddress {
+    address: String,
+    locator: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct WalletBackupKeys {
     wallet_encryption_key: String,
     recovery_vk: String,
-    dead_drop_address: String,
+    dead_drop_address: DeadDropAddress,
     cloud_address: Vec<u8>,
 }
 
@@ -112,7 +116,7 @@ impl WalletBackup {
 
         messages::wallet_backup_init()
             .recovery_vk(&self.keys.recovery_vk)?
-            .dead_drop_address(&self.keys.dead_drop_address)?
+            .dead_drop_address(&self.keys.dead_drop_address.address)?
             .cloud_address(&self.keys.cloud_address)?
             .send_secure()?;
 
@@ -164,37 +168,32 @@ pub fn create_wallet_backup(source_id: &str, wallet_encryption_key: &str) -> Vcx
 
     let mut wb = WalletBackup::create(source_id, wallet_encryption_key)?;
 
+    println!("keys: {:?}", wb.keys);
     wb.init_backup()?;
 
     WALLET_BACKUP_MAP.add(wb)
         .or(Err(VcxError::from(VcxErrorKind::CreateWalletBackup)))
 }
 
-fn gen_keys(passphrase: &str) -> VcxResult<WalletBackupKeys> {
-//    let vk = &create_key(Some("00000000000000000000000000000My2"), None)?;
-
-//    let hash = sha256(s.as_bytes());
-//    let hashed_pass_phrase = base64::encode(passphrase);
-//    let vk = &create_key(Some(&hashed_pass_phrase), None)?;
-//    Ok(WalletBackupKeys {
-//        passphrase: passphrase.to_string(),
-//        recovery_vk: vk.to_string(),
-//        dead_drop_address: gen_deaddrop_address(vk)?,
-//        cloud_address: gen_cloud_address(vk)?,
-//    })
+fn gen_keys(wallet_encryption_key: &str) -> VcxResult<WalletBackupKeys> {
+    let vk_seed = sha256_hex(wallet_encryption_key.as_bytes());
+    let vk = &create_key(Some(&vk_seed), None)?;
     Ok(WalletBackupKeys {
-        wallet_encryption_key: String::new(),
-        recovery_vk: String::new(),
-        dead_drop_address: String::new(),
-        cloud_address: Vec::new()
+        wallet_encryption_key: wallet_encryption_key.to_string(),
+        recovery_vk: vk.to_string(),
+        dead_drop_address: gen_deaddrop_address(vk)?,
+        cloud_address: gen_cloud_address(vk)?,
     })
 }
 
-fn gen_deaddrop_address(vk: &str) -> VcxResult<String> {
+fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
     trace!("gen_deaddrop_address >>> vk: {}", vk);
-    let signature = &sign(vk, "wallet-backup".as_bytes())?;
-    let sig_hash = openssl::encode(&base64::encode(signature))?;
-    openssl::encode(&format!("{}{}", vk, sig_hash))
+    let locator = sha256_hex(&sign(vk, "wallet-backup".as_bytes())?);
+    Ok(DeadDropAddress {
+        locator: locator.to_string(),
+        address: sha256_hex((vk.to_string() + &locator).as_bytes()),
+    })
+
 }
 
 fn gen_cloud_address(vk: &str) -> VcxResult<Vec<u8>> {
@@ -205,7 +204,7 @@ fn gen_cloud_address(vk: &str) -> VcxResult<Vec<u8>> {
     };
 
     let receiver_keys = json!([vk]).to_string();
-    pack_message(None, &receiver_keys, &cloud_address.to_string()?.as_bytes())
+    pack_message(None, &receiver_keys, cloud_address.to_string()?.as_bytes())
 }
 
 /*
@@ -289,15 +288,6 @@ mod tests {
 
     mod create_wallet_backup {
        use super::*;
-
-        #[test]
-        fn create_backup_succeeds() {
-            init!("false");
-
-            ::utils::httpclient::set_next_u8_response(WALLET_PROVISION_AGENT_RESPONSE.to_vec());
-
-            assert!(create_wallet_backup(SOURCE_ID, BACKUP_KEY).is_ok())
-        }
 
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
