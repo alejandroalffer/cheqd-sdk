@@ -11,6 +11,7 @@ pub mod update_message;
 pub mod message_type;
 pub mod payload;
 pub mod wallet_backup;
+pub mod deaddrop;
 
 use std::u8;
 use settings;
@@ -36,6 +37,7 @@ use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
 use settings::ProtocolTypes;
 use messages::create_key::CreateKeyReq;
+use messages::deaddrop::retrieve::{RetrieveDeadDrop, RetrievedDeadDropResult, RetrieveDeadDropBuilder};
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -260,6 +262,10 @@ pub enum A2AMessageV2 {
     BackupProvisioned(BackupProvisioned),
     Backup(Backup),
     BackupAck(BackupAck),
+
+    /// Dead Drop
+    RetrieveDeadDrop(RetrieveDeadDrop),
+    RetrievedDeadDropResult(RetrievedDeadDropResult),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV2 {
@@ -431,6 +437,16 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "WALLET_BACKUP_ACK" => {
                 BackupAck::deserialize(value)
                     .map(|msg| A2AMessageV2::BackupAck(msg))
+                    .map_err(de::Error::custom)
+            }
+            "DEAD_DROP_RETRIEVE" => {
+                RetrieveDeadDrop::deserialize(value)
+                    .map(|msg| A2AMessageV2::RetrieveDeadDrop(msg))
+                    .map_err(de::Error::custom)
+            }
+            "DEAD_DROP_RETRIEVED_RESULT" => {
+                RetrievedDeadDropResult::deserialize(value)
+                    .map(|msg| A2AMessageV2::RetrievedDeadDropResult(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -725,6 +741,8 @@ pub enum A2AMessageKinds {
     BackupReady,
     Backup,
     BackupAck,
+    RetrieveDeadDrop,
+    RetrievedDeadDropResult,
 }
 
 impl A2AMessageKinds {
@@ -761,6 +779,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::BackupReady => MessageFamilies::WalletBackup,
             A2AMessageKinds::Backup => MessageFamilies::WalletBackup,
             A2AMessageKinds::BackupAck => MessageFamilies::WalletBackup,
+            A2AMessageKinds::RetrieveDeadDrop => MessageFamilies::DeadDrop,
+            A2AMessageKinds::RetrievedDeadDropResult => MessageFamilies::DeadDrop,
         }
     }
 
@@ -797,6 +817,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::BackupReady => "WALLET_BACKUP_READY".to_string(),
             A2AMessageKinds::Backup => "WALLET_BACKUP".to_string(),
             A2AMessageKinds::BackupAck => "WALLET_BACKUP_ACK".to_string(),
+            A2AMessageKinds::RetrieveDeadDrop => "DEAD_DROP_RETRIEVE".to_string(),
+            A2AMessageKinds::RetrievedDeadDropResult => "DEAD_DROP_RETRIEVE_RESULT".to_string(),
         }
     }
 }
@@ -1078,6 +1100,8 @@ pub fn send_message() -> SendMessageBuilder { SendMessageBuilder::create() }
 pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
 
 pub fn wallet_backup_init() -> BackupInitBuilder { BackupInitBuilder::create() }
+
+pub fn retrieve_dead_drop() -> RetrieveDeadDropBuilder { RetrieveDeadDropBuilder::create() }
 
 pub fn backup_wallet() -> BackupBuilder { BackupBuilder::create() }
 

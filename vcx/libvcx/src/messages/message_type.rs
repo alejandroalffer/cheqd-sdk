@@ -73,6 +73,7 @@ pub enum MessageFamilies {
     CredentialExchange,
     Unknown(String),
     WalletBackup,
+    DeadDrop,
 }
 
 impl MessageFamilies {
@@ -86,6 +87,7 @@ impl MessageFamilies {
             MessageFamilies::Configs => "1.0",
             MessageFamilies::CredentialExchange => "1.0",
             MessageFamilies::WalletBackup => "0.1.0",
+            MessageFamilies::DeadDrop => "0.1.0",
             _ => "1.0"
         }
     }
@@ -118,6 +120,7 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::CredentialExchange => "credential_exchange".to_string(),
             MessageFamilies::Configs => "configs".to_string(),
             MessageFamilies::WalletBackup => "wallet-backup".to_string(),
+            MessageFamilies::DeadDrop => "dead-drop".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }

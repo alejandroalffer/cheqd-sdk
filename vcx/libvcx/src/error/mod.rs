@@ -213,6 +213,9 @@ pub enum VcxErrorKind {
     #[fail(display = "Failed to retrieve exported wallet")]
     RetrieveExportedWallet,
 
+    #[fail(display = "Failed to retrieve dead drop payload")]
+    RetrieveDeadDrop,
+
 }
 
 #[derive(Debug)]
@@ -379,6 +382,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::CreateWalletBackup => error::CREATE_WALLET_BACKUP.code_num,
             VcxErrorKind::RetrieveExportedWallet => error::RETRIEVE_EXPORTED_WALLET.code_num,
             VcxErrorKind::InvalidMsgVersion => error::INVALID_MSG_VERSION.code_num,
+            VcxErrorKind::RetrieveDeadDrop => error::RETRIEVE_DEAD_DROP.code_num,
         }
     }
 }

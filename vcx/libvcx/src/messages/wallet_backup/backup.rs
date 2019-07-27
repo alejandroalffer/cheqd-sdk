@@ -100,7 +100,7 @@ mod tests {
     #[test]
     fn test_backup_real() {
         init!("agency");
-        ::utils::devsetup::tests::set_institution();
+        ::utils::devsetup::tests::set_consumer();
 
         wallet_backup_init()
             .recovery_vk(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn test_received_backup_ack_true() {
         init!("agency");
-        ::utils::devsetup::tests::set_institution();
+        ::utils::devsetup::tests::set_consumer();
 
         wallet_backup_init()
             .recovery_vk(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
