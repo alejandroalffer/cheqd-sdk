@@ -232,9 +232,9 @@ public class WalletApi extends VcxJava.API {
         }
     };
     public static CompletableFuture<Integer> backupWalletBackup(
-        int walletBackupHandle, // is this a int?
-        String path,
-    )  throws VcxException {
+            int walletBackupHandle,
+            String path
+    ) throws VcxException {
         ParamGuard.notNull(walletBackupHandle, "walletBackupHandle");
         ParamGuard.notNull(path, "path");
         logger.debug("backupWalletBackup() called with: walletBackupHandle = [" + walletBackupHandle + "], path = [" + path + "]");
@@ -245,7 +245,6 @@ public class WalletApi extends VcxJava.API {
         checkResult(result);
 
         return future;
-
     }
 
     // vcx_error_t vcx_wallet_backup_update_state(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
