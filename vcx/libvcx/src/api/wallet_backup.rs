@@ -329,6 +329,7 @@ pub extern fn vcx_wallet_backup_recovery(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
