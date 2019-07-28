@@ -65,7 +65,7 @@ pub struct BackupAck {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use messages::{backup_wallet, RemoteMessageType};
+    use messages::{wallet_backup_init, backup_wallet, RemoteMessageType};
     use settings::{CONFIG_PROTOCOL_TYPE};
     use utils::libindy::signus::create_and_store_my_did;
     use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
@@ -100,9 +100,13 @@ mod tests {
     #[test]
     fn test_backup_real() {
         init!("agency");
-        ::utils::devsetup::tests::set_institution();
+        ::utils::devsetup::tests::set_consumer();
 
-        ::messages::wallet_backup_provision().send_secure().unwrap();
+        wallet_backup_init()
+            .recovery_vk(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
+            .dead_drop_address(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
+            .cloud_address(&settings::CONFIG_REMOTE_TO_SDK_DID.as_bytes().to_vec()).unwrap()
+            .send_secure().unwrap();
         thread::sleep(Duration::from_millis(2000));
 
         assert!(backup_wallet().wallet_data(vec![1, 2, 3]).send_secure().is_ok());
@@ -113,9 +117,13 @@ mod tests {
     #[test]
     fn test_received_backup_ack_true() {
         init!("agency");
-        ::utils::devsetup::tests::set_institution();
+        ::utils::devsetup::tests::set_consumer();
 
-        ::messages::wallet_backup_provision().send_secure().unwrap();
+        wallet_backup_init()
+            .recovery_vk(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
+            .dead_drop_address(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
+            .cloud_address(&settings::CONFIG_REMOTE_TO_SDK_DID.as_bytes().to_vec()).unwrap()
+            .send_secure().unwrap();
         thread::sleep(Duration::from_millis(2000));
 
         assert!(backup_wallet().wallet_data(vec![1, 2, 3]).send_secure().is_ok());

@@ -225,8 +225,40 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
             pwdidsJson:(NSString *)pwdidsJson
             completion:(void (^)(NSError *error))completion;
 
+- (void)downloadAgentMessages:(NSString *)messageStatus
+                    uid_s:(NSString *)uid_s
+                    completion:(void (^)(NSError *error, NSString* messages))completion;
+
 - (void) getLedgerFees:(void(^)(NSError *error, NSString *fees)) completion;
 
+- (void) getTxnAuthorAgreement:(void(^)(NSError *error, NSString *authorAgreement)) completion;
+
+- (vcx_error_t) activateTxnAuthorAgreement:(NSString *)text
+                               withVersion:(NSString *)version
+                                  withHash:(NSString *)hash
+                             withMechanism:(NSString *)mechanism
+                             withTimestamp:(NSNumber *)timestamp;
+- (void) createWalletBackup:(NSString *)sourceID
+                  backupKey:(NSString *)backupKey
+                 completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion;
+
+- (void) backupWalletBackup:(vcx_wallet_backup_handle_t) walletBackupHandle
+                       path:(NSString *)path
+                 completion:(void(^)(NSError *error))completion;
+
+- (void) updateWalletBackupState:(vcx_wallet_backup_handle_t) walletBackupHandle
+                      completion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void) updateWalletBackupStateWithMessage:(vcx_wallet_backup_handle_t) walletBackupHandle
+                                    message:(NSString *)message
+                                 completion:(void (^)(NSError *error, NSInteger state))completion;
+
+// should *walletBackupStr be just data here?
+- (void) serializeBackupWallet:(vcx_wallet_backup_handle_t) walletBackupHandle
+              completion:(void (^)(NSError *error, NSString *data))completion;
+
+- (void) deserializeBackupWallet:(NSString *) walletBackupStr
+                completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion;
 @end
 
 #endif /* init_h */

@@ -471,7 +471,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
             withCompletion:(void (^)(NSError *error, NSData *signature_raw, vcx_u32_t signature_len))completion
 {
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    
+
     uint8_t *data_raw = (uint8_t *) [dataRaw bytes];
     uint32_t data_length = (uint32_t) [dataRaw length];
 
@@ -491,13 +491,13 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
                    withCompletion:(void (^)(NSError *error, vcx_bool_t valid))completion
 {
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-    
+
     uint8_t *data_raw = (uint8_t *) [dataRaw bytes];
     uint32_t data_length = (uint32_t) [dataRaw length];
-    
+
     uint8_t *signature_raw = (uint8_t *) [signatureRaw bytes];
     uint32_t signature_length = (uint32_t) [signatureRaw length];
-    
+
     vcx_error_t ret = vcx_connection_verify_signature(handle,
                                                       connectionHandle,
                                                       data_raw,
@@ -1049,6 +1049,25 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (void)downloadAgentMessages:(NSString *)messageStatus
+                        uid_s:(NSString *)uid_s              
+                        completion:(void (^)(NSError *error, NSString* messages))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * message_status = [messageStatus cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * uids = [uid_s cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_download_agent_messages(handle, message_status, uids, VcxWrapperCommonStringCallback);
+
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
 - (void)updateMessages:(NSString *)messageStatus
                  pwdidsJson:(NSString *)pwdidsJson
               completion:(void (^)(NSError *error))completion{
@@ -1074,6 +1093,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     ret = vcx_ledger_get_fees(handle, VcxWrapperCommonStringCallback);
 
+
     if (ret != 0)
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -1082,6 +1102,191 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
             completion([NSError errorFromVcxError: ret], nil);
         });
     }
+}
+
+
+//vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id, const char *backup_key,
+//                                     void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
+
+- (void) createWalletBackup:(NSString *)sourceID
+                 backupKey:(NSString *)backupKey
+                 completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * source_id = [sourceID cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * backup_key = [backupKey cStringUsingEncoding:NSUTF8StringEncoding];
+
+    ret = vcx_wallet_backup_create(handle, source_id, backup_key, VcxWrapperCommonNumberCallback);
+
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+//vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path,
+//    void (*cb)(vcx_command_handle_t, vcx_error_t));
+- (void) backupWalletBackup:(vcx_wallet_backup_handle_t) walletBackupHandle
+                   path:(NSString *)path
+                   completion:(void(^)(NSError *error))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * new_path = [path cStringUsingEncoding:NSUTF8StringEncoding];
+
+    ret = vcx_wallet_backup_backup(handle, walletBackupHandle, new_path, VcxWrapperCommonCallback);
+
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+
+}
+
+//vcx_error_t vcx_wallet_backup_update_state(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+//                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+- (void) updateWalletBackupState:(vcx_wallet_backup_handle_t) walletBackupHandle
+                      completion:(void (^)(NSError *error, NSInteger state))completion {
+
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_wallet_backup_update_state(handle, walletBackupHandle, VcxWrapperCommonNumberCallback);
+
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+
+}
+
+//vcx_error_t vcx_wallet_backup_update_state_with_message(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *message,
+//                                                        void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+- (void) updateWalletBackupStateWithMessage:(vcx_wallet_backup_handle_t) walletBackupHandle
+                      message:(NSString *)message
+                      completion:(void (^)(NSError *error, NSInteger state))completion {
+
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * new_message = [message cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_wallet_backup_update_state_with_message(handle, walletBackupHandle, new_message, VcxWrapperCommonNumberCallback);
+
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+
+}
+
+//vcx_error_t vcx_wallet_backup_serialize(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+//                                        void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+- (void) serializeBackupWallet:(vcx_wallet_backup_handle_t) walletBackupHandle
+                      completion:(void (^)(NSError *error, NSString *data))completion {
+
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_wallet_backup_serialize(handle, walletBackupHandle, VcxWrapperCommonStringCallback);
+
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
+//vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, const char *wallet_backup_str,
+//                                          void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
+- (void) deserializeBackupWallet:(NSString *) walletBackupStr
+              completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion {
+
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * wallet_backup_str = [walletBackupStr cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_wallet_backup_deserialize(handle, wallet_backup_str, VcxWrapperCommonNumberCallback);
+
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+
+}
+
+
+/// Retrieve author agreement set on the Ledger
+///
+/// #params
+/// completion: Callback that provides array of matching messages retrieved
+///
+/// #Returns
+/// Error code as a u32
+- (void) getTxnAuthorAgreement:(void(^)(NSError *error, NSString *authorAgreement)) completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_get_ledger_author_agreement(handle, VcxWrapperCommonStringCallback);
+
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
+
+/// Set some accepted agreement as active.
+///
+/// As result of succesfull call of this funciton appropriate metadata will be appended to each write request by `indy_append_txn_author_agreement_meta_to_request` libindy call.
+///
+/// #Params
+/// text and version - (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if hash parameter is ommited.
+/// hash - (optional) hash on text and version. This parameter is required if text and version parameters are ommited.
+/// acc_mech_type - mechanism how user has accepted the TAA
+/// time_of_acceptance - UTC timestamp when user has accepted the TAA
+///
+/// #Returns
+/// Error code as a u32
+- (vcx_error_t) activateTxnAuthorAgreement:(NSString *)text
+                               withVersion:(NSString *)version
+                                  withHash:(NSString *)hash
+                             withMechanism:(NSString *)mechanism
+                             withTimestamp:(NSNumber *)timestamp
+{
+    return vcx_set_active_txn_author_agreement_meta(
+        [text UTF8String],
+        [version UTF8String],
+        [hash UTF8String],
+        [mechanism UTF8String],
+        [timestamp longLongValue]
+    );
+
 }
 
 @end
