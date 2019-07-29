@@ -93,7 +93,7 @@ enum_number!(ProofStateType
 enum_number!(WalletBackupState
 {
     Uninitialized = 0,
-    ProvisionRequested = 1,
+    InitRequested = 1,
     ReadyToExportWallet = 2,
     BackupInProgress = 3,
     BackupStored = 4,

@@ -15,7 +15,7 @@ use utils::error;
 use utils::libindy::signus::create_and_store_my_did;
 use utils::libindy::crypto;
 use utils::json::mapped_key_rewrite;
-use utils::constants::{ DEFAULT_SERIALIZE_VERSION, DEFAULT_ACK_CONNECTION_VERSION, DEFAULT_REQ_CONNECTION_VERSION };
+use utils::constants::{ DEFAULT_SERIALIZE_VERSION };
 use utils::json::KeyMatch;
 use std::collections::HashMap;
 
@@ -61,7 +61,7 @@ struct Connection {
     public_did: Option<String>,
     their_public_did: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    version: Option<String>
+    version: Option<settings::ProtocolTypes>
 }
 
 
@@ -120,7 +120,7 @@ impl Connection {
             .answer_status_code(&MessageStatusCode::Accepted)?
             .reply_to(&details.conn_req_id)?
             .thread(&self._build_thread(&details))?
-            .version(&self.version)?
+            .version(self.version.clone())?
             .send_secure()
             .map_err(|err| err.extend("Cannot accept invite"))?;
 
@@ -194,13 +194,13 @@ impl Connection {
     fn get_invite_detail(&self) -> &Option<InviteDetail> { &self.invite_detail }
     fn set_invite_detail(&mut self, id: InviteDetail) {
         self.version = match id.version.is_some() {
-            true => id.version.clone(),
-            false => Some(DEFAULT_ACK_CONNECTION_VERSION.to_string()),
+            true => Some(settings::ProtocolTypes::from(id.version.clone().unwrap())),
+            false => Some(settings::get_connecting_protocol_version()),
         };
         self.invite_detail = Some(id);
     }
 
-    fn get_version(&self) -> Option<String> {
+    fn get_version(&self) -> Option<settings::ProtocolTypes> {
         self.version.clone()
     }
 
@@ -228,7 +228,7 @@ impl Connection {
         let (for_did, for_verkey) = messages::create_keys()
             .for_did(&self.pw_did)?
             .for_verkey(&self.pw_verkey)?
-            .version(&self.version)?
+            .version(self.version.clone())?
             .send_secure()
             .map_err(|err| err.extend("Cannot create pairwise keys"))?;
 
@@ -392,12 +392,6 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
-pub fn get_version(handle: u32) -> VcxResult<Option<String>> {
-    CONNECTION_MAP.get(handle, |cxn| {
-        Ok(cxn.get_version())
-    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
-}
-
 pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     trace!("create_connection >>> source_id: {}", source_id);
 
@@ -420,7 +414,7 @@ pub fn create_connection(source_id: &str) -> VcxResult<u32> {
         their_pw_verkey: String::new(),
         public_did: None,
         their_public_did: None,
-        version: Some(DEFAULT_REQ_CONNECTION_VERSION.to_string()),
+        version: Some(settings::get_connecting_protocol_version()),
     };
 
     CONNECTION_MAP.add(c)
@@ -538,7 +532,6 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     let pw_vk = get_pw_verkey(handle)?;
     let agent_did = get_agent_did(handle)?;
     let agent_vk = get_agent_verkey(handle)?;
-    let version = get_version(handle)?;
 
     let response =
         messages::get_messages()
@@ -546,7 +539,6 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
             .to_vk(&pw_vk)?
             .agent_did(&agent_did)?
             .agent_vk(&agent_vk)?
-//            .version(&version)?
             .send_secure()
             .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, format!("Could not update state for handle {}", handle)))?;
 

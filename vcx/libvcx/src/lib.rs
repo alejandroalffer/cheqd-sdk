@@ -9,6 +9,7 @@ extern crate rand;
 extern crate reqwest;
 extern crate url;
 extern crate openssl;
+extern crate hex;
 extern crate indyrs as indy;
 extern crate futures;
 
@@ -36,6 +37,7 @@ extern crate uuid;
 extern crate failure;
 
 extern crate rmp_serde;
+extern crate json;
 
 #[macro_use]
 pub mod utils;

@@ -3,7 +3,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use error::prelude::*;
-use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state, from_string, to_string, update_state};
+use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state, from_string, to_string, update_state, recover_wallet};
 use messages::get_message::Message;
 use std::ptr;
 
@@ -14,6 +14,8 @@ use std::ptr;
 ///
 /// source_id: institution's personal identification for the user
 ///
+/// wallet_encryption_key: String representing the User's Key for securing (encrypting) the exported Wallet.
+///
 /// cb: Callback that provides wallet_backup handle and error status of request
 ///
 /// #Returns
@@ -23,16 +25,18 @@ use std::ptr;
 #[allow(unused_assignments)]
 pub extern fn vcx_wallet_backup_create(command_handle: u32,
                                        source_id: *const c_char,
+                                       wallet_encryption_key: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, wallet_backup_handle: u32)>) -> u32 {
     info!("vcx_wallet_backup_create >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(wallet_encryption_key, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_backup_create(command_handle: {}, source_id: {})", command_handle, source_id);
+    trace!("vcx_wallet_backup_create(command_handle: {}, source_id: {}, wallet_backup_key: ***)", command_handle, source_id);
 
     spawn(move|| {
-        match create_wallet_backup(&source_id) {
+        match create_wallet_backup(&source_id, &wallet_encryption_key) {
             Ok(handle) => {
                 trace!("vcx_wallet_backup_create(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                        command_handle, error::SUCCESS.message, handle, source_id);
@@ -65,7 +69,6 @@ pub extern fn vcx_wallet_backup_create(command_handle: u32,
 /// Todo: path will not be necessary when libindy functionality for wallet export functionality is expanded
 /// Todo: path must be different than other exported wallets because this instance is deleted after its uploaded to the cloud
 /// path: Path to export wallet to User's File System. (This instance of the export
-/// backup_key: String representing the User's Key for securing (encrypting) the exported Wallet.
 /// cb: Callback that provides the success/failure of the api call.
 /// #Returns
 /// Error code - success indicates that the api call was successfully created and execution
@@ -75,21 +78,19 @@ pub extern fn vcx_wallet_backup_create(command_handle: u32,
 pub extern fn vcx_wallet_backup_backup(command_handle: u32,
                                        wallet_backup_handle: u32,
                                        path: *const c_char,
-                                       backup_key: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
     info!("vcx_wallet_backup_backup >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(path,  VcxErrorKind::InvalidOption);
-    check_useful_c_str!(backup_key, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_backup_backup(command_handle: {}, wallet_backup_handle: {}, path: {}, backup_key: ****)",
+    trace!("vcx_wallet_backup_backup(command_handle: {}, wallet_backup_handle: {}, path: {})",
            command_handle, wallet_backup_handle, path);
 
     spawn(move|| {
-        trace!("vcx_wallet_backup_backup(command_handle: {}, wallet_backup_handle: {}, path: {}, backup_key: ****)",
+        trace!("vcx_wallet_backup_backup(command_handle: {}, wallet_backup_handle: {}, path: {})",
                command_handle, wallet_backup_handle, path);
-        match backup_wallet(wallet_backup_handle, &backup_key, &path) {
+        match backup_wallet(wallet_backup_handle, &path) {
             Ok(_) => {
                 let return_code = error::SUCCESS.code_num;
                 trace!("vcx_wallet_backup_backup(command_handle: {}, rc: {})", command_handle, return_code);
@@ -291,6 +292,44 @@ pub extern fn vcx_wallet_backup_deserialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Requests a recovery of a backup previously stored with a cloud agent
+///
+/// backup_key: Key used when creating the backup of the wallet (For encryption/decrption)
+/// cb: Callback that provides the success/failure of the api call.
+/// #Returns
+/// Error code - success indicates that the api call was successfully created and execution
+/// is scheduled to begin in a separate thread.
+#[no_mangle]
+pub extern fn vcx_wallet_backup_recovery(command_handle: u32,
+                                         backup_key: *const c_char,
+                                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_wallet_backup_recovery >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(backup_key,  VcxErrorKind::InvalidOption);
+
+    trace!("vcx_wallet_backup_recovery(command_handle: {}, config: ****)",
+           command_handle);
+
+    spawn(move|| {
+        trace!("vcx_wallet_backup_recovery(command_handle: {}, config: ****)", command_handle);
+        match recover_wallet(&backup_key) {
+            Ok(_) => {
+                trace!("vcx_wallet_backup_recovery(command_handle: {}, rc: {})", command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_wallet_backup_recovery(command_handle: {}, rc: {})", command_handle, e);
+                cb(command_handle, e.into());
+            }
+        };
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -308,6 +347,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_wallet_backup_create(cb.command_handle,
                                        CString::new("test_create").unwrap().into_raw(),
+                                          CString::new("pass_phrae").unwrap().into_raw(),
                                        Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
         assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
@@ -318,11 +358,13 @@ mod tests {
         init!("true");
         let rc = vcx_wallet_backup_create(0,
                                           CString::new("test_create_fails").unwrap().into_raw(),
+                                          CString::new("pass_phrae").unwrap().into_raw(),
                                        None);
         assert_eq!(rc, error::INVALID_OPTION.code_num);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_wallet_backup_create(cb.command_handle,
                                        ptr::null(),
+                                          CString::new("pass_phrae").unwrap().into_raw(),
                                        Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
@@ -334,6 +376,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_wallet_backup_create(cb.command_handle,
                                           CString::new("test_create").unwrap().into_raw(),
+                                          CString::new("encryption_key").unwrap().into_raw(),
                                           Some(cb.get_callback()));
         let wallet_handle = cb.receive(Some(Duration::from_secs(50))).unwrap();
 
@@ -341,7 +384,6 @@ mod tests {
         assert_eq!(vcx_wallet_backup_backup(cb.command_handle,
                                      wallet_handle,
                                      CString::new("path").unwrap().into_raw(),
-                                     CString::new("key").unwrap().into_raw(),
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(50))).unwrap();
 
@@ -351,7 +393,7 @@ mod tests {
     fn test_vcx_wallet_backup_serialize_and_deserialize() {
         init!("true");
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let handle = wallet_backup::create_wallet_backup("abc").unwrap();
+        let handle = wallet_backup::create_wallet_backup("abc", "encryption_key").unwrap();
         assert_eq!(vcx_wallet_backup_serialize(cb.command_handle,
                                                  handle,
                                                  Some(cb.get_callback())), error::SUCCESS.code_num);
@@ -376,6 +418,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_wallet_backup_create(cb.command_handle,
                                           CString::new("test_create").unwrap().into_raw(),
+                                          CString::new("encryption key").unwrap().into_raw(),
                                           Some(cb.get_callback()));
         let wallet_handle = cb.receive(Some(Duration::from_secs(50))).unwrap();
 
@@ -385,6 +428,6 @@ mod tests {
                                                   wallet_handle,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
         let state = cb.receive(Some(Duration::from_secs(50))).unwrap();
-        assert_eq!(state, ::api::WalletBackupState::ProvisionRequested as u32)
+        assert_eq!(state, ::api::WalletBackupState::InitRequested as u32)
     }
 }

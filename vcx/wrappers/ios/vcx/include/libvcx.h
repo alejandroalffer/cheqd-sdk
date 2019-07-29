@@ -34,6 +34,8 @@ typedef unsigned int vcx_payment_handle_t;
 typedef unsigned int vcx_u32_t;
 typedef SInt32 VcxHandle;
 typedef const uint8_t vcx_data_t;
+typedef unsigned long long vcx_u64_t;
+typedef unsigned int vcx_wallet_backup_handle_t;
 
 typedef struct
 {
@@ -155,7 +157,7 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
 
 /** Deletes a connection, send an API call to agency to stop sending messages from this connection */
 vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t err));
-    
+
 /** Send a message to the specified connection
 ///
 /// #params
@@ -184,12 +186,61 @@ vcx_error_t vcx_connection_send_message(vcx_command_handle_t command_handle,
                                         const char *msg,
                                         const char *send_message_options,
                                         void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *msg_id));
-    
-/** Generate a signature for the specified data */
-vcx_error_t vcx_connection_sign_data(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, uint8_t const* data_raw, unsigned int data_len, void (*cb)(vcx_command_handle_t, vcx_error_t err, uint8_t const* signature_raw, unsigned int signature_len));
 
-/** Verify the signature is valid for the specified data */
-vcx_error_t vcx_connection_verify_signature(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, uint8_t const* data_raw, unsigned int data_len, uint8_t const* signature_raw, unsigned int signature_len, void (*cb)(vcx_command_handle_t, vcx_error_t err, vcx_bool_t valid));
+/// Generate a signature for the specified data
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to receive the message
+///
+/// data_raw: raw data buffer for signature
+///
+/// data:len: length of data buffer
+///
+/// cb: Callback that provides the generated signature
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_sign_data(vcx_command_handle_t command_handle,
+                                     vcx_connection_handle_t connection_handle,
+                                     vcx_data_t *data_raw,
+                                     vcx_u32_t data_len,
+                                     void(*cb)(vcx_command_handle_t command_handle,
+                                               vcx_error_t err,
+                                               vcx_data_t *signature_raw,
+                                               vcx_u32_t signature_len));
+
+/// Verify the signature is valid for the specified data
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to receive the message
+///
+/// data_raw: raw data buffer for signature
+///
+/// data_len: length of data buffer
+///
+/// signature_raw: raw data buffer for signature
+///
+/// signature_len: length of data buffer
+///
+/// cb: Callback that specifies whether the signature was valid or not
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_verify_signature(vcx_command_handle_t command_handle,
+                                            vcx_connection_handle_t connection_handle,
+                                            vcx_data_t *data_raw,
+                                            vcx_u32_t data_len,
+                                            vcx_data_t *signature_raw,
+                                            vcx_u32_t signature_len,
+                                            void (*cb)(vcx_command_handle_t command_handle,
+                                                       vcx_error_t err,
+                                                       vcx_bool_t valid));
 
 /**
  * credential issuer object
@@ -378,8 +429,11 @@ vcx_error_t vcx_wallet_send_tokens(vcx_command_handle_t chandle, vcx_payment_han
 /** Shutdown vcx wallet */
 vcx_error_t vcx_shutdown(vcx_bool_t deleteWallet);
 
-/** Get Messages of given status */
+/** Get Messages (Connections) of given status */
 vcx_error_t vcx_messages_download( vcx_command_handle_t command_handle, const char *message_status, const char *uids, const char *pw_dids, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *messages));
+
+/** Get Messages (Cloud Agent) of given status */
+vcx_error_t vcx_download_agent_messages( vcx_command_handle_t command_handle, const char *message_status, const char *uids, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *messages));
 
 /** Update Message status */
 vcx_error_t vcx_messages_update_status( vcx_command_handle_t command_handle, const char *message_status, const char *msg_json, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
@@ -406,6 +460,58 @@ vcx_error_t vcx_set_logger( const void* context,
                                           const char* file,
                                           vcx_u32_t line),
                             void (*flushFn)(const void*  context));
+
+/// Retrieve author agreement set on the Ledger
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides array of matching messages retrieved
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_get_ledger_author_agreement(vcx_u32_t command_handle,
+                                            void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+/// Set some accepted agreement as active.
+///
+/// As result of succesfull call of this funciton appropriate metadata will be appended to each write request by `indy_append_txn_author_agreement_meta_to_request` libindy call.
+///
+/// #Params
+/// text and version - (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if hash parameter is ommited.
+/// hash - (optional) hash on text and version. This parameter is required if text and version parameters are ommited.
+/// acc_mech_type - mechanism how user has accepted the TAA
+/// time_of_acceptance - UTC timestamp when user has accepted the TAA
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_set_active_txn_author_agreement_meta(const char *text, const char *version, const char *hash, const char *acc_mech_type, vcx_u64_t type_);
+
+vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id, const char *backup_key,
+              void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
+
+/// Wallet Backup to the Cloud
+vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path,
+                                      void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Checks for any state change and updates the the state attribute
+vcx_error_t vcx_wallet_backup_update_state(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+                                            void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Checks the message any state change and updates the the state attribute
+vcx_error_t vcx_wallet_backup_update_state_with_message(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *message,
+                                                        void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Takes the wallet backup object and returns a json string of all its attributes
+vcx_error_t vcx_wallet_backup_serialize(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+                                        void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+/// Takes a json string representing an wallet backup object and recreates an object matching the json
+vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, const char *wallet_backup_str,
+                                          void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
 
 /** For testing purposes only */
 void vcx_set_next_agency_response(int);
