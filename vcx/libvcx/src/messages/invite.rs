@@ -2,7 +2,7 @@ use settings;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
 use messages::payload::Thread;
-use utils::constants::{ DEFAULT_REQ_CONNECTION_VERSION, DEFAULT_ACK_CONNECTION_VERSION };
+use utils::constants::{ DEFAULT_ACK_CONNECTION_VERSION };
 use utils::httpclient;
 use utils::constants::*;
 use utils::uuid::uuid;
@@ -227,7 +227,7 @@ impl SendInviteBuilder {
             agent_vk: String::new(),
             public_did: None,
             thread: Thread::new(),
-            version: DEFAULT_REQ_CONNECTION_VERSION.clone()
+            version: settings::get_connecting_protocol_version()
         }
     }
 
@@ -269,7 +269,7 @@ impl SendInviteBuilder {
     pub fn version(&mut self, version: &Option<String>) -> VcxResult<&mut Self> {
         self.version = match version {
             Some(version) => settings::ProtocolTypes::from(version.to_string()),
-            None => DEFAULT_REQ_CONNECTION_VERSION.clone()
+            None => settings::get_connecting_protocol_version()
         };
         Ok(self)
     }
@@ -278,7 +278,10 @@ impl SendInviteBuilder {
         trace!("SendInvite::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return self.parse_response(SEND_INVITE_V2_RESPONSE.to_vec());
+            match self.version {
+                settings::ProtocolTypes::V1 => return self.parse_response(SEND_INVITE_RESPONSE.to_vec()),
+                settings::ProtocolTypes::V2 => return self.parse_response(SEND_INVITE_V2_RESPONSE.to_vec()),
+            }
         }
 
         let data = self.prepare_request()?;
@@ -374,10 +377,10 @@ impl AcceptInviteBuilder {
         Ok(self)
     }
 
-    pub fn version(&mut self, version: &Option<String>) -> VcxResult<&mut Self> {
+    pub fn version(&mut self, version: Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
         self.version = match version {
-            Some(version) => settings::ProtocolTypes::from(version.to_string()),
-            None => DEFAULT_ACK_CONNECTION_VERSION.clone()
+            Some(version) => version,
+            None => settings::get_connecting_protocol_version()
         };
         Ok(self)
     }
@@ -596,7 +599,7 @@ mod tests {
     #[test]
     fn test_parse_send_invite_v2_response() {
         init!("indy");
-        let (result, url) = SendInviteBuilder::create().parse_response(SEND_INVITE_V2_RESPONSE.to_vec()).unwrap();
+        let (result, url) = SendInviteBuilder::create().version(&Some("2.0".to_string())).unwrap().parse_response(SEND_INVITE_V2_RESPONSE.to_vec()).unwrap();
         let invite: InviteDetail = serde_json::from_str(INVITE_DETAIL_V2_STRING).unwrap();
     }
 
