@@ -1,9 +1,8 @@
 use messages::wallet_backup::prepare_message_for_agency_v2;
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, parse_message_from_response};
 use messages::message_type::{ MessageTypes };
 use error::{VcxResult, VcxErrorKind, VcxError};
 use utils::httpclient;
-use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BackupRestore {
@@ -54,21 +53,12 @@ impl BackupRestoreBuilder {
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<BackupRestored> {
         trace!("restore wallet >>>");
 
-        let response = self.parse_restore_response(&response)?;
+        let response = parse_message_from_response(&response)?;
 
         serde_json::from_str(&response)
             .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of BackupRestored"))
     }
 
-    fn parse_restore_response(&self, response: &Vec<u8>) -> VcxResult<String> {
-        let unpacked_msg = ::utils::libindy::crypto::unpack_message(&response[..])?;
-
-        let message: Value = ::serde_json::from_slice(unpacked_msg.as_slice())
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err)))?;
-
-        message["message"].as_str().map(|x| x.to_string())
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field on response"))
-    }
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
         let init_err = |e: &str| VcxError::from_msg(
             VcxErrorKind::RetrieveExportedWallet,

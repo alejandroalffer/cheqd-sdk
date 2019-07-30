@@ -1,10 +1,9 @@
 use settings;
 use messages::wallet_backup::prepare_message_for_agency_v2;
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, parse_message_from_response};
 use messages::message_type::{ MessageTypes };
 use error::{VcxResult, VcxErrorKind, VcxError};
 use utils::httpclient;
-use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RetrieveDeadDrop {
@@ -68,21 +67,12 @@ impl RetrieveDeadDropBuilder {
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<RetrievedDeadDropResult> {
         trace!("parse_retrieve_deaddrop_response >>>");
 
-        let response = self.parse_dead_drop_response(&response)?;
+        let response = parse_message_from_response(&response)?;
 
         serde_json::from_str(&response)
             .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of DeadDropRetrievedResult"))
     }
 
-    fn parse_dead_drop_response(&self, response: &Vec<u8>) -> VcxResult<String> {
-        let unpacked_msg = ::utils::libindy::crypto::unpack_message(&response[..])?;
-
-        let message: Value = ::serde_json::from_slice(unpacked_msg.as_slice())
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err)))?;
-
-        message["message"].as_str().map(|x| x.to_string())
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field on response"))
-    }
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
         let init_err = |e: &str| VcxError::from_msg(
             VcxErrorKind::RetrieveDeadDrop,
@@ -126,8 +116,11 @@ pub struct RetrievedDeadDropResult {
 mod tests {
     use super::*;
     use messages::{retrieve_dead_drop};
-    use wallet_backup::tests:: init_backup;
+    use wallet_backup::tests::init_backup;
     use utils::libindy::signus::create_and_store_my_did;
+    use wallet_backup::WalletBackup;
+    use utils::libindy::crypto::sign;
+    use rand::Rng;
 
     #[cfg(feature = "wallet_backup")]
     #[test]
@@ -204,13 +197,44 @@ mod tests {
 
         let wb = init_backup();
 
-        // Todo: Make sure invalid dead drop on agency has appropriate error response
-        assert!(retrieve_dead_drop()
+        let err = retrieve_dead_drop()
             .recovery_vk(&wb.recovery_vk).unwrap()
             .dead_drop_address(&(wb.dd_address + "B")).unwrap()
             .locator(&wb.locator).unwrap()
             .signature(&wb.sig).unwrap()
-            .send_secure().is_err());
+            .send_secure();
+
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "Error: Message failed in post\n  Caused by: POST failed with: {\"detail\":\"java.lang.RuntimeException: invalid address\",\"statusCode\":\"GNR-105\",\"statusMsg\":\"unhandled error\"}\n"
+        );
+        teardown!("agency");
+    }
+
+    #[cfg(feature = "wallet_backup")]
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_retrieve_dd_with_none_stored_returns_none() {
+        init!("agency");
+        ::utils::devsetup::tests::set_consumer();
+
+        let backup_key = rand::thread_rng()
+            .gen_ascii_chars()
+            .take(44)
+            .collect::<String>();
+
+        let wb = WalletBackup::create("a123", &backup_key).unwrap();
+        let sig = sign(&wb.keys.recovery_vk, wb.keys.dead_drop_address.locator.as_bytes()).unwrap();
+
+        let empty_backup = retrieve_dead_drop()
+            .recovery_vk(&wb.keys.recovery_vk).unwrap()
+            .dead_drop_address(&wb.keys.dead_drop_address.address).unwrap()
+            .locator(&wb.keys.dead_drop_address.locator).unwrap()
+            .signature(&sig).unwrap()
+            .send_secure().unwrap();
+
+        assert!(empty_backup.entry.is_none());
         teardown!("agency");
     }
 }

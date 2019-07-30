@@ -913,15 +913,9 @@ pub fn parse_message_from_response(response: &Vec<u8>) -> VcxResult<String> {
 }
 
 fn parse_response_from_agency_v2(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage>> {
-    let unpacked_msg = crypto::unpack_message(&response[..])?;
+    let message = parse_message_from_response(response)?;
 
-    let message: Value = ::serde_json::from_slice(unpacked_msg.as_slice())
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err)))?;
-
-    let message = message["message"].as_str()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field on response"))?;
-
-    let message: A2AMessage = serde_json::from_str(message)
+    let message: A2AMessage = serde_json::from_str(&message)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))?;
 
     Ok(vec![message])
