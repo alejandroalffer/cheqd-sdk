@@ -626,6 +626,10 @@ public abstract class LibVcx {
         /* Takes a json string representing an wallet backup object and recreates an object matching the json */
         public int vcx_wallet_backup_deserialize(int commandHandle, String walletBackupStr, Callback cb);
 
+        /** Retrieve Backup from the cloud and Import the encrypted file back into the wallet */
+        public int vcx_wallet_backup_restore(int command_handle, String config, Callback cb);
+
+
         /**
          * token object
          *

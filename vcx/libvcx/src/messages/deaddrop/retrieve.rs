@@ -1,27 +1,28 @@
 use settings;
-use messages::wallet_backup::{prepare_message_for_agency_v2};
+use messages::wallet_backup::prepare_message_for_agency_v2;
 use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
 use messages::message_type::{ MessageTypes };
 use error::{VcxResult, VcxErrorKind, VcxError};
 use utils::httpclient;
+use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RetrieveDeadDrop {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
-    #[serde(rename = "recoveryVk")]
+    #[serde(rename = "recoveryVerKey")]
     recovery_vk: String,
-    #[serde(rename = "deadDropAddress")]
-    dead_drop_address: String,
+    address: String,
     locator: String,
-    signature: String,
+    #[serde(rename = "locatorSignature")]
+    signature: Vec<u8>,
 }
 
 pub struct RetrieveDeadDropBuilder {
     recovery_vk: Option<String>,
     dead_drop_address: Option<String>,
     locator: Option<String>,
-    signature: Option<String>,
+    signature: Option<Vec<u8>>,
 }
 
 impl RetrieveDeadDropBuilder {
@@ -49,22 +50,39 @@ impl RetrieveDeadDropBuilder {
         Ok(self)
     }
 
-    pub fn signature(&mut self, sig: &str) -> VcxResult<&mut Self> {
-        self.signature = Some(sig.to_string());
+    pub fn signature(&mut self, sig: &[u8]) -> VcxResult<&mut Self> {
+        self.signature = Some(sig.to_vec());
         Ok(self)
     }
 
-    pub fn send_secure(&mut self) -> VcxResult<()> {
+    pub fn send_secure(&mut self) -> VcxResult<RetrievedDeadDropResult> {
         trace!("DeadDropRetrieve::send >>>");
 
         let data = self.prepare_request()?;
 
-        // Agency is no longer sending Specific Response - 200 is sufficient
-        httpclient::post_u8(&data)?;
+        let response = httpclient::post_u8(&data)?;
 
-        Ok(())
+        self.parse_response(response)
     }
 
+    fn parse_response(&self, response: Vec<u8>) -> VcxResult<RetrievedDeadDropResult> {
+        trace!("parse_retrieve_deaddrop_response >>>");
+
+        let response = self.parse_dead_drop_response(&response)?;
+
+        serde_json::from_str(&response)
+            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of DeadDropRetrievedResult"))
+    }
+
+    fn parse_dead_drop_response(&self, response: &Vec<u8>) -> VcxResult<String> {
+        let unpacked_msg = ::utils::libindy::crypto::unpack_message(&response[..])?;
+
+        let message: Value = ::serde_json::from_slice(unpacked_msg.as_slice())
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err)))?;
+
+        message["message"].as_str().map(|x| x.to_string())
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field on response"))
+    }
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
         let init_err = |e: &str| VcxError::from_msg(
             VcxErrorKind::RetrieveDeadDrop,
@@ -77,47 +95,44 @@ impl RetrieveDeadDropBuilder {
                     A2AMessageKinds::RetrieveDeadDrop,
                 )),
                 recovery_vk: self.recovery_vk.clone().ok_or(init_err("recovery_key"))?,
-                dead_drop_address: self.dead_drop_address.clone().ok_or(init_err("dead_drop_address"))?,
+                address: self.dead_drop_address.clone().ok_or(init_err("dead_drop_address"))?,
                 locator: self.locator.clone().ok_or(init_err("locator"))?,
                 signature: self.signature.clone().ok_or(init_err("signature"))?,
             }
         ));
 
-        let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
+        let agency_did = settings::get_config_value(settings::CONFIG_AGENCY_DID)?;
+        let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
+        let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
-        prepare_message_for_agency_v2(&message, &agency_did)
+        prepare_message_for_agency_v2(&message, &agency_did, &agency_vk, &my_vk)
     }
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
-struct DeadDropRetrievedEntry {
-    address: String,
-    data: Vec<u8>
+pub struct DeadDropRetrievedEntry {
+    pub address: String,
+    pub data: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RetrievedDeadDropResult {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
-    entry: Option<DeadDropRetrievedEntry>
+    pub entry: Option<DeadDropRetrievedEntry>
 }
 
-#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
     use messages::{retrieve_dead_drop};
-//    use messages::{wallet_backup_init, RemoteMessageType, retrieve_dead_drop};
-//    use std::thread;
-//    use std::time::Duration;
+    use wallet_backup::tests:: init_backup;
     use utils::libindy::signus::create_and_store_my_did;
-//    use messages::wallet_backup::received_expected_message;
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_dead_drop_retrieve() {
         init!("ledger");
-        let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
         let (agent_did, agent_vk) = create_and_store_my_did(Some(::utils::constants::MY2_SEED)).unwrap();
         let (my_did, my_vk) = create_and_store_my_did(Some(::utils::constants::MY1_SEED)).unwrap();
         let (agency_did, agency_vk) = create_and_store_my_did(Some(::utils::constants::MY3_SEED)).unwrap();
@@ -129,7 +144,7 @@ mod tests {
         let msg = retrieve_dead_drop()
             .recovery_vk(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
             .dead_drop_address(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
-            .signature(&settings::CONFIG_REMOTE_TO_SDK_DID).unwrap()
+            .signature(&settings::CONFIG_REMOTE_TO_SDK_DID.as_bytes()).unwrap()
             .locator(&settings::CONFIG_REMOTE_TO_SDK_DID).unwrap()
             .prepare_request()
             .unwrap();
@@ -137,47 +152,65 @@ mod tests {
 
     }
 
-//    #[cfg(feature = "agency")]
-//    #[cfg(feature = "pool_tests")]
-//    #[test]
-//    fn test_backup_provision_real() {
-//        init!("agency");
-//        ::utils::devsetup::tests::set_consumer();
-//
-//        assert!(retrieve_dead_drop()
-//            .recovery_vk(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
-//            .dead_drop_address(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
-//            .cloud_address(&settings::CONFIG_REMOTE_TO_SDK_DID.as_bytes().to_vec()).unwrap()
-//            .send_secure().is_ok());
-//        teardown!("agency")
-//    }
-//
-//    #[cfg(feature = "agency")]
-//    #[cfg(feature = "pool_tests")]
-//    #[test]
-//    fn test_received_provisioned_response_true() {
-//        init!("agency");
-//        ::utils::devsetup::tests::set_consumer();
-//
-//        wallet_backup_init()
-//            .recovery_vk(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
-//            .dead_drop_address(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
-//            .cloud_address(&settings::CONFIG_REMOTE_TO_SDK_DID.as_bytes().to_vec()).unwrap()
-//            .send_secure().unwrap();
-//        thread::sleep(Duration::from_millis(2000));
-//
-//        assert_eq!(received_expected_message(None, RemoteMessageType::WalletBackupProvisioned).unwrap(), true);
-//        teardown!("agency")
-//    }
-//
-//    #[cfg(feature = "agency")]
-//    #[cfg(feature = "pool_tests")]
-//    #[test]
-//    fn test_received_provisioned_response_false() {
-//        init!("agency");
-//        ::utils::devsetup::tests::set_consumer();
-//
-//        assert_eq!(received_expected_message(None, RemoteMessageType::WalletBackupProvisioned).unwrap(), false);
-//        teardown!("agency")
-//    }
+    #[cfg(feature = "wallet_backup")]
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_retrieve_dead_drop_real() {
+        init!("agency");
+        ::utils::devsetup::tests::set_consumer();
+
+        let wb = init_backup();
+
+        assert!(retrieve_dead_drop()
+            .recovery_vk(&wb.recovery_vk).unwrap()
+            .dead_drop_address(&wb.dd_address).unwrap()
+            .locator(&wb.locator).unwrap()
+            .signature(&wb.sig).unwrap()
+            .send_secure().is_ok());
+        teardown!("agency");
+    }
+
+    #[cfg(feature = "wallet_backup")]
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_retrieved_dead_drop_result_real() {
+        init!("agency");
+        ::utils::devsetup::tests::set_consumer();
+
+        let wb = init_backup();
+
+        let dead_drop_result = retrieve_dead_drop()
+            .recovery_vk(&wb.recovery_vk).unwrap()
+            .dead_drop_address(&wb.dd_address).unwrap()
+            .locator(&wb.locator).unwrap()
+            .signature(&wb.sig).unwrap()
+            .send_secure().unwrap();
+
+        let entry = dead_drop_result.entry.unwrap();
+        assert_eq!(entry.address, wb.dd_address.clone());
+        assert_eq!(base64::decode(&entry.data).unwrap(), wb.cloud_address.clone());
+        teardown!("agency");
+    }
+
+    #[cfg(feature = "wallet_backup")]
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_retrieved_dead_drop_fails_with_invalid_address() {
+        init!("agency");
+        ::utils::devsetup::tests::set_consumer();
+
+        let wb = init_backup();
+
+        // Todo: Make sure invalid dead drop on agency has appropriate error response
+        assert!(retrieve_dead_drop()
+            .recovery_vk(&wb.recovery_vk).unwrap()
+            .dead_drop_address(&(wb.dd_address + "B")).unwrap()
+            .locator(&wb.locator).unwrap()
+            .signature(&wb.sig).unwrap()
+            .send_secure().is_err());
+        teardown!("agency");
+    }
 }

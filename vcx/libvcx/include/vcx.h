@@ -1809,6 +1809,17 @@ vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, c
 //                                             wallet_backup_str: *const c_char,
 //                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, handle: u32)>) -> u32 {  
 
+// Retrieves Cloud Backup and imports its content
+// according to fields provided in import_config
+//
+// config: "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}"
+// exported_wallet_path: Path of the file that contains exported wallet content
+// backup_key: Key used when creating the backup of the wallet (For encryption/decrption)
+// cb: Callback that provides the success/failure of the api call.
+// #Returns
+// Error code - success indicates that the api call was successfully created and execution
+// is scheduled to begin in a separate thread.
+vcx_error_t vcx_wallet_backup_restore(vcx_command_handle_t command_handle, const char *config, void (*cb)(vcx_command_handle_t, vcx_error_t));
 #ifdef __cplusplus
 } // extern "C"
 #endif

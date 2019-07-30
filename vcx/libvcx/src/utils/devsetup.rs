@@ -109,14 +109,19 @@ pub mod tests {
     pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";*/
 
     /* dummy */
-    pub const AGENCY_ENDPOINT: &'static str = "https://eas-team1.pdev.evernym.com";
+    pub const AGENCY_ENDPOINT: &'static str = "https://eas-team2.pdev.evernym.com";
     pub const AGENCY_DID: &'static str = "CV65RFpeCtPu82hNF9i61G";
     pub const AGENCY_VERKEY: &'static str = "7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2";
 
-    pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team1.pdev.evernym.com";
+    pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team2.pdev.evernym.com";
     pub const C_AGENCY_DID: &'static str = "TGLBMTcW9fHdkSqown9jD8";
     pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR";
 
+    pub fn delete_connected_wallets(wallet_name: &str) {
+        ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, wallet_name));
+        ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, wallet_name));
+        ::utils::libindy::wallet::tests::delete_test_wallet(wallet_name);
+    }
     pub fn set_trustee_did() {
         let (my_did, my_vk) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
@@ -235,10 +240,6 @@ pub mod tests {
         use indy::ledger;
         use futures::Future;
 
-        settings::clear_config();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
-        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         let enterprise_wallet_name = format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
         let seed1 = create_new_seed();
         let config = json!({

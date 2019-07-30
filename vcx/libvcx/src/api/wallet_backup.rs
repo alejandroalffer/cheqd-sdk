@@ -3,7 +3,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use error::prelude::*;
-use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state, from_string, to_string, update_state, recover_wallet};
+use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state, from_string, to_string, update_state, restore_wallet};
 use messages::get_message::Message;
 use std::ptr;
 
@@ -294,26 +294,27 @@ pub extern fn vcx_wallet_backup_deserialize(command_handle: u32,
 
 /// Requests a recovery of a backup previously stored with a cloud agent
 ///
+/// config: "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":"","key_derivation":""}"
 /// backup_key: Key used when creating the backup of the wallet (For encryption/decrption)
 /// cb: Callback that provides the success/failure of the api call.
 /// #Returns
 /// Error code - success indicates that the api call was successfully created and execution
 /// is scheduled to begin in a separate thread.
 #[no_mangle]
-pub extern fn vcx_wallet_backup_recovery(command_handle: u32,
-                                         backup_key: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+pub extern fn vcx_wallet_backup_restore(command_handle: u32,
+                                        config: *const c_char,
+                                        cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
     info!("vcx_wallet_backup_recovery >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(backup_key,  VcxErrorKind::InvalidOption);
+    check_useful_c_str!(config,  VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_backup_recovery(command_handle: {}, config: ****)",
            command_handle);
 
     spawn(move|| {
         trace!("vcx_wallet_backup_recovery(command_handle: {}, config: ****)", command_handle);
-        match recover_wallet(&backup_key) {
+        match restore_wallet(&config) {
             Ok(_) => {
                 trace!("vcx_wallet_backup_recovery(command_handle: {}, rc: {})", command_handle, error::SUCCESS.message);
                 cb(command_handle, error::SUCCESS.code_num);
@@ -341,6 +342,7 @@ mod tests {
     use serde_json::Value;
     use wallet_backup;
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_vcx_wallet_backup_create() {
         init!("true");
@@ -353,6 +355,7 @@ mod tests {
         assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_vcx_wallet_backup_create_fails() {
         init!("true");
@@ -369,6 +372,7 @@ mod tests {
         assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_wallet_backup() {
         init!("true");
@@ -389,6 +393,7 @@ mod tests {
 
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_vcx_wallet_backup_serialize_and_deserialize() {
         init!("true");
@@ -411,6 +416,7 @@ mod tests {
         assert!(handle > 0);
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_vcx_wallet_backup_update_state() {
         init!("true");

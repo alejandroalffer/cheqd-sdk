@@ -354,4 +354,30 @@ public class WalletApi extends VcxJava.API {
         return future;
 
     }
+
+    private static Callback vcxBackupRestore = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, int importHandle) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], importHandle = [" + importHandle + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            Integer result = importHandle;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<Integer> restoreWalletBackup(
+            String config
+    ) throws VcxException {
+        ParamGuard.notNull(config, "config");
+        logger.debug("restoreBackup() called with: config = [****]");
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_wallet_backup_restore(commandHandle, config, vcxBackupRestore);
+        checkResult(result);
+
+        return future;
+    }
+
 }

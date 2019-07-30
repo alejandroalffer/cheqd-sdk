@@ -9,7 +9,7 @@ use utils::httpclient;
 pub struct BackupInitParams {
     #[serde(rename = "recoveryVk")]
     recovery_vk: String,
-    #[serde(rename = "deadDropAddress")]
+    #[serde(rename = "ddAddress")]
     dead_drop_address: String,
     #[serde(rename = "cloudAddress")]
     cloud_address: Vec<u8>,
@@ -86,8 +86,10 @@ impl BackupInitBuilder {
         ));
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
+        let agency_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?;
+        let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
-        prepare_message_for_agency_v2(&message, &agency_did)
+        prepare_message_for_agency_v2(&message, &agency_did, &agency_vk, &my_vk)
     }
 }
 
@@ -97,7 +99,6 @@ pub struct BackupProvisioned {
     msg_type: MessageTypes,
 }
 
-#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -107,6 +108,7 @@ mod tests {
     use utils::libindy::signus::create_and_store_my_did;
     use messages::wallet_backup::received_expected_message;
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_wallet_backup_provision() {
         init!("ledger");
@@ -129,6 +131,7 @@ mod tests {
 
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -144,6 +147,7 @@ mod tests {
         teardown!("agency")
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -162,6 +166,7 @@ mod tests {
         teardown!("agency")
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]

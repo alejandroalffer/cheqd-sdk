@@ -1235,6 +1235,22 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 }
 
 
+- (void)restoreWallet:(NSString *)config
+           completion:(void (^)(NSError *error))completion {
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_wallet_backup_restore(handle, [config cStringUsingEncoding:NSUTF8StringEncoding], VcxWrapperCommonCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret]);
+       });
+   }
+}
+
 /// Retrieve author agreement set on the Ledger
 ///
 /// #params
