@@ -21,7 +21,6 @@ lazy_static! {
     static ref WALLET_BACKUP_MAP: ObjectCache<WalletBackup> = Default::default();
 }
 
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CloudAddress {
     version: Option<String>,
@@ -30,26 +29,26 @@ pub struct CloudAddress {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct DeadDropAddress {
-    address: String,
-    locator: String,
+pub struct DeadDropAddress {
+    pub address: String,
+    pub locator: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct WalletBackupKeys {
-    wallet_encryption_key: String,
-    recovery_vk: String,
-    dead_drop_address: DeadDropAddress,
-    cloud_address: Vec<u8>,
+pub struct WalletBackupKeys {
+    pub wallet_encryption_key: String,
+    pub recovery_vk: String,
+    pub dead_drop_address: DeadDropAddress,
+    pub cloud_address: Vec<u8>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct WalletBackup {
+pub struct WalletBackup {
     source_id: String,
     state: WalletBackupState,
     to_did: String, // user agent did
     uuid: Option<String>,
-    keys: WalletBackupKeys,
+    pub keys: WalletBackupKeys,
     has_stored_backup: bool,
 }
 
@@ -104,7 +103,7 @@ impl WalletBackup {
         Ok(self.get_state())
     }
 
-    fn create(source_id: &str, wallet_encryption_key: &str) -> VcxResult<WalletBackup> {
+    pub fn create(source_id: &str, wallet_encryption_key: &str) -> VcxResult<WalletBackup> {
         Ok(WalletBackup {
             source_id: source_id.to_string(),
             state: WalletBackupState::Uninitialized,
@@ -145,6 +144,8 @@ impl WalletBackup {
         if settings::test_indy_mode_enabled() { return Ok(Vec::new()) }
 
         let path = Path::new(exported_wallet_path);
+        fs::remove_file(path).unwrap_or(());
+
         export(get_wallet_handle(), &path, backup_key)?;
         let data = fs::read(&path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
         fs::remove_file(path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
@@ -567,6 +568,17 @@ pub mod tests {
 
         #[cfg(feature = "wallet_backup")]
         #[test]
+        fn retrieve_exported_wallet_success_with_file_already_created() {
+            init!("true");
+            File::create(FILE_PATH).and_then(|mut f| f.write_all(&vec![1, 2, 3])).unwrap();
+
+            setup_wallet_env(settings::DEFAULT_WALLET_NAME).unwrap();
+
+            assert!(WalletBackup::_retrieve_exported_wallet(BACKUP_KEY, FILE_PATH).is_ok());
+        }
+
+        #[cfg(feature = "wallet_backup")]
+        #[test]
         fn backup_wallet_fails_with_invalid_handle() {
             init!("true");
             assert_eq!(backup_wallet(0, FILE_PATH).unwrap_err().kind(), VcxErrorKind::InvalidHandle)
@@ -619,7 +631,41 @@ pub mod tests {
             ::utils::devsetup::tests::set_consumer();
 
             restore_wallet(&restore_config().to_string().unwrap()).unwrap();
+
+            let options = json!({
+                "retrieveType": true,
+                "retrieveValue": true,
+                "retrieveTags": true
+            }).to_string();
+            let record = wallet::get_record(RECORD_TYPE, ID, &options).unwrap();
+            let record: serde_json::Value = serde_json::from_str(&record).unwrap();
+            assert_eq!(&record, &json!({"value":RECORD_VALUE, "type": RECORD_TYPE, "id": ID, "tags": {}}));
+
             wallet::delete_wallet(&restore_config().wallet_name, None, None, None).unwrap();
+            teardown!("agency");
+        }
+
+        #[cfg(feature = "wallet_backup")]
+        #[cfg(feature = "agency")]
+        #[cfg(feature = "pool_tests")]
+        #[test]
+        fn restore_wallet_fails_with_no_backup() {
+            init!("agency");
+            ::utils::devsetup::tests::set_consumer();
+
+            wallet::add_record(RECORD_TYPE, ID, RECORD_VALUE, None).unwrap();
+            let wb = init_backup();
+            thread::sleep(Duration::from_millis(2000));
+            cleanup_local_env();
+
+            init!("agency");
+            ::utils::devsetup::tests::set_consumer();
+
+            let rc = restore_wallet(&restore_config().to_string().unwrap());
+            assert_eq!(
+                rc.unwrap_err().to_string(),
+                "Error: Message failed in post\n  Caused by: POST failed with: {\"statusCode\":\"GNR-111\",\"statusMsg\":\"No Wallet Backup available to download\"}\n"
+            );
             teardown!("agency");
         }
     }
