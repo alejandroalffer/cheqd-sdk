@@ -1050,7 +1050,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 }
 
 - (void)downloadAgentMessages:(NSString *)messageStatus
-                        uid_s:(NSString *)uid_s              
+                        uid_s:(NSString *)uid_s
                         completion:(void (^)(NSError *error, NSString* messages))completion{
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -1110,7 +1110,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
 - (void) createWalletBackup:(NSString *)sourceID
                  backupKey:(NSString *)backupKey
-                 completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion{
+                 completion:(void (^)(NSError *error, NSInteger walletBackupHandle))completion{
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     const char * source_id = [sourceID cStringUsingEncoding:NSUTF8StringEncoding];
@@ -1216,7 +1216,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 //vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, const char *wallet_backup_str,
 //                                          void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
 - (void) deserializeBackupWallet:(NSString *) walletBackupStr
-              completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion {
+              completion:(void (^)(NSError *error, NSInteger walletBackupHandle))completion {
 
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -1293,14 +1293,14 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                                withVersion:(NSString *)version
                                   withHash:(NSString *)hash
                              withMechanism:(NSString *)mechanism
-                             withTimestamp:(NSNumber *)timestamp
+                             withTimestamp:(long)timestamp
 {
     return vcx_set_active_txn_author_agreement_meta(
         [text UTF8String],
         [version UTF8String],
         [hash UTF8String],
         [mechanism UTF8String],
-        [timestamp longLongValue]
+        timestamp
     );
 
 }

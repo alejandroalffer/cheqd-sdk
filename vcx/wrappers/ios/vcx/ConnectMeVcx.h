@@ -237,10 +237,10 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                                withVersion:(NSString *)version
                                   withHash:(NSString *)hash
                              withMechanism:(NSString *)mechanism
-                             withTimestamp:(NSNumber *)timestamp;
+                             withTimestamp:(long)timestamp;
 - (void) createWalletBackup:(NSString *)sourceID
                   backupKey:(NSString *)backupKey
-                 completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion;
+                 completion:(void (^)(NSError *error, NSInteger walletBackupHandle))completion;
 
 - (void) backupWalletBackup:(vcx_wallet_backup_handle_t) walletBackupHandle
                        path:(NSString *)path
@@ -258,12 +258,12 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
               completion:(void (^)(NSError *error, NSString *data))completion;
 
 - (void) deserializeBackupWallet:(NSString *) walletBackupStr
-                completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion;
+                completion:(void (^)(NSError *error, NSInteger walletBackupHandle))completion;
 
 
 - (void)restoreWallet:(NSString *)config
            completion:(void (^)(NSError *error))completion;
-                
+
 @end
 
 #endif /* init_h */
