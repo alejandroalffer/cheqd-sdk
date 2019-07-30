@@ -43,6 +43,7 @@ pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
 pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
 pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
 pub static CONFIG_TXN_AUTHOR_AGREEMENT: &'static str = "author_agreement";
+pub static CONFIG_USE_LATEST_PROTOCOLS: &'static str = "use_latest_protocols";
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
@@ -64,6 +65,7 @@ pub static MASK_VALUE: &str = "********";
 pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "RAW";
 pub static DEFAULT_PAYMENT_PLUGIN: &str = "libsovtoken.so";
 pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "sovtoken_init";
+pub static DEFAULT_USE_LATEST_PROTOCOLS: &str = "false";
 pub static DEFAULT_PAYMENT_METHOD: &str = "sov";
 pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
@@ -112,6 +114,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), DEFAULT_WALLET_BACKUP_KEY.to_string());
     settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
     settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
+    settings.insert(CONFIG_USE_LATEST_PROTOCOLS.to_string(), DEFAULT_USE_LATEST_PROTOCOLS.to_string());
 
     error::SUCCESS.code_num
 }
@@ -285,6 +288,14 @@ pub fn get_wallet_credentials(storage_creds: Option<&str>) -> String {
     if let Some(_creds) = storage_creds { credentials["storage_credentials"] = serde_json::from_str(&_creds).unwrap(); }
 
     credentials.to_string()
+}
+
+pub fn get_connecting_protocol_version() -> ProtocolTypes {
+    let protocol = get_config_value(CONFIG_USE_LATEST_PROTOCOLS).unwrap_or(DEFAULT_USE_LATEST_PROTOCOLS.to_string());
+    match protocol.as_ref() {
+        "true" | "TRUE" | "True" => return ProtocolTypes::V2,
+        "false" | "FALSE" | "False" | _ => return ProtocolTypes::V1,
+    }
 }
 
 pub fn validate_payment_method() -> VcxResult<()> {

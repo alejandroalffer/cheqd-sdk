@@ -2,8 +2,9 @@ use settings;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV2 };
 use utils::httpclient;
-use utils::constants::{DEFAULT_CREATE_KEYS_VERSION, CREATE_KEYS_RESPONSE, CREATE_KEYS_V2_RESPONSE};
+use utils::constants::{CREATE_KEYS_RESPONSE, CREATE_KEYS_V2_RESPONSE};
 use error::prelude::*;
+use settings::ProtocolTypes;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -60,7 +61,7 @@ impl CreateKeyBuilder {
         CreateKeyBuilder {
             for_did: String::new(),
             for_verkey: String::new(),
-            version: DEFAULT_CREATE_KEYS_VERSION.clone()
+            version: settings::get_connecting_protocol_version()
         }
     }
 
@@ -76,10 +77,10 @@ impl CreateKeyBuilder {
         Ok(self)
     }
 
-    pub fn version(&mut self, version: &Option<String>) -> VcxResult<&mut Self> {
+    pub fn version(&mut self, version: Option<ProtocolTypes>) -> VcxResult<&mut Self> {
         self.version = match version {
-            Some(version) => settings::ProtocolTypes::from(version.to_string()),
-            None => DEFAULT_CREATE_KEYS_VERSION.clone()
+            Some(version) => version,
+            None => settings::get_connecting_protocol_version(),
         };
         Ok(self)
     }
@@ -179,7 +180,7 @@ mod tests {
 
         let mut builder = create_keys();
 
-        let (for_did, for_verkey) = builder.version(&Some("1.0".to_string())).unwrap().parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
+        let (for_did, for_verkey) = builder.version(Some(ProtocolTypes::V1)).unwrap().parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
 
         assert_eq!(for_did, "U5LXs4U7P9msh647kToezy");
         assert_eq!(for_verkey, "FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq");
@@ -189,9 +190,9 @@ mod tests {
     fn test_parse_create_keys_v2_response() {
         init!("true");
 
-        let builder = create_keys();
+        let mut builder = create_keys();
 
-        let (for_did, for_verkey) = builder.parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()).unwrap();
+        let (for_did, for_verkey) = builder.version(Some(ProtocolTypes::V2)).unwrap().parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()).unwrap();
 
         assert_eq!(for_did, "MNepeSWtGfhnv8jLB1sFZC");
         assert_eq!(for_verkey, "C73MRnns4qUjR5N4LRwTyiXVPKPrA5q4LCT8PZzxVdt9");

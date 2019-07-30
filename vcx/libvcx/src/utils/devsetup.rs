@@ -107,13 +107,13 @@ pub mod tests {
     pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";*/
 
     /* dummy */
-    pub const AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
-    pub const AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
-    pub const AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
+    pub const AGENCY_ENDPOINT: &'static str = "https://eas-team1.pdev.evernym.com";
+    pub const AGENCY_DID: &'static str = "CV65RFpeCtPu82hNF9i61G";
+    pub const AGENCY_VERKEY: &'static str = "7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2";
 
-    pub const C_AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
-    pub const C_AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
-    pub const C_AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
+    pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team1.pdev.evernym.com";
+    pub const C_AGENCY_DID: &'static str = "TGLBMTcW9fHdkSqown9jD8";
+    pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR";
 
     pub fn delete_connected_wallets(wallet_name: &str) {
         ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, wallet_name));
