@@ -50,8 +50,10 @@ impl BackupBuilder {
         ));
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
+        let agency_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?;
+        let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
-        prepare_message_for_agency_v2(&message, &agency_did)
+        prepare_message_for_agency_v2(&message, &agency_did, &agency_vk, &my_vk)
     }
 }
 

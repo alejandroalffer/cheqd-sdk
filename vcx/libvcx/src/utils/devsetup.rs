@@ -29,15 +29,13 @@ macro_rules! init {
             ::utils::devsetup::tests::setup_ledger_env();
         },
         "agency" => {
-            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
-            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::devsetup::tests::delete_connected_wallets(::settings::DEFAULT_WALLET_NAME);
             ::utils::libindy::pool::tests::delete_test_pool();
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
             ::utils::devsetup::tests::setup_local_env("1.0");
         },
         "agency_2_0" => {
-            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
-            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::devsetup::tests::delete_connected_wallets(::settings::DEFAULT_WALLET_NAME);
             ::utils::libindy::pool::tests::delete_test_pool();
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
             ::utils::devsetup::tests::setup_local_env("2.0");
@@ -117,6 +115,11 @@ pub mod tests {
     pub const C_AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
     pub const C_AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
 
+    pub fn delete_connected_wallets(wallet_name: &str) {
+        ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, wallet_name));
+        ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, wallet_name));
+        ::utils::libindy::wallet::tests::delete_test_wallet(wallet_name);
+    }
     pub fn set_trustee_did() {
         let (my_did, my_vk) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
@@ -235,10 +238,6 @@ pub mod tests {
         use indy::ledger;
         use futures::Future;
 
-        settings::clear_config();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
-        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         let enterprise_wallet_name = format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
         let seed1 = create_new_seed();
         let config = json!({

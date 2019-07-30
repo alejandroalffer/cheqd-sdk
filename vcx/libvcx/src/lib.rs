@@ -38,6 +38,7 @@ extern crate failure;
 
 extern crate rmp_serde;
 extern crate json;
+extern crate rmpv;
 
 #[macro_use]
 pub mod utils;

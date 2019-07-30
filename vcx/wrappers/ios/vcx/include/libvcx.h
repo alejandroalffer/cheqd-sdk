@@ -513,6 +513,10 @@ vcx_error_t vcx_wallet_backup_serialize(vcx_command_handle_t command_handle, vcx
 vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, const char *wallet_backup_str,
                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
 
+/** Retrieve cloud backup and Import an encrypted file back into the wallet */
+vcx_error_t vcx_wallet_backup_restore(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
+
+
 /** For testing purposes only */
 void vcx_set_next_agency_response(int);
 #ifdef __cplusplus

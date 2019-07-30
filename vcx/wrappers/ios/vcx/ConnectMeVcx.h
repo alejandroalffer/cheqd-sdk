@@ -259,6 +259,11 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
 - (void) deserializeBackupWallet:(NSString *) walletBackupStr
                 completion:(void (^)(NSError *error, NSNumber *walletBackupHandle))completion;
+
+
+- (void)restoreWallet:(NSString *)config
+           completion:(void (^)(NSError *error))completion;
+                
 @end
 
 #endif /* init_h */

@@ -4,15 +4,18 @@ use messages;
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
-use utils::libindy::wallet::{export, get_wallet_handle};
+use utils::libindy::wallet::{export, get_wallet_handle, RestoreWalletConfigs};
 use utils::libindy::crypto::{create_key, sign, pack_message};
 use utils::constants::{DEFAULT_SERIALIZE_VERSION};
 use std::path::Path;
 use std::fs;
-use messages::RemoteMessageType;
+use messages::{RemoteMessageType, retrieve_dead_drop, parse_message_from_response, wallet_backup_restore};
 use messages::wallet_backup::received_expected_message;
 use messages::get_message::Message;
 use utils::openssl::sha256_hex;
+use std::fs::File;
+use std::io::Write;
+use utils::libindy::wallet;
 
 lazy_static! {
     static ref WALLET_BACKUP_MAP: ObjectCache<WalletBackup> = Default::default();
@@ -20,7 +23,8 @@ lazy_static! {
 
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct CloudAddress {
+pub struct CloudAddress {
+    version: Option<String>,
     agent_did: String,
     agent_vk: String,
 }
@@ -168,7 +172,6 @@ pub fn create_wallet_backup(source_id: &str, wallet_encryption_key: &str) -> Vcx
 
     let mut wb = WalletBackup::create(source_id, wallet_encryption_key)?;
 
-    println!("keys: {:?}", wb.keys);
     wb.init_backup()?;
 
     WALLET_BACKUP_MAP.add(wb)
@@ -176,14 +179,19 @@ pub fn create_wallet_backup(source_id: &str, wallet_encryption_key: &str) -> Vcx
 }
 
 fn gen_keys(wallet_encryption_key: &str) -> VcxResult<WalletBackupKeys> {
-    let vk_seed = sha256_hex(wallet_encryption_key.as_bytes());
-    let vk = &create_key(Some(&vk_seed), None)?;
+    let vk = &gen_vk(wallet_encryption_key)?;
+
     Ok(WalletBackupKeys {
         wallet_encryption_key: wallet_encryption_key.to_string(),
         recovery_vk: vk.to_string(),
         dead_drop_address: gen_deaddrop_address(vk)?,
         cloud_address: gen_cloud_address(vk)?,
     })
+}
+
+fn gen_vk(wallet_encryption_key: &str) -> VcxResult<String> {
+    let vk_seed = sha256_hex(wallet_encryption_key.as_bytes());
+    create_key(Some(&vk_seed), None)
 }
 
 fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
@@ -199,6 +207,7 @@ fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
 fn gen_cloud_address(vk: &str) -> VcxResult<Vec<u8>> {
     trace!("gen_cloud_address >>> vk: {}", vk);
     let cloud_address = CloudAddress {
+        version: None,
         agent_did: settings::get_config_value(::settings::CONFIG_REMOTE_TO_SDK_DID)?,
         agent_vk: settings::get_config_value(::settings::CONFIG_REMOTE_TO_SDK_VERKEY)?
     };
@@ -219,8 +228,59 @@ pub fn backup_wallet(handle: u32, exported_wallet_path: &str) -> VcxResult<u32> 
     })
 }
 
-pub fn recover_wallet(backup_key: &str) -> VcxResult<u32> {
-    Ok(1)
+pub fn restore_wallet(config: &str) -> VcxResult<()> {
+    let (restore_config, backup) = restore_from_cloud(config)?;
+
+    reconstitute_restored_wallet(config, &restore_config, &backup)?;
+
+    Ok(())
+}
+
+fn restore_from_cloud(config: &str) -> VcxResult<(RestoreWalletConfigs, Vec<u8>)> {
+    let recovery_config = RestoreWalletConfigs::from_str(config)?;
+    let recovery_vk  = gen_vk(&recovery_config.backup_key)?;
+    let cloud_address = recover_dead_drop(&recovery_vk)?;
+    let backup = wallet_backup_restore()
+        .recovery_vk(&recovery_vk)?
+        .agent_did(&cloud_address.agent_did)?
+        .agent_vk(&cloud_address.agent_vk)?
+        .send_secure()?;
+
+    let encrypted_wallet = base64::decode(&backup.wallet)
+        .map_err(|e| VcxError::from_msg(VcxErrorKind::RetrieveExportedWallet, format!("Encrypted wallet not base64 encoded: {:?}", e)))?;
+
+    Ok((recovery_config, encrypted_wallet))
+}
+
+fn reconstitute_restored_wallet(config: &str, recovery_config: &RestoreWalletConfigs, encrypted_wallet: &[u8]) -> VcxResult<()> {
+    File::create(&recovery_config.exported_wallet_path).and_then(|mut f| f.write_all(encrypted_wallet))
+        .map_err(|e| VcxError::from_msg(VcxErrorKind::IOError, format!("Failed writing restored encrypted wallet to fs: {:?}", e)))?;
+
+    wallet::import(config)?;
+
+    let path = Path::new(&recovery_config.exported_wallet_path);
+    fs::remove_file(path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
+
+    wallet::open_wallet(&recovery_config.wallet_name, None, None, None)?;
+    Ok(())
+}
+
+pub fn recover_dead_drop(vk: &str) -> VcxResult<CloudAddress> {
+    let dead_drop_info = gen_deaddrop_address(&vk)?;
+    let locator_sig = sign(&vk, dead_drop_info.locator.as_bytes())?;
+
+    let dead_drop_result = retrieve_dead_drop()
+        .recovery_vk(&vk).unwrap()
+        .dead_drop_address(&dead_drop_info.address).unwrap()
+        .locator(&dead_drop_info.locator).unwrap()
+        .signature(&locator_sig).unwrap()
+        .send_secure()?;
+
+    let entry = dead_drop_result.entry.ok_or(VcxErrorKind::RetrieveDeadDrop)?;
+    let encrypted_ca = base64::decode(&entry.data)
+        .map_err(|_| VcxError::from_msg(VcxErrorKind::RetrieveDeadDrop, "Cloud Address not base64 encoded"))?;
+
+    CloudAddress::from_str(&parse_message_from_response(&encrypted_ca)?)
 }
 
 pub fn is_valid_handle(handle: u32) -> bool { WALLET_BACKUP_MAP.has_handle(handle) }
@@ -274,17 +334,125 @@ pub fn has_known_cloud_backup(handle: u32) -> bool {
 
 #[cfg(feature = "wallet_backup")]
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
-    use utils::devsetup::tests::setup_wallet_env;
+    use utils::devsetup::tests::{setup_wallet_env, delete_connected_wallets};
     use serde_json::Value;
     use std::thread;
     use std::time::Duration;
+    use utils::libindy::wallet;
+    use std::fs::File;
+    use std::io::Write;
 
     pub const WALLET_PROVISION_AGENT_RESPONSE: &'static [u8; 2] = &[79, 75];
     static SOURCE_ID: &str = r#"12345"#;
     static FILE_PATH: &str = r#"/tmp/tmp_wallet"#;
-    static BACKUP_KEY: &str = r#"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY"#;
+    pub static BACKUP_KEY: &str = r#"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY"#;
+    pub static RECORD_TYPE: &str = r#"cloudBackupType"#;
+    pub static ID: &str = r#"cloudBackupId"#;
+    pub static RECORD_VALUE: &str = r#"save before cloud backup"#;
+    pub static BACKUP_WALLET_NAME: &str = r#"cloud_backup"#;
+    pub static PATH: &str = r#"/tmp/cloud_backup.zip"#;
+
+
+    pub struct TestBackupData {
+        pub wb_handle: u32,
+        pub recovery_vk: String,
+        pub dd_address: String,
+        pub locator: String,
+        pub encryption_key: String,
+        pub cloud_address: Vec<u8>,
+        pub sig: Vec<u8>,
+    }
+
+    impl TestBackupData {
+        pub fn new(handle: Option<u32>, vk: Option<String>, dd_address: Option<String>,
+                   locator: Option<String>, cloud_address: Option<Vec<u8>>, sig: Option<Vec<u8>>, key: Option<String>) -> TestBackupData {
+            TestBackupData {
+                wb_handle: handle.unwrap_or_default(),
+                recovery_vk: vk.unwrap_or_default(),
+                dd_address: dd_address.unwrap_or_default(),
+                locator: locator.unwrap_or_default(),
+                cloud_address: cloud_address.unwrap_or_default(),
+                sig: sig.unwrap_or_default(),
+                encryption_key: key.unwrap_or(BACKUP_KEY.to_string()),
+            }
+        }
+    }
+
+    pub fn restore_config() -> RestoreWalletConfigs {
+        RestoreWalletConfigs {
+            wallet_name: BACKUP_WALLET_NAME.to_string(),
+            wallet_key: BACKUP_KEY.to_string(),
+            exported_wallet_path: PATH.to_string(),
+            backup_key: BACKUP_KEY.to_string(),
+            key_derivation: None,
+        }
+    }
+
+    pub fn init_backup() -> TestBackupData {
+        let mut wb = WalletBackup::create(SOURCE_ID, BACKUP_KEY).unwrap();
+        wb.init_backup().unwrap();
+
+        let k = wb.keys.clone();
+        let dd = k.dead_drop_address.clone();
+        let sig = sign(&k.recovery_vk, dd.locator.as_bytes()).unwrap();
+
+        let wb_handle = WALLET_BACKUP_MAP.add(wb).unwrap();
+
+        TestBackupData::new(Some(wb_handle),
+                            Some(k.recovery_vk.to_string()),
+                            Some(dd.address.clone()),
+                            Some(dd.locator.clone()),
+                            Some(k.cloud_address.clone()),
+                            Some(sig),
+                                Some(BACKUP_KEY.to_string()),
+                            )
+
+    }
+
+    pub fn backup_wallet_utils() -> TestBackupData {
+        wallet::add_record(RECORD_TYPE, ID, RECORD_VALUE, None).unwrap();
+        let wb = init_backup();
+
+        backup_wallet(wb.wb_handle, PATH).unwrap();
+
+        thread::sleep(Duration::from_millis(2000));
+
+        wb
+
+    }
+
+    pub fn restore_wallet_utils(encrypted_wallet: &[u8], wb: &TestBackupData) -> serde_json::Value {
+        delete_connected_wallets(BACKUP_WALLET_NAME);
+        ::api::vcx::vcx_shutdown(true);
+
+        let mut ofile = File::create(PATH).unwrap();
+        ofile.write_all(encrypted_wallet).unwrap();
+
+        let import_config = json!({
+            settings::CONFIG_WALLET_NAME: BACKUP_WALLET_NAME,
+            settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
+            settings::CONFIG_EXPORTED_WALLET_PATH: PATH.to_string(),
+            settings::CONFIG_WALLET_BACKUP_KEY: wb.encryption_key.to_string(),
+        }).to_string();
+
+        wallet::import(&import_config).unwrap();
+        wallet::open_wallet(BACKUP_WALLET_NAME, None, None, None).unwrap();
+
+        let options = json!({
+            "retrieveType": true,
+            "retrieveValue": true,
+            "retrieveTags": true
+        }).to_string();
+        let record = wallet::get_record(RECORD_TYPE, ID, &options).unwrap();
+        let record: serde_json::Value = serde_json::from_str(&record).unwrap();
+
+        ::std::fs::remove_file(PATH).unwrap();
+        delete_connected_wallets(BACKUP_WALLET_NAME);
+        record
+    }
+
 
     mod create_wallet_backup {
        use super::*;
@@ -298,7 +466,6 @@ mod tests {
 
             assert!(create_wallet_backup(SOURCE_ID, BACKUP_KEY).is_ok())
         }
-
     }
 
     mod update_state {
@@ -407,6 +574,32 @@ mod tests {
             assert!(update_state(wallet_backup, None).is_ok());
             assert_eq!(get_state(wallet_backup), WalletBackupState::ReadyToExportWallet as u32);
             assert!(has_known_cloud_backup(wallet_backup))
+        }
+    }
+
+    mod restore_wallet {
+        use super::*;
+
+        use utils::devsetup::tests::cleanup_local_env;
+
+        #[cfg(feature = "agency")]
+        #[cfg(feature = "pool_tests")]
+        #[test]
+        fn restore_wallet_real() {
+            init!("agency");
+            ::utils::devsetup::tests::set_consumer();
+
+            wallet::add_record(RECORD_TYPE, ID, RECORD_VALUE, None).unwrap();
+            let wb = init_backup();
+            backup_wallet(wb.wb_handle, PATH).unwrap();
+            thread::sleep(Duration::from_millis(2000));
+            cleanup_local_env();
+
+            init!("agency");
+            ::utils::devsetup::tests::set_consumer();
+
+            restore_wallet(&restore_config().to_string().unwrap()).unwrap();
+            wallet::delete_wallet(&restore_config().wallet_name, None, None, None).unwrap();
         }
     }
 }

@@ -30,6 +30,7 @@ use self::proofs::proof_request::ProofRequestMessage;
 use self::agent_utils::{Connect, ConnectResponse, SignUp, SignUpResponse, CreateAgent, CreateAgentResponse, UpdateComMethod, ComMethodUpdated};
 use self::wallet_backup::backup_init::{BackupInit, BackupProvisioned, BackupInitBuilder};
 use self::wallet_backup::backup::{Backup, BackupAck, BackupBuilder};
+use self::wallet_backup::restore::{BackupRestore, BackupRestored, BackupRestoreBuilder};
 use self::message_type::*;
 use error::prelude::*;
 
@@ -262,6 +263,8 @@ pub enum A2AMessageV2 {
     BackupProvisioned(BackupProvisioned),
     Backup(Backup),
     BackupAck(BackupAck),
+    BackupRestore(BackupRestore),
+    BackupRestored(BackupRestored),
 
     /// Dead Drop
     RetrieveDeadDrop(RetrieveDeadDrop),
@@ -437,6 +440,16 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "WALLET_BACKUP_ACK" => {
                 BackupAck::deserialize(value)
                     .map(|msg| A2AMessageV2::BackupAck(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_RESTORE" => {
+                BackupRestore::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupRestore(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_RESTORED" => {
+                BackupRestored::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupRestored(msg))
                     .map_err(de::Error::custom)
             }
             "DEAD_DROP_RETRIEVE" => {
@@ -630,6 +643,8 @@ pub enum RemoteMessageType {
     Proof,
     WalletBackupProvisioned,
     WalletBackupAck,
+    WalletBackupRestored,
+    RetrievedDeadDropResult,
 }
 
 impl Serialize for RemoteMessageType {
@@ -644,6 +659,8 @@ impl Serialize for RemoteMessageType {
             RemoteMessageType::Proof => "proof",
             RemoteMessageType::WalletBackupProvisioned => "WALLET_BACKUP_READY",
             RemoteMessageType::WalletBackupAck => "WALLET_BACKUP_ACK",
+            RemoteMessageType::WalletBackupRestored => "WALLET_BACKUP_RESTORED",
+            RemoteMessageType::RetrievedDeadDropResult => "DEAD_DROP_RETRIEVE_RESULT",
             RemoteMessageType::Other(_type) => _type,
         };
         Value::String(value.to_string()).serialize(serializer)
@@ -663,6 +680,8 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
             Some("proof") => Ok(RemoteMessageType::Proof),
             Some("WALLET_BACKUP_READY") => Ok(RemoteMessageType::WalletBackupProvisioned),
             Some("WALLET_BACKUP_ACK") => Ok(RemoteMessageType::WalletBackupAck),
+            Some("WALLET_BACKUP_RESTORED") => Ok(RemoteMessageType::WalletBackupRestored),
+            Some("DEAD_DROP_RETRIEVE_RESULT") => Ok(RemoteMessageType::RetrievedDeadDropResult),
             Some(_type) => Ok(RemoteMessageType::Other(_type.to_string())),
             _ => Err(de::Error::custom("Unexpected message type."))
         }
@@ -741,6 +760,8 @@ pub enum A2AMessageKinds {
     BackupReady,
     Backup,
     BackupAck,
+    BackupRestore,
+    BackupRestored,
     RetrieveDeadDrop,
     RetrievedDeadDropResult,
 }
@@ -779,6 +800,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::BackupReady => MessageFamilies::WalletBackup,
             A2AMessageKinds::Backup => MessageFamilies::WalletBackup,
             A2AMessageKinds::BackupAck => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupRestore => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupRestored => MessageFamilies::WalletBackup,
             A2AMessageKinds::RetrieveDeadDrop => MessageFamilies::DeadDrop,
             A2AMessageKinds::RetrievedDeadDropResult => MessageFamilies::DeadDrop,
         }
@@ -817,6 +840,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::BackupReady => "WALLET_BACKUP_READY".to_string(),
             A2AMessageKinds::Backup => "WALLET_BACKUP".to_string(),
             A2AMessageKinds::BackupAck => "WALLET_BACKUP_ACK".to_string(),
+            A2AMessageKinds::BackupRestore => "WALLET_BACKUP_RESTORE".to_string(),
+            A2AMessageKinds::BackupRestored => "WALLET_BACKUP_RESTORED".to_string(),
             A2AMessageKinds::RetrieveDeadDrop => "DEAD_DROP_RETRIEVE".to_string(),
             A2AMessageKinds::RetrievedDeadDropResult => "DEAD_DROP_RETRIEVE_RESULT".to_string(),
         }
@@ -875,6 +900,16 @@ fn parse_response_from_agency_v1(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage
         .map(|msg| rmp_serde::from_slice(msg)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err))))
         .collect::<VcxResult<Vec<A2AMessage>>>()
+}
+
+pub fn parse_message_from_response(response: &Vec<u8>) -> VcxResult<String> {
+    let unpacked_msg = crypto::unpack_message(&response[..])?;
+
+    let message: Value = ::serde_json::from_slice(unpacked_msg.as_slice())
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err)))?;
+
+    Ok(message["message"].as_str()
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field on response"))?.to_string())
 }
 
 fn parse_response_from_agency_v2(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage>> {
@@ -1100,6 +1135,8 @@ pub fn send_message() -> SendMessageBuilder { SendMessageBuilder::create() }
 pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
 
 pub fn wallet_backup_init() -> BackupInitBuilder { BackupInitBuilder::create() }
+
+pub fn wallet_backup_restore() -> BackupRestoreBuilder { BackupRestoreBuilder::create() }
 
 pub fn retrieve_dead_drop() -> RetrieveDeadDropBuilder { RetrieveDeadDropBuilder::create() }
 

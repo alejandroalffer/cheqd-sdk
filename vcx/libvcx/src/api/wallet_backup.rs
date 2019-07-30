@@ -3,7 +3,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use error::prelude::*;
-use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state, from_string, to_string, update_state, recover_wallet};
+use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state, from_string, to_string, update_state, restore_wallet};
 use messages::get_message::Message;
 use std::ptr;
 
@@ -294,26 +294,27 @@ pub extern fn vcx_wallet_backup_deserialize(command_handle: u32,
 
 /// Requests a recovery of a backup previously stored with a cloud agent
 ///
+/// config: "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":"","key_derivation":""}"
 /// backup_key: Key used when creating the backup of the wallet (For encryption/decrption)
 /// cb: Callback that provides the success/failure of the api call.
 /// #Returns
 /// Error code - success indicates that the api call was successfully created and execution
 /// is scheduled to begin in a separate thread.
 #[no_mangle]
-pub extern fn vcx_wallet_backup_recovery(command_handle: u32,
-                                         backup_key: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+pub extern fn vcx_wallet_backup_restore(command_handle: u32,
+                                        config: *const c_char,
+                                        cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
     info!("vcx_wallet_backup_recovery >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(backup_key,  VcxErrorKind::InvalidOption);
+    check_useful_c_str!(config,  VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_backup_recovery(command_handle: {}, config: ****)",
            command_handle);
 
     spawn(move|| {
         trace!("vcx_wallet_backup_recovery(command_handle: {}, config: ****)", command_handle);
-        match recover_wallet(&backup_key) {
+        match restore_wallet(&config) {
             Ok(_) => {
                 trace!("vcx_wallet_backup_recovery(command_handle: {}, rc: {})", command_handle, error::SUCCESS.message);
                 cb(command_handle, error::SUCCESS.code_num);
@@ -329,105 +330,105 @@ pub extern fn vcx_wallet_backup_recovery(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-#[cfg(feature = "wallet_backup")]
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::ffi::CString;
-    use std::ptr;
-    use utils::error;
-    use std::time::Duration;
-    use api::{return_types_u32};
-    use serde_json::Value;
-    use wallet_backup;
-
-    #[test]
-    fn test_vcx_wallet_backup_create() {
-        init!("true");
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let rc = vcx_wallet_backup_create(cb.command_handle,
-                                       CString::new("test_create").unwrap().into_raw(),
-                                          CString::new("pass_phrae").unwrap().into_raw(),
-                                       Some(cb.get_callback()));
-        assert_eq!(rc, error::SUCCESS.code_num);
-        assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
-    }
-
-    #[test]
-    fn test_vcx_wallet_backup_create_fails() {
-        init!("true");
-        let rc = vcx_wallet_backup_create(0,
-                                          CString::new("test_create_fails").unwrap().into_raw(),
-                                          CString::new("pass_phrae").unwrap().into_raw(),
-                                       None);
-        assert_eq!(rc, error::INVALID_OPTION.code_num);
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let rc = vcx_wallet_backup_create(cb.command_handle,
-                                       ptr::null(),
-                                          CString::new("pass_phrae").unwrap().into_raw(),
-                                       Some(cb.get_callback()));
-        assert_eq!(rc, error::INVALID_OPTION.code_num);
-    }
-
-    #[test]
-    fn test_wallet_backup() {
-        init!("true");
-
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let rc = vcx_wallet_backup_create(cb.command_handle,
-                                          CString::new("test_create").unwrap().into_raw(),
-                                          CString::new("encryption_key").unwrap().into_raw(),
-                                          Some(cb.get_callback()));
-        let wallet_handle = cb.receive(Some(Duration::from_secs(50))).unwrap();
-
-        let cb = return_types_u32::Return_U32::new().unwrap();
-        assert_eq!(vcx_wallet_backup_backup(cb.command_handle,
-                                     wallet_handle,
-                                     CString::new("path").unwrap().into_raw(),
-                                     Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(50))).unwrap();
-
-    }
-
-    #[test]
-    fn test_vcx_wallet_backup_serialize_and_deserialize() {
-        init!("true");
-        let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let handle = wallet_backup::create_wallet_backup("abc", "encryption_key").unwrap();
-        assert_eq!(vcx_wallet_backup_serialize(cb.command_handle,
-                                                 handle,
-                                                 Some(cb.get_callback())), error::SUCCESS.code_num);
-        let s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
-        let j: Value = serde_json::from_str(&s).unwrap();
-        assert_eq!(j["version"], ::utils::constants::DEFAULT_SERIALIZE_VERSION);
-
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_wallet_backup_deserialize(cb.command_handle,
-                                                   CString::new(s).unwrap().into_raw(),
-                                                   Some(cb.get_callback())),
-                   error::SUCCESS.code_num);
-
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
-        assert!(handle > 0);
-    }
-
-    #[test]
-    fn test_vcx_wallet_backup_update_state() {
-        init!("true");
-
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let rc = vcx_wallet_backup_create(cb.command_handle,
-                                          CString::new("test_create").unwrap().into_raw(),
-                                          CString::new("encryption key").unwrap().into_raw(),
-                                          Some(cb.get_callback()));
-        let wallet_handle = cb.receive(Some(Duration::from_secs(50))).unwrap();
-
-        ::utils::httpclient::set_next_u8_response(Vec::new());
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_wallet_backup_update_state(cb.command_handle,
-                                                  wallet_handle,
-                                            Some(cb.get_callback())), error::SUCCESS.code_num);
-        let state = cb.receive(Some(Duration::from_secs(50))).unwrap();
-        assert_eq!(state, ::api::WalletBackupState::InitRequested as u32)
-    }
-}
+//#[cfg(feature = "wallet_backup")]
+//#[cfg(test)]
+//mod tests {
+//    use super::*;
+//    use std::ffi::CString;
+//    use std::ptr;
+//    use utils::error;
+//    use std::time::Duration;
+//    use api::{return_types_u32};
+//    use serde_json::Value;
+//    use wallet_backup;
+//
+//    #[test]
+//    fn test_vcx_wallet_backup_create() {
+//        init!("true");
+//        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+//        let rc = vcx_wallet_backup_create(cb.command_handle,
+//                                       CString::new("test_create").unwrap().into_raw(),
+//                                          CString::new("pass_phrae").unwrap().into_raw(),
+//                                       Some(cb.get_callback()));
+//        assert_eq!(rc, error::SUCCESS.code_num);
+//        assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
+//    }
+//
+//    #[test]
+//    fn test_vcx_wallet_backup_create_fails() {
+//        init!("true");
+//        let rc = vcx_wallet_backup_create(0,
+//                                          CString::new("test_create_fails").unwrap().into_raw(),
+//                                          CString::new("pass_phrae").unwrap().into_raw(),
+//                                       None);
+//        assert_eq!(rc, error::INVALID_OPTION.code_num);
+//        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+//        let rc = vcx_wallet_backup_create(cb.command_handle,
+//                                       ptr::null(),
+//                                          CString::new("pass_phrae").unwrap().into_raw(),
+//                                       Some(cb.get_callback()));
+//        assert_eq!(rc, error::INVALID_OPTION.code_num);
+//    }
+//
+//    #[test]
+//    fn test_wallet_backup() {
+//        init!("true");
+//
+//        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+//        let rc = vcx_wallet_backup_create(cb.command_handle,
+//                                          CString::new("test_create").unwrap().into_raw(),
+//                                          CString::new("encryption_key").unwrap().into_raw(),
+//                                          Some(cb.get_callback()));
+//        let wallet_handle = cb.receive(Some(Duration::from_secs(50))).unwrap();
+//
+//        let cb = return_types_u32::Return_U32::new().unwrap();
+//        assert_eq!(vcx_wallet_backup_backup(cb.command_handle,
+//                                     wallet_handle,
+//                                     CString::new("path").unwrap().into_raw(),
+//                                     Some(cb.get_callback())), error::SUCCESS.code_num);
+//        cb.receive(Some(Duration::from_secs(50))).unwrap();
+//
+//    }
+//
+//    #[test]
+//    fn test_vcx_wallet_backup_serialize_and_deserialize() {
+//        init!("true");
+//        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+//        let handle = wallet_backup::create_wallet_backup("abc", "encryption_key").unwrap();
+//        assert_eq!(vcx_wallet_backup_serialize(cb.command_handle,
+//                                                 handle,
+//                                                 Some(cb.get_callback())), error::SUCCESS.code_num);
+//        let s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+//        let j: Value = serde_json::from_str(&s).unwrap();
+//        assert_eq!(j["version"], ::utils::constants::DEFAULT_SERIALIZE_VERSION);
+//
+//        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+//        assert_eq!(vcx_wallet_backup_deserialize(cb.command_handle,
+//                                                   CString::new(s).unwrap().into_raw(),
+//                                                   Some(cb.get_callback())),
+//                   error::SUCCESS.code_num);
+//
+//        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+//        assert!(handle > 0);
+//    }
+//
+//    #[test]
+//    fn test_vcx_wallet_backup_update_state() {
+//        init!("true");
+//
+//        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+//        let rc = vcx_wallet_backup_create(cb.command_handle,
+//                                          CString::new("test_create").unwrap().into_raw(),
+//                                          CString::new("encryption key").unwrap().into_raw(),
+//                                          Some(cb.get_callback()));
+//        let wallet_handle = cb.receive(Some(Duration::from_secs(50))).unwrap();
+//
+//        ::utils::httpclient::set_next_u8_response(Vec::new());
+//        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+//        assert_eq!(vcx_wallet_backup_update_state(cb.command_handle,
+//                                                  wallet_handle,
+//                                            Some(cb.get_callback())), error::SUCCESS.code_num);
+//        let state = cb.receive(Some(Duration::from_secs(50))).unwrap();
+//        assert_eq!(state, ::api::WalletBackupState::InitRequested as u32)
+//    }
+//}

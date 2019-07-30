@@ -1,5 +1,6 @@
 pub mod backup_init;
 pub mod backup;
+pub mod restore;
 
 use settings;
 use messages;
@@ -24,21 +25,18 @@ pub fn get_wallet_backup_messages() -> VcxResult<Vec<Message>> {
 //Todo: This is meant only as a short term solution. Wallet backup is the only protocol using V2 as of 06/2019
 // Eventually, WalletBackup can use the general prepare_message_for_agency
 // This is all Duplicate code that can be found in messages/mod.rs -> 'pack_for_agency_v2' and 'prepare_forward_message'
-pub fn prepare_message_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u8>> {
+pub fn prepare_message_for_agency_v2(message: &A2AMessage, agency_did: &str, agency_vk: &str, my_vk: &str) -> VcxResult<Vec<u8>> {
     if settings::test_indy_mode_enabled() { return Ok(Vec::new()) }
 
-    let message = _pack_for_agency_v2_without_fwd(message, agency_did)?;
+    let message = _pack_for_agency_v2_without_fwd(message, agency_did, agency_vk, my_vk)?;
     _prepare_fwd_v2(message, agency_did)
 }
 
-fn _pack_for_agency_v2_without_fwd(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u8>> {
-    let agent_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?;
-    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
-
+fn _pack_for_agency_v2_without_fwd(message: &A2AMessage, agency_did: &str, agency_vk: &str, my_vk: &str) -> VcxResult<Vec<u8>> {
     let message = ::serde_json::to_string(&message)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize A2A message: {}", err)))?;
 
-    let receiver_keys = ::serde_json::to_string(&vec![&agent_vk])
+    let receiver_keys = ::serde_json::to_string(&vec![&agency_vk])
         .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize receiver keys: {}", err)))?;
 
     crypto::pack_message(Some(&my_vk), &receiver_keys, message.as_bytes())
