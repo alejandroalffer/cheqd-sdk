@@ -99,7 +99,6 @@ pub struct BackupProvisioned {
     msg_type: MessageTypes,
 }
 
-#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -109,6 +108,7 @@ mod tests {
     use utils::libindy::signus::create_and_store_my_did;
     use messages::wallet_backup::received_expected_message;
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_wallet_backup_provision() {
         init!("ledger");
@@ -131,6 +131,7 @@ mod tests {
 
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -146,6 +147,7 @@ mod tests {
         teardown!("agency")
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -164,6 +166,7 @@ mod tests {
         teardown!("agency")
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]

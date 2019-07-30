@@ -179,6 +179,7 @@ pub fn create_wallet_backup(source_id: &str, wallet_encryption_key: &str) -> Vcx
 }
 
 fn gen_keys(wallet_encryption_key: &str) -> VcxResult<WalletBackupKeys> {
+
     let vk = &gen_vk(wallet_encryption_key)?;
 
     Ok(WalletBackupKeys {
@@ -190,12 +191,16 @@ fn gen_keys(wallet_encryption_key: &str) -> VcxResult<WalletBackupKeys> {
 }
 
 fn gen_vk(wallet_encryption_key: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() { return Ok(settings::DEFAULT_WALLET_BACKUP_KEY.to_string()) }
+
     let vk_seed = sha256_hex(wallet_encryption_key.as_bytes());
     create_key(Some(&vk_seed), None)
 }
 
 fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
     trace!("gen_deaddrop_address >>> vk: {}", vk);
+    if settings::test_indy_mode_enabled() { return Ok(DeadDropAddress {address: String::new(), locator: String::new()}) }
+
     let locator = sha256_hex(&sign(vk, "wallet-backup".as_bytes())?);
     Ok(DeadDropAddress {
         locator: locator.to_string(),
@@ -206,6 +211,7 @@ fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
 
 fn gen_cloud_address(vk: &str) -> VcxResult<Vec<u8>> {
     trace!("gen_cloud_address >>> vk: {}", vk);
+    if settings::test_indy_mode_enabled() { return Ok(Vec::new()) }
     let cloud_address = CloudAddress {
         version: None,
         agent_did: settings::get_config_value(::settings::CONFIG_REMOTE_TO_SDK_DID)?,
@@ -332,7 +338,6 @@ pub fn has_known_cloud_backup(handle: u32) -> bool {
     }).unwrap_or(false)
 }
 
-#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -457,6 +462,7 @@ pub mod tests {
     mod create_wallet_backup {
        use super::*;
 
+        #[cfg(feature = "wallet_backup")]
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
         #[test]
@@ -464,13 +470,15 @@ pub mod tests {
             init!("agency");
             ::utils::devsetup::tests::set_consumer();
 
-            assert!(create_wallet_backup(SOURCE_ID, BACKUP_KEY).is_ok())
+            assert!(create_wallet_backup(SOURCE_ID, BACKUP_KEY).is_ok());
+            teardown!("agency");
         }
     }
 
     mod update_state {
         use super::*;
 
+        #[cfg(feature = "wallet_backup")]
         #[test]
         fn update_state_success() {
             init!("true");
@@ -481,6 +489,7 @@ pub mod tests {
             assert_eq!(get_state(handle), WalletBackupState::InitRequested as u32);
         }
 
+        #[cfg(feature = "wallet_backup")]
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
         #[test]
@@ -493,8 +502,10 @@ pub mod tests {
 
             assert!(update_state(handle, None).is_ok());
             assert_eq!(get_state(handle), WalletBackupState::ReadyToExportWallet as u32);
+            teardown!("agency");
         }
 
+        #[cfg(feature = "wallet_backup")]
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
         #[test]
@@ -513,12 +524,14 @@ pub mod tests {
 
             assert!(update_state(handle, None).is_ok());
             assert_eq!(get_state(handle), WalletBackupState::ReadyToExportWallet as u32);
+            teardown!("agency");
         }
     }
 
     mod serialization {
         use super::*;
 
+        #[cfg(feature = "wallet_backup")]
         #[test]
         fn to_string_test() {
             init!("true");
@@ -531,6 +544,7 @@ pub mod tests {
             WalletBackup::from_str(&serialized).unwrap();
         }
 
+        #[cfg(feature = "wallet_backup")]
         #[test]
         fn test_deserialize_fails() {
             assert_eq!(from_string("{}").unwrap_err().kind(), VcxErrorKind::InvalidJson);
@@ -540,6 +554,7 @@ pub mod tests {
     mod backup_wallet {
         use super::*;
 
+        #[cfg(feature = "wallet_backup")]
         #[test]
         fn retrieving_exported_wallet_data_successful() {
             init!("true");
@@ -550,17 +565,20 @@ pub mod tests {
             assert!(data.unwrap().len() > 0);
         }
 
+        #[cfg(feature = "wallet_backup")]
         #[test]
         fn backup_wallet_fails_with_invalid_handle() {
             init!("true");
             assert_eq!(backup_wallet(0, FILE_PATH).unwrap_err().kind(), VcxErrorKind::InvalidHandle)
         }
 
+        #[cfg(feature = "wallet_backup")]
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
         #[test]
         fn backup_wallet_succeeds_real() {
             init!("agency");
+            ::utils::devsetup::tests::set_consumer();
 
             let wallet_backup = create_wallet_backup(SOURCE_ID, BACKUP_KEY).unwrap();
             thread::sleep(Duration::from_millis(2000));
@@ -573,7 +591,8 @@ pub mod tests {
 
             assert!(update_state(wallet_backup, None).is_ok());
             assert_eq!(get_state(wallet_backup), WalletBackupState::ReadyToExportWallet as u32);
-            assert!(has_known_cloud_backup(wallet_backup))
+            assert!(has_known_cloud_backup(wallet_backup));
+            teardown!("agency");
         }
     }
 
@@ -582,6 +601,7 @@ pub mod tests {
 
         use utils::devsetup::tests::cleanup_local_env;
 
+        #[cfg(feature = "wallet_backup")]
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
         #[test]
@@ -600,6 +620,7 @@ pub mod tests {
 
             restore_wallet(&restore_config().to_string().unwrap()).unwrap();
             wallet::delete_wallet(&restore_config().wallet_name, None, None, None).unwrap();
+            teardown!("agency");
         }
     }
 }

@@ -63,7 +63,6 @@ pub struct BackupAck {
     msg_type: MessageTypes,
 }
 
-#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -75,6 +74,7 @@ mod tests {
     use std::time::Duration;
     use messages::wallet_backup::received_expected_message;
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_wallet_backup() {
         init!("false");
@@ -97,6 +97,7 @@ mod tests {
 
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -112,6 +113,8 @@ mod tests {
         thread::sleep(Duration::from_millis(2000));
 
         assert!(backup_wallet().wallet_data(vec![1, 2, 3]).send_secure().is_ok());
+
+        teardown!("agency");
     }
 
     #[cfg(feature = "agency")]

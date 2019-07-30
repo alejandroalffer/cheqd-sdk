@@ -29,13 +29,15 @@ macro_rules! init {
             ::utils::devsetup::tests::setup_ledger_env();
         },
         "agency" => {
-            ::utils::devsetup::tests::delete_connected_wallets(::settings::DEFAULT_WALLET_NAME);
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::pool::tests::delete_test_pool();
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
             ::utils::devsetup::tests::setup_local_env("1.0");
         },
         "agency_2_0" => {
-            ::utils::devsetup::tests::delete_connected_wallets(::settings::DEFAULT_WALLET_NAME);
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::pool::tests::delete_test_pool();
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
             ::utils::devsetup::tests::setup_local_env("2.0");
@@ -107,11 +109,11 @@ pub mod tests {
     pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";*/
 
     /* dummy */
-    pub const AGENCY_ENDPOINT: &'static str = "https://eas-team1.pdev.evernym.com";
+    pub const AGENCY_ENDPOINT: &'static str = "https://eas-team2.pdev.evernym.com";
     pub const AGENCY_DID: &'static str = "CV65RFpeCtPu82hNF9i61G";
     pub const AGENCY_VERKEY: &'static str = "7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2";
 
-    pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team1.pdev.evernym.com";
+    pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team2.pdev.evernym.com";
     pub const C_AGENCY_DID: &'static str = "TGLBMTcW9fHdkSqown9jD8";
     pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR";
 

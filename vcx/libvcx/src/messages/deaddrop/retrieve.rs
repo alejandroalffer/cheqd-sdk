@@ -122,7 +122,6 @@ pub struct RetrievedDeadDropResult {
     pub entry: Option<DeadDropRetrievedEntry>
 }
 
-#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -130,6 +129,7 @@ mod tests {
     use wallet_backup::tests:: init_backup;
     use utils::libindy::signus::create_and_store_my_did;
 
+    #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_dead_drop_retrieve() {
         init!("ledger");
@@ -152,6 +152,7 @@ mod tests {
 
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -167,8 +168,10 @@ mod tests {
             .locator(&wb.locator).unwrap()
             .signature(&wb.sig).unwrap()
             .send_secure().is_ok());
+        teardown!("agency");
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -188,8 +191,10 @@ mod tests {
         let entry = dead_drop_result.entry.unwrap();
         assert_eq!(entry.address, wb.dd_address.clone());
         assert_eq!(base64::decode(&entry.data).unwrap(), wb.cloud_address.clone());
+        teardown!("agency");
     }
 
+    #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -206,5 +211,6 @@ mod tests {
             .locator(&wb.locator).unwrap()
             .signature(&wb.sig).unwrap()
             .send_secure().is_err());
+        teardown!("agency");
     }
 }

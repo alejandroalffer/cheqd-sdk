@@ -143,6 +143,7 @@ mod tests {
             err.unwrap_err().to_string(),
             "Error: Message failed in post\n  Caused by: POST failed with: {\"statusCode\":\"GNR-111\",\"statusMsg\":\"No Wallet Backup available to download\"}\n"
         );
+        teardown!("agency");
     }
 
     #[cfg(feature = "agency")]
@@ -163,5 +164,6 @@ mod tests {
         let record = restore_wallet_utils(encrypted_wallet, &wb);
 
         assert_eq!(&record, &json!({"value":RECORD_VALUE, "type": RECORD_TYPE, "id": ID, "tags": {}}));
+        teardown!("agency");
     }
 }
