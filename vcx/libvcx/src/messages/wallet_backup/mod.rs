@@ -3,24 +3,11 @@ pub mod backup;
 pub mod restore;
 
 use settings;
-use messages;
-use messages::get_message::Message;
-use settings::get_config_value;
+use messages::get_message::{Message, download_agent_messages};
 use error::prelude::*;
-use messages::{GeneralMessage, A2AMessage, prepare_forward_message_for_agency_v2, ForwardV2, A2AMessageKinds, RemoteMessageType};
+use messages::{A2AMessage, prepare_forward_message_for_agency_v2, ForwardV2, A2AMessageKinds, RemoteMessageType};
 use utils::libindy::crypto;
 use messages::message_type::MessageTypes;
-
-//Todo: this could be refactored ad put in Utils so that all code (not just wallet backup) could
-// retrieve messages from the UserAgent
-pub fn get_wallet_backup_messages() -> VcxResult<Vec<Message>> {
-    messages::get_messages()
-        .to(&get_config_value(settings::CONFIG_SDK_TO_REMOTE_DID)?)?
-        .to_vk(&get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?)?
-        .agent_did(&get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?)?
-        .agent_vk(&get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?)?
-        .send_secure()
-}
 
 //Todo: This is meant only as a short term solution. Wallet backup is the only protocol using V2 as of 06/2019
 // Eventually, WalletBackup can use the general prepare_message_for_agency
@@ -62,7 +49,7 @@ pub fn received_expected_message(message: Option<Message>, expected_type: Remote
     if let Some(msg) = message {
         if msg.msg_type == expected_type { return Ok(true) };
     } else {
-        let messages = get_wallet_backup_messages()?;
+        let messages = download_agent_messages(None, None)?;
         for msg in messages.iter() {
             // Todo: This will return ok if it finds any matching type... FIX
             if msg.msg_type == expected_type { return Ok(true) };
