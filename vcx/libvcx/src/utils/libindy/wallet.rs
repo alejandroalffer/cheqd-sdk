@@ -8,6 +8,27 @@ use std::path::Path;
 use error::prelude::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct WalletRecord {
+    id: Option<String>,
+    #[serde(rename = "type")]
+    record_type: Option<String>,
+    pub value: Option<String>,
+    tags: Option<String>
+}
+
+impl WalletRecord {
+    pub fn to_string(&self) -> VcxResult<String> {
+        serde_json::to_string(&self)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize WalletRecord: {:?}", err)))
+    }
+
+    pub fn from_str(data: &str) -> VcxResult<WalletRecord> {
+        serde_json::from_str(data)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize WalletRecord: {:?}", err)))
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RestoreWalletConfigs {
     pub wallet_name: String,
     pub wallet_key: String,
@@ -276,6 +297,36 @@ pub mod tests {
 
     #[test]
     fn test_wallet_import_export() {
+        settings::set_defaults();
+        teardown!("false");
+
+        let export_path = export_test_wallet();
+
+        let xtype = "type1";
+        let id = "id1";
+        let value = "value1";
+        let options = "{}";
+
+        ::api::vcx::vcx_shutdown(true);
+
+        let import_config = json!({
+            settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
+            settings::CONFIG_WALLET_KEY: "new key",
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
+            settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
+        }).to_string();
+        import(&import_config).unwrap();
+        open_wallet(&settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+
+        // If wallet was successfully imported, there will be an error trying to add this duplicate record
+        assert_eq!(add_record(xtype, id, value, None).unwrap_err().kind(), VcxErrorKind::DuplicationWalletRecord);
+        thread::sleep(Duration::from_secs(1));
+        ::api::vcx::vcx_shutdown(true);
+        delete_import_wallet_path(export_path);
+    }
+
+    #[test]
+    fn test_wallet_import_export_with_different_wallet_key() {
         settings::set_defaults();
         teardown!("false");
 
