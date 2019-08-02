@@ -4,7 +4,7 @@ use messages;
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
-use utils::libindy::wallet::{export, get_wallet_handle, RestoreWalletConfigs};
+use utils::libindy::wallet::{export, get_wallet_handle, RestoreWalletConfigs, add_record, get_record, WalletRecord};
 use utils::libindy::crypto::{create_key, sign, pack_message};
 use utils::constants::{DEFAULT_SERIALIZE_VERSION};
 use std::path::Path;
@@ -16,10 +16,13 @@ use utils::openssl::sha256_hex;
 use std::fs::File;
 use std::io::Write;
 use utils::libindy::wallet;
+use settings::test_agency_mode_enabled;
 
 lazy_static! {
     static ref WALLET_BACKUP_MAP: ObjectCache<WalletBackup> = Default::default();
 }
+
+pub static RECOVERY_KEY_TYPE: &str = r#"RECOVERY_KEY"#;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CloudAddress {
@@ -87,6 +90,7 @@ impl WalletBackup {
 
     fn update_state(&mut self, message: Option<Message>) -> VcxResult<u32> {
         debug!("updating state for wallet_backup {}", self.source_id);
+        if test_agency_mode_enabled() { return Ok(self.get_state()) }
 
         match self.state {
             WalletBackupState::InitRequested =>
@@ -195,7 +199,23 @@ fn gen_vk(wallet_encryption_key: &str) -> VcxResult<String> {
     if settings::test_indy_mode_enabled() { return Ok(settings::DEFAULT_WALLET_BACKUP_KEY.to_string()) }
 
     let vk_seed = sha256_hex(wallet_encryption_key.as_bytes());
+
     create_key(Some(&vk_seed), None)
+        .and_then(|v| _add_generated_vk(&wallet_encryption_key, &v))
+        .or_else(|e| _handle_duplicate_vk(e, &wallet_encryption_key) )
+}
+
+fn _add_generated_vk(id: &str, vk: &str) -> VcxResult<String> {
+    add_record(RECOVERY_KEY_TYPE, id, vk, None)
+        .and_then(|()| Ok(vk.to_string()))
+}
+
+fn _handle_duplicate_vk(err: VcxError, id: &str) -> VcxResult<String> {
+    if &err.kind() == &VcxErrorKind::DuplicationWalletRecord {
+        let options = json!({"retrieveType": false, "retrieveValue": true, "retrieveTags": false});
+        let record = get_record(RECOVERY_KEY_TYPE, id, &options.to_string())?;
+        Ok(WalletRecord::from_str(&record)?.value.unwrap_or(String::new()))
+    } else { Err(err) }
 }
 
 fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
@@ -472,6 +492,21 @@ pub mod tests {
             ::utils::devsetup::tests::set_consumer();
 
             assert!(create_wallet_backup(SOURCE_ID, BACKUP_KEY).is_ok());
+
+            teardown!("agency");
+        }
+
+        #[cfg(feature = "wallet_backup")]
+        #[cfg(feature = "agency")]
+        #[cfg(feature = "pool_tests")]
+        #[test]
+        fn create_two_backup_init_succeeds_real() {
+            init!("agency");
+            ::utils::devsetup::tests::set_consumer();
+
+            assert!(create_wallet_backup(SOURCE_ID, BACKUP_KEY).is_ok());
+            assert!(create_wallet_backup(SOURCE_ID, BACKUP_KEY).is_ok());
+
             teardown!("agency");
         }
     }
@@ -604,6 +639,32 @@ pub mod tests {
             assert!(update_state(wallet_backup, None).is_ok());
             assert_eq!(get_state(wallet_backup), WalletBackupState::ReadyToExportWallet as u32);
             assert!(has_known_cloud_backup(wallet_backup));
+            teardown!("agency");
+        }
+
+        #[cfg(feature = "wallet_backup")]
+        #[cfg(feature = "agency")]
+        #[cfg(feature = "pool_tests")]
+        #[test]
+        fn backup_wallet_multiple_times_real() {
+            init!("agency");
+            ::utils::devsetup::tests::set_consumer();
+
+            let wallet_backup = create_wallet_backup(SOURCE_ID, BACKUP_KEY).unwrap();
+            thread::sleep(Duration::from_millis(2000));
+
+            assert_eq!(get_state(wallet_backup), WalletBackupState::InitRequested as u32);
+            assert!(update_state(wallet_backup, None).is_ok());
+
+            backup_wallet(wallet_backup, FILE_PATH).unwrap();
+            assert_eq!(get_state(wallet_backup), WalletBackupState::BackupInProgress as u32);
+
+            assert!(update_state(wallet_backup, None).is_ok());
+            assert_eq!(get_state(wallet_backup), WalletBackupState::ReadyToExportWallet as u32);
+            assert!(has_known_cloud_backup(wallet_backup));
+
+            backup_wallet(wallet_backup, FILE_PATH).unwrap();
+            assert_eq!(get_state(wallet_backup), WalletBackupState::BackupInProgress as u32);
             teardown!("agency");
         }
     }
