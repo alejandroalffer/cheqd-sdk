@@ -117,10 +117,16 @@ pub mod tests {
     pub const C_AGENCY_DID: &'static str = "TGLBMTcW9fHdkSqown9jD8";
     pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR";
 
+    pub fn test_wallet() -> String {
+        settings::get_config_value(settings::CONFIG_WALLET_NAME)
+            .unwrap_or(settings::DEFAULT_WALLET_NAME.to_string())
+    }
+
     pub fn delete_connected_wallets(wallet_name: &str) {
         ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, wallet_name));
         ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, wallet_name));
         ::utils::libindy::wallet::tests::delete_test_wallet(wallet_name);
+        ::utils::libindy::wallet::tests::delete_test_wallet(&test_wallet());
     }
     pub fn set_trustee_did() {
         let (my_did, my_vk) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
@@ -202,11 +208,13 @@ pub mod tests {
     }
 
     pub fn cleanup_local_env() {
+        wallet::tests::delete_test_wallet(&test_wallet());
         set_institution();
         wallet::tests::delete_test_wallet(&format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME));
         set_consumer();
         wallet::tests::delete_test_wallet(&format!("{}_{}", constants::CONSUMER_PREFIX, settings::DEFAULT_WALLET_NAME));
         pool::tests::delete_test_pool();
+        ::utils::libindy::wallet::tests::delete_test_wallet(::settings::DEFAULT_WALLET_NAME);
     }
 
     pub fn set_institution() {
