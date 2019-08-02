@@ -296,7 +296,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_wallet_import_export() {
+    fn test_wallet_import_export_with_different_wallet_key() {
         settings::set_defaults();
         teardown!("false");
 
@@ -326,7 +326,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_wallet_import_export_with_different_wallet_key() {
+    fn test_wallet_import_export() {
         settings::set_defaults();
         teardown!("false");
 
@@ -341,7 +341,7 @@ pub mod tests {
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
-            settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
+            settings::CONFIG_WALLET_KEY: "new key",
             settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();

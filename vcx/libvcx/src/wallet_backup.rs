@@ -13,9 +13,10 @@ use messages::{RemoteMessageType, retrieve_dead_drop, parse_message_from_respons
 use messages::wallet_backup::received_expected_message;
 use messages::get_message::Message;
 use utils::openssl::sha256_hex;
-use std::fs::File;
-use std::io::Write;
+use std::io::{Write, Error};
 use utils::libindy::wallet;
+use std::path::PathBuf;
+use settings::test_agency_mode_enabled;
 
 lazy_static! {
     static ref WALLET_BACKUP_MAP: ObjectCache<WalletBackup> = Default::default();
@@ -89,6 +90,7 @@ impl WalletBackup {
 
     fn update_state(&mut self, message: Option<Message>) -> VcxResult<u32> {
         debug!("updating state for wallet_backup {}", self.source_id);
+        if test_agency_mode_enabled() { return Ok(self.get_state()) }
 
         match self.state {
             WalletBackupState::InitRequested =>
@@ -171,7 +173,7 @@ impl WalletBackup {
 }
 
 pub fn create_wallet_backup(source_id: &str, wallet_encryption_key: &str) -> VcxResult<u32> {
-    trace!("create_wallet_backup >>> source_id: {}", source_id);
+    info!("create_wallet_backup >>> source_id: {}", source_id);
 
     let mut wb = WalletBackup::create(source_id, wallet_encryption_key)?;
 
@@ -182,6 +184,7 @@ pub fn create_wallet_backup(source_id: &str, wallet_encryption_key: &str) -> Vcx
 }
 
 fn gen_keys(wallet_encryption_key: &str) -> VcxResult<WalletBackupKeys> {
+    info!("gen_keys >>> encryption_key: ***");
 
     let vk = &gen_vk(wallet_encryption_key)?;
 
@@ -218,7 +221,7 @@ fn _handle_duplicate_vk(err: VcxError, id: &str) -> VcxResult<String> {
 }
 
 fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
-    trace!("gen_deaddrop_address >>> vk: {}", vk);
+    info!("gen_deaddrop_address >>> vk: {}", vk);
     if settings::test_indy_mode_enabled() { return Ok(DeadDropAddress {address: String::new(), locator: String::new()}) }
 
     let locator = sha256_hex(&sign(vk, "wallet-backup".as_bytes())?);
@@ -230,7 +233,7 @@ fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
 }
 
 fn gen_cloud_address(vk: &str) -> VcxResult<Vec<u8>> {
-    trace!("gen_cloud_address >>> vk: {}", vk);
+    info!("gen_cloud_address >>> vk: {}", vk);
     if settings::test_indy_mode_enabled() { return Ok(Vec::new()) }
     let cloud_address = CloudAddress {
         version: None,
@@ -249,12 +252,14 @@ fn gen_cloud_address(vk: &str) -> VcxResult<Vec<u8>> {
     be done in a separate libindy api call if necessary.
  */
 pub fn backup_wallet(handle: u32, exported_wallet_path: &str) -> VcxResult<u32> {
+    info!("backup_wallet >>> handle: {}, export_path: {}", handle, exported_wallet_path);
     WALLET_BACKUP_MAP.get_mut(handle, |wb| {
         wb.backup(exported_wallet_path)
     })
 }
 
 pub fn restore_wallet(config: &str) -> VcxResult<()> {
+    info!("restore_wallet >>> config: ***");
     let (restore_config, backup) = restore_from_cloud(config)?;
 
     reconstitute_restored_wallet(config, &restore_config, &backup)?;
@@ -279,11 +284,16 @@ fn restore_from_cloud(config: &str) -> VcxResult<(RestoreWalletConfigs, Vec<u8>)
 }
 
 fn reconstitute_restored_wallet(config: &str, recovery_config: &RestoreWalletConfigs, encrypted_wallet: &[u8]) -> VcxResult<()> {
-    File::create(&recovery_config.exported_wallet_path).and_then(|mut f| f.write_all(encrypted_wallet))
-        .map_err(|e| VcxError::from_msg(VcxErrorKind::IOError, format!("Failed writing restored encrypted wallet to fs: {:?}", e)))?;
+    _write_encrypted_wallet_for_import(&recovery_config.exported_wallet_path, encrypted_wallet)?;
+
+    info!("Deleting temporary wallet before the recovered wallet is imported");
+    wallet::delete_wallet(&settings::get_config_value(settings::CONFIG_WALLET_NAME)?, None, None, None)?;
 
     wallet::import(config)?;
 
+    //Todo: Fix libindy
+    // Deletes recovered encrypted wallet from the temporary location on the file system
+    // This will be removed once libindy enables import/export without file system location
     let path = Path::new(&recovery_config.exported_wallet_path);
     fs::remove_file(path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
 
@@ -291,7 +301,30 @@ fn reconstitute_restored_wallet(config: &str, recovery_config: &RestoreWalletCon
     Ok(())
 }
 
+fn _write_encrypted_wallet_for_import(path: &str, wallet: &[u8]) -> VcxResult<()> {
+    let err = |e: Error| VcxError::from_msg( VcxErrorKind::IOError, format!("Wallet IO error: {:?}", e));
+
+    let path = PathBuf::from(path);
+
+    if let Some(parent_path) = path.parent() {
+        fs::DirBuilder::new()
+            .recursive(true)
+            .create(parent_path).map_err(err)?;
+    }
+
+    fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .truncate(true)
+        .open(path).map_err(err)?
+        .write_all(wallet).map_err(err)?;
+
+    Ok(())
+}
+
 pub fn recover_dead_drop(vk: &str) -> VcxResult<CloudAddress> {
+    info!("recover_dead_drop >>> vk: ***");
     let dead_drop_info = gen_deaddrop_address(&vk)?;
     let locator_sig = sign(&vk, dead_drop_info.locator.as_bytes())?;
 
@@ -347,6 +380,7 @@ pub fn set_state(handle: u32, state: WalletBackupState) -> VcxResult<()> {
 }
 
 pub fn update_state(handle: u32, message: Option<Message>) -> VcxResult<u32> {
+    info!("update_state >>> source_id {}", get_source_id(handle)?);
     WALLET_BACKUP_MAP.get_mut(handle, |wb| {
         wb.update_state(message.clone())
     })
@@ -361,13 +395,14 @@ pub fn has_known_cloud_backup(handle: u32) -> bool {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::devsetup::tests::{setup_wallet_env, delete_connected_wallets};
+    use utils::devsetup::tests::setup_wallet_env;
     use serde_json::Value;
     use std::thread;
     use std::time::Duration;
     use utils::libindy::wallet;
     use std::fs::File;
-    use std::io::Write;
+    use utils::devsetup::tests::{test_wallet, set_consumer};
+    use utils::devsetup::tests::{cleanup_local_env, setup_local_env};
 
     pub const WALLET_PROVISION_AGENT_RESPONSE: &'static [u8; 2] = &[79, 75];
     static SOURCE_ID: &str = r#"12345"#;
@@ -376,7 +411,6 @@ pub mod tests {
     pub static RECORD_TYPE: &str = r#"cloudBackupType"#;
     pub static ID: &str = r#"cloudBackupId"#;
     pub static RECORD_VALUE: &str = r#"save before cloud backup"#;
-    pub static BACKUP_WALLET_NAME: &str = r#"cloud_backup"#;
     pub static PATH: &str = r#"/tmp/cloud_backup.zip"#;
 
 
@@ -405,11 +439,11 @@ pub mod tests {
         }
     }
 
-    pub fn restore_config() -> RestoreWalletConfigs {
+    pub fn restore_config(path: Option<String>) -> RestoreWalletConfigs {
         RestoreWalletConfigs {
-            wallet_name: BACKUP_WALLET_NAME.to_string(),
+            wallet_name: test_wallet(),
             wallet_key: BACKUP_KEY.to_string(),
-            exported_wallet_path: PATH.to_string(),
+            exported_wallet_path: path.unwrap_or(PATH.to_string()),
             backup_key: BACKUP_KEY.to_string(),
             key_derivation: None,
         }
@@ -441,43 +475,11 @@ pub mod tests {
         let wb = init_backup();
 
         backup_wallet(wb.wb_handle, PATH).unwrap();
-
-        thread::sleep(Duration::from_millis(2000));
+        thread::sleep(Duration::from_millis(1000));
 
         wb
 
     }
-
-    pub fn restore_wallet_utils(encrypted_wallet: &[u8], wb: &TestBackupData) -> serde_json::Value {
-        delete_connected_wallets(BACKUP_WALLET_NAME);
-        ::api::vcx::vcx_shutdown(true);
-
-        let mut ofile = File::create(PATH).unwrap();
-        ofile.write_all(encrypted_wallet).unwrap();
-
-        let import_config = json!({
-            settings::CONFIG_WALLET_NAME: BACKUP_WALLET_NAME,
-            settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: PATH.to_string(),
-            settings::CONFIG_WALLET_BACKUP_KEY: wb.encryption_key.to_string(),
-        }).to_string();
-
-        wallet::import(&import_config).unwrap();
-        wallet::open_wallet(BACKUP_WALLET_NAME, None, None, None).unwrap();
-
-        let options = json!({
-            "retrieveType": true,
-            "retrieveValue": true,
-            "retrieveTags": true
-        }).to_string();
-        let record = wallet::get_record(RECORD_TYPE, ID, &options).unwrap();
-        let record: serde_json::Value = serde_json::from_str(&record).unwrap();
-
-        ::std::fs::remove_file(PATH).unwrap();
-        delete_connected_wallets(BACKUP_WALLET_NAME);
-        record
-    }
-
 
     mod create_wallet_backup {
        use super::*;
@@ -488,7 +490,7 @@ pub mod tests {
         #[test]
         fn create_backup_succeeds_real() {
             init!("agency");
-            ::utils::devsetup::tests::set_consumer();
+            set_consumer();
 
             assert!(create_wallet_backup(SOURCE_ID, BACKUP_KEY).is_ok());
 
@@ -501,7 +503,7 @@ pub mod tests {
         #[test]
         fn create_two_backup_init_succeeds_real() {
             init!("agency");
-            ::utils::devsetup::tests::set_consumer();
+            set_consumer();
 
             assert!(create_wallet_backup(SOURCE_ID, BACKUP_KEY).is_ok());
             assert!(create_wallet_backup(SOURCE_ID, BACKUP_KEY).is_ok());
@@ -530,7 +532,7 @@ pub mod tests {
         #[test]
         fn update_state_with_provisioned_msg_changes_state_to_ready_to_export() {
             init!("agency");
-            ::utils::devsetup::tests::set_consumer();
+            set_consumer();
 
             let handle = create_wallet_backup(SOURCE_ID, BACKUP_KEY).unwrap();
             thread::sleep(Duration::from_millis(2000));
@@ -547,7 +549,7 @@ pub mod tests {
         fn update_state_with_backup_ack_msg_changes_state_to_ready_to_export() {
             init!("agency");
 
-            ::utils::devsetup::tests::set_consumer();
+            set_consumer();
             let handle = create_wallet_backup(SOURCE_ID, BACKUP_KEY).unwrap();
             thread::sleep(Duration::from_millis(2000));
 
@@ -624,7 +626,7 @@ pub mod tests {
         #[test]
         fn backup_wallet_succeeds_real() {
             init!("agency");
-            ::utils::devsetup::tests::set_consumer();
+            set_consumer();
 
             let wallet_backup = create_wallet_backup(SOURCE_ID, BACKUP_KEY).unwrap();
             thread::sleep(Duration::from_millis(2000));
@@ -647,7 +649,7 @@ pub mod tests {
         #[test]
         fn backup_wallet_multiple_times_real() {
             init!("agency");
-            ::utils::devsetup::tests::set_consumer();
+            set_consumer();
 
             let wallet_backup = create_wallet_backup(SOURCE_ID, BACKUP_KEY).unwrap();
             thread::sleep(Duration::from_millis(2000));
@@ -671,7 +673,6 @@ pub mod tests {
     mod restore_wallet {
         use super::*;
 
-        use utils::devsetup::tests::cleanup_local_env;
 
         #[cfg(feature = "wallet_backup")]
         #[cfg(feature = "agency")]
@@ -679,18 +680,15 @@ pub mod tests {
         #[test]
         fn restore_wallet_real() {
             init!("agency");
-            ::utils::devsetup::tests::set_consumer();
 
-            wallet::add_record(RECORD_TYPE, ID, RECORD_VALUE, None).unwrap();
-            let wb = init_backup();
-            backup_wallet(wb.wb_handle, PATH).unwrap();
-            thread::sleep(Duration::from_millis(2000));
+            set_consumer();
+            let wb = backup_wallet_utils();
             cleanup_local_env();
 
-            init!("agency");
-            ::utils::devsetup::tests::set_consumer();
+            setup_local_env("1.0");
+            set_consumer();
 
-            restore_wallet(&restore_config().to_string().unwrap()).unwrap();
+            restore_wallet(&restore_config(None).to_string().unwrap()).unwrap();
 
             let options = json!({
                 "retrieveType": true,
@@ -701,7 +699,7 @@ pub mod tests {
             let record: serde_json::Value = serde_json::from_str(&record).unwrap();
             assert_eq!(&record, &json!({"value":RECORD_VALUE, "type": RECORD_TYPE, "id": ID, "tags": {}}));
 
-            wallet::delete_wallet(&restore_config().wallet_name, None, None, None).unwrap();
+            wallet::delete_wallet(&restore_config(None).wallet_name, None, None, None).unwrap();
             teardown!("agency");
         }
 
@@ -711,21 +709,70 @@ pub mod tests {
         #[test]
         fn restore_wallet_fails_with_no_backup() {
             init!("agency");
-            ::utils::devsetup::tests::set_consumer();
+            set_consumer();
 
             wallet::add_record(RECORD_TYPE, ID, RECORD_VALUE, None).unwrap();
             let wb = init_backup();
             thread::sleep(Duration::from_millis(2000));
             cleanup_local_env();
 
-            init!("agency");
-            ::utils::devsetup::tests::set_consumer();
+            setup_local_env("1.0");
+            set_consumer();
 
-            let rc = restore_wallet(&restore_config().to_string().unwrap());
+            let rc = restore_wallet(&restore_config(None).to_string().unwrap());
             assert_eq!(
                 rc.unwrap_err().to_string(),
                 "Error: Message failed in post\n  Caused by: POST failed with: {\"statusCode\":\"GNR-111\",\"statusMsg\":\"No Wallet Backup available to download\"}\n"
             );
+            teardown!("agency");
+        }
+
+        #[cfg(feature = "wallet_backup")]
+        #[cfg(feature = "agency")]
+        #[cfg(feature = "pool_tests")]
+        #[test]
+        fn recovery_creates_file_structure_for_undefined_path_recovery_success() {
+            init!("agency");
+
+            set_consumer();
+            let wb = backup_wallet_utils();
+            cleanup_local_env();
+
+            init!("agency");
+            set_consumer();
+
+            // Just to make sure path doesn't exist
+            let base = "/tmp/uncreated/";
+            let uncreated_path = format!("{}/nested/test.txt", base);
+            ::std::fs::remove_dir_all(base).unwrap_or(println!("No Directory to delete before test"));
+            let rc = restore_wallet(&restore_config(Some(uncreated_path.to_string())).to_string().unwrap());
+            ::std::fs::remove_dir_all(base).unwrap_or(println!("No Directory to delete after test"));
+
+            assert!(rc.is_ok());
+            teardown!("agency");
+        }
+
+        #[cfg(feature = "wallet_backup")]
+        #[cfg(feature = "agency")]
+        #[cfg(feature = "pool_tests")]
+        #[test]
+        fn recovery_overwrites_export_path_when_file_already_exists() {
+            init!("agency");
+            set_consumer();
+
+            let wb = backup_wallet_utils();
+            cleanup_local_env();
+
+            init!("agency");
+            set_consumer();
+
+            let base = "/tmp/existing/";
+            let existing_file = format!("{}/test.txt", base);
+            _write_encrypted_wallet_for_import(&existing_file, &vec![1, 2, 3, 4, 5, 6, 7]).unwrap();
+            let rc = restore_wallet(&restore_config(Some(existing_file.to_string())).to_string().unwrap());
+            ::std::fs::remove_dir_all(base).unwrap_or(println!("No Directory to delete after test"));
+
+            assert!(rc.is_ok());
             teardown!("agency");
         }
     }

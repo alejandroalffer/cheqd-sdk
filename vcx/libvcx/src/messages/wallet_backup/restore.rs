@@ -94,7 +94,42 @@ mod tests {
     use settings;
     use messages::wallet_backup_restore;
     use utils::libindy::signus::create_and_store_my_did;
-    use wallet_backup::tests::{init_backup, restore_wallet_utils, backup_wallet_utils, RECORD_VALUE, RECORD_TYPE, ID};
+    use utils::devsetup::tests::{test_wallet, delete_connected_wallets};
+    use wallet_backup::tests::{init_backup, TestBackupData, backup_wallet_utils, RECORD_VALUE, RECORD_TYPE, ID, PATH};
+    use std::fs::File;
+    use utils::libindy::wallet;
+    use std::io::Write;
+
+    pub fn restore_wallet_utils(encrypted_wallet: &[u8], wb: &TestBackupData) -> serde_json::Value {
+        delete_connected_wallets(&test_wallet());
+        ::api::vcx::vcx_shutdown(true);
+
+        let mut ofile = File::create(PATH).unwrap();
+        ofile.write_all(encrypted_wallet).unwrap();
+
+        let import_config = json!({
+            settings::CONFIG_WALLET_NAME: &test_wallet(),
+            settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
+            settings::CONFIG_EXPORTED_WALLET_PATH: PATH.to_string(),
+            settings::CONFIG_WALLET_BACKUP_KEY: wb.encryption_key.to_string(),
+        }).to_string();
+
+        wallet::import(&import_config).unwrap();
+        wallet::open_wallet(&test_wallet(), None, None, None).unwrap();
+
+        let options = json!({
+            "retrieveType": true,
+            "retrieveValue": true,
+            "retrieveTags": true
+        }).to_string();
+        let record = wallet::get_record(RECORD_TYPE, ID, &options).unwrap();
+        let record: serde_json::Value = serde_json::from_str(&record).unwrap();
+
+        ::std::fs::remove_file(PATH).unwrap();
+        delete_connected_wallets(&test_wallet());
+        record
+    }
+
 
     #[test]
     fn test_backup_restore() {
