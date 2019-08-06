@@ -7,6 +7,11 @@ stages:
   - package
   - publish
 
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - cache/
+
 variables:
   staticLibVersion: "20190607"
   rustVersion: "1.36.0"
