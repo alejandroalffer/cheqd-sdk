@@ -7,6 +7,11 @@ stages:
   - package
   - publish
 
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - cache/
+
 variables:
   staticLibVersion: "20190607"
   rustVersion: "1.36.0"
@@ -577,5 +582,7 @@ publish-packages:
     - export KRAKEN_CREDENTIALS=$(echo ${KRAKEN_CREDENTIALS_B64} | base64 -d)
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" node-vcx-*.tgz https://kraken.corp.evernym.com/repo/portal_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" node-vcx-*.tgz https://kraken.corp.evernym.com/repo/npm/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" python3-vcx-*.tar.gz https://kraken.corp.evernym.com/repo/portal_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" python3-vcx-*.tar.gz https://kraken.corp.evernym.com/repo/python/upload
