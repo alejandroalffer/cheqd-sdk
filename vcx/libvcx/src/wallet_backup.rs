@@ -403,6 +403,8 @@ pub mod tests {
     use std::fs::File;
     use utils::devsetup::tests::{test_wallet, set_consumer};
     use utils::devsetup::tests::{cleanup_local_env, setup_local_env};
+    use api::vcx::vcx_shutdown;
+    use settings::process_config_string;
 
     pub const WALLET_PROVISION_AGENT_RESPONSE: &'static [u8; 2] = &[79, 75];
     static SOURCE_ID: &str = r#"12345"#;
@@ -442,7 +444,7 @@ pub mod tests {
     pub fn restore_config(path: Option<String>) -> RestoreWalletConfigs {
         RestoreWalletConfigs {
             wallet_name: test_wallet(),
-            wallet_key: BACKUP_KEY.to_string(),
+            wallet_key: settings::DEFAULT_WALLET_KEY.to_string(),
             exported_wallet_path: path.unwrap_or(PATH.to_string()),
             backup_key: BACKUP_KEY.to_string(),
             key_derivation: None,
@@ -776,5 +778,74 @@ pub mod tests {
             teardown!("agency");
         }
     }
+
+    #[cfg(feature = "wallet_backup")]
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn recovery_full() {
+        // 1.  Provision 1st time (Provision Async) + (Init)
+        let config_wallet_key = "CONFIG_WALLET_KEY";
+        init!("agency");
+        set_consumer();
+        let consumer_wallet_name = test_wallet();
+        println!("my wallet: {:?}", consumer_wallet_name);
+
+        // 2. Insert test data into non secret portion of the wallet (config data)
+        let original_config = settings::tests::config_json();
+        wallet::add_record(config_wallet_key, config_wallet_key, &original_config, None).unwrap();
+
+        // 3. Backup Wallet
+        let wb = init_backup();
+        backup_wallet(wb.wb_handle, PATH).unwrap();
+        thread::sleep(Duration::from_millis(1000));
+
+        // 4. Destroy Environment
+        cleanup_local_env();
+        vcx_shutdown(true);
+
+        // 5. Provision 2nd time (for interaction with agency to get dead-drop)
+        init!("agency");
+        set_consumer();
+
+        // 6. Restore
+        restore_wallet(&restore_config(None).to_string().unwrap()).unwrap();
+        thread::sleep(Duration::from_millis(1000));
+
+        // 7. Shutdown to clear configuration and close wallet
+        vcx_shutdown(false);
+
+        // 8. Initialize with wallet info (simple init)
+        ::settings::set_config_value(::settings::CONFIG_WALLET_KEY,::settings::DEFAULT_WALLET_KEY);
+        ::settings::set_config_value(::settings::CONFIG_WALLET_KEY_DERIVATION,::settings::DEFAULT_WALLET_KEY_DERIVATION);
+        ::settings::set_config_value(::settings::CONFIG_WALLET_NAME,&consumer_wallet_name);
+        ::settings::set_config_value(::settings::CONFIG_WALLET_BACKUP_KEY,BACKUP_KEY);
+
+        wallet::open_wallet(&consumer_wallet_name, None, None, None).unwrap();
+
+        // 9. retrieve config data
+        let options = json!({
+                "retrieveType": false,
+                "retrieveValue": true,
+                "retrieveTags": false
+            }).to_string();
+        let record = serde_json::from_str::<serde_json::Value>(&wallet::get_record(config_wallet_key, config_wallet_key, &options).unwrap()).unwrap();
+        let retrieved_config_p1: String = serde_json::from_value(record.get("value").unwrap().to_owned()).unwrap();
+        assert_eq!(&retrieved_config_p1, &original_config);
+
+        // 10. shutdown to clear config
+        vcx_shutdown(false);
+
+        // 11. Full init with previously stored config
+        process_config_string(&retrieved_config_p1, true).unwrap();
+        wallet::open_wallet(&consumer_wallet_name, None, None, None).unwrap();
+
+        let record = serde_json::from_str::<serde_json::Value>(&wallet::get_record(config_wallet_key, config_wallet_key, &options).unwrap()).unwrap();
+        let retrieved_config_p2: String = serde_json::from_value(record.get("value").unwrap().to_owned()).unwrap();
+        assert_eq!(&retrieved_config_p2, &original_config);
+
+        teardown!("agency");
+    }
+
 }
 

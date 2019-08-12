@@ -397,6 +397,12 @@ pub mod tests {
     use super::*;
     use utils::get_temp_dir_path;
 
+    pub fn config_json() -> String {
+        trace!("config_jsonc >>>");
+        let config = SETTINGS.read().unwrap();
+        serde_json::to_string(&config.clone()).unwrap()
+    }
+
     #[test]
     fn test_bad_path() {
         let path = "garbage.txt";
