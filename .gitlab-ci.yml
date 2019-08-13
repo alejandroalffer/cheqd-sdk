@@ -536,6 +536,10 @@ publish-android:
     refs:
       - master@dev/vcx/indy-sdk
   script:
+    - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
+    - export vcxRevision=$(git rev-parse --short HEAD)
+    - cd -
+    - export vcxVersion=$(./vcx/ci/scripts/toml_utils.py ${PWD}/vcx/libvcx/Cargo.toml)
     - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
     - sudo chmod +x vcx/ci/scripts/androidPublish.sh
     - vcx/ci/scripts/androidPublish.sh ${vcxVersion}-${vcxRevision}
