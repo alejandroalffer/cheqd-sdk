@@ -17,6 +17,7 @@ use std::io::{Write, Error};
 use utils::libindy::wallet;
 use std::path::PathBuf;
 use settings::test_agency_mode_enabled;
+use rand::Rng;
 
 lazy_static! {
     static ref WALLET_BACKUP_MAP: ObjectCache<WalletBackup> = Default::default();
@@ -133,7 +134,7 @@ impl WalletBackup {
     }
 
     fn backup(&mut self, exported_wallet_path: &str) -> VcxResult<u32> {
-        let wallet_data = WalletBackup::_retrieve_exported_wallet(&self.keys.wallet_encryption_key, exported_wallet_path)?;
+        let wallet_data = _read_exported_wallet(&self.keys.wallet_encryption_key, exported_wallet_path)?;
 
         messages::backup_wallet()
             .wallet_data(wallet_data)
@@ -142,19 +143,6 @@ impl WalletBackup {
         self.state = WalletBackupState::BackupInProgress;
 
         Ok(error::SUCCESS.code_num)
-    }
-
-    fn _retrieve_exported_wallet(backup_key: &str, exported_wallet_path: &str) -> VcxResult<Vec<u8>> {
-        if settings::test_indy_mode_enabled() { return Ok(Vec::new()) }
-
-        let path = Path::new(exported_wallet_path);
-        fs::remove_file(path).unwrap_or(());
-
-        export(get_wallet_handle(), &path, backup_key)?;
-        let data = fs::read(&path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
-        fs::remove_file(path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
-
-        Ok(data)
     }
 
     fn to_string(&self) -> VcxResult<String> {
@@ -258,13 +246,29 @@ pub fn backup_wallet(handle: u32, exported_wallet_path: &str) -> VcxResult<u32> 
     })
 }
 
+fn _read_exported_wallet(backup_key: &str, exported_wallet_path: &str) -> VcxResult<Vec<u8>> {
+    if settings::test_indy_mode_enabled() { return Ok(Vec::new()) }
+
+    let tmp_dir = _unique_tmp_dir(exported_wallet_path)?;
+
+    export(get_wallet_handle(), tmp_dir.as_path(), backup_key)?;
+
+    let data = fs::read(tmp_dir.as_path())
+        .and_then(|data| {
+            fs::remove_file(tmp_dir.as_path())?;
+            Ok(data)
+        })
+        .map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
+
+    Ok(data)
+}
+
+
 pub fn restore_wallet(config: &str) -> VcxResult<()> {
     info!("restore_wallet >>> config: ***");
     let (restore_config, backup) = restore_from_cloud(config)?;
 
-    reconstitute_restored_wallet(config, &restore_config, &backup)?;
-
-    Ok(())
+    reconstitute_restored_wallet(&restore_config, &backup)
 }
 
 fn restore_from_cloud(config: &str) -> VcxResult<(RestoreWalletConfigs, Vec<u8>)> {
@@ -283,13 +287,13 @@ fn restore_from_cloud(config: &str) -> VcxResult<(RestoreWalletConfigs, Vec<u8>)
     Ok((recovery_config, encrypted_wallet))
 }
 
-fn reconstitute_restored_wallet(config: &str, recovery_config: &RestoreWalletConfigs, encrypted_wallet: &[u8]) -> VcxResult<()> {
-    _write_encrypted_wallet_for_import(&recovery_config.exported_wallet_path, encrypted_wallet)?;
+fn reconstitute_restored_wallet(recovery_config: &RestoreWalletConfigs, encrypted_wallet: &[u8]) -> VcxResult<()> {
+    let recovery_config = _write_tmp_encrypted_wallet_for_import(recovery_config, encrypted_wallet)?;
 
     info!("Deleting temporary wallet before the recovered wallet is imported");
     wallet::delete_wallet(&settings::get_config_value(settings::CONFIG_WALLET_NAME)?, None, None, None)?;
 
-    wallet::import(config)?;
+    wallet::import(&recovery_config.to_string()?)?;
 
     //Todo: Fix libindy
     // Deletes recovered encrypted wallet from the temporary location on the file system
@@ -301,15 +305,13 @@ fn reconstitute_restored_wallet(config: &str, recovery_config: &RestoreWalletCon
     Ok(())
 }
 
-fn _write_encrypted_wallet_for_import(path: &str, wallet: &[u8]) -> VcxResult<()> {
-    let err = |e: Error| VcxError::from_msg( VcxErrorKind::IOError, format!("Wallet IO error: {:?}", e));
+fn _write_tmp_encrypted_wallet_for_import(recovery_config: &RestoreWalletConfigs, wallet: &[u8]) -> VcxResult<RestoreWalletConfigs> {
+    let tmp_dir = _unique_tmp_dir(&recovery_config.exported_wallet_path)?;
 
-    let path = PathBuf::from(path);
-
-    if let Some(parent_path) = path.parent() {
+    if let Some(parent_path) = tmp_dir.parent() {
         fs::DirBuilder::new()
             .recursive(true)
-            .create(parent_path).map_err(err)?;
+            .create(parent_path).map_err(_io_err_res)?;
     }
 
     fs::OpenOptions::new()
@@ -317,11 +319,24 @@ fn _write_encrypted_wallet_for_import(path: &str, wallet: &[u8]) -> VcxResult<()
         .create(true)
         .truncate(true)
         .truncate(true)
-        .open(path).map_err(err)?
-        .write_all(wallet).map_err(err)?;
+        .open(&tmp_dir).map_err(_io_err_res)?
+        .write_all(wallet).map_err(_io_err_res)?;
 
-    Ok(())
+    let mut new_path_config = recovery_config.clone();
+    new_path_config.exported_wallet_path = tmp_dir.to_str().ok_or_else(|| _io_err_opt("Invalid unique temp directory"))?.to_string();
+
+    Ok(new_path_config)
 }
+
+fn _unique_tmp_dir(path_str: &str) -> VcxResult<PathBuf> {
+    let path = PathBuf::from(path_str);
+    let f_name = path.file_name().and_then(|os_str| os_str.to_str()).ok_or_else(|| _io_err_opt("Invalid file name"))?;
+    Ok(Path::new(path_str).with_file_name(&format!("{}{}", rand::thread_rng().gen::<u32>(), f_name)))
+}
+
+fn _io_err_res(e: Error) -> VcxError { VcxError::from_msg(VcxErrorKind::IOError, format!("Wallet IO error: {:?}", e)) }
+
+fn _io_err_opt(e: &str) -> VcxError { VcxError::from_msg(VcxErrorKind::IOError, format!("Wallet IO error: {}", e)) }
 
 pub fn recover_dead_drop(vk: &str) -> VcxResult<CloudAddress> {
     info!("recover_dead_drop >>> vk: ***");
@@ -599,7 +614,7 @@ pub mod tests {
             init!("true");
             setup_wallet_env(settings::DEFAULT_WALLET_NAME).unwrap();
 
-            let data = WalletBackup::_retrieve_exported_wallet(BACKUP_KEY, FILE_PATH);
+            let data = _read_exported_wallet(BACKUP_KEY, FILE_PATH);
 
             assert!(data.unwrap().len() > 0);
         }
@@ -612,7 +627,7 @@ pub mod tests {
 
             setup_wallet_env(settings::DEFAULT_WALLET_NAME).unwrap();
 
-            assert!(WalletBackup::_retrieve_exported_wallet(BACKUP_KEY, FILE_PATH).is_ok());
+            assert!(_read_exported_wallet(BACKUP_KEY, FILE_PATH).is_ok());
         }
 
         #[cfg(feature = "wallet_backup")]
@@ -770,9 +785,16 @@ pub mod tests {
 
             let base = "/tmp/existing/";
             let existing_file = format!("{}/test.txt", base);
-            _write_encrypted_wallet_for_import(&existing_file, &vec![1, 2, 3, 4, 5, 6, 7]).unwrap();
-            let rc = restore_wallet(&restore_config(Some(existing_file.to_string())).to_string().unwrap());
-            ::std::fs::remove_dir_all(base).unwrap_or(println!("No Directory to delete after test"));
+            let recovery_config = RestoreWalletConfigs {
+                wallet_name: test_wallet(),
+                wallet_key: settings::get_config_value(::settings::CONFIG_WALLET_KEY).unwrap(),
+                exported_wallet_path: existing_file,
+                backup_key: settings::get_config_value(::settings::CONFIG_WALLET_BACKUP_KEY).unwrap_or(BACKUP_KEY.to_string()),
+                key_derivation: None
+            };
+            _write_tmp_encrypted_wallet_for_import(&recovery_config, &vec![1, 2, 3, 4, 5, 6, 7]).unwrap();
+            let rc = restore_wallet(&restore_config(Some(recovery_config.exported_wallet_path.to_string())).to_string().unwrap());
+            ::std::fs::remove_dir_all(&PathBuf::from(&recovery_config.exported_wallet_path).parent().unwrap()).unwrap_or(println!("No Directory to delete after test"));
 
             assert!(rc.is_ok());
             teardown!("agency");
