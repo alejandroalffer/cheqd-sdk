@@ -339,7 +339,7 @@ public class WalletApi extends VcxJava.API {
             future.complete(walletBackupHandle);
         }
     };
-    
+
     public static CompletableFuture<Integer> deserializeBackupWallet(
         String walletBackupStr
     )  throws VcxException {
@@ -357,12 +357,11 @@ public class WalletApi extends VcxJava.API {
 
     private static Callback vcxBackupRestore = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err, int importHandle) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], importHandle = [" + importHandle + "]");
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            Integer result = importHandle;
-            future.complete(result);
+            future.complete(0);
         }
     };
 
