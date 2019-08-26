@@ -164,10 +164,7 @@ mod tests {
             .agent_vk(&settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY).unwrap()).unwrap()
             .send_secure();
 
-        assert_eq!(
-            err.unwrap_err().to_string(),
-            "Error: Message failed in post\n  Caused by: POST failed with: {\"statusCode\":\"GNR-111\",\"statusMsg\":\"No Wallet Backup available to download\"}\n"
-        );
+        assert!( err.unwrap_err().to_string().contains("GNR-121") );
         teardown!("agency");
     }
 
