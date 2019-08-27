@@ -29,16 +29,16 @@ public class IssuerApi extends VcxJava.API {
     };
 
     public static CompletableFuture<Integer> issuerCreateCredential(String sourceId,
-                                                                    String credentialDefId,
+                                                                    int credentialDefHandle,
                                                                     String issuerId,
                                                                     String credentialData,
                                                                     String credentialName,
-                                                                    long price) throws VcxException {
+                                                                    String price) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
         ParamGuard.notNullOrWhiteSpace(credentialData, "credentialData");
         ParamGuard.notNullOrWhiteSpace(credentialName, "credentialName");
 
-        logger.debug("issuerCreateCredential() called with: sourceId = [" + sourceId + "], credentialDefId = [" + credentialDefId + "], issuerId = [" + issuerId + "], credentialData = [" + credentialData + "], credentialName = [" + credentialName + "], price = [" + price + "]");
+        logger.debug("issuerCreateCredential() called with: sourceId = [" + sourceId + "], credentialDefId = [" + credentialDefHandle + "], issuerId = [" + issuerId + "], credentialData = [" + credentialData + "], credentialName = [" + credentialName + "], price = [" + price + "]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
@@ -46,7 +46,7 @@ public class IssuerApi extends VcxJava.API {
         int result = LibVcx.api.vcx_issuer_create_credential(
                 issue,
                 sourceId,
-                credentialDefId,
+                credentialDefHandle,
                 issuerId,
                 credentialData,
                 credentialName,
