@@ -217,7 +217,7 @@ public abstract class LibVcx {
         public int vcx_issuer_send_credential_offer(int command_handle, int credential_handle, int connection_handle, Callback cb);
 
         /** Get the credential offer message that can be sent to the specified connection */
-        public int vcx_issuer_get_credential_offer_msg(int command_handle, int credential_handle, int connection_handle, Callback cb);
+        public int vcx_issuer_get_credential_offer_msg(int command_handle, int credential_handle, Callback cb);
 
         /** Updates the state of the credential from the agency. */
         public int vcx_issuer_credential_update_state(int command_handle, int credential_handle, Callback cb);
@@ -232,7 +232,7 @@ public abstract class LibVcx {
         public int vcx_issuer_send_credential(int command_handle, int credential_handle, int connection_handle, Callback cb);
 
         /** Get the credential message that can be sent to the specified connection */
-        public int vcx_issuer_get_credential_msg(int command_handle, int credential_handle, int connection_handle, Callback cb);
+        public int vcx_issuer_get_credential_msg(int command_handle, int credential_handle, String my_pw_did, Callback cb);
 
         /** Populates status with the current state of this credential. */
         public int vcx_issuer_credential_serialize(int command_handle, int credential_handle, Callback cb);
