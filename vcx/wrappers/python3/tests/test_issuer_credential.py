@@ -144,13 +144,15 @@ async def test_send_offer():
 async def test_get_msgs():
     connection = await Connection.create(source_id)
     await connection.connect(connection_options)
+    my_pw_did = connection.get_my_pw_did()
+    their_pw_did = connection.get_my_pw_did()
     cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     offer = await issuer_credential.get_offer_msg(connection)
     assert(offer)
     cred = await Credential.create("cred", offer)
     assert(cred)
-    request = await cred.get_request_msg(connection, 0)
+    request = await cred.get_request_msg(my_pw_did, their_pw_did, 0)
     print(request)
     await issuer_credential.update_state_with_message(json.dumps(request))
     assert await issuer_credential.get_state() == State.RequestReceived

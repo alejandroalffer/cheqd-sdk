@@ -777,6 +777,55 @@ pub extern fn vcx_connection_get_pw_did(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Retrieves their_pw_did from Connection object
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// cb: Callback that provides your pw_did for this connection
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_get_their_pw_did(command_handle: u32,
+                                              connection_handle: u32,
+                                              cb: Option<extern fn(xcommand_handle: u32, err: u32, serialized_data: *const c_char)>) -> u32 {
+    info!("vcx_connection_get_pw_did >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    trace!("vcx_connection_get_their_pw_did(command_handle: {}, connection_handle: {}), source_id: {:?}",
+           command_handle, connection_handle, source_id);
+
+    if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_get_state - invalid handle");
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+    }
+
+    spawn(move|| {
+        match get_their_pw_did(connection_handle) {
+            Ok(json) => {
+                trace!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {}), source_id: {:?}",
+                       command_handle, connection_handle, error::SUCCESS.message, json, source_id);
+                let msg = CStringUtils::string_to_cstring(json);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(x) => {
+                warn!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {}), source_id: {:?}",
+                      command_handle, connection_handle, x, "null", source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
+            },
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
