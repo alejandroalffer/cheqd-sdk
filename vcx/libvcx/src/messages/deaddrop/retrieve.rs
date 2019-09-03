@@ -112,6 +112,7 @@ pub struct RetrievedDeadDropResult {
     pub entry: Option<DeadDropRetrievedEntry>
 }
 
+#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -183,7 +184,6 @@ mod tests {
 
         let entry = dead_drop_result.entry.unwrap();
         assert_eq!(entry.address, wb.dd_address.clone());
-        assert_eq!(base64::decode(&entry.data).unwrap(), wb.cloud_address.clone());
         teardown!("agency");
     }
 

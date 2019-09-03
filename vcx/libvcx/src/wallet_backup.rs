@@ -407,6 +407,7 @@ pub fn has_known_cloud_backup(handle: u32) -> bool {
     }).unwrap_or(false)
 }
 
+#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 pub mod tests {
     use super::*;

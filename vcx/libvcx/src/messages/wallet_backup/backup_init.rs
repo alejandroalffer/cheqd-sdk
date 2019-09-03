@@ -99,6 +99,7 @@ pub struct BackupProvisioned {
     msg_type: MessageTypes,
 }
 
+#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
