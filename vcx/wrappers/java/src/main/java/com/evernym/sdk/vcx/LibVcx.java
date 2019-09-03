@@ -282,8 +282,14 @@ public abstract class LibVcx {
 
         /**
          * Populate response_data with the latest proof offer received.
+         * Todo: This should be depricated, use vcx_get_proof_msg
          */
         public int vcx_get_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
+
+        /**
+         * Populate response_data with the latest proof offer received.
+        */
+        public int vcx_get_proof_msg(int command_handle, int proof_handle, Callback cb);
 
         /**
          * Set proof offer as accepted.
