@@ -146,8 +146,8 @@ async def test_send_offer():
 async def test_get_msgs():
     connection = await Connection.create(source_id)
     await connection.connect(connection_options)
-    my_pw_did = connection.get_my_pw_did()
-    their_pw_did = connection.get_my_pw_did()
+    my_pw_did = await connection.get_my_pw_did()
+    their_pw_did = await connection.get_their_pw_did()
     cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     offer = await issuer_credential.get_offer_msg()
@@ -223,7 +223,7 @@ async def test_get_credential_msg():
     data['data']['state'] = State.RequestReceived
     data['data']['credential_request'] = req
     issuer_credential2 = await issuer_credential.deserialize(data)
-    my_pw_did = await issuer_credential2.get_my_pw_did()
+    my_pw_did = await connection.get_my_pw_did()
     msg = await issuer_credential2.get_credential_msg(my_pw_did)
     assert (msg)
 

@@ -244,11 +244,11 @@ class Credential(VcxStateful):
         c_payment = c_uint32(payment_handle)
 
         msg = await do_call('vcx_credential_get_request_msg',
-                      c_credential_handle,
-                      c_my_pw_did,
-                      c_their_pw_did,
-                      c_payment,
-                      Credential.get_request_msg.cb)
+                            c_credential_handle,
+                            c_my_pw_did,
+                            c_their_pw_did,
+                            c_payment,
+                            Credential.get_request_msg.cb)
 
         return json.loads(msg.decode())
 

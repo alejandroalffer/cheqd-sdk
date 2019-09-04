@@ -190,7 +190,7 @@ class IssuerCredential(VcxStateful):
         """
         if not hasattr(IssuerCredential.get_offer_msg, "cb"):
             self.logger.debug("vcx_issuer_get_credential_offer_msg: Creating callback")
-            IssuerCredential.get_offer_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_char_p))
+            IssuerCredential.get_offer_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_credential_handle = c_uint32(self.handle)
 

@@ -92,6 +92,7 @@ impl Credential {
                                                                    &cred_def_json)
             .map_err(|err| err.extend("Cannot create credential request"))?;
 
+        debug!("Credential::build_request <<< Success");
         Ok(CredentialRequest {
             libindy_cred_req: req,
             libindy_cred_req_meta: req_meta,

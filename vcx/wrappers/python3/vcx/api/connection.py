@@ -299,7 +299,8 @@ class Connection(VcxStateful):
 
         c_connection_handle = c_uint32(self.handle)
 
-        return await do_call('vcx_connection_get_pw_did', c_connection_handle, Connection.get_my_pw_did.cb)
+        my_pw_did = await do_call('vcx_connection_get_pw_did', c_connection_handle, Connection.get_my_pw_did.cb)
+        return str(my_pw_did)
 
     async def get_their_pw_did(self) -> str:
         if not hasattr(Connection.get_their_pw_did, "cb"):
@@ -308,4 +309,5 @@ class Connection(VcxStateful):
 
         c_connection_handle = c_uint32(self.handle)
 
-        return await do_call('vcx_connection_get_their_pw_did', c_connection_handle, Connection.get_their_pw_did.cb)
+        their_pw_did = await do_call('vcx_connection_get_their_pw_did', c_connection_handle, Connection.get_their_pw_did.cb)
+        return str(their_pw_did)
