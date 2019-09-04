@@ -5,6 +5,7 @@ from vcx.api.vcx_stateful import VcxStateful
 
 import json
 
+
 class Proof(VcxStateful):
 
     def __init__(self, source_id: str):
@@ -24,9 +25,11 @@ class Proof(VcxStateful):
         self._proof_state = x
 
     @staticmethod
-    async def create(source_id: str, name: str, requested_attrs: list, revocation_interval: dict, requested_predicates: list = []):
+    async def create(source_id: str, name: str, requested_attrs: list, revocation_interval: dict,
+                     requested_predicates=None):
         """
          Builds a generic proof object
+        :param requested_predicates:
         :param source_id: Tag associated by user of sdk
         :param name: Name of the Proof
         :param requested_attrs: Attributes associated with the Proof
@@ -38,6 +41,8 @@ class Proof(VcxStateful):
         proof = await Proof.create(source_id, name, requested_attrs)
         :return: Proof Object
         """
+        if requested_predicates is None:
+            requested_predicates = []
         constructor_params = (source_id,)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
@@ -141,8 +146,8 @@ class Proof(VcxStateful):
         c_proof_handle = c_uint32(self.handle)
 
         msg = await do_call('vcx_proof_get_request_msg',
-                      c_proof_handle,
-                      Proof.get_proof_request_msg.cb)
+                            c_proof_handle,
+                            Proof.get_proof_request_msg.cb)
 
         return json.loads(msg.decode())
 
@@ -172,6 +177,7 @@ class Proof(VcxStateful):
 
     async def get_proof(self, connection: Connection) -> list:
         """
+        Todo: This should be depricated, use get_proof_msg
         Example:
         connection = await Connection.create(source_id)
         await connection.connect(phone_number)
@@ -194,5 +200,27 @@ class Proof(VcxStateful):
                                            c_proof_handle,
                                            c_connection_handle,
                                            Proof.get_proof.cb)
+        self.proof_state = proof_state
+        return json.loads(proof.decode())
+
+    async def get_proof_msg(self) -> list:
+        """
+        Example:
+        name = "proof name"
+        requested_attrs = [{"name": "age", "restrictions": [{"schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }, { "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}]
+        proof = await Proof.create(source_id, name, requested_attrs)
+        await proof.request_proof()
+        await proof.get_proof_msg()
+        :return: List of proofs received for this specific proof object
+        """
+        if not hasattr(Proof.get_proof, "cb"):
+            self.logger.debug("vcx_get_proof: Creating callback")
+            Proof.get_proof_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32, c_char_p))
+
+        c_proof_handle = c_uint32(self.handle)
+
+        proof_state, proof = await do_call('vcx_get_proof_msg',
+                                           c_proof_handle,
+                                           Proof.get_proof_msg.cb)
         self.proof_state = proof_state
         return json.loads(proof.decode())

@@ -198,6 +198,7 @@ pub fn libindy_prover_create_credential_req(prover_did: &str,
                                             credential_offer_json: &str,
                                             credential_def_json: &str) -> VcxResult<(String, String)> {
     if settings::test_indy_mode_enabled() { return Ok((::utils::constants::CREDENTIAL_REQ_STRING.to_owned(), String::new())); }
+    trace!("anoncreds::libindy_prover_create_credential_req >>>");
 
     let master_secret_name = settings::DEFAULT_LINK_SECRET_ALIAS;
     anoncreds::prover_create_credential_req(get_wallet_handle(),
@@ -398,6 +399,7 @@ pub fn create_cred_def(issuer_did: &str,
 
 pub fn get_cred_def_json(cred_def_id: &str) -> VcxResult<(String, String)> {
     if settings::test_indy_mode_enabled() { return Ok((CRED_DEF_ID.to_string(), CRED_DEF_JSON.to_string())); }
+    trace!("anoncreds::get_cred_def_json >>> id: {}", cred_def_id);
 
     let cred_def_json = libindy_get_cred_def(cred_def_id)?;
 
