@@ -131,7 +131,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<GetProofResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_get_proof(commandHandle, proofHandle, vcxGetProofCB);
+        int result = LibVcx.api.vcx_get_proof_msg(commandHandle, proofHandle, vcxGetProofCB);
         checkResult(result);
 
         return future;
