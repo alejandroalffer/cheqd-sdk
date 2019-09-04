@@ -5,6 +5,7 @@ from vcx.api.vcx_stateful import VcxStateful
 
 import json
 
+
 class Proof(VcxStateful):
 
     def __init__(self, source_id: str):
@@ -24,9 +25,11 @@ class Proof(VcxStateful):
         self._proof_state = x
 
     @staticmethod
-    async def create(source_id: str, name: str, requested_attrs: list, revocation_interval: dict, requested_predicates: list = []):
+    async def create(source_id: str, name: str, requested_attrs: list, revocation_interval: dict,
+                     requested_predicates=None):
         """
          Builds a generic proof object
+        :param requested_predicates:
         :param source_id: Tag associated by user of sdk
         :param name: Name of the Proof
         :param requested_attrs: Attributes associated with the Proof
@@ -38,6 +41,8 @@ class Proof(VcxStateful):
         proof = await Proof.create(source_id, name, requested_attrs)
         :return: Proof Object
         """
+        if requested_predicates is None:
+            requested_predicates = []
         constructor_params = (source_id,)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
@@ -141,8 +146,8 @@ class Proof(VcxStateful):
         c_proof_handle = c_uint32(self.handle)
 
         msg = await do_call('vcx_proof_get_request_msg',
-                      c_proof_handle,
-                      Proof.get_proof_request_msg.cb)
+                            c_proof_handle,
+                            Proof.get_proof_request_msg.cb)
 
         return json.loads(msg.decode())
 

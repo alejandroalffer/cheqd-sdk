@@ -126,7 +126,7 @@ impl IssuerCredential {
         Ok(error::SUCCESS.code_num)
     }
 
-    pub fn generate_credential_offer_msg(&mut self) -> VcxResult<(String, String)> {
+    pub fn generate_credential_offer_msg(&mut self, connection_handle: u32) -> VcxResult<(String, String)> {
         let mut payload = Vec::new();
 
         let connection_name = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?;
@@ -174,7 +174,7 @@ impl IssuerCredential {
         self.remote_vk = connection::get_their_pw_verkey(connection_handle)?;
 
 
-        let (payload, title) = self.generate_credential_offer_msg()?;
+        let (payload, title) = self.generate_credential_offer_msg(connection_handle)?;
 
         debug!("credential offer data: {}", secret!(&payload));
 
@@ -199,13 +199,14 @@ impl IssuerCredential {
         return Ok(error::SUCCESS.code_num);
     }
 
-    fn generate_credential_msg(&mut self, my_pw_did: &str) -> VcxResult<String> {
+    fn generate_credential_msg(&mut self, connection_handle: u32) -> VcxResult<String> {
+        let to = connection::get_pw_did(connection_handle)?;
         let attrs_with_encodings = self.create_attributes_encodings()?;
 
         let data = if settings::test_indy_mode_enabled() {
             CRED_MSG.to_string()
         } else {
-            let cred = self.generate_credential(&attrs_with_encodings, my_pw_did)?;
+            let cred = self.generate_credential(&attrs_with_encodings, &to)?;
             serde_json::to_string(&cred)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot serialize credential: {}", err)))?
         };
@@ -229,7 +230,7 @@ impl IssuerCredential {
 
         self.verify_payment()?;
 
-        let data = self.generate_credential_msg(&connection::get_pw_did(connection_handle)?)?;
+        let data = self.generate_credential_msg(connection_handle)?;
 
         debug!("credential data: {}", secret!(&data));
 
@@ -634,9 +635,9 @@ pub fn from_string(credential_data: &str) -> VcxResult<u32> {
     ISSUER_CREDENTIAL_MAP.add(schema)
 }
 
-pub fn generate_credential_offer_msg(handle: u32) -> VcxResult<(String, String)> {
+pub fn generate_credential_offer_msg(handle: u32, connection_handle: u32) -> VcxResult<(String, String)> {
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
-        i.generate_credential_offer_msg()
+        i.generate_credential_offer_msg(connection_handle)
     })
 }
 
@@ -646,9 +647,9 @@ pub fn send_credential_offer(handle: u32, connection_handle: u32) -> VcxResult<u
     })
 }
 
-pub fn generate_credential_msg(handle: u32, my_pw_did: &str) -> VcxResult<String> {
+pub fn generate_credential_msg(handle: u32, connection_handle: u32) -> VcxResult<String> {
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
-        i.generate_credential_msg(my_pw_did)
+        i.generate_credential_msg(connection_handle)
     })
 }
 

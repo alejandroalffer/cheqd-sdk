@@ -446,7 +446,9 @@ mod tests {
     use super::*;
     use utils::constants::{GET_MESSAGES_RESPONSE, GET_ALL_MESSAGES_RESPONSE};
     use messages::message_type::MessageTypeV1;
+    #[cfg(feature = "pool_tests")]
     use std::thread;
+    #[cfg(feature = "pool_tests")]
     use std::time::Duration;
 
 

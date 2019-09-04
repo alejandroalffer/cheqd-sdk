@@ -63,6 +63,7 @@ pub struct BackupAck {
     msg_type: MessageTypes,
 }
 
+#[cfg(feature = "wallet_backup")]
 #[cfg(test)]
 mod tests {
     use super::*;
