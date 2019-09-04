@@ -672,7 +672,7 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
         match value.as_str() {
             Some("connReq") => Ok(RemoteMessageType::ConnReq),
-            Some("connReqAnswer") => Ok(RemoteMessageType::ConnReqAnswer),
+            Some("connReqAnswer") | Some("CONN_REQ_ACCEPTED") => Ok(RemoteMessageType::ConnReqAnswer),
             Some("credOffer") => Ok(RemoteMessageType::CredOffer),
             Some("credReq") => Ok(RemoteMessageType::CredReq),
             Some("cred") => Ok(RemoteMessageType::Cred),

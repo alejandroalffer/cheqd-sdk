@@ -20,7 +20,6 @@ schema_id = '123'
 req = {'libindy_cred_req': '', 'libindy_cred_req_meta': '', 'cred_def_id': '', 'tid': '', 'to_did': '', 'from_did': '',
        'version': '', 'mid': '', 'msg_ref_id': '123'}
 
-
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_create_issuer_credential():
@@ -69,7 +68,7 @@ async def test_deserialize():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_deserialize_with_invalid_data():
     with pytest.raises(VcxError) as e:
-        data = {'data': {'invalid': -99}}
+        data = {'data': { 'invalid': -99 } }
         await IssuerCredential.deserialize(data)
     assert ErrorCode.InvalidJson == e.value.error_code
     assert 'Invalid JSON string' == e.value.error_msg
@@ -81,7 +80,7 @@ async def test_serialize_deserialize_and_then_serialize():
     cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     data1 = await issuer_credential.serialize()
-    print("data1: %s" % data1)
+    print("data1: %s" %  data1)
     issuer_credential2 = await IssuerCredential.deserialize(data1)
     data2 = await issuer_credential2.serialize()
     assert data1 == data2
@@ -138,8 +137,7 @@ async def test_send_offer():
     await issuer_credential.send_offer(connection)
     assert await issuer_credential.update_state() == State.OfferSent
     txn = await issuer_credential.get_payment_txn()
-    assert (txn)
-
+    assert(txn)
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -150,18 +148,17 @@ async def test_get_msgs():
     their_pw_did = await connection.get_their_pw_did()
     cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
-    offer = await issuer_credential.get_offer_msg()
-    assert (offer)
+    offer = await issuer_credential.get_offer_msg(connection)
+    assert(offer)
     cred = await Credential.create("cred", offer)
-    assert (cred)
-    request = await cred.get_request_msg(my_pw_did, their_pw_did, 0)
+    assert(cred)
+    request = await cred.get_request_msg(connection, 0)
     print(request)
     await issuer_credential.update_state_with_message(json.dumps(request))
     assert await issuer_credential.get_state() == State.RequestReceived
-    cred_msg = await issuer_credential.get_credential_msg(my_pw_did)
+    cred_msg = await issuer_credential.get_credential_msg(connection)
     await cred.update_state_with_message(json.dumps(cred_msg))
-    assert (await cred.get_state() == State.Accepted)
-
+    assert(await cred.get_state() == State.Accepted)
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -177,7 +174,6 @@ async def test_send_offer_with_invalid_state():
         await issuer_credential2.send_offer(connection)
     assert ErrorCode.NotReady == e.value.error_code
     assert 'Object not ready for specified action' == e.value.error_msg
-
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -282,7 +278,7 @@ async def test_revoke_credential_success():
     with pytest.raises(VcxError) as e:
         await issuer_credential2.revoke_credential()
     assert ErrorCode.InvalidRevocationDetails == e.value.error_code
-
+    
     serialized['data']['cred_rev_id'] = '123'
     issuer_credential3 = await IssuerCredential.deserialize(serialized)
     with pytest.raises(VcxError) as e:
@@ -298,3 +294,4 @@ async def test_revoke_credential_success():
     serialized['data']['tails_file'] = 'file'
     issuer_credential5 = await IssuerCredential.deserialize(serialized)
     await issuer_credential5.revoke_credential()
+

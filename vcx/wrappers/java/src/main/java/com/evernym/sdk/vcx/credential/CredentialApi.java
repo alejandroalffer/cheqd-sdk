@@ -85,19 +85,17 @@ public class CredentialApi extends VcxJava.API {
 
     public static CompletableFuture<String> credentialGetRequestMsg(
             int credentialHandle,
-            String myPwDid,
-            String theirPwDid,
+            int connectionHandle,
             int paymentHandle
     ) throws VcxException {
-        logger.debug("credentialGetRequestMsg() called with: credentialHandle = [" + credentialHandle + "], myPwDid = [" + myPwDid + "], theirPwDid = [" + theirPwDid + "], paymentHandle = [" + paymentHandle + "]");
+        logger.debug("credentialGetRequestMsg() called with: credentialHandle = [" + credentialHandle + "], connectionHandle = [" + connectionHandle + "], paymentHandle = [" + paymentHandle + "]");
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_credential_get_request_msg(
                 commandHandle,
                 credentialHandle,
-                myPwDid,
-                theirPwDid,
+                connectionHandle,
                 paymentHandle,
                 vcxCredentialStringCB);
         checkResult(result);

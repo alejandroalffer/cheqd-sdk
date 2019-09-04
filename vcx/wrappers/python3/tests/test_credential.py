@@ -227,7 +227,7 @@ async def test_get_request_msg():
     my_pw_did = await connection.get_my_pw_did()
     their_pw_did = await connection.get_my_pw_did()
     credential = await Credential.deserialize(credential_json_versioned)
-    msg = await credential.get_request_msg(my_pw_did, their_pw_did, 0)
+    msg = await credential.get_request_msg(connection, 0)
     assert(msg)
 
 
