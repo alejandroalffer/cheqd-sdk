@@ -204,6 +204,12 @@ public abstract class LibVcx {
          */
         public int vcx_connection_verify_signature(int command_handle, int connection_handle, byte[] data_raw, int data_len, byte[] signature_raw, int signature_len, Callback cb);
 
+        /** Get my pairwise did from connection */
+        public int vcx_connection_get_pw_did(int command_handle, int connection_handle, Callback cb);
+
+        /** Get their pairwise did from connection */
+        public int vcx_connection_get_their_pw_did(int command_handle, int connection_handle, Callback cb);
+
         /**
          * credential issuer object
          *
@@ -217,7 +223,7 @@ public abstract class LibVcx {
         public int vcx_issuer_send_credential_offer(int command_handle, int credential_handle, int connection_handle, Callback cb);
 
         /** Get the credential offer message that can be sent to the specified connection */
-        public int vcx_issuer_get_credential_offer_msg(int command_handle, int credential_handle, int connection_handle, Callback cb);
+        public int vcx_issuer_get_credential_offer_msg(int command_handle, int credential_handle, Callback cb);
 
         /** Updates the state of the credential from the agency. */
         public int vcx_issuer_credential_update_state(int command_handle, int credential_handle, Callback cb);
@@ -232,7 +238,7 @@ public abstract class LibVcx {
         public int vcx_issuer_send_credential(int command_handle, int credential_handle, int connection_handle, Callback cb);
 
         /** Get the credential message that can be sent to the specified connection */
-        public int vcx_issuer_get_credential_msg(int command_handle, int credential_handle, int connection_handle, Callback cb);
+        public int vcx_issuer_get_credential_msg(int command_handle, int credential_handle, String my_pw_did, Callback cb);
 
         /** Populates status with the current state of this credential. */
         public int vcx_issuer_credential_serialize(int command_handle, int credential_handle, Callback cb);
@@ -276,8 +282,14 @@ public abstract class LibVcx {
 
         /**
          * Populate response_data with the latest proof offer received.
+         * Todo: This should be depricated, use vcx_get_proof_msg
          */
         public int vcx_get_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
+
+        /**
+         * Populate response_data with the latest proof offer received.
+        */
+        public int vcx_get_proof_msg(int command_handle, int proof_handle, Callback cb);
 
         /**
          * Set proof offer as accepted.
@@ -555,7 +567,7 @@ public abstract class LibVcx {
         public int vcx_credential_send_request(int command_handle, int credential_handle, int connection_handle,int payment_handle, Callback cb);
 
         /** Get credential request message for given connection */
-        public int vcx_credential_get_request_msg(int command_handle, int credential_handle, int connection_handle, int payment_handle, Callback cb);
+        public int vcx_credential_get_request_msg(int command_handle, int credential_handle, String myPwDid, String theirPwDid, int payment_handle, Callback cb);
 
         /** Check for any credential offers from the connection. */
         public int vcx_credential_get_offers(int command_handle, int connection_handle,Callback cb);

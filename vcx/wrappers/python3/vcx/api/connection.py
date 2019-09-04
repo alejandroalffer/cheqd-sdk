@@ -291,3 +291,21 @@ class Connection(VcxStateful):
                                 Connection.invite_details.cb)
 
         return json.loads(details.decode())
+
+    async def get_my_pw_did(self) -> str:
+        if not hasattr(Connection.get_my_pw_did, "cb"):
+            self.logger.debug("get_my_pw_did: Creating callback")
+            Connection.get_my_pw_did.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+
+        return await do_call('vcx_connection_get_pw_did', c_connection_handle, Connection.get_my_pw_did.cb)
+
+    async def get_their_pw_did(self) -> str:
+        if not hasattr(Connection.get_their_pw_did, "cb"):
+            self.logger.debug("get_their_pw_did: Creating callback")
+            Connection.get_their_pw_did.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+
+        return await do_call('vcx_connection_get_their_pw_did', c_connection_handle, Connection.get_their_pw_did.cb)

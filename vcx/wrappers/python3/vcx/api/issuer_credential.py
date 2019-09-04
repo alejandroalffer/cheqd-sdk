@@ -170,7 +170,7 @@ class IssuerCredential(VcxStateful):
                       c_connection_handle,
                       IssuerCredential.send_offer.cb)
 
-    async def get_offer_msg(self, connection: Connection):
+    async def get_offer_msg(self):
         """
         Gets the offer message to send to specified connection.
         :param connection: vcx.api.connection.Connection
@@ -190,15 +190,13 @@ class IssuerCredential(VcxStateful):
         """
         if not hasattr(IssuerCredential.get_offer_msg, "cb"):
             self.logger.debug("vcx_issuer_get_credential_offer_msg: Creating callback")
-            IssuerCredential.get_offer_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+            IssuerCredential.get_offer_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_char_p))
 
         c_credential_handle = c_uint32(self.handle)
-        c_connection_handle = c_uint32(connection.handle)
 
         msg = await do_call('vcx_issuer_get_credential_offer_msg',
-                      c_credential_handle,
-                      c_connection_handle,
-                      IssuerCredential.get_offer_msg.cb)
+                            c_credential_handle,
+                            IssuerCredential.get_offer_msg.cb)
 
         return json.loads(msg.decode())
 
@@ -222,10 +220,10 @@ class IssuerCredential(VcxStateful):
                       c_connection_handle,
                       IssuerCredential.send_credential.cb)
 
-    async def get_credential_msg(self, connection: Connection):
+    async def get_credential_msg(self, my_pw_did: str):
         """
         Get the credential to send to the end user (prover).
-        :param connection: Connection Object
+        :param my_pw_did: my pw did associated with person I'm sending credential to
         :return: None
             Example:
             credential.send_credential(connection)
@@ -235,12 +233,12 @@ class IssuerCredential(VcxStateful):
             IssuerCredential.get_credential_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_credential_handle = c_uint32(self.handle)
-        c_connection_handle = c_uint32(connection.handle)
+        c_my_pw_did = c_char_p(json.dumps(my_pw_did).encode('utf-8'))
 
         msg = await do_call('vcx_issuer_get_credential_msg',
-                      c_credential_handle,
-                      c_connection_handle,
-                      IssuerCredential.get_credential_msg.cb)
+                            c_credential_handle,
+                            c_my_pw_did,
+                            IssuerCredential.get_credential_msg.cb)
 
         return json.loads(msg.decode())
 
