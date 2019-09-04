@@ -124,7 +124,7 @@ public class ProofApi extends VcxJava.API {
     }
 
     public static CompletableFuture<GetProofResult> getProofMsg(
-            int proofHandle,
+            int proofHandle
     ) throws VcxException {
         ParamGuard.notNull(proofHandle, "proofHandle");
         logger.debug("getProof() called with: proofHandle = [" + proofHandle + "]");
