@@ -71,6 +71,37 @@ impl CredentialDef {
     fn get_rev_reg_delta_payment_txn(&self) -> Option<PaymentTxn> { self.rev_reg_delta_payment_txn.clone() }
 }
 
+pub fn create_credentialdef_from_id(source_id: String, cred_def_id: String, issuer_did: String) -> VcxResult<u32> {
+    trace!("create_credentialdef_from_id >>> source_id: {}, cred_def_id: {}, issuer_did: {}",
+           source_id, cred_def_id, issuer_did);
+
+    let tag: String = cred_def_id
+        .split_terminator(':')
+        .collect::<Vec<&str>>()
+        .pop()
+        .unwrap_or_default()
+        .to_string();
+
+    let cred_def = CredentialDef {
+        source_id,
+        tag,
+        id: cred_def_id,
+        issuer_did: Some(issuer_did),
+        name: String::new(),
+        cred_def_payment_txn: None,
+        rev_reg_def_payment_txn: None,
+        rev_reg_delta_payment_txn: None,
+        rev_reg_id: None,
+        rev_reg_def: None,
+        rev_reg_entry: None,
+        tails_file: None,
+    };
+
+    let handle = CREDENTIALDEF_MAP.add(cred_def).or(Err(VcxError::from(VcxErrorKind::CreateCredDef)))?;
+
+    Ok(handle)
+}
+
 pub fn create_new_credentialdef(source_id: String,
                                 name: String,
                                 issuer_did: String,
@@ -373,6 +404,20 @@ pub mod tests {
         let payment = serde_json::to_string(&get_cred_def_payment_txn(rc).unwrap()).unwrap();
         assert!(payment.len() > 0);
     }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_create_credential_def_from_id_real() {
+        init!("ledger");
+
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (_, handle) = create_cred_def_real(false);
+        let cred_def_id = get_cred_def_id(handle).unwrap();
+
+        let handle2 = create_credentialdef_from_id("1".to_string(), cred_def_id.clone(), did).unwrap();
+        assert_eq!(get_cred_def_id(handle2).unwrap(), cred_def_id);
+    }
+
 
     #[cfg(feature = "pool_tests")]
     #[test]
