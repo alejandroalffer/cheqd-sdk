@@ -109,6 +109,14 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
 ///
 /// issuer_did: did corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
 ///
+/// revocation_config: Information given during the initial create of the cred def if revocation was enabled
+///  {
+///     tails_file: Option<String>,  // Path to tails file
+///     rev_reg_id: Option<String>,
+///     rev_reg_def: Option<String>,
+///     rev_reg_entry: Option<String>,
+///  }
+///
 /// cb: Callback that provides CredentialDef handle and error status of request.
 ///
 /// #Returns
@@ -118,12 +126,14 @@ pub extern fn vcx_credentialdef_create_with_id(command_handle: u32,
                                                source_id: *const c_char,
                                                cred_def_id: *const c_char,
                                                issuer_did: *const c_char,
+                                               revocation_config: *const c_char,
                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
     info!("vcx_credentialdef_create_with_id >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(cred_def_id, VcxErrorKind::InvalidOption);
     check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(revocation_config, VcxErrorKind::InvalidOption);
 
     let issuer_did: String = if !issuer_did.is_null() {
         check_useful_c_str!(issuer_did, VcxErrorKind::InvalidOption);
@@ -135,14 +145,19 @@ pub extern fn vcx_credentialdef_create_with_id(command_handle: u32,
         }
     };
 
-    trace!("vcx_credentialdef_create_with_id(command_handle: {}, source_id: {}, cred_def_id: {} issuer_did: {})",
+    trace!("vcx_credentialdef_create_with_id(command_handle: {}, source_id: {}, cred_def_id: {} issuer_did: {}, revocation_config: {:?})",
            command_handle,
            source_id,
            cred_def_id,
-           issuer_did);
+           issuer_did,
+           revocation_config
+    );
 
     spawn(move|| {
-        let ( rc, handle) = match credential_def::create_credentialdef_from_id(source_id, cred_def_id, issuer_did ) {
+        let ( rc, handle) = match credential_def::create_credentialdef_from_id(source_id,
+                                                                               cred_def_id,
+                                                                               issuer_did,
+                                                                               revocation_config ) {
             Ok(x) => {
                 trace!("vcx_credentialdef_create_with_id_cb(command_handle: {}, rc: {}, credentialdef_handle: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, x, credential_def::get_source_id(x).unwrap_or_default());
@@ -436,6 +451,7 @@ mod tests {
                                             CString::new("Test Source ID").unwrap().into_raw(),
                                             CString::new("Test Credential Def").unwrap().into_raw(),
                                             CString::new("6vkhW3L28AophhA68SSzRS").unwrap().into_raw(),
+                                            ptr::null(),
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
