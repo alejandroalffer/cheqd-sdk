@@ -184,7 +184,7 @@ build-ios:
       - IOSBuilds/libvcxall/*.gz
   script:
     - curl -s https://repo.corp.evernym.com/filely/ios/vcx-build-static-libs_${staticLibVersion}.tar.gz | tar -C ~/ -xvzf -
-    - brew install rustup-init
+    - which rustup-init || brew install rustup-init
     - echo | rustup-init
     - source ~/.bash_profile
     - mkdir -p ~/IOSBuilds/libvcxpartial/ ~/IOSBuilds/libvcxall/
