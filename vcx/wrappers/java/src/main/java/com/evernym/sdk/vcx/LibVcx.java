@@ -681,6 +681,8 @@ public abstract class LibVcx {
         /** Creates a credential definition from the given schema.  Populates a handle to the new credentialdef. */
         int vcx_credentialdef_create(int command_handle, String source_id, String credentialdef_name, String schema_id, String issuer_did, String tag,  String config, int payment_handle, Callback cb);
 
+        /** Creates a credential definition from the given credential definition id. */
+        int vcx_credentialdef_create_with_id(int command_handle, String source_id, String credentialdef_id, String issuer_did, String revocation_config, Callback cb);
 
         /** Populates status with the current state of this credential. */
         int vcx_credentialdef_serialize(int command_handle, int credentialdef_handle, Callback cb);

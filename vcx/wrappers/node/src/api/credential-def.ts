@@ -107,6 +107,43 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
       throw new VCXInternalError(err)
     }
   }
+  /**
+   * Creates a new CredentialDef object that is written to the ledger
+   *
+   * Example:
+   * ```
+   * data = {
+   *   revocation_config: null,
+   *   credDefId: 'testCredentialDefId',
+   *   sourceId: 'testCredentialDefSourceId'
+   * }
+   * credentialDef = await CredentialDef.create_with_id(data)
+   * ```
+   */
+  public static async create_with_id ({
+    sourceId,
+    credDefId,
+    revocation_config
+  }: ICredentialDefCreateData): Promise<CredentialDef> {
+    // Todo: need to add params for tag and config
+    const credentialDef = new CredentialDef(sourceId, { "", "", "" })
+    const commandHandle = 0
+    const issuerDid = null
+
+    try {
+      await credentialDef._create((cb) => rustAPI().vcx_credentialdef_create_with_id(
+        commandHandle,
+        sourceId,
+        credDefId,
+        issuerDid,
+        JSON.stringify(revocation_config),
+      cb
+      ))
+      return credentialDef
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
 
   /**
    * Builds a credentialDef object with defined attributes.
