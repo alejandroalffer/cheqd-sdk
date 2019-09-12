@@ -506,6 +506,36 @@ vcx_error_t vcx_credentialdef_create(vcx_command_handle_t command_handle,
                                   vcx_payment_handle_t payment_handle,
                                   void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t));
 
+/// Create a new CredentialDef object from a cred_def_id
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the user.
+///
+/// cred_def_id: reference to already created cred def
+///
+/// issuer_did: did corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
+///
+/// revocation_config: Information given during the initial create of the cred def if revocation was enabled
+///  {
+///     tails_file: Option<String>,  // Path to tails file
+///     rev_reg_id: Option<String>,
+///     rev_reg_def: Option<String>,
+///     rev_reg_entry: Option<String>,
+///  }
+///
+/// cb: Callback that provides CredentialDef handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_credentialdef_create_with_id(vcx_command_handle_t command_handle,
+                                             const char *source_id,
+                                             const char *cred_def_id,
+                                             const char *issuer_did,
+                                             const char *revocation_config,
+                                             void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t));
+
 // Takes a json string representing a credentialdef object and recreates an object matching the json
 //
 // #Params

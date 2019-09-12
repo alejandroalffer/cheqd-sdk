@@ -58,6 +58,43 @@ public class CredentialDefApi extends VcxJava.API {
         return future;
     }
 
+    private static Callback credentialDefCreateWithIdCB = new Callback() {
+        // TODO: This callback and jna definition needs to be fixed for this API
+        // it should accept connection handle as well
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, int credentialDefHandle) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], credentialDefHandle = [" + credentialDefHandle + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            Integer result = credentialDefHandle;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<Integer> credentialDefCreateWithId(String sourceId,
+                                                                       String credDefId,
+                                                                       String issuerDid,
+                                                                       String revocationConfig
+    ) throws VcxException {
+        ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
+        ParamGuard.notNullOrWhiteSpace(credDefId, "credDefId");
+        logger.debug("credentialDefCreateWithId() called with: sourceId = [" + sourceId + "], credDefId = [" + credDefId + "], issuerId = [****], revocationConfig = [" + revocationConfig + "]");
+        //TODO: Check for more mandatory params in vcx to add in PamaGuard
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_credentialdef_create_with_id(
+                commandHandle,
+                sourceId,
+                credDefId,
+                issuerDid,
+                revocationConfig,
+                credentialDefCreateWithIdCB
+        );
+        checkResult(result);
+        return future;
+    }
+
     private static Callback credentialDefSerializeCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String serializedData) {

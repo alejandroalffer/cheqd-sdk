@@ -83,7 +83,14 @@ class TestHelper {
                 0
                 ));
     }
-
+    static int _createCredentialDefWithId() throws VcxException, ExecutionException, InterruptedException {
+        return  getResultFromFuture(CredentialDefApi.credentialDefCreateWithId(
+                "testCredentialDefSourceId",
+                "testCredentialDefId",
+                null,
+                null
+        ));
+    }
     static  <T> T getResultFromFuture(CompletableFuture<T> future) throws ExecutionException, InterruptedException {
         Awaitility.await().until(future::isDone);
         return future.get();
