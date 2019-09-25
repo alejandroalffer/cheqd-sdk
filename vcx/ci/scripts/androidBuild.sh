@@ -2,39 +2,6 @@
 
 set -e
 
-setup() {
-    echo "Working Directory: ${PWD}"
-    set -e
-    export ARCH=$1
-    export LIBINDY_BRANCH=$2
-    export LIBINDY_VERSION=$3
-    export LIBNULL_BRANCH=$4
-    export LIBNULL_VERSION=$5
-    export LIBSOVTOKEN_ZIP=$6
-
-    export PATH=$PATH:/opt/gradle/gradle-3.4.1/bin
-    export PATH=${PATH}:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools:$ANDROID_HOME/build-tools/25.0.2/
-    export PATH=${HOME}/.cargo/bin:${PATH}
-    export SOVRIN_REPO=https://repo.sovrin.org/android/libsovtoken/stable/1.0.0-6/
-    export VCX_BASE=../vcx
-    # For docker
-    # export VCX_BASE=${HOME}/vcx
-
-    source /etc/profile
-	if [ ! -d runtime_android_build ]; then
-        mkdir runtime_android_build
-    fi
-    cd runtime_android_build
-	retrieve_prebuilt_binaries ${ARCH}
-	generate_flags $1
-    if [ ! -d "toolchains" ]; then
-        mkdir toolchains
-    fi
-
-    ANDROID_JNI_LIB=${VCX_BASE}/wrappers/java/vcx/src/main/jniLibs
-}
-
-
 retrieve_prebuilt_binaries() {
     ANDROID_BUILD_FOLDER=${PWD}
     pushd ${ANDROID_BUILD_FOLDER}
@@ -170,7 +137,40 @@ build_vcx() {
 
 }
 
-setup $1 $2 $3 $4 $5 $6
+setup() {
+    echo "Working Directory: ${PWD}"
+    set -e
+    export ARCH=$1
+    export LIBINDY_BRANCH=$2
+    export LIBINDY_VERSION=$3
+    export LIBNULL_BRANCH=$4
+    export LIBNULL_VERSION=$5
+    export LIBSOVTOKEN_VER=$6
+    export LIBSOVTOKEN_ZIP=$7
+
+    export PATH=$PATH:/opt/gradle/gradle-3.4.1/bin
+    export PATH=${PATH}:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools:$ANDROID_HOME/build-tools/25.0.2/
+    export PATH=${HOME}/.cargo/bin:${PATH}
+    export SOVRIN_REPO=https://repo.sovrin.org/android/libsovtoken/stable/${LIBSOVTOKEN_VER}/
+    export VCX_BASE=../vcx
+    # For docker
+    # export VCX_BASE=${HOME}/vcx
+
+    source /etc/profile
+	if [ ! -d runtime_android_build ]; then
+        mkdir runtime_android_build
+    fi
+    cd runtime_android_build
+	retrieve_prebuilt_binaries ${ARCH}
+	generate_flags $1
+    if [ ! -d "toolchains" ]; then
+        mkdir toolchains
+    fi
+
+    ANDROID_JNI_LIB=${VCX_BASE}/wrappers/java/vcx/src/main/jniLibs
+}
+
+setup $@
 get_libindy
 get_libsovtoken
 get_libnullpay

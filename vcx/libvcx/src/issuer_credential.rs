@@ -923,7 +923,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_cred_offer() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         let issuer = create_full_issuer_credential().0.generate_credential_offer(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap()).unwrap();
     }
 

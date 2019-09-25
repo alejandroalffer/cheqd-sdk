@@ -741,7 +741,7 @@ mod tests {
                                  connection_handle,
                                  Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let rc = cb.receive(Some(Duration::from_secs(10))).is_err();
+        let _ = cb.receive(Some(Duration::from_secs(10))).is_err();
     }
 
     #[test]

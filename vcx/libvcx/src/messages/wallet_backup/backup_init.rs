@@ -112,7 +112,7 @@ mod tests {
     #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_wallet_backup_provision() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
         let (agent_did, agent_vk) = create_and_store_my_did(Some(::utils::constants::MY2_SEED)).unwrap();
         let (my_did, my_vk) = create_and_store_my_did(Some(::utils::constants::MY1_SEED)).unwrap();

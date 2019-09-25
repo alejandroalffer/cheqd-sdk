@@ -448,14 +448,16 @@ mod tests {
                "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
                "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
                "genesis_path": get_temp_dir_path(Some("pool1.txn")).to_str().unwrap(),
-               "payment_method": "null"}).to_string()
+               "payment_method": "null",
+               "pool_config": json!({"timeout":60}).to_string()
+           }).to_string()
     }
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_file() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
@@ -502,7 +504,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_config() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
@@ -613,7 +615,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_with_default_values() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
@@ -630,7 +632,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_called_twice_fails() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
@@ -655,7 +657,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_called_twice_passes_after_shutdown() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
@@ -676,7 +678,7 @@ mod tests {
         assert_eq!(settings::get_config_value("wallet_name").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
 
         // Init for the second time works
-        ::utils::devsetup::tests::setup_ledger_env();
+        ::utils::devsetup::tests::setup_ledger_env(false);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -693,7 +695,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_fails_with_open_wallet() {
-        init!("ledger");
+        init!("ledger_zero_fees");
 
         let config_path_buf = get_temp_dir_path(Some("test_init.json"));
         let config_path = config_path_buf.to_str().unwrap();
@@ -852,10 +854,10 @@ mod tests {
 
         let data = r#"["name","male"]"#;
         let connection = ::connection::tests::build_test_connection();
-        let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(), "NAME".to_string(), "4fUDR9R7fjwELRvH9JT6HH".to_string(), "id".to_string(), "tag".to_string(), "{}".to_string()).unwrap();
+        let credentialdef = ::credential_def::create_and_publish_credentialdef("SID".to_string(), "NAME".to_string(), "4fUDR9R7fjwELRvH9JT6HH".to_string(), "id".to_string(), "tag".to_string(), "{}".to_string()).unwrap();
         let issuer_credential = ::issuer_credential::issuer_credential_create(credentialdef, "1".to_string(), "8XFh8yBzrpJQmNyZzgoTqB".to_owned(), "credential_name".to_string(), "{\"attr\":\"value\"}".to_owned(), 1).unwrap();
         let proof = ::proof::create_proof("1".to_string(), "[]".to_string(), "[]".to_string(), r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
-        let schema = ::schema::create_new_schema("5", "VsKV7grR1BUE29mG2Fm2kX".to_string(), "name".to_string(), "0.1".to_string(), data.to_string()).unwrap();
+        let schema = ::schema::create_and_publish_schema("5", "VsKV7grR1BUE29mG2Fm2kX".to_string(), "name".to_string(), "0.1".to_string(), data.to_string()).unwrap();
         let disclosed_proof = ::disclosed_proof::create_proof("id", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
         let credential = ::credential::credential_create_with_offer("name", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
 
@@ -915,7 +917,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_logging_config() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
         let content = create_config_util(Some("debug"));
@@ -999,7 +1001,7 @@ mod tests {
         init!("true");
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_ledger_author_agreement(cb.command_handle,
-                                             Some(cb.get_callback())), error::SUCCESS.code_num);
+                                                   Some(cb.get_callback())), error::SUCCESS.code_num);
         let agreement = cb.receive(Some(Duration::from_secs(2))).unwrap();
         assert_eq!(::utils::constants::DEFAULT_AUTHOR_AGREEMENT, agreement.unwrap());
     }
@@ -1023,7 +1025,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_minimal() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         let content = get_settings();
         settings::clear_config();
         // Store settings and handles

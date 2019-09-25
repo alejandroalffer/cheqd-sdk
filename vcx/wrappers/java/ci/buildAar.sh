@@ -103,7 +103,7 @@ pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
         echo "Running :assembleDebugAndroidTest to see if it passes..."
 
         # Run the tests first
-        ./gradlew --no-daemon :assembleDebugAndroidTest --project-dir=android -x test
+        ./gradlew --full-stacktrace --debug --no-daemon :assembleDebugAndroidTest --project-dir=android -x test
 
         echo "Installing the android test apk that will test the aar library..."
         i=0

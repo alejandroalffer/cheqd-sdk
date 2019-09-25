@@ -122,7 +122,7 @@ pub mod tests {
     #[test]
     fn test_open_close_pool() {
         use super::*;
-        init!("ledger");
+        init!("ledger_zero_fees");
         assert!(get_pool_handle().unwrap() > 0);
     }
 }

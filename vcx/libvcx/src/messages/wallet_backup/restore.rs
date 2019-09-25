@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_backup_restore() {
-        init!("ledger");
+        init!("ledger_zero_fees");
 
         let (agent_did, agent_vk) = create_and_store_my_did(Some(::utils::constants::MY2_SEED)).unwrap();
         let (my_did, my_vk) = create_and_store_my_did(Some(::utils::constants::MY1_SEED)).unwrap();
@@ -164,7 +164,7 @@ mod tests {
             .agent_vk(&settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY).unwrap()).unwrap()
             .send_secure();
 
-        assert!( err.unwrap_err().to_string().contains("GNR-121") );
+        assert!( err.unwrap_err().to_string().contains("GNR-111") );
         teardown!("agency");
     }
 

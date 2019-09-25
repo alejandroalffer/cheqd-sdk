@@ -703,7 +703,7 @@ pub mod tests {
             let wb = backup_wallet_utils();
             cleanup_local_env();
 
-            setup_local_env("1.0");
+            setup_local_env("1.0", false);
             set_consumer();
 
             restore_wallet(&restore_config(None).to_string().unwrap()).unwrap();
@@ -734,7 +734,7 @@ pub mod tests {
             thread::sleep(Duration::from_millis(2000));
             cleanup_local_env();
 
-            setup_local_env("1.0");
+            setup_local_env("1.0", false);
             set_consumer();
 
             let rc = restore_wallet(&restore_config(None).to_string().unwrap());

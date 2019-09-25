@@ -126,7 +126,7 @@ mod tests {
     #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_dead_drop_retrieve() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         let (agent_did, agent_vk) = create_and_store_my_did(Some(::utils::constants::MY2_SEED)).unwrap();
         let (my_did, my_vk) = create_and_store_my_did(Some(::utils::constants::MY1_SEED)).unwrap();
         let (agency_did, agency_vk) = create_and_store_my_did(Some(::utils::constants::MY3_SEED)).unwrap();

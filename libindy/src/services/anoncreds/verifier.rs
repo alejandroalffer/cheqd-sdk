@@ -1,15 +1,15 @@
 use std::collections::{HashMap, HashSet};
 
-use domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinition};
+use domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinitionId};
 use domain::anoncreds::proof::{Proof, RequestedProof, Identifier};
-use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequest};
+use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequest, NonRevocedInterval};
 use domain::anoncreds::revocation_registry::RevocationRegistryV1;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use domain::anoncreds::schema::{SchemaV1, Schema};
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
+use domain::anoncreds::schema::{SchemaV1, SchemaId};
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
-use ursa::cl::CredentialPublicKey;
+use ursa::cl::{CredentialPublicKey, new_nonce, Nonce};
 use ursa::cl::verifier::Verifier as CryptoVerifier;
 use services::wallet::language::{parse_from_json, Operator};
 
@@ -33,10 +33,10 @@ impl Verifier {
     pub fn verify(&self,
                   full_proof: &Proof,
                   proof_req: &ProofRequest,
-                  schemas: &HashMap<String, SchemaV1>,
-                  cred_defs: &HashMap<String, CredentialDefinitionV1>,
-                  rev_reg_defs: &HashMap<String, RevocationRegistryDefinitionV1>,
-                  rev_regs: &HashMap<String, HashMap<u64, RevocationRegistryV1>>) -> IndyResult<bool> {
+                  schemas: &HashMap<SchemaId, SchemaV1>,
+                  cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,
+                  rev_reg_defs: &HashMap<RevocationRegistryId, RevocationRegistryDefinitionV1>,
+                  rev_regs: &HashMap<RevocationRegistryId, HashMap<u64, RevocationRegistryV1>>) -> IndyResult<bool> {
         trace!("verify >>> full_proof: {:?}, proof_req: {:?}, schemas: {:?}, cred_defs: {:?}, rev_reg_defs: {:?} rev_regs: {:?}",
                full_proof, proof_req, schemas, cred_defs, rev_reg_defs, rev_regs);
 
@@ -51,6 +51,8 @@ impl Verifier {
                                                        &received_self_attested_attrs,
                                                        &received_predicates)?;
 
+        Verifier::_verify_revealed_attribute_values(&proof_req, &full_proof)?;
+
         Verifier::_verify_requested_restrictions(&proof_req,
                                                  schemas,
                                                  cred_defs,
@@ -59,6 +61,12 @@ impl Verifier {
                                                  &received_predicates,
                                                  &received_self_attested_attrs)?;
 
+        Verifier::_compare_timestamps_from_proof_and_request(proof_req,
+                                                             &received_revealed_attrs,
+                                                             &received_unrevealed_attrs,
+                                                             &received_self_attested_attrs,
+                                                             &received_predicates)?;
+
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
         let non_credential_schema = build_non_credential_schema()?;
 
@@ -66,34 +74,31 @@ impl Verifier {
             let identifier = full_proof.identifiers[sub_proof_index].clone();
 
             let schema: &SchemaV1 = schemas.get(&identifier.schema_id)
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema not found for id: {:?}", identifier.schema_id)))?;
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Schema not found for id: {:?}", identifier.schema_id)))?;
 
             let cred_def: &CredentialDefinitionV1 = cred_defs.get(&identifier.cred_def_id)
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("CredentialDefinition not found for id: {:?}", identifier.cred_def_id)))?;
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("CredentialDefinition not found for id: {:?}", identifier.cred_def_id)))?;
 
-            let (rev_reg_def, rev_reg) = if cred_def.value.revocation.is_some() {
-                let timestamp = identifier.timestamp
-                    .clone()
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Timestamp not found"))?;
+            let (rev_reg_def, rev_reg) =
+                if let Some(timestamp) = identifier.timestamp {
+                    let rev_reg_id = identifier.rev_reg_id
+                        .clone()
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
 
-                let rev_reg_id = identifier.rev_reg_id
-                    .clone()
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
+                    let rev_reg_def = Some(rev_reg_defs
+                        .get(&rev_reg_id)
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistryDefinition not found for id: {:?}", identifier.rev_reg_id)))?);
 
-                let rev_reg_def = Some(rev_reg_defs
-                    .get(&rev_reg_id)
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistryDefinition not found for id: {:?}", identifier.rev_reg_id)))?);
+                    let rev_regs_for_cred = rev_regs
+                        .get(&rev_reg_id)
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistry not found for id: {:?}", rev_reg_id)))?;
 
-                let rev_regs_for_cred = rev_regs
-                    .get(&rev_reg_id)
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistry not found for id: {:?}", rev_reg_id)))?;
+                    let rev_reg = Some(rev_regs_for_cred
+                        .get(&timestamp)
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistry not found for timestamp: {:?}", timestamp)))?);
 
-                let rev_reg = Some(rev_regs_for_cred
-                    .get(&timestamp)
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistry not found for timestamp: {:?}", timestamp)))?);
-
-                (rev_reg_def, rev_reg)
-            } else { (None, None) };
+                    (rev_reg_def, rev_reg)
+                } else { (None, None) };
 
             let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
             let predicates_for_credential = Verifier::_get_predicates_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
@@ -116,6 +121,16 @@ impl Verifier {
         trace!("verify <<< valid: {:?}", valid);
 
         Ok(valid)
+    }
+
+    pub fn generate_nonce(&self) -> IndyResult<Nonce> {
+        trace!("generate_nonce >>> ");
+
+        let nonce = new_nonce()?;
+
+        trace!("generate_nonce <<< nonce: {:?} ", nonce);
+
+        Ok(nonce)
     }
 
     fn _get_revealed_attributes_for_credential(sub_proof_index: usize,
@@ -184,14 +199,54 @@ impl Verifier {
             .keys()
             .collect();
 
-        let received_predicates: HashSet<&String> = received_predicates
+        let received_predicates_: HashSet<&String> = received_predicates
             .keys()
             .collect();
 
-        if requested_predicates != received_predicates {
+        if requested_predicates != received_predicates_ {
             return Err(err_msg(IndyErrorKind::InvalidStructure,
                                format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates)));
         }
+
+        Ok(())
+    }
+
+    fn _compare_timestamps_from_proof_and_request(proof_req: &ProofRequest,
+                                                  received_revealed_attrs: &HashMap<String, Identifier>,
+                                                  received_unrevealed_attrs: &HashMap<String, Identifier>,
+                                                  received_self_attested_attrs: &HashSet<String>,
+                                                  received_predicates: &HashMap<String, Identifier>) -> IndyResult<()> {
+        proof_req.requested_attributes
+            .iter()
+            .map(|(referent, info)|
+                Verifier::_validate_timestamp(&received_revealed_attrs, referent, &proof_req.non_revoked, &info.non_revoked)
+                    .or_else(|_| Verifier::_validate_timestamp(&received_unrevealed_attrs, referent, &proof_req.non_revoked, &info.non_revoked))
+                    .or_else(|_| received_self_attested_attrs.get(referent).map(|_| ()).ok_or_else(|| IndyError::from(IndyErrorKind::InvalidStructure)))
+            )
+            .collect::<IndyResult<Vec<()>>>()?;
+
+        proof_req.requested_predicates
+            .iter()
+            .map(|(referent, info)|
+                Verifier::_validate_timestamp(received_predicates, referent, &proof_req.non_revoked, &info.non_revoked))
+            .collect::<IndyResult<Vec<()>>>()?;
+
+        Ok(())
+    }
+
+    fn _validate_timestamp(received_: &HashMap<String, Identifier>, referent: &str,
+                           global_interval: &Option<NonRevocedInterval>, local_interval: &Option<NonRevocedInterval>) -> IndyResult<()> {
+        if get_non_revoc_interval(global_interval, local_interval).is_none() {
+            return Ok(());
+        }
+
+        if !received_
+            .get(referent)
+            .map(|attr| attr.timestamp.is_some())
+            .unwrap_or(false) {
+            return Err(IndyError::from(IndyErrorKind::InvalidStructure));
+        }
+
         Ok(())
     }
 
@@ -235,25 +290,53 @@ impl Verifier {
             .collect()
     }
 
-    fn _get_proof_identifier(proof: &Proof, index: i32) -> IndyResult<Identifier> {
+    fn _get_proof_identifier(proof: &Proof, index: u32) -> IndyResult<Identifier> {
         proof.identifiers
             .get(index as usize)
             .cloned()
-            .ok_or(err_msg(
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("Identifier not found for index: {}", index)
             ))
     }
 
+    fn _verify_revealed_attribute_values(proof_req: &ProofRequest,
+                                         proof: &Proof) -> IndyResult<()> {
+        for (attr_referent, attr_info) in proof.requested_proof.revealed_attrs.iter() {
+            let reveal_attr_encoded = attr_info.encoded.to_string();
+            let sub_proof_index = attr_info.sub_proof_index as usize;
+
+            let attr_name = proof_req.requested_attributes.get(attr_referent.as_str())
+                .as_ref()
+                .map(|attr_info| attr_info.name.as_str())
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequest", attr_referent)))?;
+
+            let crypto_proof_encoded = proof.proof.proofs
+                .get(sub_proof_index)
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("CryptoProof not found by index \"{}\"", sub_proof_index)))?
+                .revealed_attrs()?
+                .iter()
+                .find(|(key, _)|attr_common_view(&attr_name) == attr_common_view(&key))
+                .map(|(_, val)| val.to_string())
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with name \"{}\" not found in CryptoProof", attr_name)))?;
+
+            if reveal_attr_encoded != crypto_proof_encoded {
+                return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
+                                               format!("Encoded Values for \"{}\" are different in RequestedProof \"{}\" and CryptoProof \"{}\"", attr_name, reveal_attr_encoded, crypto_proof_encoded)));
+            }
+        }
+        Ok(())
+    }
+
     fn _verify_requested_restrictions(proof_req: &ProofRequest,
-                                      schemas: &HashMap<String, SchemaV1>,
-                                      cred_defs: &HashMap<String, CredentialDefinitionV1>,
+                                      schemas: &HashMap<SchemaId, SchemaV1>,
+                                      cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,
                                       received_revealed_attrs: &HashMap<String, Identifier>,
                                       received_unrevealed_attrs: &HashMap<String, Identifier>,
                                       received_predicates: &HashMap<String, Identifier>,
                                       self_attested_attrs: &HashSet<String>) -> IndyResult<()> {
         let proof_attr_identifiers: HashMap<String, Identifier> = received_revealed_attrs
-            .into_iter()
+            .iter()
             .chain(received_unrevealed_attrs)
             .map(|(r, id)| (r.to_string(), id.clone()))
             .collect();
@@ -266,7 +349,7 @@ impl Verifier {
 
         for (referent, info) in requested_attrs {
             let op = parse_from_json(
-                &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
+                &build_wql_query(&info.name, &referent, &info.restrictions, None)?
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers, schemas, cred_defs)?;
@@ -277,7 +360,7 @@ impl Verifier {
 
         for (referent, info) in proof_req.requested_predicates.iter() {
             let op = parse_from_json(
-                &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
+                &build_wql_query(&info.name, &referent, &info.restrictions, None)?
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, received_predicates, schemas, cred_defs)?;
@@ -300,48 +383,48 @@ impl Verifier {
 
     fn _gather_filter_info(referent: &str,
                            identifiers: &HashMap<String, Identifier>,
-                           schemas: &HashMap<String, SchemaV1>,
-                           cred_defs: &HashMap<String, CredentialDefinitionV1>) -> IndyResult<Filter> {
+                           schemas: &HashMap<SchemaId, SchemaV1>,
+                           cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>) -> IndyResult<Filter> {
         let identifier = identifiers
             .get(referent)
-            .ok_or(err_msg(
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidState,
                 format!("Identifier not found for referent: {}", referent))
             )?;
 
         let schema: &SchemaV1 = schemas
             .get(&identifier.schema_id)
-            .ok_or(err_msg(
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("Schema not found for id: {:?}", identifier.schema_id))
             )?;
 
         let cred_def: &CredentialDefinitionV1 = cred_defs
             .get(&identifier.cred_def_id)
-            .ok_or(err_msg(
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("CredentialDefinitionV1 not found for id: {:?}", identifier.cred_def_id))
             )?;
 
-        let schema_issuer_did = Schema::issuer_did(&schema.id)
-            .ok_or(err_msg(
+        let schema_issuer_did = cred_def.schema_id.issuer_did()
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("schema_id has invalid format: {:?}", schema.id))
             )?;
 
-        let issuer_did = CredentialDefinition::issuer_did(&cred_def.id)
-            .ok_or(err_msg(
+        let issuer_did = cred_def.id.issuer_did()
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("cred_def_id has invalid format: {:?}", cred_def.id))
             )?;
 
         Ok(Filter {
-            schema_id: identifier.schema_id.to_string(),
+            schema_id: identifier.schema_id.0.to_string(),
             schema_name: schema.name.to_string(),
-            schema_issuer_did: schema_issuer_did.to_string(),
+            schema_issuer_did,
             schema_version: schema.version.to_string(),
-            cred_def_id: identifier.cred_def_id.to_string(),
-            issuer_did: issuer_did.to_string()
+            cred_def_id: identifier.cred_def_id.0.to_string(),
+            issuer_did
         })
     }
 
@@ -380,7 +463,7 @@ impl Verifier {
                     .iter()
                     .map(|op| Verifier::_process_operator(attr, op, filter))
                     .collect::<IndyResult<Vec<()>>>()
-                    .map(|_|())
+                    .map(|_| ())
                     .map_err(|err| err.extend("$and operator validation failed."))
             }
             Operator::Or(ref operators) => {
@@ -689,5 +772,30 @@ mod tests {
             Operator::Not(Box::new(Operator::Eq(schema_version_tag(), unencrypted_target(SCHEMA_VERSION.to_string()))))
         ]);
         assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+    }
+
+    fn _received() -> HashMap<String, Identifier> {
+        let mut res: HashMap<String, Identifier> = HashMap::new();
+        res.insert("referent_1".to_string(), Identifier { timestamp: Some(1234), schema_id: SchemaId(String::new()), cred_def_id: CredentialDefinitionId(String::new()), rev_reg_id: Some(RevocationRegistryId(String::new())) });
+        res.insert("referent_2".to_string(), Identifier { timestamp: None, schema_id: SchemaId(String::new()), cred_def_id: CredentialDefinitionId(String::new()), rev_reg_id: Some(RevocationRegistryId(String::new())) });
+        res
+    }
+
+    fn _interval() -> NonRevocedInterval {
+        NonRevocedInterval { from: None, to: Some(1234) }
+    }
+
+    #[test]
+    fn validate_timestamp_works() {
+        Verifier::_validate_timestamp(&_received(), "referent_1", &None, &None).unwrap();
+        Verifier::_validate_timestamp(&_received(), "referent_1", &Some(_interval()), &None).unwrap();
+        Verifier::_validate_timestamp(&_received(), "referent_1", &None, &Some(_interval())).unwrap();
+    }
+
+    #[test]
+    fn validate_timestamp_not_work() {
+        Verifier::_validate_timestamp(&_received(), "referent_2", &Some(_interval()), &None).unwrap_err();
+        Verifier::_validate_timestamp(&_received(), "referent_2", &None, &Some(_interval())).unwrap_err();
+        Verifier::_validate_timestamp(&_received(), "referent_3", &None, &Some(_interval())).unwrap_err();
     }
 }
