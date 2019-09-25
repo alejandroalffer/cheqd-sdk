@@ -26,21 +26,40 @@ macro_rules! init {
         "ledger" => {
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-            ::utils::devsetup::tests::setup_ledger_env();
+            ::utils::devsetup::tests::setup_ledger_env(false);
+        },
+        "ledger_zero_fees" => {
+            ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
+            ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+            ::utils::devsetup::tests::setup_ledger_env(true);
         },
         "agency" => {
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::pool::tests::delete_test_pool();
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-            ::utils::devsetup::tests::setup_local_env("1.0");
+            ::utils::devsetup::tests::setup_local_env("1.0", false);
+        },
+        "agency_zero_fees" => {
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::pool::tests::delete_test_pool();
+            ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+            ::utils::devsetup::tests::setup_local_env("1.0", true);
         },
         "agency_2_0" => {
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::pool::tests::delete_test_pool();
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-            ::utils::devsetup::tests::setup_local_env("2.0");
+            ::utils::devsetup::tests::setup_local_env("2.0", false);
+        },
+        "agency_2_0_zero_fees" => {
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::pool::tests::delete_test_pool();
+            ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+            ::utils::devsetup::tests::setup_local_env("2.0", true);
         },
         _ => {panic!("Invalid test mode");},
     };
@@ -170,18 +189,18 @@ pub mod tests {
         });
     }
 
-    #[cfg(all(unix, test))]
+    #[cfg(all(unix, test, not(target_os = "android")))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
         libloading::os::unix::Library::open(Some(library), libc::RTLD_NOW | libc::RTLD_NODELETE)
             .map(libloading::Library::from)
     }
 
-    #[cfg(any(not(unix), not(test)))]
+    #[cfg(any(not(unix), not(test), target_os = "android"))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
         libloading::Library::new(library)
     }
 
-    pub fn setup_ledger_env() {
+    pub fn setup_ledger_env(use_zero_fees: bool) {
         match pool::get_pool_handle() {
             Ok(x) => pool::close().unwrap(),
             Err(x) => (),
@@ -204,7 +223,7 @@ pub mod tests {
         ::utils::libindy::anoncreds::libindy_prover_create_master_secret(settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
         set_trustee_did();
 
-        ::utils::libindy::payments::tests::token_setup(None, None);
+        ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
     }
 
     pub fn cleanup_local_env() {
@@ -244,7 +263,7 @@ pub mod tests {
         unsafe { wallet::WALLET_HANDLE = wallet_handle.parse::<i32>().unwrap() }
     }
 
-    pub fn setup_local_env(protocol_type: &str) {
+    pub fn setup_local_env(protocol_type: &str, use_zero_fees: bool) {
         use indy::ledger;
         use futures::Future;
 
@@ -314,10 +333,10 @@ pub mod tests {
 
         // as trustees, mint tokens into each wallet
         set_consumer();
-        ::utils::libindy::payments::tests::token_setup(None, None);
+        ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
 
         set_institution();
-        ::utils::libindy::payments::tests::token_setup(None, None);
+        ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
     }
 
     fn _config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
@@ -355,7 +374,7 @@ pub mod tests {
         use std::time::Duration;
         use api::VcxStateType;
 
-        init!("agency");
+        init!("agency_zero_fees");
 
         let (faber, alice) = ::connection::tests::create_connected_connections();
         set_institution();

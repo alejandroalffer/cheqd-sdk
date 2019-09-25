@@ -2,6 +2,7 @@ package com.evernym.sdk.vcx;
 
 import com.sun.jna.*;
 import com.sun.jna.ptr.PointerByReference;
+import static com.sun.jna.Native.detach;
 
 import java.io.File;
 
@@ -48,6 +49,11 @@ public abstract class LibVcx {
          */
         public int vcx_schema_create(int command_handle, String source_id, String schema_name, String version, String schema_data, int payment_handle, Callback cb);
 
+         /**
+         * Create a Schema that will be published by Endorser later.
+         */
+        public int vcx_schema_prepare_for_endorser(int command_handle, String source_id, String schema_name, String version, String schema_data, String endorser, Callback cb);
+
         /**
          * Populates status with the current State of this claim.
          */
@@ -72,6 +78,16 @@ public abstract class LibVcx {
          * Release memory associated with schema object.
          */
         public int vcx_schema_release(int handle);
+
+        /**
+         * Request a State update from the agent for the given schema.
+         */
+        public int vcx_schema_update_state(int command_handle, int schema_handle, Callback cb);
+
+        /**
+         * Retrieves the State of the schema
+         */
+        public int vcx_schema_get_state(int command_handle, int schema_handle, Callback cb);
 
 
 
@@ -551,6 +567,11 @@ public abstract class LibVcx {
 
         public int vcx_pool_set_handle(int handle);
 
+        public int vcx_get_request_price(int command_handle, String action_json, String requester_info_json, Callback cb);
+
+        /** Endorse transaction to the ledger preserving an original author */
+        public int vcx_endorse_transaction(int command_handle, String transaction, Callback cb);
+
         /**
          * credential object
          *
@@ -619,7 +640,7 @@ public abstract class LibVcx {
 
         /** Set wallet handle manually */
         public int vcx_wallet_set_handle(int handle);
-        
+
         /** Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent */
         public int vcx_wallet_backup_create(int command_handle, String sourceID, String backupKey, Callback cb);
 
@@ -641,6 +662,12 @@ public abstract class LibVcx {
         /** Retrieve Backup from the cloud and Import the encrypted file back into the wallet */
         public int vcx_wallet_backup_restore(int command_handle, String config, Callback cb);
 
+
+        /** Sign with payment address **/
+        public int vcx_wallet_sign_with_address(int command_handle, String address, byte[] message_raw, int message_len, Callback cb);
+
+        /** Verify with payment address **/
+        public int vcx_wallet_verify_with_address(int command_handle, String address, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
 
         /**
          * token object
@@ -681,6 +708,9 @@ public abstract class LibVcx {
         /** Creates a credential definition from the given schema.  Populates a handle to the new credentialdef. */
         int vcx_credentialdef_create(int command_handle, String source_id, String credentialdef_name, String schema_id, String issuer_did, String tag,  String config, int payment_handle, Callback cb);
 
+        /** Create a credential definition from the given schema that will be published by Endorser later. */
+        int vcx_credentialdef_prepare_for_endorser(int command_handle, String source_id, String credentialdef_name, String schema_id, String issuer_did, String tag,  String config, String endorser, Callback cb);
+
         /** Creates a credential definition from the given credential definition id. */
         int vcx_credentialdef_create_with_id(int command_handle, String source_id, String credentialdef_id, String issuer_did, String revocation_config, Callback cb);
 
@@ -695,6 +725,12 @@ public abstract class LibVcx {
 
         /** Retrieves cred_def_id from credentialdef object. */
         int vcx_credentialdef_get_cred_def_id(int command_handle, int cred_def_handle, Callback cb);
+
+        /** Updates the State of the credential def from the ledger. */
+        public int vcx_credentialdef_update_state(int command_handle, int credentialdef_handle,Callback cb);
+
+        /** Retrieves the State of the credential def */
+        public int vcx_credentialdef_get_state(int command_handle, int credentialdef_handle, Callback cb);
 
         /**
          * logger
@@ -812,6 +848,8 @@ public abstract class LibVcx {
 
             @SuppressWarnings({"unused", "unchecked"})
             public void callback(Pointer context, int level, String target, String message, String module_path, String file, int line) {
+
+                detach(false);
 
                 // NOTE: We must restrict the size of the message because the message could be the whole
                 // contents of a file, like a 10 MB log file and we do not want all of that content logged

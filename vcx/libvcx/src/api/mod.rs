@@ -99,6 +99,17 @@ enum_number!(WalletBackupState
     BackupStored = 4,
 });
 
+enum_number!(PublicEntityStateType
+{
+    Built = 0,
+    Published = 1,
+});
+
+impl Default for PublicEntityStateType{
+    fn default() -> Self {
+        PublicEntityStateType::Published
+    }
+}
 
 #[repr(C)]
 pub struct VcxStatus {

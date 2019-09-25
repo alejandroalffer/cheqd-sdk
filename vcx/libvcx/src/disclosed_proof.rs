@@ -892,7 +892,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieve_credentials() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
         let (_, _, req, _) = ::utils::libindy::anoncreds::tests::create_proof();
 
@@ -908,7 +908,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieve_credentials_emtpy() {
-        init!("ledger");
+        init!("ledger_zero_fees");
 
         let mut req = json!({
            "nonce":"123432421212",
@@ -935,7 +935,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_case_for_proof_req_doesnt_matter_for_retrieve_creds() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let mut req = json!({
@@ -1163,7 +1163,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_proof() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (schema_id, _, cred_def_id, _, _, _, _, cred_id, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
         let mut proof_req = ProofRequestMessage::create();
@@ -1218,7 +1218,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_self_attested_proof() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let mut proof_req = ProofRequestMessage::create();
@@ -1256,7 +1256,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_proof_with_predicates() {
-        init!("ledger");
+        init!("ledger_zero_fees");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (schema_id, _, cred_def_id, _, _, _, _, cred_id, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
         let mut proof_req = ProofRequestMessage::create();
@@ -1340,7 +1340,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_empty() {
-        init!("ledger");
+        init!("ledger_zero_fees");
 
         // empty vector
         assert_eq!(build_rev_states_json(Vec::new().as_mut()).unwrap(), "{}".to_string());
@@ -1363,7 +1363,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_no_cache() {
-        init!("ledger");
+        init!("ledger_zero_fees");
 
         let attrs = r#"["address1","address2","city","state","zip"]"#;
         let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
@@ -1403,7 +1403,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_cached() {
-        init!("ledger");
+        init!("ledger_zero_fees");
 
         let current_timestamp = time::get_time().sec as u64;
         let cached_rev_state = "{\"some\": \"json\"}".to_string();
@@ -1457,7 +1457,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_with_older_cache() {
-        init!("ledger");
+        init!("ledger_zero_fees");
 
         let current_timestamp = time::get_time().sec as u64;
         let cached_timestamp = current_timestamp - 100;
@@ -1512,7 +1512,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_with_newer_cache() {
-        init!("ledger");
+        init!("ledger_zero_fees");
 
         let current_timestamp = time::get_time().sec as u64;
         let cached_timestamp = current_timestamp + 100;

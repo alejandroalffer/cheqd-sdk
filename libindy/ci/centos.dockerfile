@@ -1,4 +1,4 @@
-FROM amazonlinux:2017.03
+FROM centos:7
 
 ARG uid=1000
 
@@ -39,7 +39,7 @@ RUN wget https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-mav
 RUN sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
 RUN yum install -y apache-maven
 
-ENV RUST_ARCHIVE=rust-1.34.1-x86_64-unknown-linux-gnu.tar.gz
+ENV RUST_ARCHIVE=rust-1.36.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
 RUN mkdir -p /rust
@@ -70,6 +70,8 @@ RUN cd /tmp && \
     make && \
     make install && \
     rm -rf /tmp/zeromq-4.2.2
+
+RUN yum install fakeroot -y
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy

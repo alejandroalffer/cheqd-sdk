@@ -5,8 +5,9 @@ indyVersion=${INDY_VERSION:?"Indy version needs to be set"}
 nullBranch=${NULL_BRANCH:?"Nullpay branch needs to be set i.e (stbale or master)"}
 nullVersion=${NULL_VERSION:?"Nullpay version needs to be set"}
 sovZip=${SOVTOKEN_ZIP:?"Sovtoken zip file needs to be set"}
+sovVer=${SOVTOKEN_VER:?"Sovtoken version needs to be set"}
 
-export LIBSOVTOKEN_IOS_BUILD_URL="https://repo.sovrin.org/ios/libsovtoken/stable/libsovtoken-core/1.0.0~6/${sovZip}"
+export LIBSOVTOKEN_IOS_BUILD_URL="https://repo.sovrin.org/ios/libsovtoken/stable/libsovtoken-core/${sovVer}/${sovZip}"
 export LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/${indyBranch}/libindy-core/${indyVersion}/libindy.tar.gz"
 export LIBNULLPAY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libnullpay/${nullBranch}/libnullpay-core/${nullVersion}/libnullpay.tar.gz"
 

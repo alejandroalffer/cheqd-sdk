@@ -87,7 +87,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_delete_connection() {
-        init!("agency");
+        init!("agency_zero_fees");
         let alice = connection::create_connection("alice").unwrap();
         connection::connect(alice, None).unwrap();
         connection::delete_connection(alice).unwrap();
@@ -324,7 +324,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_real_proof() {
-        init!("agency");
+        init!("agency_zero_fees");
 
         _real_proof_demo();
 
@@ -336,7 +336,7 @@ mod tests {
     #[test]
     fn test_real_proof_with_revocation() {
         let number_of_attributes = 10;
-        init!("agency");
+        init!("agency_zero_fees");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 

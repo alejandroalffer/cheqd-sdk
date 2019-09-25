@@ -53,7 +53,8 @@ pub fn init_pool() -> VcxResult<()>  {
         },
         Ok(_) => {
             debug!("Pool Config Created Successfully");
-            pool::open_pool_ledger(&pool_name, None)?;
+            let pool_config: Option<String> = settings::get_config_value(settings::CONFIG_POOL_CONFIG).ok();
+            pool::open_pool_ledger(&pool_name, pool_config.as_ref().map(String::as_str))?;
             Ok(())
         }
     }
@@ -67,7 +68,7 @@ mod tests {
     fn test_init_pool_and_wallet() {
         use super::*;
 
-        init!("ledger");
+        init!("ledger_zero_fees");
         // make sure there's a valid wallet and pool before trying to use them.
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
