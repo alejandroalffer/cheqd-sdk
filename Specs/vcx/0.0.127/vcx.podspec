@@ -10,7 +10,7 @@
 # libindy 1.11.1 stable
 # libnullpay 1.11.1 stable
 # libsovtoken 1.0.2-201909020930-18989f4 stable
-# libvcx 0.4.54373050-111929ac9
+# libvcx 0.4.54372444-111929ac9
 
 Pod::Spec.new do |s|
   s.name             = 'vcx'
@@ -32,7 +32,7 @@ through to the libvcx shared library.
   s.homepage         = 'https://www.evernym.com/'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'evernym-ios-dev' => 'iosdev@evernym.com' }
-  s.source           = { :http => 'https://repo.corp.evernym.com/filely/ios/vcx.libvcxpartial_0.4.54373050-111929ac9_universal.zip' }
+  s.source           = { :http => 'https://repo.corp.evernym.com/filely/ios/vcx.libvcxpartial_0.4.54372444-111929ac9_universal.zip' }
 
   s.ios.deployment_target = '8.0'
 
