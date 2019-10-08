@@ -323,7 +323,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
     if settings::test_indy_mode_enabled() {
         let inputs = vec![build_test_address("9UFgyjuJxi1i1HD")];
 
-        let outputs = vec![Output { recipient: build_test_address("xkIsxem0YNtHrRO"), amount: 1, }];
+        let outputs = vec![Output { source: None, recipient: build_test_address("xkIsxem0YNtHrRO"), amount: 1, extra: None}];
         return Ok((PaymentTxn::from_parts(inputs, outputs, 1, false), SUBMIT_SCHEMA_RESPONSE.to_string()));
     }
 
@@ -459,11 +459,11 @@ pub fn outputs(remainder: u64, refund_address: &str, payee_address: Option<Strin
 
     let mut outputs = Vec::new();
     if remainder > 0 {
-        outputs.push(Output { recipient: refund_address.to_string(), amount: remainder });
+        outputs.push(Output { source: None, recipient: refund_address.to_string(), amount: remainder, extra: None });
     }
 
     if let Some(address) = payee_address {
-        outputs.push(Output { recipient: address, amount: payee_amount.unwrap_or(0) });
+        outputs.push(Output { source: None, recipient: address, amount: payee_amount.unwrap_or(0), extra: None });
     }
 
     Ok(outputs)
