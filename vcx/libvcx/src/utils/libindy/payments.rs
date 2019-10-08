@@ -983,43 +983,4 @@ pub mod tests {
         let res = get_request_price(action_json, Some(requester_info));
         assert!(res.is_err());
     }
-
-    fn _action() -> String {
-        json!({
-            "auth_type":"101",
-            "auth_action":"ADD",
-            "new_value":"0",
-            "field":"role"
-        }).to_string()
-    }
-
-    #[test]
-    fn get_action_price_for_requester_match_to_constraint() {
-        init!("true");
-
-        let requester_info = json!({
-            "role": "0",
-            "need_to_be_owner":false,
-            "sig_count":1,
-        }).to_string();
-
-        let price = get_request_price(_action(), Some(requester_info)).unwrap();
-        assert_eq!(2, price);
-    }
-
-    #[test]
-    fn get_action_price_for_requester_not_match_to_constraint() {
-        init!("true");
-
-        let action_json = _action();
-
-        let requester_info = json!({
-            "role": "101",
-            "need_to_be_owner":false,
-            "sig_count":1,
-        }).to_string();
-
-        let res = get_request_price(action_json, Some(requester_info));
-        assert!(res.is_err());
-    }
 }
