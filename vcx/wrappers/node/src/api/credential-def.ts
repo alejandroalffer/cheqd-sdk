@@ -233,6 +233,80 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
   }
 
   /**
+   * Builds a generic Schema object that will be published by Endorser later
+   *
+   * Example:
+   * ```
+   * data = {
+   *   name: 'testCredentialDefName',
+   *   endorser: 'V4SGRU86Z58d6TV7PBUe6f',
+   *   revocation: false,
+   *   schemaId: 'testCredentialDefSchemaId',
+   *   sourceId: 'testCredentialDefSourceId'
+   * }
+   * credentialDef = await CredentialDef.prepareForEndorser(data)
+   * ```
+   */
+  public static async prepareForEndorser ({
+    name,
+    endorser,
+    revocationDetails,
+    schemaId,
+    sourceId
+  }: ICredentialDefPrepareForEndorserData): Promise<CredentialDef> {
+    // Todo: need to add params for tag and config
+    try {
+      const tailsFile = revocationDetails.tailsFile
+      const credentialDef = new CredentialDef(sourceId, { name, schemaId, tailsFile })
+      const issuerDid = null
+      const revocation = {
+        max_creds: revocationDetails.maxCreds,
+        support_revocation: revocationDetails.supportRevocation,
+        tails_file: revocationDetails.tailsFile
+      }
+
+      const credDefForEndorser = await
+      createFFICallbackPromise<{ credDefTxn: string, revocRegDefTxn: string, revocRegEntryTxn: string, handle: number }>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credentialdef_prepare_for_endorser(0,
+                                                                        sourceId,
+                                                                        name,
+                                                                        schemaId,
+                                                                        issuerDid,
+                                                                        'tag1',
+                                                                        JSON.stringify(revocation),
+                                                                        endorser,
+                                                                      cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'uint32', 'string', 'string', 'string'],
+            (handle: number, err: number, _handle: number, _credDefTxn: string, _revocRegDefTxn: string, _revocRegEntryTxn: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!_credDefTxn) {
+                reject('no credential definition transaction')
+                return
+              }
+              resolve({ credDefTxn: _credDefTxn, revocRegDefTxn: _revocRegDefTxn, revocRegEntryTxn: _revocRegEntryTxn, handle: _handle })
+            })
+      )
+      credentialDef._setHandle(credDefForEndorser.handle)
+      credentialDef._credDefTransaction = credDefForEndorser.credDefTxn
+      credentialDef._revocRegDefTransaction = credDefForEndorser.revocRegDefTxn
+      credentialDef._revocRegEntryTransaction = credDefForEndorser.revocRegEntryTxn
+      return credentialDef
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
    * Builds a credentialDef object with defined attributes.
    * Attributes are provided by a previous call to the serialize function.
    * Example:

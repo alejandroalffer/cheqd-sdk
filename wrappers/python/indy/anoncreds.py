@@ -96,7 +96,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
 
     :param wallet_handle: wallet handle (created by open_wallet).
     :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
-    :param schema_json: credential schema as a json 
+    :param schema_json: credential schema as a json
         {
             id: identifier of schema
             attrNames: array of attribute name strings
@@ -173,7 +173,7 @@ async def issuer_rotate_credential_def_start(wallet_handle: int,
                                              config_json: Optional[str]) -> str:
     """
     Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
-   
+
     Use `issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
 
     WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
@@ -320,7 +320,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                     revoked: array<number> an array of revoked indices.
                 },
                 ver: string - version revocation registry entry json
-            }    
+            }
     """
 
     logger = logging.getLogger(__name__)
@@ -1140,6 +1140,10 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
                            // If specified prover must proof non-revocation
                            // for date in this interval for each attribute
                            // (applies to every attribute and predicate but can be overridden on attribute level)
+            "ver": Optional<str>  - proof request version:
+                - omit to use unqualified identifiers for restrictions
+                - "1.0" to use unqualified identifiers for restrictions
+                - "2.0" to use fully qualified identifiers for restrictions
         }
     where
     attr_referent: Proof-request local identifier of requested attribute
@@ -1178,7 +1182,7 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
            "issuer_did": string, (Optional)
            "cred_def_id": string, (Optional)
         }
-        
+
     :return: json with credentials for the given proof request.
         {
             "attrs": {
@@ -1250,14 +1254,18 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
                            // for date in this interval for each attribute
                            // (applies to every attribute and predicate but can be overridden on attribute level)
                            // (can be overridden on attribute level)
+            "ver": Optional<str>  - proof request version:
+                - omit to use unqualified identifiers for restrictions
+                - "1.0" to use unqualified identifiers for restrictions
+                - "2.0" to use fully qualified identifiers for restrictions
         }
     :param extra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:
         {
             "<attr_referent>": <wql query>,
             "<predicate_referent>": <wql query>,
         }
-        
-        
+
+
     where
     attr_info: Describes requested attribute
         {
@@ -1299,7 +1307,7 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
             "issuer_did": <credential issuer did>,
             "cred_def_id": <credential definition id>,
             "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
-            
+
     :return: search_handle: Search handle that can be used later to fetch records by small batches (with prover_fetch_credentials_for_proof_req)
     """
 
@@ -1440,6 +1448,10 @@ async def prover_create_proof(wallet_handle: int,
                            // for date in this interval for each attribute
                            // (applies to every attribute and predicate but can be overridden on attribute level)
                            // (can be overridden on attribute level)
+            "ver": Optional<str>  - proof request version:
+                - omit to use unqualified identifiers for restrictions
+                - "1.0" to use unqualified identifiers for restrictions
+                - "2.0" to use fully qualified identifiers for restrictions
         }
     :param requested_credentials_json: either a credential or self-attested attribute for each requested attribute
         {
@@ -1480,7 +1492,7 @@ async def prover_create_proof(wallet_handle: int,
                   "timestamp4": <rev_state4>
               },
           }
-          
+
     where
         attr_referent: Proof-request local identifier of requested attribute
         attr_info: Describes requested attribute
@@ -1598,6 +1610,9 @@ async def verifier_verify_proof(proof_request_json: str,
     Verifies a proof (of multiple credential).
     All required schemas, public keys and revocation registries must be provided.
 
+    IMPORTANT: You must use *_id's (`schema_id`, `cred_def_id`, `rev_reg_id`) listed in `proof[identifiers]`
+        as the keys for corresponding `schemas_json`, `credential_defs_json`, `rev_reg_defs_json`, `rev_regs_json` objects.
+
     :param proof_request_json:
         {
             "name": string,
@@ -1615,6 +1630,10 @@ async def verifier_verify_proof(proof_request_json: str,
                            // If specified prover must proof non-revocation
                            // for date in this interval for each attribute
                            // (can be overridden on attribute level)
+            "ver": Optional<str>  - proof request version:
+                - omit to use unqualified identifiers for restrictions
+                - "1.0" to use unqualified identifiers for restrictions
+                - "2.0" to use fully qualified identifiers for restrictions
         }
     :param proof_json: created for request proof json
         {
@@ -1837,4 +1856,46 @@ async def generate_nonce() -> str:
 
     res = nonce.decode()
     logger.debug("generate_nonce: <<< res: %r", res)
+    return res
+
+
+async def to_unqualified(entity: str) -> str:
+    """
+    Get unqualified form (short form without method) of a fully qualified entity like DID.
+
+    This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+        Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+        Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+        another case when casting to unqualified form needed
+
+    :param entity: target entity to disqualify. Can be one of:
+                Did
+                SchemaId
+                CredentialDefinitionId
+                RevocationRegistryId
+                Schema
+                CredentialDefinition
+                RevocationRegistryDefinition
+                CredentialOffer
+                CredentialRequest
+                ProofRequest
+
+    :return: entity either in unqualified form or original if casting isn't possible
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("to_unqualified: >>> entity: %r", entity)
+
+    if not hasattr(to_unqualified, "cb"):
+        logger.debug("to_unqualified: Creating callback")
+        to_unqualified.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_entity = c_char_p(entity.encode('utf-8'))
+
+    res = await do_call('indy_to_unqualified',
+                        c_entity,
+                        to_unqualified.cb)
+
+    res = res.decode()
+    logger.debug("to_unqualified: <<< res: %r", res)
     return res

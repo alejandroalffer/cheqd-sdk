@@ -162,12 +162,12 @@ pub extern fn vcx_credentialdef_create_with_id(command_handle: u32,
                 trace!("vcx_credentialdef_create_with_id_cb(command_handle: {}, rc: {}, credentialdef_handle: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, x, credential_def::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
-            },
+            }
             Err(x) => {
                 warn!("vcx_credentialdef_create_with_id(command_handle: {}, rc: {}, credentialdef_handle: {}), source_id: {:?}",
                       command_handle, x, 0, "");
                 (x.into(), 0)
-            },
+            }
         };
         cb(command_handle, rc, handle);
 

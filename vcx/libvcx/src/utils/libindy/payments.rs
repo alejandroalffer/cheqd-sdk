@@ -13,7 +13,7 @@ use settings;
 use error::prelude::*;
 
 static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "3":0, "100":0, "101":2, "102":42, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":2, "114":2, "115":0, "116":0, "117":0, "118":0, "119":0, "10001":0}"#;
-static ZERO_FEES: &str = r#"{"0":0, "1":0, "101":0, "10001":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
+static ZERO_FEES: &str = r#"{"0":0, "1":0, "3":0, "100":0, "101":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0, "10001":0}"#;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WalletInfo {
@@ -48,8 +48,12 @@ pub struct UTXO {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Output {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source: Option<String>,
     recipient: String,
     amount: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    extra: Option<String>,
 }
 
 impl fmt::Display for WalletInfo {
@@ -939,6 +943,45 @@ pub mod tests {
     fn test_two_init() {
         init!("ledger_zero_fees");
         init!("ledger_zero_fees");
+    }
+
+    fn _action() -> String {
+        json!({
+            "auth_type":"101",
+            "auth_action":"ADD",
+            "new_value":"0",
+            "field":"role"
+        }).to_string()
+    }
+
+    #[test]
+    fn get_action_price_for_requester_match_to_constraint() {
+        init!("true");
+
+        let requester_info = json!({
+            "role": "0",
+            "need_to_be_owner":false,
+            "sig_count":1,
+        }).to_string();
+
+        let price = get_request_price(_action(), Some(requester_info)).unwrap();
+        assert_eq!(2, price);
+    }
+
+    #[test]
+    fn get_action_price_for_requester_not_match_to_constraint() {
+        init!("true");
+
+        let action_json = _action();
+
+        let requester_info = json!({
+            "role": "101",
+            "need_to_be_owner":false,
+            "sig_count":1,
+        }).to_string();
+
+        let res = get_request_price(action_json, Some(requester_info));
+        assert!(res.is_err());
     }
 
     fn _action() -> String {
