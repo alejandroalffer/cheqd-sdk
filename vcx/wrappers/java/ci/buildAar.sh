@@ -97,7 +97,7 @@ pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
         #     elif [ "${arch}" = "arm64" ]; then
         #         arch_folder="arm64-v8a"
         #     fi
-        #     rm ${ANDROID_JNI_LIB}/${arch_folder}/libgnustl_shared.so
+        #     rm ${ANDROID_JNI_LIB}/${arch_folder}/libc++_shared.so
         # done
 
         echo "Running :assembleDebugAndroidTest to see if it passes..."
@@ -134,7 +134,7 @@ pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
         #     elif [ "${arch}" = "arm64" ]; then
         #         arch_folder="arm64-v8a"
         #     fi
-        #     cp -v ../../../runtime_android_build/libvcx_${arch}/libgnustl_shared.so ${ANDROID_JNI_LIB}/${arch_folder}/libgnustl_shared.so
+        #     cp -v ../../../runtime_android_build/libvcx_${arch}/libc++_shared.so ${ANDROID_JNI_LIB}/${arch_folder}/libc++_shared.so
         # done
     popd
 popd

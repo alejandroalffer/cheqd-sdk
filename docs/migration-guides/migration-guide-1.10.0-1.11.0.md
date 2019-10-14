@@ -16,14 +16,18 @@ version you can check migration guides history:
 
 ## Table of contents
 
-* [Notes](#notes)
-* [Libindy 1.10 to 1.11 migration](#libindy-110-to-111-migration-guide)
-    * [Payment API](#payment-api)
-    * [Anoncreds API](#anoncreds-api)
-    * [Ledger API](#ledger-api)
-* [Libindy 1.11.0 to 1.11.1 migration](#libindy-1110-to-1111-migration-guide)
-    * [Ledger API 1.11.1](#ledger-api-1111)
-    * [Anoncreds API 1.11.1](#ledger-api-1111)
+- [Libindy 1.10 to 1.11 migration Guide](#libindy-110-to-111-migration-guide)
+  - [Table of contents](#table-of-contents)
+  - [Notes](#notes)
+  - [Libindy 1.10 to 1.11 migration Guide](#libindy-110-to-111-migration-guide-1)
+    - [Payment API](#payment-api)
+      - [Changes](#changes)
+    - [Anoncreds API](#anoncreds-api)
+    - [Ledger API](#ledger-api)
+  - [Libindy 1.11.0 to 1.11.1 migration Guide](#libindy-1110-to-1111-migration-guide)
+    - [Ledger API 1.11.1](#ledger-api-1111)
+    - [Anoncreds API 1.11.1](#anoncreds-api-1111)
+      - [Workflow](#workflow)
 
 ## Notes
 
@@ -46,7 +50,7 @@ Functions from older version are listed in the left column, and the equivalent n
 #### Changes
 
 <table>
-    <tr>  
+    <tr>
       <th>v1.10.0 - Payment API</th>
       <th>v1.11.0 - Payment API</th>
     </tr>
@@ -124,7 +128,7 @@ indy_build_get_payment_sources_with_from_request(command_handle: CommandHandle,
                                                         payment_method: *const c_char))
       </pre>
       </td>
-    </tr> 
+    </tr>
     <tr>
       <th colspan="2">
           <a href="https://github.com/hyperledger/indy-sdk/blob/v1.11.0/libindy/src/api/payments_v2.rs#L67">
@@ -147,7 +151,7 @@ indy_parse_get_payment_sources_with_from_response(command_handle: CommandHandle,
                                                          next: i64))
       </pre>
       </td>
-    </tr> 
+    </tr>
     <tr>
       <th colspan="2">
           <a href="https://github.com/hyperledger/indy-sdk/blob/v1.11.0/libindy/src/api/payments.rs#L676">
@@ -170,9 +174,22 @@ indy_build_get_payment_sources_request(command_handle: CommandHandle,
       </td>
       <td>
           <b>DEPRECATED</b>
-      </td>  
+      </td>
     </tr>
-    <tr>
+    <tr>## Notes
+
+Migration information is organized in tables, there are mappings for each Libindy API part of how older version functionality maps to a newer one.
+Functions from older version are listed in the left column, and the equivalent newer version function is placed in the right column:
+
+* If some function had been added, the word 'NEW' would be placed in the left column.
+* If some function had been deleted, the word 'DELETED' would be placed in the right column.
+* If some function had been deprecated, the word 'DEPRECATED' would be placed in the right column.
+* If some function had been changed, the current format would be placed in the right column.
+* If some function had not been changed, the symbol '=' would be placed in the right column.
+* To get more details about current format of a function click on the description above it.
+* Bellow are signatures of functions in Libindy C API.
+  The params of ```cb``` (except command_handle and err) will be result values of the similar function in any Libindy wrapper.
+
       <th colspan="2">
           <a href="https://github.com/hyperledger/indy-sdk/blob/v1.11.0/libindy/src/api/payments.rs#L729">
               Parses response for Indy request for getting sources list.
@@ -192,7 +209,7 @@ indy_parse_get_payment_sources_response(command_handle: CommandHandle,
       </td>
       <td>
           <b>DEPRECATED</b>
-      </td>  
+      </td>
     </tr>
     <tr>
       <th colspan="2">
@@ -229,23 +246,23 @@ indy_get_request_info(command_handle: CommandHandle,
 Now only `primary` proof can be built if `non_revoked` intervals were not requested by a verifier.
 An example test can be found here: `indy-sdk/libindy/tests/anoncreds_demos.rs/anoncreds_works_for_requested_proof_with_revocation_but_provided_primary_only`
 
-* Added new Libindy API function `indy_generate_nonce` to generate a nonce of the size recommended for usage within a proof request. 
+* Added new Libindy API function `indy_generate_nonce` to generate a nonce of the size recommended for usage within a proof request.
 An example test can be found here: `indy-sdk/libindy/tests/anoncreds_demos.rs/anoncreds_works_for_single_issuer_single_prover`
 
 ### Ledger API
 
-* Updated `indy_append_txn_author_agreement_acceptance_to_request` Libindy function to discard the time portion of `acceptance time` on appending TAA metadata into request. 
+* Updated `indy_append_txn_author_agreement_acceptance_to_request` Libindy function to discard the time portion of `acceptance time` on appending TAA metadata into request.
 It was done cause too much time precision can lead to privacy risk.
 
     *NOTE* that if the following points are met:
     - Indy Pool consists of nodes with version less 1.9.2
     - Transaction Author Agreement is set on the Pool
-    
+
     Requests to the Pool will fail during the day TAA was set.
 
-* Updated `constraint` parameter of `indy_build_auth_rule_request` Libindy Ledger API function to accept new optional `off_ledger_signature` field that specifies if a signature of unknown ledger `DID` is allowed for an action performing (false by default). 
+* Updated `constraint` parameter of `indy_build_auth_rule_request` Libindy Ledger API function to accept new optional `off_ledger_signature` field that specifies if a signature of unknown ledger `DID` is allowed for an action performing (false by default).
 
-* Added new function `indy_append_request_endorser` to append Endorser to an existing request. 
+* Added new function `indy_append_request_endorser` to append Endorser to an existing request.
 It allows writing transactions to the ledger with preserving an original author but by different Endorser.
 An example flow can be found [here](../configuration.md)
 An example test can be found here: `indy-sdk/libindy/tests/ledger.rs/indy_send_request_by_endorser_works`
@@ -254,7 +271,7 @@ An example test can be found here: `indy-sdk/libindy/tests/ledger.rs/indy_send_r
 
 ### Ledger API 1.11.1
 
-* Extended `config` parameter of `indy_open_pool_ledger` function to accept `number_read_nodes` value. 
+* Extended `config` parameter of `indy_open_pool_ledger` function to accept `number_read_nodes` value.
 This value set the number of nodes to send read requests.
 
 ### Anoncreds API 1.11.1
@@ -264,7 +281,7 @@ The main idea of changes performed in Anoncreds API is to provide a way to rotat
 **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
 
 <table>
-    <tr>  
+    <tr>
       <th>v1.11.0 - Anoncreds API</th>
       <th>v1.11.1 - Anoncreds API</th>
     </tr>
@@ -286,7 +303,7 @@ indy_issuer_rotate_credential_def_start(command_handle: i32,
                                         cred_def_id: *const c_char,
                                         config_json: *const c_char,
                                            cb: Option<extern fn(xcommand_handle: i32,
-                                                                err: ErrorCode, 
+                                                                err: ErrorCode,
                                                                 cred_def_json: *const c_char)>)
           </pre>
       </td>
@@ -312,7 +329,7 @@ indy_issuer_rotate_credential_def_apply(command_handle: i32,
           </pre>
       </td>
     </tr>
-</table> 
+</table>
 
 #### Workflow
 ```

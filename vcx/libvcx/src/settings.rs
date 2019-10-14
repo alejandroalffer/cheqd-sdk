@@ -46,6 +46,7 @@ pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
 pub static CONFIG_TXN_AUTHOR_AGREEMENT: &'static str = "author_agreement";
 pub static CONFIG_USE_LATEST_PROTOCOLS: &'static str = "use_latest_protocols";
 pub static CONFIG_POOL_CONFIG: &'static str = "pool_config";
+pub static CONFIG_DID_METHOD: &str = "did_method";
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;

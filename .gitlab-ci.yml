@@ -14,15 +14,15 @@ cache:
 
 variables:
   staticLibVersion: "20190607"
-  rustVersion: "1.36.0"
-  libsovtokenVersion: "1.0.2"
-  libsovtokenVersionExtra: "10"
+  rustVersion: "1.37.0"
+  libsovtokenVersion: "1.0.3"
+  libsovtokenVersionExtra: "13"
   indyBranch: 'stable'
-  libindyVersion: "1.11.1"
+  libindyVersion: "1.12.0"
   nullBranch: 'stable'
-  libnullVersion: "1.11.1"
-  androidSovtokenArtifact: "libsovtoken_1.0.2-201909020935-18989f4_all.zip"
-  iosSovtokenArtifact: "libsovtoken_1.0.2-201909020930-18989f4_all.zip"
+  libnullVersion: "1.12.0"
+  androidSovtokenArtifact: "libsovtoken_1.0.3-201910091207-1c7ff32_all.zip"
+  iosSovtokenArtifact: "libsovtoken_1.0.3-201910091236-1c7ff32_all.zip"
 
 ## - Anchors - ##
 .tags_micro:
