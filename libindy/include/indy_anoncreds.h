@@ -4,7 +4,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
+
     extern indy_error_t indy_issuer_create_schema(indy_handle_t command_handle,
                                                   const char *  issuer_did,
                                                   const char *  name,
@@ -48,7 +48,7 @@ extern "C" {
                                                                 void           (*cb)(indy_handle_t command_handle_,
                                                                                      indy_error_t  err)
                                                                 );
-    
+
     extern indy_error_t indy_issuer_create_and_store_revoc_reg(indy_handle_t command_handle,
                                                                indy_handle_t wallet_handle,
                                                                const char *  issuer_did,
@@ -73,7 +73,7 @@ extern "C" {
                                                                                  indy_error_t  err,
                                                                                  const char*   cred_offer_json)
                                                             );
-    
+
     extern indy_error_t indy_issuer_create_credential(indy_handle_t command_handle,
                                                       indy_handle_t wallet_handle,
                                                       const char *  cred_offer_json,
@@ -88,7 +88,7 @@ extern "C" {
                                                                            const char*   cred_revoc_id,
                                                                            const char*   revoc_reg_delta_json)
                                                       );
-    
+
     extern indy_error_t indy_issuer_revoke_credential(indy_handle_t command_handle,
                                                       indy_handle_t wallet_handle,
                                                       indy_handle_t blob_storage_reader_handle,
@@ -129,8 +129,8 @@ extern "C" {
                                                                               indy_error_t  err,
                                                                               const char*   out_master_secret_id)
                                                          );
-    
-    
+
+
     extern indy_error_t indy_prover_create_credential_req(indy_handle_t command_handle,
                                                           indy_handle_t wallet_handle,
                                                           const char *  prover_did,
@@ -217,7 +217,7 @@ extern "C" {
                                                                                        indy_error_t  err,
                                                                                        const char*   credentials_json)
                                                                   );
-    
+
 
     extern indy_error_t indy_prover_search_credentials_for_proof_req(indy_handle_t command_handle,
                                                                      indy_handle_t wallet_handle,
@@ -306,6 +306,13 @@ extern "C" {
                                             void           (*cb)(indy_handle_t command_handle_,
                                                                  indy_error_t  err,
                                                                  const char*   nonce)
+                                            );
+
+    extern indy_error_t indy_to_unqualified(indy_handle_t command_handle,
+                                            const char *  entity,
+                                            void           (*cb)(indy_handle_t command_handle_,
+                                                                 indy_error_t  err,
+                                                                 const char*   res)
                                             );
 
 #ifdef __cplusplus

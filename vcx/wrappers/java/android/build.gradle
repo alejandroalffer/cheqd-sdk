@@ -80,7 +80,8 @@ tasks.withType(JavaCompile) {
 }
 
 android {
-    compileSdkVersion 23
+    compileSdkVersion 28
+    buildToolsVersion "28.0.3"
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -98,17 +99,17 @@ android {
     packagingOptions{
         doNotStrip '*/mips/*.so'
         doNotStrip '*/mips64/*.so'
-        pickFirst 'lib/x86_64/libgnustl_shared.so'
-        pickFirst 'lib/arm/libgnustl_shared.so'
-        pickFirst 'lib/armeabi/libgnustl_shared.so'
-        pickFirst 'lib/x86/libgnustl_shared.so'
-        pickFirst 'lib/armeabi-v7a/libgnustl_shared.so'
-        pickFirst 'lib/arm64-v8a/libgnustl_shared.so'
+        pickFirst 'lib/x86_64/libc++_shared.so'
+        pickFirst 'lib/arm/libc++_shared.so'
+        pickFirst 'lib/armeabi/libc++_shared.so'
+        pickFirst 'lib/x86/libc++_shared.so'
+        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
     }
 
     defaultConfig {
         minSdkVersion 23
-        targetSdkVersion 23
+        targetSdkVersion 28
         versionCode 1
         versionName "${fullVersionName()}"
 
@@ -164,7 +165,8 @@ dependencies {
     testImplementation group: 'org.json', name: 'json', version:'20160810'
     testImplementation 'net.java.dev.jna:jna:4.5.0'
     testImplementation 'org.awaitility:awaitility-scala:3.1.2'
-    androidTestImplementation('com.facebook.react:react-native:0.51.0') { force = true }
+    androidTestImplementation 'com.getkeepsafe.relinker:relinker:1.3.1'
+    androidTestImplementation('com.facebook.react:react-native:0.59.9') { force = true }
     androidTestImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support:support-annotations:26.1.0'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'

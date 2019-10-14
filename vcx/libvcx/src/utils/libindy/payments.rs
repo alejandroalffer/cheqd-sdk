@@ -13,7 +13,7 @@ use settings;
 use error::prelude::*;
 
 static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "3":0, "100":0, "101":2, "102":42, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":2, "114":2, "115":0, "116":0, "117":0, "118":0, "119":0, "10001":0}"#;
-static ZERO_FEES: &str = r#"{"0":0, "1":0, "101":0, "10001":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
+static ZERO_FEES: &str = r#"{"0":0, "1":0, "3":0, "100":0, "101":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0, "10001":0}"#;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WalletInfo {
@@ -48,8 +48,12 @@ pub struct UTXO {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Output {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source: Option<String>,
     recipient: String,
     amount: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    extra: Option<String>,
 }
 
 impl fmt::Display for WalletInfo {
@@ -319,7 +323,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
     if settings::test_indy_mode_enabled() {
         let inputs = vec![build_test_address("9UFgyjuJxi1i1HD")];
 
-        let outputs = vec![Output { recipient: build_test_address("xkIsxem0YNtHrRO"), amount: 1, }];
+        let outputs = vec![Output { source: None, recipient: build_test_address("xkIsxem0YNtHrRO"), amount: 1, extra: None}];
         return Ok((PaymentTxn::from_parts(inputs, outputs, 1, false), SUBMIT_SCHEMA_RESPONSE.to_string()));
     }
 
@@ -455,11 +459,11 @@ pub fn outputs(remainder: u64, refund_address: &str, payee_address: Option<Strin
 
     let mut outputs = Vec::new();
     if remainder > 0 {
-        outputs.push(Output { recipient: refund_address.to_string(), amount: remainder });
+        outputs.push(Output { source: None, recipient: refund_address.to_string(), amount: remainder, extra: None });
     }
 
     if let Some(address) = payee_address {
-        outputs.push(Output { recipient: address, amount: payee_amount.unwrap_or(0) });
+        outputs.push(Output { source: None, recipient: address, amount: payee_amount.unwrap_or(0), extra: None });
     }
 
     Ok(outputs)
