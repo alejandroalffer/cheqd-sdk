@@ -16,6 +16,7 @@ do
     cp -v runtime_android_build/libvcx_${arch}/libz.so ${ANDROID_JNI_LIB}/${arch_folder}/libz.so
     cp -v runtime_android_build/libvcx_${arch}/liblog.so ${ANDROID_JNI_LIB}/${arch_folder}/liblog.so
     cp -v runtime_android_build/libvcx_${arch}/libc++_shared.so ${ANDROID_JNI_LIB}/${arch_folder}/libc++_shared.so
+    cp -v runtime_android_build/libvcx_${arch}/libstdc++.so ${ANDROID_JNI_LIB}/${arch_folder}/libstdc++.so
 done
 
 pushd vcx/wrappers/java/android

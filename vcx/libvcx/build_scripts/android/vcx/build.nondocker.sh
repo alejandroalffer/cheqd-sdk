@@ -248,7 +248,6 @@ find ${TOOLCHAIN_DIR} -name libm.a
 find ${TOOLCHAIN_DIR} -name libz.so
 find ${TOOLCHAIN_DIR} -name liblog.so
 find ${TOOLCHAIN_DIR} -name libc++_shared.so
-find ${TOOLCHAIN_DIR} -name libstdc++_shared.so
 find ${TOOLCHAIN_DIR} -name libstdc++.so
 echo "CROSS_COMPILE_PREFIX: ${CROSS_COMPILE_PREFIX}"
 
@@ -261,7 +260,7 @@ ${OPENSSL_DIR}/lib/libssl.a \
 ${OPENSSL_DIR}/lib/libcrypto.a \
 ${SODIUM_LIB_DIR}/libsodium.a \
 ${LIBZMQ_LIB_DIR}/libzmq.a \
--Wl,--no-whole-archive -z muldefs -L. -lz -llog -lc++_shared"
+-Wl,--no-whole-archive -z muldefs -L. -lz -llog -lc++_shared -lstdc++"
 # ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
 # ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libm.a \
 
@@ -274,7 +273,7 @@ ${OPENSSL_DIR}/lib/libssl.a \
 ${OPENSSL_DIR}/lib/libcrypto.a \
 ${SODIUM_LIB_DIR}/libsodium.a \
 ${LIBZMQ_LIB_DIR}/libzmq.a \
--Wl,--no-whole-archive -z muldefs -L. -lz -llog -lc++_shared
+-Wl,--no-whole-archive -z muldefs -L. -lz -llog -lc++_shared -lstdc++
 # ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
 # ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libm.a \
 
@@ -292,6 +291,7 @@ cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_
 # cp ${TOOLCHAIN_DIR}/${CROSS_COMPILE_PREFIX}/${NDK_LIB_DIR}/libgnustl_shared.so ${LIBVCX_BUILDS}
 # cp ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
+cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libstdc++.so ${LIBVCX_BUILDS}
 
 #cp ${TOOLCHAIN_DIR}/${CROSS_COMPILE_DIR}/${NDK_LIB_DIR}/libgnustl_shared.so ${LIBVCX_BUILDS}
 #${TOOLCHAIN_DIR}/sysroot/usr/lib/${ANDROID_TRIPLET}/
