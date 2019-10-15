@@ -248,6 +248,8 @@ find ${TOOLCHAIN_DIR} -name libm.a
 find ${TOOLCHAIN_DIR} -name libz.so
 find ${TOOLCHAIN_DIR} -name liblog.so
 find ${TOOLCHAIN_DIR} -name libc++_shared.so
+find ${TOOLCHAIN_DIR} -name libstdc++_shared.so
+find ${TOOLCHAIN_DIR} -name libstdc++.so
 echo "CROSS_COMPILE_PREFIX: ${CROSS_COMPILE_PREFIX}"
 
 echo "$CXX -v -shared -o ${LIBVCX_BUILDS}/libvcx.so -Wl,--whole-archive \
