@@ -204,6 +204,7 @@ export STRIP=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_PREFIX}-strip
 export CXX=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_PREFIX}-clang++
 export CXXLD=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_PREFIX}-ld
 export RANLIB=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_PREFIX}-ranlib
+export NM=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_PREFIX}-nm
 # export CC=${PREBUILT_TOOLCHAIN}/bin/${CROSS_COMPILE_CLANG_PREFIX}${TARGET_API}-clang
 # export AR=${PREBUILT_TOOLCHAIN}/bin/${CROSS_COMPILE_PREFIX}-ar
 # export STRIP=${PREBUILT_TOOLCHAIN}/bin/${CROSS_COMPILE_PREFIX}-strip
@@ -244,12 +245,12 @@ popd
 LIBVCX_BUILDS=${WORKDIR}/libvcx_${TARGET_ARCH}
 mkdir -p ${LIBVCX_BUILDS}
 
-find ${TOOLCHAIN_DIR} -name libm.a
-find ${TOOLCHAIN_DIR} -name libz.so
-find ${TOOLCHAIN_DIR} -name liblog.so
-find ${TOOLCHAIN_DIR} -name libc++_shared.so
-find ${TOOLCHAIN_DIR} -name libstdc++.so
-echo "CROSS_COMPILE_PREFIX: ${CROSS_COMPILE_PREFIX}"
+# find ${TOOLCHAIN_DIR} -name libm.a
+# find ${TOOLCHAIN_DIR} -name libz.so
+# find ${TOOLCHAIN_DIR} -name liblog.so
+# find ${TOOLCHAIN_DIR} -name libc++_shared.so
+# find ${TOOLCHAIN_DIR} -name libstdc++.so
+# echo "CROSS_COMPILE_PREFIX: ${CROSS_COMPILE_PREFIX}"
 
 echo "$CXX -v -shared -o ${LIBVCX_BUILDS}/libvcx.so -Wl,--whole-archive \
 ${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a \
@@ -263,6 +264,15 @@ ${LIBZMQ_LIB_DIR}/libzmq.a \
 -Wl,--no-whole-archive -z muldefs -L. -lz -llog -lc++_shared -lstdc++"
 # ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
 # ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libm.a \
+
+$NM ${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a | grep -i C1ERKSs
+$NM ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libm.a | grep -i C1ERKSs
+$NM ${LIBINDY_DIR}/libindy.a | grep -i C1ERKSs
+$NM ${LIBSOVTOKEN_DIR}/libsovtoken.a | grep -i C1ERKSs
+$NM ${OPENSSL_DIR}/lib/libssl.a | grep -i C1ERKSs
+$NM ${OPENSSL_DIR}/lib/libcrypto.a | grep -i C1ERKSs
+$NM ${SODIUM_LIB_DIR}/libsodium.a | grep -i C1ERKSs
+$NM ${LIBZMQ_LIB_DIR}/libzmq.a | grep -i C1ERKSs
 
 $CXX -v -shared -o ${LIBVCX_BUILDS}/libvcx.so -Wl,--whole-archive \
 ${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a \
@@ -287,11 +297,15 @@ mv ${LIBVCX_BUILDS}/libvcx.so.new ${LIBVCX_BUILDS}/libvcx.so
 
 cp "${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a" ${LIBVCX_BUILDS}
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libz.so ${LIBVCX_BUILDS}
+$NM -D ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libz.so | grep -i C1ERKSs
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/liblog.so ${LIBVCX_BUILDS}
+$NM -D ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/liblog.so | grep -i C1ERKSs
 # cp ${TOOLCHAIN_DIR}/${CROSS_COMPILE_PREFIX}/${NDK_LIB_DIR}/libgnustl_shared.so ${LIBVCX_BUILDS}
 # cp ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
+$NM -D ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so | grep -i C1ERKSs
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libstdc++.so ${LIBVCX_BUILDS}
+$NM -D ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libstdc++.so | grep -i C1ERKSs
 
 #cp ${TOOLCHAIN_DIR}/${CROSS_COMPILE_DIR}/${NDK_LIB_DIR}/libgnustl_shared.so ${LIBVCX_BUILDS}
 #${TOOLCHAIN_DIR}/sysroot/usr/lib/${ANDROID_TRIPLET}/
