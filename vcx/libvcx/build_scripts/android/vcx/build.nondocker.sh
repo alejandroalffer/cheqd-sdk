@@ -265,7 +265,6 @@ ${LIBZMQ_LIB_DIR}/libzmq.a \
 # ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
 # ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libm.a \
 
-$NM ${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a | grep -i C1ERKSs
 $NM ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libm.a | grep -i C1ERKSs
 $NM ${LIBINDY_DIR}/libindy.a | grep -i C1ERKSs
 $NM ${LIBSOVTOKEN_DIR}/libsovtoken.a | grep -i C1ERKSs
@@ -273,6 +272,7 @@ $NM ${OPENSSL_DIR}/lib/libssl.a | grep -i C1ERKSs
 $NM ${OPENSSL_DIR}/lib/libcrypto.a | grep -i C1ERKSs
 $NM ${SODIUM_LIB_DIR}/libsodium.a | grep -i C1ERKSs
 $NM ${LIBZMQ_LIB_DIR}/libzmq.a | grep -i C1ERKSs
+$NM ${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a | grep -i C1ERKSs
 
 $CXX -v -shared -o ${LIBVCX_BUILDS}/libvcx.so -Wl,--whole-archive \
 ${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a \
