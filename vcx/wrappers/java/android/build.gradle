@@ -99,18 +99,6 @@ android {
     packagingOptions{
         doNotStrip '*/mips/*.so'
         doNotStrip '*/mips64/*.so'
-        pickFirst 'lib/x86_64/libc++_shared.so'
-        pickFirst 'lib/arm/libc++_shared.so'
-        pickFirst 'lib/armeabi/libc++_shared.so'
-        pickFirst 'lib/x86/libc++_shared.so'
-        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
-        pickFirst 'lib/arm64-v8a/libc++_shared.so'
-        pickFirst 'lib/x86_64/libstdc++.so'
-        pickFirst 'lib/arm/libstdc++.so'
-        pickFirst 'lib/armeabi/libstdc++.so'
-        pickFirst 'lib/x86/libstdc++.so'
-        pickFirst 'lib/armeabi-v7a/libstdc++.so'
-        pickFirst 'lib/arm64-v8a/libstdc++.so'
     }
 
     defaultConfig {

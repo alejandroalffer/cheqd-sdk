@@ -266,15 +266,6 @@ ${LIBZMQ_LIB_DIR}/libzmq.a \
 # ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
 # ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libm.a \
 
-# $NM ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libm.a | grep -i C1ERKSs
-# $NM ${LIBINDY_DIR}/libindy.a | grep -i C1ERKSs
-# $NM ${LIBSOVTOKEN_DIR}/libsovtoken.a | grep -i C1ERKSs
-# $NM ${OPENSSL_DIR}/lib/libssl.a | grep -i C1ERKSs
-# $NM ${OPENSSL_DIR}/lib/libcrypto.a | grep -i C1ERKSs
-# $NM ${SODIUM_LIB_DIR}/libsodium.a | grep -i C1ERKSs
-# $NM ${LIBZMQ_LIB_DIR}/libzmq.a | grep -i C1ERKSs
-# $NM ${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a | grep -i C1ERKSs
-
 $CXX -v -shared -o ${LIBVCX_BUILDS}/libvcx.so -Wl,--whole-archive \
 ${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a \
 ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libm.a \
@@ -299,15 +290,7 @@ mv ${LIBVCX_BUILDS}/libvcx.so.new ${LIBVCX_BUILDS}/libvcx.so
 
 cp "${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a" ${LIBVCX_BUILDS}
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libz.so ${LIBVCX_BUILDS}
-#$NM -D ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libz.so | grep -i C1ERKSs
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/liblog.so ${LIBVCX_BUILDS}
-#$NM -D ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/liblog.so | grep -i C1ERKSs
-# cp ${TOOLCHAIN_DIR}/${CROSS_COMPILE_PREFIX}/${NDK_LIB_DIR}/libgnustl_shared.so ${LIBVCX_BUILDS}
 # cp ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
-cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
-#$NM -D ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so | grep -i C1ERKSs
-cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libstdc++.so ${LIBVCX_BUILDS}
-#$NM -D ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libstdc++.so | grep -i C1ERKSs
-
-#cp ${TOOLCHAIN_DIR}/${CROSS_COMPILE_DIR}/${NDK_LIB_DIR}/libgnustl_shared.so ${LIBVCX_BUILDS}
-#${TOOLCHAIN_DIR}/sysroot/usr/lib/${ANDROID_TRIPLET}/
+# cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
+# cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libstdc++.so ${LIBVCX_BUILDS}
