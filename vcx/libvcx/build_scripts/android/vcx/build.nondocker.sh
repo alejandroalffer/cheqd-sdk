@@ -261,7 +261,8 @@ ${OPENSSL_DIR}/lib/libssl.a \
 ${OPENSSL_DIR}/lib/libcrypto.a \
 ${SODIUM_LIB_DIR}/libsodium.a \
 ${LIBZMQ_LIB_DIR}/libzmq.a \
--Wl,--no-whole-archive -z muldefs"
+-Wl,--no-whole-archive -z muldefs \
+-L${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API} -lz -llog"
 # ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
 # ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libm.a \
 
@@ -283,7 +284,8 @@ ${OPENSSL_DIR}/lib/libssl.a \
 ${OPENSSL_DIR}/lib/libcrypto.a \
 ${SODIUM_LIB_DIR}/libsodium.a \
 ${LIBZMQ_LIB_DIR}/libzmq.a \
--Wl,--no-whole-archive -z muldefs
+-Wl,--no-whole-archive -z muldefs \
+-L${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API} -lz -llog
 # ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
 # ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libm.a \
 
