@@ -291,6 +291,5 @@ mv ${LIBVCX_BUILDS}/libvcx.so.new ${LIBVCX_BUILDS}/libvcx.so
 cp "${LIBVCX}/target/${CROSS_COMPILE_PREFIX}/release/libvcx.a" ${LIBVCX_BUILDS}
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libz.so ${LIBVCX_BUILDS}
 cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/liblog.so ${LIBVCX_BUILDS}
-# cp ${PREBUILT_TOOLCHAIN}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
-# cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
+cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/libc++_shared.so ${LIBVCX_BUILDS}
 # cp ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/${CROSS_COMPILE_PREFIX}/${TARGET_API}/libstdc++.so ${LIBVCX_BUILDS}
