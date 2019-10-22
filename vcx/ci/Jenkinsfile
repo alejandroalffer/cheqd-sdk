@@ -15,7 +15,7 @@ def vcx_nodejs
 // DEPRECATED ( NO LONGER PRODUCED ) libvcx.tar.gz (libvcx.so file and provision_agent_keys.py) ----> archived with Jenkins
 class Globals {
 
-    static String rustVersion = "1.36.0"
+    static String rustVersion = "1.37.0"
 
     static String libindyVersion = "1.10.1"
 
@@ -380,7 +380,7 @@ def buildAndroid(arch) {
                 }
 
                 dir("runtime_android_build/libvcx_${arch}") {
-                    stash includes: "libvcx.so,libz.so,liblog.so,libgnustl_shared.so", name: "libvcx_${arch}"
+                    stash includes: "libvcx.so,libz.so,liblog.so,libc++_shared.so", name: "libvcx_${arch}"
                 }
             }
         } catch (Exception ex) {

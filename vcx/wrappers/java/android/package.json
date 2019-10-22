@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "react-native": "0.51.0"
+    "react-native": "0.59.9"
   }
 }

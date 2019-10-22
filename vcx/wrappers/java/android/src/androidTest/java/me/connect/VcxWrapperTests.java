@@ -11,10 +11,12 @@ import android.support.test.filters.SmallTest;
 import android.support.test.rule.GrantPermissionRule;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
+import android.content.Context;
 
 import com.evernym.sdk.vcx.VcxException;
 import com.evernym.sdk.vcx.utils.UtilsApi;
 import com.evernym.sdk.vcx.vcx.VcxApi;
+import com.getkeepsafe.relinker.ReLinker;
 
 import junit.framework.Assert;
 
@@ -87,11 +89,12 @@ public class VcxWrapperTests {
     public void testInitSovToken() {
         Log.d(TAG, "testInitSov: called");
         try {
+            ReLinker.recursively().loadLibrary(InstrumentationRegistry.getTargetContext(), "vcx");
             int result =  VcxApi.vcxSetLogger(callbackLogger.context, callbackLogger.enabled, callbackLogger.log, callbackLogger.flush);
             Assert.assertSame(0,result);
             result =  VcxApi.initSovToken();
             Assert.assertSame(0,result);
-        } catch (VcxException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
