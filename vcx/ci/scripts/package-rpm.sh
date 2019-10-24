@@ -18,7 +18,19 @@ echo "Building libvcx.so"
 cargo build --no-default-features --features "ci"
 echo "Updating libvcx.so File with Version"
 cargo update-so
-echo "Creating Libvcx Debian File"
-cargo deb --no-build
-echo "Moving Libvcx Debian File to Output Directory"
-cp target/debian/*.deb $CURDIR/$OUTPUTDIR
+echo "Creating .rpm file"
+
+mkdir -p ./target/rpmroot/usr/lib/
+cp ./target/debug/libvcx.so.* ./target/rpmroot/usr/lib/
+
+mkdir -p ./target/rpmroot/usr/share/libvcx/
+cp ./include/vcx.h ./target/rpmroot/usr/share/libvcx/
+cp ./scripts/provision_agent_keys.py ./target/rpmroot/usr/share/libvcx/
+
+rpmbuild --buildroot=${PWD}/target/rpmroot -bb --target x86_64 rpm/libvcx.spec
+
+if [ ! -d ${CURDIR}/${OUTPUTDIR} ]; then
+  mkdir -p ${CURDIR}/${OUTPUTDIR}
+fi
+
+cp target/*.rpm ${CURDIR}/${OUTPUTDIR}
