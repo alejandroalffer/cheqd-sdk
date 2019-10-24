@@ -42,12 +42,13 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
 ARG RUST_VER
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUST_VER
 ENV PATH /root/.cargo/bin:$PATH
-RUN cargo install cargo-deb --color=never
+RUN cargo install cargo-deb --color=never --version=1.21.1 #TEMPORARY - REMOVE WHEN 1.22 COMPILES
 
 # Install Gradle
-RUN wget -q https://services.gradle.org/distributions/gradle-3.4.1-bin.zip
-RUN mkdir /opt/gradle
-RUN unzip -q -d /opt/gradle gradle-3.4.1-bin.zip
+RUN wget -q https://services.gradle.org/distributions/gradle-3.4.1-bin.zip &&\
+    mkdir /opt/gradle &&\
+    unzip -q -d /opt/gradle gradle-3.4.1-bin.zip &&\
+    rm gradle-3.4.1-bin.zip
 
 # fpm for deb packaging of npm
 RUN gem install fpm
