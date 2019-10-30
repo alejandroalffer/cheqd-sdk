@@ -1,18 +1,18 @@
 use std::collections::{HashMap, HashSet};
 
-use domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinitionId};
-use domain::anoncreds::proof::{Proof, RequestedProof, Identifier};
-use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequestPayload, NonRevocedInterval};
-use domain::anoncreds::revocation_registry::RevocationRegistryV1;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
-use domain::anoncreds::schema::{SchemaV1, SchemaId};
-use errors::prelude::*;
-use services::anoncreds::helpers::*;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinitionId};
+use crate::domain::anoncreds::proof::{Proof, RequestedProof, Identifier};
+use crate::domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequestPayload, NonRevocedInterval};
+use crate::domain::anoncreds::revocation_registry::RevocationRegistryV1;
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
+use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
+use indy_api_types::errors::prelude::*;
+use crate::services::anoncreds::helpers::*;
 
 
 use ursa::cl::{CredentialPublicKey, new_nonce, Nonce};
 use ursa::cl::verifier::Verifier as CryptoVerifier;
-use utils::wql::Query;
+use crate::utils::wql::Query;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Filter {
@@ -103,7 +103,7 @@ impl Verifier {
             let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
             let predicates_for_credential = Verifier::_get_predicates_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
 
-            let credential_schema = build_credential_schema(&schema.attr_names)?;
+            let credential_schema = build_credential_schema(&schema.attr_names.0)?;
             let sub_proof_request = build_sub_proof_request(&attrs_for_credential, &predicates_for_credential)?;
 
             let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;

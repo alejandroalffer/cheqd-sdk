@@ -5,21 +5,21 @@ use indy::anoncreds;
 use self::futures::Future;
 use serde_json;
 
-use utils::{environment, wallet, blob_storage, test};
-use utils::types::CredentialOfferInfo;
+use crate::utils::{environment, wallet, blob_storage, test};
+use crate::utils::types::CredentialOfferInfo;
 
 use std::sync::Once;
 use std::mem;
-use utils::constants::*;
+use crate::utils::constants::*;
 
 use std::collections::{HashSet, HashMap};
 
-use utils::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
-use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId};
-use utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType, RevocationRegistryId};
-use utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
-use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
-use utils::domain::crypto::did::DidValue;
+use crate::utils::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
+use crate::utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId};
+use crate::utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType, RevocationRegistryId};
+use crate::utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
+use crate::utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use crate::utils::domain::crypto::did::DidValue;
 
 pub static mut WALLET_HANDLE: i32 = 0;
 pub static mut CREDENTIAL_DEF_JSON: &'static str = "";
@@ -234,7 +234,7 @@ pub fn gvt_schema() -> SchemaV1 {
         id: SchemaId(gvt_schema_id()),
         version: SCHEMA_VERSION.to_string(),
         name: GVT_SCHEMA_NAME.to_string(),
-        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap(),
+        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap().into(),
         seq_no: None
     }
 }
@@ -252,7 +252,7 @@ pub fn gvt_schema_issuer2() -> SchemaV1 {
         id: SchemaId(gvt_schema_id_issuer2()),
         version: SCHEMA_VERSION.to_string(),
         name: GVT_SCHEMA_NAME.to_string(),
-        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap(),
+        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap().into(),
         seq_no: None
     }
 }
@@ -271,7 +271,7 @@ pub fn xyz_schema() -> SchemaV1 {
         id: SchemaId(xyz_schema_id()),
         version: SCHEMA_VERSION.to_string(),
         name: XYZ_SCHEMA_NAME.to_string(),
-        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap(),
+        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap().into(),
         seq_no: None
     }
 }
@@ -289,7 +289,7 @@ pub fn xyz_schema_tag2() -> SchemaV1 {
         id: SchemaId(xyz_schema_id_tag2()),
         version: SCHEMA_VERSION.to_string(),
         name: format!("{}{}", XYZ_SCHEMA_NAME, TAG_2),
-        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap(),
+        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap().into(),
         seq_no: None
     }
 }
