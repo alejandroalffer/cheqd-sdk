@@ -12,6 +12,7 @@ pub mod message_type;
 pub mod payload;
 pub mod wallet_backup;
 pub mod deaddrop;
+pub mod thread;
 
 use std::u8;
 use settings;
@@ -692,22 +693,41 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
 pub enum MessageStatusCode {
     Created,
     Sent,
-    Pending,
+    Received,
     Accepted,
     Rejected,
     Reviewed,
 }
 
-impl Serialize for MessageStatusCode {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        let value = match self {
+impl MessageStatusCode {
+    pub fn message(&self) -> &'static str {
+        match self {
+            MessageStatusCode::Created => "message created",
+            MessageStatusCode::Sent => "message sent",
+            MessageStatusCode::Received => "message received",
+            MessageStatusCode::Accepted => "message accepted",
+            MessageStatusCode::Rejected => "message rejected",
+            MessageStatusCode::Reviewed => "message reviewed",
+        }
+    }
+}
+
+impl std::string::ToString for MessageStatusCode {
+    fn to_string(&self) -> String {
+        match self {
             MessageStatusCode::Created => "MS-101",
             MessageStatusCode::Sent => "MS-102",
-            MessageStatusCode::Pending => "MS-103",
+            MessageStatusCode::Received => "MS-103",
             MessageStatusCode::Accepted => "MS-104",
             MessageStatusCode::Rejected => "MS-105",
             MessageStatusCode::Reviewed => "MS-106",
-        };
+        }.to_string()
+    }
+}
+
+impl Serialize for MessageStatusCode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let value = self.to_string();
         Value::String(value.to_string()).serialize(serializer)
     }
 }
@@ -718,7 +738,7 @@ impl<'de> Deserialize<'de> for MessageStatusCode {
         match value.as_str() {
             Some("MS-101") => Ok(MessageStatusCode::Created),
             Some("MS-102") => Ok(MessageStatusCode::Sent),
-            Some("MS-103") => Ok(MessageStatusCode::Pending),
+            Some("MS-103") => Ok(MessageStatusCode::Received),
             Some("MS-104") => Ok(MessageStatusCode::Accepted),
             Some("MS-105") => Ok(MessageStatusCode::Rejected),
             Some("MS-106") => Ok(MessageStatusCode::Reviewed),

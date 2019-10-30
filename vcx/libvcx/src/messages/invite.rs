@@ -1,7 +1,7 @@
 use settings;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
-use messages::payload::Thread;
+use messages::thread::Thread;
 use utils::constants::{ DEFAULT_ACK_CONNECTION_VERSION };
 use utils::httpclient;
 use utils::constants::*;
@@ -109,11 +109,11 @@ pub struct KeyDlgProof {
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SenderDetail {
-    name: Option<String>,
-    agent_key_dlg_proof: KeyDlgProof,
+    pub name: Option<String>,
+    pub agent_key_dlg_proof: KeyDlgProof,
     #[serde(rename = "DID")]
     pub did: String,
-    logo_url: Option<String>,
+    pub logo_url: Option<String>,
     #[serde(rename = "verKey")]
     pub verkey: String,
     #[serde(rename = "publicDID")]
@@ -125,23 +125,23 @@ pub struct SenderDetail {
 #[serde(rename_all = "camelCase")]
 pub struct SenderAgencyDetail {
     #[serde(rename = "DID")]
-    did: String,
+    pub did: String,
     #[serde(rename = "verKey")]
-    verkey: String,
-    endpoint: String,
+    pub verkey: String,
+    pub endpoint: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteDetail {
-    status_code: String,
+    pub status_code: String,
     pub conn_req_id: String,
     pub sender_detail: SenderDetail,
     pub sender_agency_detail: SenderAgencyDetail,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
-    target_name: String,
-    status_msg: String,
+    pub target_name: String,
+    pub status_msg: String,
     pub thread_id: Option<String>
 }
 

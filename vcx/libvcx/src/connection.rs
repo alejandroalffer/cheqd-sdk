@@ -7,8 +7,10 @@ use settings;
 use messages;
 use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion, to_u8};
 use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
-use messages::payload::{Payloads, Thread};
+use messages::payload::Payloads;
+use messages::thread::Thread;
 use messages::get_message::{Message, MessagePayload};
+use messages::update_connection::send_delete_connection_message;
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
@@ -19,17 +21,21 @@ use utils::constants::{ DEFAULT_SERIALIZE_VERSION };
 use utils::json::KeyMatch;
 use std::collections::HashMap;
 
+use v3::handlers::connection as v3_connection;
+use v3::messages::connection::invite::Invitation as InvitationV3;
+use settings::ProtocolTypes;
+
 lazy_static! {
     static ref CONNECTION_MAP: ObjectCache<Connection> = Default::default();
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct ConnectionOptions {
+pub struct ConnectionOptions {
     #[serde(default)]
-    connection_type: Option<String>,
+    pub connection_type: Option<String>,
     #[serde(default)]
-    phone: Option<String>,
-    use_public_did: Option<bool>,
+    pub phone: Option<String>,
+    pub use_public_did: Option<bool>,
 }
 
 impl Default for ConnectionOptions {
@@ -39,6 +45,21 @@ impl Default for ConnectionOptions {
             phone: None,
             use_public_did: None,
         }
+    }
+}
+
+impl ConnectionOptions {
+    pub fn from_opt_str(options: Option<String>) -> VcxResult<ConnectionOptions> {
+        Ok(
+            match options.as_ref().map(|opt| opt.trim()) {
+                None => ConnectionOptions::default(),
+                Some(opt) if opt.is_empty() => ConnectionOptions::default(),
+                Some(opt) => {
+                    serde_json::from_str(&opt)
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ConnectionOptions: {}", err)))?
+                }
+            }
+        )
     }
 }
 
@@ -91,13 +112,7 @@ impl Connection {
     pub fn delete_connection(&mut self) -> VcxResult<u32> {
         trace!("Connection::delete_connection >>>");
 
-        messages::delete_connection()
-            .to(&self.pw_did)?
-            .to_vk(&self.pw_verkey)?
-            .agent_did(&self.agent_did)?
-            .agent_vk(&self.agent_vk)?
-            .send_secure()
-            .map_err(|err| err.extend("Cannot delete connection"))?;
+        send_delete_connection_message(&self.pw_did, &self.pw_verkey, &self.agent_did, &self.agent_vk)?;
 
         self.state = VcxStateType::VcxStateNone;
 
@@ -225,14 +240,8 @@ impl Connection {
     fn create_agent_pairwise(&mut self) -> VcxResult<u32> {
         debug!("creating pairwise keys on agent for connection {}", self.source_id);
 
-        let (for_did, for_verkey) = messages::create_keys()
-            .for_did(&self.pw_did)?
-            .for_verkey(&self.pw_verkey)?
-            .version(self.version.clone())?
-            .send_secure()
-            .map_err(|err| err.extend("Cannot create pairwise keys"))?;
+        let (for_did, for_verkey) = create_agent_keys(&self.source_id, &self.pw_did, &self.pw_verkey, self.version.clone())?;
 
-        debug!("create key for connection: {} with did {:?}, vk: {:?}", self.source_id, for_did, for_verkey);
         self.set_agent_did(&for_did);
         self.set_agent_verkey(&for_verkey);
 
@@ -260,8 +269,25 @@ impl Connection {
     }
 }
 
+pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str, version: Option<ProtocolTypes>) -> VcxResult<(String, String)> {
+    /*
+        Create User Pairwise Agent in old way.
+        Send Messages corresponding to V2 Protocol version to avoid code changes on Agency side.
+    */
+    debug!("creating pairwise keys on agent for connection {}", source_id);
+
+    let (agent_did, agent_verkey) = messages::create_keys()
+        .for_did(pw_did)?
+        .for_verkey(pw_verkey)?
+        .version(version)?
+        .send_secure()
+        .map_err(|err| err.extend("Cannot create pairwise keys"))?;
+
+    Ok((agent_did, agent_verkey))
+}
+
 pub fn is_valid_handle(handle: u32) -> bool {
-    CONNECTION_MAP.has_handle(handle)
+    CONNECTION_MAP.has_handle(handle) || v3_connection::CONNECTION_MAP.has_handle(handle)
 }
 
 pub fn set_agent_did(handle: u32, did: &str) -> VcxResult<()> {
@@ -313,6 +339,10 @@ pub fn get_their_public_did(handle: u32) -> VcxResult<Option<String>> {
 }
 
 pub fn get_their_pw_verkey(handle: u32) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::get_their_pw_verkey(handle);
+    }
+
     CONNECTION_MAP.get(handle, |cxn| {
         Ok(cxn.get_their_pw_verkey().to_string())
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
@@ -374,11 +404,17 @@ pub fn set_pw_verkey(handle: u32, verkey: &str) -> VcxResult<()> {
 }
 
 pub fn get_state(handle: u32) -> u32 {
+    // TODO: THINK better way
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::get_state(handle);
+    }
+
     CONNECTION_MAP.get(handle, |cxn| {
         debug!("get state for connection {}", cxn.get_source_id());
         Ok(cxn.get_state().clone())
     }).unwrap_or(0)
 }
+
 
 pub fn set_state(handle: u32, state: VcxStateType) -> VcxResult<()> {
     CONNECTION_MAP.get_mut(handle, |cxn| {
@@ -387,6 +423,10 @@ pub fn set_state(handle: u32, state: VcxStateType) -> VcxResult<()> {
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::get_source_id(handle);
+    }
+
     CONNECTION_MAP.get(handle, |cxn| {
         Ok(cxn.get_source_id().clone())
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
@@ -394,6 +434,11 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
 
 pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     trace!("create_connection >>> source_id: {}", source_id);
+
+    // Initiate connection of new format -- redirect to v3 folder
+    if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
+        return v3_connection::create_connection(source_id);
+    }
 
     let method_name = settings::get_config_value(settings::CONFIG_DID_METHOD).ok();
 
@@ -425,6 +470,11 @@ pub fn create_connection(source_id: &str) -> VcxResult<u32> {
 
 pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResult<u32> {
     debug!("create connection {} with invite {}", source_id, details);
+
+    // Invitation of new format -- redirect to v3 folder
+    if let Ok(invitation) = serde_json::from_str::<InvitationV3>(details) {
+        return v3_connection::create_connection_with_invite(source_id, invitation);
+    }
 
     let details: Value = serde_json::from_str(&details)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize invite details: {}", err)))?;
@@ -522,6 +572,10 @@ pub fn force_v2_parse_acceptance_details(handle: u32, message: &Message) -> VcxR
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::update_state(handle, message);
+    }
+
     debug!("updating state for connection {}", get_source_id(handle).unwrap_or_default());
     let state = get_state(handle);
 
@@ -548,7 +602,7 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     if get_state(handle) == VcxStateType::VcxStateOfferSent as u32 || get_state(handle) == VcxStateType::VcxStateInitialized as u32 {
         for message in response {
             if message.status_code == MessageStatusCode::Accepted && message.msg_type == RemoteMessageType::ConnReqAnswer {
-                let rc = process_acceptance_message(handle, &message);
+                let rc = process_acceptance_message(handle, message.clone());
 
                 if rc.is_err() {
                     force_v2_parse_acceptance_details(handle, &message)?;
@@ -560,7 +614,11 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     Ok(error::SUCCESS.code_num)
 }
 
-pub fn process_acceptance_message(handle: u32, message: &Message) -> VcxResult<u32> {
+pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u32> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::process_acceptance_message(handle, message);
+    }
+
     let details = parse_acceptance_details(handle, &message)
         .map_err(|err| err.extend("Cannot parse acceptance details"))?;
 
@@ -572,6 +630,10 @@ pub fn process_acceptance_message(handle: u32, message: &Message) -> VcxResult<u
 }
 
 pub fn delete_connection(handle: u32) -> VcxResult<u32> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::delete_connection(handle);
+    }
+
     CONNECTION_MAP.get_mut(handle, |t| {
         debug!("delete connection: {}", t.get_source_id());
         t.delete_connection()
@@ -582,15 +644,11 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
 }
 
 pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
-    let options_obj: ConnectionOptions =
-        match options.as_ref().map(|opt| opt.trim()) {
-            None => ConnectionOptions::default(),
-            Some(opt) if opt.is_empty() => ConnectionOptions::default(),
-            Some(opt) => {
-                serde_json::from_str(&opt)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ConnectionOptions: {}", err)))?
-            }
-        };
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::connect(handle, options);
+    }
+
+    let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options)?;
 
     CONNECTION_MAP.get_mut(handle, |t| {
         debug!("establish connection {}", t.get_source_id());
@@ -601,28 +659,44 @@ pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::to_string(handle);
+    }
+
     CONNECTION_MAP.get(handle, |t| {
         Connection::to_string(&t)
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
 pub fn from_string(connection_data: &str) -> VcxResult<u32> {
-    let derived_connection: Connection = Connection::from_str(connection_data)?;
-    let handle = CONNECTION_MAP.add(derived_connection)?;
-    debug!("inserting handle {} source_id {} into connection table", handle, get_source_id(handle).unwrap_or_default());
-    Ok(handle)
+    if let Ok(derived_connection) = Connection::from_str(connection_data) {
+        let handle = CONNECTION_MAP.add(derived_connection)?;
+        debug!("inserting handle {} source_id {} into connection table", handle, get_source_id(handle).unwrap_or_default());
+        Ok(handle)
+    } else {
+        v3_connection::from_string(connection_data)
+    }
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::release(handle);
+    }
+
     CONNECTION_MAP.release(handle)
         .or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
 pub fn release_all() {
     CONNECTION_MAP.drain().ok();
+    v3_connection::CONNECTION_MAP.drain().ok();
 }
 
 pub fn get_invite_details(handle: u32, abbreviated: bool) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::get_invite_details(handle, abbreviated);
+    }
+
     debug!("get invite details for connection {}", get_source_id(handle).unwrap_or_default());
 
     CONNECTION_MAP.get(handle, |t| {
@@ -1066,7 +1140,7 @@ pub mod tests {
         init!("true");
         let handle = create_connection("test_process_acceptance_message").unwrap();
         let message = serde_json::from_str(INVITE_ACCEPTED_RESPONSE).unwrap();
-        assert_eq!(error::SUCCESS.code_num, process_acceptance_message(handle, &message).unwrap());
+        assert_eq!(error::SUCCESS.code_num, process_acceptance_message(handle, message).unwrap());
     }
 
     #[test]

@@ -7,6 +7,7 @@ use error::prelude::*;
 
 use std::collections::HashMap;
 use serde_json::Value;
+use messages::thread::Thread;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(untagged)]
@@ -95,7 +96,7 @@ impl Payloads {
             MessagePayload::V1(payload) => {
                 let payload = Payloads::decrypt_payload_v1(my_vk, payload)?;
                 Ok((payload.msg, None))
-            },
+            }
             MessagePayload::V2(payload) => {
                 let payload = Payloads::decrypt_payload_v2(my_vk, payload)?;
                 Ok((payload.msg, Some(payload.thread)))
@@ -239,32 +240,5 @@ impl PayloadTypes {
             version: kind.family().version().to_string(),
             type_: kind.name().to_string(),
         }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
-pub struct Thread {
-    pub thid: Option<String>,
-    pub pthid: Option<String>,
-    #[serde(rename = "senderOrder")]
-    pub sender_order: u32,
-    #[serde(rename = "receivedOrders")]
-    pub received_orders: HashMap<String, u32>,
-}
-
-impl Thread {
-    pub fn new() -> Thread {
-        Thread {
-            thid: None,
-            pthid: None,
-            sender_order: 0,
-            received_orders: HashMap::new(),
-        }
-    }
-
-    pub fn increment_receiver(&mut self, did: &str) {
-        self.received_orders.entry(did.to_string())
-            .and_modify(|e| *e += 1)
-            .or_insert(0);
     }
 }
