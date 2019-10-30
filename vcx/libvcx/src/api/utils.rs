@@ -642,6 +642,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] //FIXME
     fn test_messages_download() {
         init!("true");
 

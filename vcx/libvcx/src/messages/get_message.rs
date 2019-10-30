@@ -111,6 +111,13 @@ impl GetMessagesBuilder {
         }
     }
 
+    #[cfg(test)]
+    pub fn create_v1() -> GetMessagesBuilder {
+        let mut builder = GetMessagesBuilder::create();
+        builder.version = settings::ProtocolTypes::V1;
+        builder
+    }
+
     pub fn uid(&mut self, uids: Option<Vec<String>>) -> VcxResult<&mut Self> {
         //Todo: validate msg_uid??
         self.uids = uids;
@@ -388,7 +395,7 @@ impl Message {
     }
 }
 
-pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>, status_codes: Option<Vec<MessageStatusCode>>) -> VcxResult<Vec<Message>> {
+pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>, status_codes: Option<Vec<MessageStatusCode>>, version: Option<String>) -> VcxResult<Vec<Message>> {
     trace!("get_connection_messages >>> pw_did: {}, pw_vk: {}, agent_vk: {}, msg_uid: {:?}",
            pw_did, pw_vk, agent_vk, msg_uid);
 
@@ -399,6 +406,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .agent_vk(&agent_vk)?
         .uid(msg_uid)?
         .status_codes(status_codes)?
+        .version(&version)?
         .send_secure()
         .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, "Cannot get messages"))?;
 
@@ -410,7 +418,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None)?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, None)?;
     trace!("checking for ref_msg: {:?}", message);
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
@@ -418,7 +426,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
         _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None)?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, None)?;
 
     trace!("checking for pending message: {:?}", message);
 
@@ -506,7 +514,7 @@ mod tests {
     fn test_parse_get_messages_response() {
         init!("true");
 
-        let result = GetMessagesBuilder::create().parse_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
+        let result = GetMessagesBuilder::create_v1().parse_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 3)
     }
 
@@ -567,7 +575,7 @@ mod tests {
         let bundle = Bundled::create(data).encode().unwrap();
         let message = crypto::prep_msg(&my_vk, &verkey, &bundle[..]).unwrap();
 
-        let result = GetMessagesBuilder::create().parse_response(message).unwrap();
+        let result = GetMessagesBuilder::create_v1().parse_response(message).unwrap();
     }
 
     #[cfg(feature = "agency")]

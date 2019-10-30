@@ -9,7 +9,7 @@ use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithV
 use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
 use messages::payload::Payloads;
 use messages::thread::Thread;
-use messages::get_message::{Message, MessagePayload};
+use messages::get_message::{Message, MessagePayload, get_connection_messages};
 use messages::send_message::SendMessageOptions;
 use messages::update_connection::send_delete_connection_message;
 use messages::payload::PayloadKinds;
@@ -381,6 +381,15 @@ pub fn get_pw_did(handle: u32) -> VcxResult<String> {
         match connection {
             Connections::V1(ref connection) => Ok(connection.get_pw_did().to_string()),
             Connections::V3(ref connection) => Ok(connection.agent_info().pw_did.to_string())
+        }
+    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
+}
+
+pub fn get_ver_str(handle: u32) -> VcxResult<Option<String>> {
+    CONNECTION_MAP.get(handle, |connection| {
+        match connection {
+            Connections::V1(ref connection) => Ok(connection.get_version().as_ref().map(ProtocolTypes::to_string)),
+            Connections::V3(ref connection) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
         }
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
@@ -1167,7 +1176,7 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
-            version: None
+            version: Some(ProtocolTypes::V1)
         };
 
         let handle = CONNECTION_MAP.add(Connections::V1(c)).unwrap();

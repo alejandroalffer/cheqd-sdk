@@ -38,6 +38,7 @@ async def test_update_agent_info_fails(cleanup):
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
+@pytest.mark.skip(reason='FIXME')
 async def test_vcx_messages_download():
     messages = await vcx_messages_download()
     assert messages

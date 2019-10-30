@@ -636,7 +636,8 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
                                                                  &agent_did,
                                                                  &agent_vk,
                                                                  Some(vec![msg_id.to_string()]),
-                                                                 None)?;
+                                                                 None,
+                                                                 connection::get_ver_str(connection_handle)?)?;
 
     if message[0].msg_type == RemoteMessageType::ProofReq {
         let request = _parse_proof_req_message(&message[0], &my_vk)?;
@@ -678,7 +679,8 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
                                                                  &agent_did,
                                                                  &agent_vk,
                                                                  None,
-                                                                 None)?;
+                                                                 None,
+                                                                 connection::get_ver_str(connection_handle)?)?;
 
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 

@@ -85,7 +85,8 @@ impl AgentInfo {
                                                &self.agent_did,
                                                &self.agent_vk,
                                                None,
-                                               Some(vec![MessageStatusCode::Received]))?;
+                                               Some(vec![MessageStatusCode::Received]),
+                                               None)?;
 
 
         let mut a2a_messages: HashMap<String, A2AMessage> = HashMap::new();
@@ -105,6 +106,7 @@ impl AgentInfo {
                                                    &self.agent_did,
                                                    &self.agent_vk,
                                                    Some(vec![msg_id.to_string()]),
+                                                   None,
                                                    None)?;
 
         let message =
