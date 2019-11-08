@@ -539,7 +539,7 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
            command_handle, connection_handle, msg, send_msg_options);
 
     spawn(move || {
-        match ::messages::send_message::send_generic_message(connection_handle, &msg, &send_msg_options) {
+        match send_generic_message(connection_handle, &msg, &send_msg_options) {
             Ok(x) => {
                 trace!("vcx_connection_send_message_cb(command_handle: {}, rc: {}, msg_id: {})",
                        command_handle, error::SUCCESS.message, x);

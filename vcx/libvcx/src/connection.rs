@@ -549,10 +549,11 @@ pub fn force_v2_parse_acceptance_details(handle: u32, message: &Message) -> VcxR
         MessagePayload::V1(payload) => {
             let vec = to_u8(payload);
             let json: Value = serde_json::from_slice(&vec[..])
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;;
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;
+            ;
 
             let payload = Payloads::decrypt_payload_v12(&my_vk, &json)?;
-            let response:AcceptanceDetails = serde_json::from_value(payload.msg)
+            let response: AcceptanceDetails = serde_json::from_value(payload.msg)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
 
             set_their_pw_did(handle, &response.sender_detail.did).ok();
@@ -569,6 +570,14 @@ pub fn force_v2_parse_acceptance_details(handle: u32, message: &Message) -> VcxR
             Ok(response.sender_detail)
         }
     }
+}
+
+pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(connection_handle) {
+        return v3_connection::send_generic_message(connection_handle, msg, msg_options);
+    }
+
+    ::messages::send_message::send_generic_message(connection_handle, &msg, &msg_options)
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {

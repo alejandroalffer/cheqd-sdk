@@ -306,10 +306,10 @@ pub mod tests {
         let consumer_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
         unsafe {
-            INSTITUTION_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config)).unwrap();
+            INSTITUTION_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config)).unwrap();
         }
         unsafe {
-            CONSUMER_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&consumer_wallet_name, &consumer_config)).unwrap();
+            CONSUMER_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&consumer_wallet_name, &consumer_config)).unwrap();
         }
         pool::tests::open_sandbox_pool();
 
@@ -339,7 +339,7 @@ pub mod tests {
         ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
     }
 
-    fn _config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
+    pub fn config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
         let wallet_handle = wallet::open_wallet(wallet_n, None, None, None).unwrap();
         let mut config: serde_json::Value = serde_json::from_str(config).unwrap();
         config[settings::CONFIG_WALLET_HANDLE] = json!(wallet_handle.to_string());
@@ -397,7 +397,7 @@ pub mod tests {
         let config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
         unsafe {
-            INSTITUTION_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&settings::DEFAULT_WALLET_NAME, &config)).unwrap();
+            INSTITUTION_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&settings::DEFAULT_WALLET_NAME, &config)).unwrap();
         }
 
         pool::tests::open_sandbox_pool();
