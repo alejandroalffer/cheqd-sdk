@@ -1,4 +1,4 @@
-use v3::messages::{MessageId, A2AMessage};
+use v3::messages::a2a::{MessageId, A2AMessage};
 use messages::thread::Thread;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -113,7 +113,7 @@ pub mod tests {
             id:  _id(),
             problem_code: Some(_problem_code()),
             explain: Some(_explain()),
-            localization: Some(Localization::default()),
+            localization: None,
             thread: _thread(),
         }
     }
