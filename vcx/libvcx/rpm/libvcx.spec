@@ -20,7 +20,10 @@ ln -sf `ls -rt /usr/lib/libvcx.so.* | tail -n1` /usr/lib/libvcx.so
 %postun
 #!/bin/sh
 # postinst script for libvcx
-rm -f /usr/lib/libvcx.so
+if [ "$1" -eq 0 ]; then
+  rm -f /usr/lib/libvcx.so
+fi
+/sbin/ldconfig
 
 %description
 This is Evernym's SDK for managing Verifiable Credential eXchange against an
