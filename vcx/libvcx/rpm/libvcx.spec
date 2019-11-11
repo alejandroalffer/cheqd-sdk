@@ -8,7 +8,7 @@ Requires: python3, zeromq, libindy
 AutoReq: no
 
 %define _rpmdir target/
-%define _rpmfilename %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm
+%define _rpmfilename %%{NAME}_%%{VERSION}-%%{RELEASE}_%%{ARCH}.rpm
 %define _unpackaged_files_terminate_build 0
 
 %post
