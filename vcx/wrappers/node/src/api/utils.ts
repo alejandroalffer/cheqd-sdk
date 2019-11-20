@@ -121,12 +121,12 @@ export async function getLedgerAuthorAgreement (): Promise<string> {
       (resolve, reject) => Callback(
         'void',
         ['uint32','uint32','string'],
-        (xhandle: number, err: number, agreement: string) => {
+        (xhandle: number, err: number, _agreement: string) => {
           if (err) {
             reject(err)
             return
           }
-          resolve(agreement)
+          resolve(_agreement)
         })
     )
     return agreement
@@ -138,9 +138,9 @@ export async function getLedgerAuthorAgreement (): Promise<string> {
 export function setActiveTxnAuthorAgreementMeta (text: string | null | undefined,
                                                  version: string | null | undefined,
                                                  hash: string | null | undefined,
-                                                 acc_mech_type: string,
-                                                 time_of_acceptance: number) {
-  return rustAPI().vcx_set_active_txn_author_agreement_meta(text, version, hash, acc_mech_type, time_of_acceptance)
+                                                 accMechType: string,
+                                                 timeOfAcceptance: number) {
+  return rustAPI().vcx_set_active_txn_author_agreement_meta(text, version, hash, accMechType, timeOfAcceptance)
 }
 
 export function shutdownVcx (deleteWallet: boolean): number {

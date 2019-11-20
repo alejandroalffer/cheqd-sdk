@@ -18,8 +18,8 @@ import {
   IIssuerCredentialCreateData,
   IProofCreateData,
   ISchemaCreateData,
-  ISchemaPrepareForEndorserData,
   ISchemaLookupData,
+  ISchemaPrepareForEndorserData,
   IssuerCredential,
   Proof,
   Schema
@@ -71,9 +71,9 @@ export const dataCredentialDefCreateWithId = (): ICredentialDefCreateDataWithId 
   sourceId: 'testCredentialDefWithIdSourceId'
 })
 
-export const dataCredentialDefPrepareForEndorser = ():  ICredentialDefPrepareForEndorserData => ({
-  name: 'testCredentialDefName',
+export const dataCredentialDefPrepareForEndorser = (): ICredentialDefPrepareForEndorserData => ({
   endorser: 'V4SGRU86Z58d6TV7PBUe6f',
+  name: 'testCredentialDefName',
   revocationDetails: {
     maxCreds: undefined,
     supportRevocation: false,

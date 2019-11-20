@@ -25,4 +25,3 @@ export const INVITE_ACCEPTED_MESSAGE = '{ "statusCode": "MS-104", "payload": \
   111, 110, 101, 107, 110, 54, 88, 75, 122, 122, 122, 86, 68, 90, 107, 98, 114, 74, 85, \
   56, 86, 104, 99, 114 ], "senderDID": "NsQ1rvm6TrsHx1TB4xEh55", "uid": "owm5yta", \
   "type": "connReqAnswer", "deliveryDetails": [] }'
-
