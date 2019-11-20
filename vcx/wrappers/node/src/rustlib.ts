@@ -202,6 +202,8 @@ export interface IFFIEntryPoint {
   // credentialdef
   vcx_credentialdef_create: (commandId: number, sourceId: string, credentialDefName: string, schemaId: string,
                              issuerDid: string | null, tag: string, config: string, payment: number, cb: any) => number
+  vcx_credentialdef_create_with_id: (commandId: number, sourceId: string, credentialDefId: string,
+                                     issuerDid: string | null, revocationConfig: string | null, cb: any) => number
   vcx_credentialdef_prepare_for_endorser: (commandId: number, sourceId: string, credentialDefName: string,
                              schemaId: string, issuerDid: string | null, tag: string, config: string, endorser: string,
                              cb: any) => number
@@ -391,6 +393,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   // credentialDef
   vcx_credentialdef_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_credentialdef_create_with_id: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
+    FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_credentialdef_prepare_for_endorser: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_credentialdef_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],

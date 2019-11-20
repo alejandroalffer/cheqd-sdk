@@ -22,6 +22,19 @@ export interface ICredentialDefCreateData {
   paymentHandle: number
 }
 
+/**
+ * @interface
+ * @description
+ * sourceId: String for SDK User's reference.
+ * credDefId: id of credentialdef.
+ * revocationConfig: Information given during the initial create of the cred def if revocation was enabled
+ */
+export interface ICredentialDefCreateDataWithId {
+  sourceId: string,
+  credDefId: string,
+  revocationConfig?: IRevocationConfig,
+}
+
 export interface ICredentialDefPrepareForEndorserData {
   sourceId: string,
   name: string,
@@ -45,8 +58,9 @@ export interface ICredentialDefDataObj {
 }
 
 export interface ICredentialDefParams {
-  schemaId: string,
-  name: string,
+  schemaId?: string,
+  name?: string,
+  credDefId?: string,
   tailsFile?: string
 }
 
@@ -54,6 +68,13 @@ export interface IRevocationDetails {
   maxCreds?: number,
   supportRevocation?: boolean,
   tailsFile?: string,
+}
+
+export interface IRevocationConfig {
+  tailsFile?: string,
+  revRegId?: string,
+  revRegDef?: string,
+  revRegEntry?: string,
 }
 
 export enum CredentialDefState {
@@ -126,22 +147,27 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
    * Example:
    * ```
    * data = {
-   *   revocation_config: null,
    *   credDefId: 'testCredentialDefId',
    *   sourceId: 'testCredentialDefSourceId'
    * }
    * credentialDef = await CredentialDef.create_with_id(data)
    * ```
    */
-  public static async create_with_id ({
+  public static async createWithId ({
     sourceId,
     credDefId,
-    revocation_config
-  }: ICredentialDefCreateData): Promise<CredentialDef> {
+    revocationConfig
+  }: ICredentialDefCreateDataWithId): Promise<CredentialDef> {
     // Todo: need to add params for tag and config
-    const credentialDef = new CredentialDef(sourceId, {  })
+    const credentialDef = new CredentialDef(sourceId, { credDefId, tailsFile: revocationConfig && revocationConfig.tailsFile })
     const commandHandle = 0
     const issuerDid = null
+    const revocation = revocationConfig !== undefined ? {
+      rev_reg_def: revocationConfig.revRegDef,
+      rev_reg_entry: revocationConfig.revRegEntry,
+      rev_reg_id: revocationConfig.revRegId,
+      tails_file: revocationConfig.tailsFile,
+    } : null
 
     try {
       await credentialDef._create((cb) => rustAPI().vcx_credentialdef_create_with_id(
@@ -149,83 +175,10 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
         sourceId,
         credDefId,
         issuerDid,
-        JSON.stringify(revocation_config),
+        revocation && JSON.stringify(revocation),
       cb
       ))
-      return credentialDef
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
 
-  /**
-   * Builds a generic Schema object that will be published by Endorser later
-   *
-   * Example:
-   * ```
-   * data = {
-   *   name: 'testCredentialDefName',
-   *   endorser: 'V4SGRU86Z58d6TV7PBUe6f',
-   *   revocation: false,
-   *   schemaId: 'testCredentialDefSchemaId',
-   *   sourceId: 'testCredentialDefSourceId'
-   * }
-   * credentialDef = await CredentialDef.prepareForEndorser(data)
-   * ```
-   */
-  public static async prepareForEndorser ({
-    name,
-    endorser,
-    revocationDetails,
-    schemaId,
-    sourceId
-  }: ICredentialDefPrepareForEndorserData): Promise<CredentialDef> {
-    // Todo: need to add params for tag and config
-    try {
-      const tailsFile = revocationDetails.tailsFile
-      const credentialDef = new CredentialDef(sourceId, { name, schemaId, tailsFile })
-      const issuerDid = null
-      const revocation = {
-        max_creds: revocationDetails.maxCreds,
-        support_revocation: revocationDetails.supportRevocation,
-        tails_file: revocationDetails.tailsFile
-      }
-
-      const credDefForEndorser = await
-      createFFICallbackPromise<{ credDefTxn: string, revocRegDefTxn: string, revocRegEntryTxn: string, handle: number }>(
-          (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credentialdef_prepare_for_endorser(0,
-                                                                        sourceId,
-                                                                        name,
-                                                                        schemaId,
-                                                                        issuerDid,
-                                                                        'tag1',
-                                                                        JSON.stringify(revocation),
-                                                                        endorser,
-                                                                      cb)
-            if (rc) {
-              reject(rc)
-            }
-          },
-          (resolve, reject) => ffi.Callback(
-            'void',
-            ['uint32', 'uint32', 'uint32', 'string', 'string', 'string'],
-            (handle: number, err: number, _handle: number, _credDefTxn: string, _revocRegDefTxn: string, _revocRegEntryTxn: string) => {
-              if (err) {
-                reject(err)
-                return
-              }
-              if (!_credDefTxn) {
-                reject('no credential definition transaction')
-                return
-              }
-              resolve({ credDefTxn: _credDefTxn, revocRegDefTxn: _revocRegDefTxn, revocRegEntryTxn: _revocRegEntryTxn, handle: _handle })
-            })
-      )
-      credentialDef._setHandle(credDefForEndorser.handle)
-      credentialDef._credDefTransaction = credDefForEndorser.credDefTxn
-      credentialDef._revocRegDefTransaction = credDefForEndorser.revocRegDefTxn
-      credentialDef._revocRegEntryTransaction = credDefForEndorser.revocRegEntryTxn
       return credentialDef
     } catch (err) {
       throw new VCXInternalError(err)
@@ -339,17 +292,17 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
   protected _deserializeFn = rustAPI().vcx_credentialdef_deserialize
   private _name: string | undefined
   private _schemaId: string | undefined
-  private _credDefId: string | null
+  private _credDefId: string | undefined
   private _tailsFile: string | undefined
   private _credDefTransaction: string | null
   private _revocRegDefTransaction: string | null
   private _revocRegEntryTransaction: string | null
 
-  constructor (sourceId: string, { name, schemaId, tailsFile }: ICredentialDefParams) {
+  constructor (sourceId: string, { name, schemaId, credDefId, tailsFile }: ICredentialDefParams) {
     super(sourceId)
     this._name = name
     this._schemaId = schemaId
-    this._credDefId = null
+    this._credDefId = credDefId
     this._tailsFile = tailsFile
     this._credDefTransaction = null
     this._revocRegDefTransaction = null
