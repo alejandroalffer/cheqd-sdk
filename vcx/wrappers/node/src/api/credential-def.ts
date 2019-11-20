@@ -139,7 +139,7 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     revocation_config
   }: ICredentialDefCreateData): Promise<CredentialDef> {
     // Todo: need to add params for tag and config
-    const credentialDef = new CredentialDef(sourceId, { "", "", "" })
+    const credentialDef = new CredentialDef(sourceId, {  })
     const commandHandle = 0
     const issuerDid = null
 
@@ -337,8 +337,8 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
   protected _releaseFn = rustAPI().vcx_credentialdef_release
   protected _serializeFn = rustAPI().vcx_credentialdef_serialize
   protected _deserializeFn = rustAPI().vcx_credentialdef_deserialize
-  private _name: string
-  private _schemaId: string
+  private _name: string | undefined
+  private _schemaId: string | undefined
   private _credDefId: string | null
   private _tailsFile: string | undefined
   private _credDefTransaction: string | null
