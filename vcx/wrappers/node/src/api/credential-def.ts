@@ -70,6 +70,29 @@ export class CredentialDefPaymentManager extends PaymentManager {
  * @class Class representing a credential Definition
  */
 export class CredentialDef extends VCXBase<ICredentialDefData> {
+  public paymentManager!: CredentialDefPaymentManager
+  protected _releaseFn = rustAPI().vcx_credentialdef_release
+  protected _serializeFn = rustAPI().vcx_credentialdef_serialize
+  protected _deserializeFn = rustAPI().vcx_credentialdef_deserialize
+  private _name: string | undefined
+  private _schemaId: string | undefined
+  private _credDefId: string | null
+  private _tailsFile: string | undefined
+  private _credDefTransaction: string | null
+  private _revocRegDefTransaction: string | null
+  private _revocRegEntryTransaction: string | null
+
+  constructor (sourceId: string, { name, schemaId, tailsFile }: ICredentialDefParams) {
+    super(sourceId)
+    this._name = name
+    this._schemaId = schemaId
+    this._credDefId = null
+    this._tailsFile = tailsFile
+    this._credDefTransaction = null
+    this._revocRegDefTransaction = null
+    this._revocRegEntryTransaction = null
+  }
+
   /**
    * Creates a new CredentialDef object that is written to the ledger
    *
@@ -331,29 +354,6 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
       schemaId: null
     }
     return super._deserialize(CredentialDef, credentialDef, credentialDefParams)
-  }
-
-  public paymentManager!: CredentialDefPaymentManager
-  protected _releaseFn = rustAPI().vcx_credentialdef_release
-  protected _serializeFn = rustAPI().vcx_credentialdef_serialize
-  protected _deserializeFn = rustAPI().vcx_credentialdef_deserialize
-  private _name: string | undefined
-  private _schemaId: string | undefined
-  private _credDefId: string | null
-  private _tailsFile: string | undefined
-  private _credDefTransaction: string | null
-  private _revocRegDefTransaction: string | null
-  private _revocRegEntryTransaction: string | null
-
-  constructor (sourceId: string, { name, schemaId, tailsFile }: ICredentialDefParams) {
-    super(sourceId)
-    this._name = name
-    this._schemaId = schemaId
-    this._credDefId = null
-    this._tailsFile = tailsFile
-    this._credDefTransaction = null
-    this._revocRegDefTransaction = null
-    this._revocRegEntryTransaction = null
   }
 
   /**
