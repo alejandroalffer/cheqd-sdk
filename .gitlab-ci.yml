@@ -307,7 +307,7 @@ build-android-armv7-from-latest:
 .build-libvcx:
   extends: .tags_large
   variables:
-    RUSTTESTFLAG: 'test'
+    RUSTTESTFLAG: '--no-test'
   artifacts:
     expire_in: 1 week
     paths:
