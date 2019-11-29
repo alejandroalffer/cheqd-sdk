@@ -407,7 +407,7 @@ test-node-wrapper-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy:latest
   dependencies:
     - build-libvcx-from-latest
-  except:
+  only:
     refs:
       - /^docker-.*/
 
