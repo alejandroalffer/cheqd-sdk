@@ -204,7 +204,7 @@ impl GetMessagesBuilder {
                 ),
             settings::ProtocolTypes::V2 => {
                 let msg = GetMessagesReq {
-                    msg_type: MessageTypes::build_v2(A2AMessageKinds::GetMessages),
+                    msg_type: MessageTypes::build_v2(A2AMessageKinds::GetMessagesByConnections),
                     exclude_payload: self.exclude_payload.clone(),
                     uids: self.uids.clone(),
                     status_codes: self.status_codes.clone(),
@@ -221,9 +221,10 @@ impl GetMessagesBuilder {
     }
 
     fn parse_download_messages_response(response: Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<MessageByConnection>> {
-        trace!("parse_get_connection_messages_response >>>");
+        trace!("parse_download_messages_response >>> version {:?}", version);
         let mut response = parse_response_from_agency(&response, version)?;
 
+        trace!("parse_download_messages_response: parsed response {:?}", response);
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
             A2AMessage::Version2(A2AMessageV2::GetMessagesByConnectionsResponse(res)) => res.msgs,
