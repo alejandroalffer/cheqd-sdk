@@ -537,6 +537,7 @@ publish-android:
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - vcx-aries-support
   script:
     - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
     - export vcxRevision=$(git rev-parse --short HEAD)
@@ -553,6 +554,7 @@ publish-ios:
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - vcx-aries-support
   dependencies:
     - build-ios
   script:
@@ -570,6 +572,7 @@ publish-java-wrapper:
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - vcx-aries-support
   script:
     - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
     - sudo chmod +x vcx/wrappers/java/ci/publishJar.sh
