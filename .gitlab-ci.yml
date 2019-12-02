@@ -532,7 +532,7 @@ package-node-wrapper-from-latest:
 ## - Jobs : Publish - ##
 publish-android:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-android:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/vcx-android:latest
   extends: .tags_micro
   only:
     refs:
@@ -549,7 +549,7 @@ publish-android:
 
 publish-ios:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/vcx-libindy:latest
   extends: .tags_micro
   only:
     refs:
@@ -567,7 +567,7 @@ publish-ios:
 
 publish-java-wrapper:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-java:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/vcx-java:latest
   extends: .tags_micro
   only:
     refs:
@@ -580,7 +580,7 @@ publish-java-wrapper:
 
 publish-packages:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/vcx-libindy:latest
   extends: .tags_micro
   only:
     refs:
