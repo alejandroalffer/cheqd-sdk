@@ -5,11 +5,11 @@ use rmp_serde;
 use api::VcxStateType;
 use settings;
 use messages;
-use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion, to_u8, SerializableObjectWithState};
+use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, to_u8, SerializableObjectWithState};
 use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
 use messages::payload::Payloads;
 use messages::thread::Thread;
-use messages::get_message::{Message, MessagePayload, get_connection_messages};
+use messages::get_message::{Message, MessagePayload};
 use messages::send_message::SendMessageOptions;
 use messages::update_connection::send_delete_connection_message;
 use messages::payload::PayloadKinds;
@@ -19,7 +19,6 @@ use utils::error;
 use utils::libindy::signus::create_my_did;
 use utils::libindy::crypto;
 use utils::json::mapped_key_rewrite;
-use utils::constants::{ DEFAULT_SERIALIZE_VERSION };
 use utils::json::KeyMatch;
 use std::collections::HashMap;
 
@@ -256,11 +255,14 @@ impl Connection {
             self.public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
         };
 
+        let webhook_url = settings::get_config_value(settings::CONFIG_WEBHOOK_URL).ok();
+
         if let Ok(name) = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME) {
             messages::update_data()
                 .to(&self.pw_did)?
                 .name(&name)?
                 .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL)?)?
+                .webhook_url(&webhook_url)?
                 .use_public_did(&self.public_did)?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot update agent profile"))?;
@@ -886,49 +888,49 @@ impl KeyMatch for (String, Option<String>) {
 
 
 lazy_static! {
-static ref ABBREVIATIONS: Vec < (String, String) > = {
-vec ! [
-("statusCode".to_string(),          "sc".to_string()),
-("connReqId".to_string(), "id".to_string()),
-("senderDetail".to_string(), "s".to_string()),
-("name".to_string(), "n".to_string()),
-("agentKeyDlgProof".to_string(), "dp".to_string()),
-("agentDID".to_string(),            "d".to_string()),
-("agentDelegatedKey".to_string(), "k".to_string()),
-("signature".to_string(), "s".to_string()),
-("DID".to_string(), "d".to_string()),
-("logoUrl".to_string(), "l".to_string()),
-("verKey".to_string(), "v".to_string()),
-("senderAgencyDetail".to_string(), "sa".to_string()),
-("endpoint".to_string(), "e".to_string()),
-("targetName".to_string(), "t".to_string()),
-("statusMsg".to_string(), "sm".to_string()),
-]
-};
+    static ref ABBREVIATIONS: Vec<(String, String)> = {
+        vec![
+        ("statusCode".to_string(),          "sc".to_string()),
+        ("connReqId".to_string(),           "id".to_string()),
+        ("senderDetail".to_string(),        "s".to_string()),
+        ("name".to_string(),                "n".to_string()),
+        ("agentKeyDlgProof".to_string(),    "dp".to_string()),
+        ("agentDID".to_string(),            "d".to_string()),
+        ("agentDelegatedKey".to_string(),   "k".to_string()),
+        ("signature".to_string(),           "s".to_string()),
+        ("DID".to_string(), "d".to_string()),
+        ("logoUrl".to_string(), "l".to_string()),
+        ("verKey".to_string(), "v".to_string()),
+        ("senderAgencyDetail".to_string(), "sa".to_string()),
+        ("endpoint".to_string(), "e".to_string()),
+        ("targetName".to_string(), "t".to_string()),
+        ("statusMsg".to_string(), "sm".to_string()),
+        ]
+    };
 }
 
 lazy_static! {
-static ref UNABBREVIATIONS: Vec < ((String, Option < String > ), String) > = {
-vec ! [
-(("sc".to_string(), None), "statusCode".to_string()),
-(("id".to_string(), None), "connReqId".to_string()),
-(("s".to_string(), None),                                   "senderDetail".to_string()),
-(("n".to_string(), Some("senderDetail".to_string())), "name".to_string()),
-(("dp".to_string(), Some("senderDetail".to_string())),      "agentKeyDlgProof".to_string()),
-(("d".to_string(), Some("agentKeyDlgProof".to_string())), "agentDID".to_string()),
-(("k".to_string(), Some("agentKeyDlgProof".to_string())),   "agentDelegatedKey".to_string()),
-(("s".to_string(), Some("agentKeyDlgProof".to_string())), "signature".to_string()),
-(("d".to_string(), Some("senderDetail".to_string())),       "DID".to_string()),
-(("l".to_string(), Some("senderDetail".to_string())), "logoUrl".to_string()),
-(("v".to_string(), Some("senderDetail".to_string())),       "verKey".to_string()),
-(("sa".to_string(), None), "senderAgencyDetail".to_string()),
-(("d".to_string(), Some("senderAgencyDetail".to_string())), "DID".to_string()),
-(("v".to_string(), Some("senderAgencyDetail".to_string())), "verKey".to_string()),
-(("e".to_string(), Some("senderAgencyDetail".to_string())), "endpoint".to_string()),
-(("t".to_string(), None), "targetName".to_string()),
-(("sm".to_string(), None), "statusMsg".to_string()),
-]
-};
+    static ref UNABBREVIATIONS: Vec<((String, Option<String>), String)> = {
+        vec![
+        (("sc".to_string(), None),                                  "statusCode".to_string()),
+        (("id".to_string(), None),                                  "connReqId".to_string()),
+        (("s".to_string(), None),                                   "senderDetail".to_string()),
+        (("n".to_string(), Some("senderDetail".to_string())),       "name".to_string()),
+        (("dp".to_string(), Some("senderDetail".to_string())),      "agentKeyDlgProof".to_string()),
+        (("d".to_string(), Some("agentKeyDlgProof".to_string())),   "agentDID".to_string()),
+        (("k".to_string(), Some("agentKeyDlgProof".to_string())),   "agentDelegatedKey".to_string()),
+        (("s".to_string(), Some("agentKeyDlgProof".to_string())),   "signature".to_string()),
+        (("d".to_string(), Some("senderDetail".to_string())),       "DID".to_string()),
+        (("l".to_string(), Some("senderDetail".to_string())),       "logoUrl".to_string()),
+        (("v".to_string(), Some("senderDetail".to_string())),       "verKey".to_string()),
+        (("sa".to_string(), None),                                  "senderAgencyDetail".to_string()),
+        (("d".to_string(), Some("senderAgencyDetail".to_string())), "DID".to_string()),
+        (("v".to_string(), Some("senderAgencyDetail".to_string())), "verKey".to_string()),
+        (("e".to_string(), Some("senderAgencyDetail".to_string())), "endpoint".to_string()),
+        (("t".to_string(), None),                                   "targetName".to_string()),
+        (("sm".to_string(), None),                                  "statusMsg".to_string()),
+        ]
+    };
 }
 
 fn abbrv_event_detail(val: Value) -> VcxResult<Value> {

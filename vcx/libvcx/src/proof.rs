@@ -328,7 +328,7 @@ impl Proof {
 
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateOfferSent;
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
     }
 
     fn get_proof(&self) -> VcxResult<String> {
@@ -397,13 +397,11 @@ impl Proof {
 
     fn get_state(&self) -> u32 {
         trace!("Proof::get_state >>>");
-        let state = self.state as u32;
-        state
+        self.state as u32
     }
 
     fn get_proof_state(&self) -> u32 {
-        let state = self.proof_state as u32;
-        state
+        self.proof_state as u32
     }
 
     fn get_proof_uuid(&self) -> &String { &self.msg_uid }
@@ -687,7 +685,6 @@ mod tests {
                                   r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
         let proof_string = to_string(handle).unwrap();
-        println!("{}", proof_string);
         let s: Value = serde_json::from_str(&proof_string).unwrap();
         assert_eq!(s["version"], DEFAULT_SERIALIZE_VERSION);
         assert!(!proof_string.is_empty());

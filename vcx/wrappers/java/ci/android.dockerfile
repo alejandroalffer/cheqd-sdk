@@ -19,5 +19,5 @@ RUN echo "android ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 ARG RUST_VER
 USER android
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${RUST_VER}
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.39.0
 ENV PATH /home/android/.cargo/bin:$PATH

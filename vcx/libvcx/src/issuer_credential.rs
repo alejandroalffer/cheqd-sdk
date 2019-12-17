@@ -210,7 +210,7 @@ impl IssuerCredential {
         self.state = VcxStateType::VcxStateOfferSent;
 
         debug!("sent credential offer for: {}", self.source_id);
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
     }
 
     fn generate_credential_msg(&mut self, my_pw_did: &str) -> VcxResult<String> {
@@ -270,7 +270,7 @@ impl IssuerCredential {
         self.state = VcxStateType::VcxStateAccepted;
 
         debug!("issued credential: {}", self.source_id);
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
     }
 
     pub fn create_attributes_encodings(&self) -> VcxResult<String> {
@@ -331,8 +331,7 @@ impl IssuerCredential {
 
     fn get_state(&self) -> u32 {
         trace!("IssuerCredential::get_state >>>");
-        let state = self.state as u32;
-        state
+        self.state as u32
     }
     fn get_offer_uid(&self) -> &String { &self.msg_uid }
     fn set_offer_uid(&mut self, uid: &str) { self.msg_uid = uid.to_owned(); }
@@ -383,7 +382,7 @@ impl IssuerCredential {
         //Todo: make a cred_def_offer error
         let libindy_offer = anoncreds::libindy_issuer_create_credential_offer(&self.cred_def_id)?;
 
-        println!("remote_did {:?}", self.remote_did);
+        debug!("generate_credential_offer remote_did {:?}", self.remote_did);
         let (libindy_offer, cred_def_id) =
             if !Qualifier::is_fully_qualified(&self.remote_did) {
                 (anoncreds::libindy_to_unqualified(&libindy_offer)?,

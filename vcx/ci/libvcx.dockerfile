@@ -4,8 +4,7 @@ ARG uid=1000
 RUN useradd -ms /bin/bash -u $uid vcx
 USER vcx
 
-ARG RUST_VER
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${RUST_VER}
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.39.0
 ENV PATH /home/vcx/.cargo/bin:$PATH
 WORKDIR /home/vcx
 ENV PATH /home/vcx:$PATH

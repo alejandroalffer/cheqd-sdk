@@ -5,7 +5,6 @@ use settings::{ProtocolTypes, get_protocol_type};
 use utils::libindy::crypto;
 use error::prelude::*;
 
-use std::collections::HashMap;
 use serde_json::Value;
 use messages::thread::Thread;
 
