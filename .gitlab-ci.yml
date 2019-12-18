@@ -19,7 +19,6 @@ variables:
   libsovtokenVersionExtra: "13"
   indyBranch: 'stable'
   libindyVersion: "1.13.0"
-  libindyDebVersion: "1.13.0"
   nullBranch: 'stable'
   libnullVersion: "1.13.0"
   androidSovtokenArtifact: "libsovtoken_1.0.3-201910091207-1c7ff32_all.zip"
@@ -318,7 +317,7 @@ build-android-armv7-from-latest:
     - export VCXREVISION=$(git rev-parse --short HEAD)
     - export VCXVERSION=$(${CI_PROJECT_DIR}/vcx/ci/scripts/toml_utils.py ${CI_PROJECT_DIR}/vcx/libvcx/Cargo.toml)
     - cd ${CI_PROJECT_DIR}
-    - apt-get update && apt-get install -y libindy=${libindyDebVersion} libsovtoken=${libsovtokenVersion}
+    - apt-get update && apt-get install -y libindy=${libindyVersion} libsovtoken=${libsovtokenVersion}
     - vcx/ci/scripts/package.sh ${RUSTTESTFLAG} ${VCXVERSION} ${VCXREVISION}
 build-libvcx-from-branch:
   extends: .build-libvcx
