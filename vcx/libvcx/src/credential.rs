@@ -801,7 +801,6 @@ pub mod tests {
     }
 
     #[test]
-    #[ignore] //FIXME
     fn full_credential_test() {
         init!("true");
 

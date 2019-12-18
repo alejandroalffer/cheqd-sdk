@@ -111,6 +111,7 @@ impl Connection {
                 .agent_vk(&self.agent_vk)?
                 .public_did(self.public_did.as_ref().map(String::as_str))?
                 .thread(&Thread::new())?
+                .version(&Some(::settings::get_protocol_type().to_string()))?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot send invite"))?;
 
@@ -284,6 +285,7 @@ impl Connection {
                 .to_vk(&self.pw_verkey)?
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
+                .version(&Some(::settings::get_protocol_type().to_string()))?
                 .send_secure()
                 .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, format!("Could not update state for connection {}", self.source_id)))?;
 

@@ -1090,7 +1090,6 @@ pub mod tests {
     }
 
     #[test]
-    #[ignore] //FIXME
     fn test_update_state_with_pending_credential_request() {
         init!("true");
         let mut credential = create_pending_issuer_credential();
