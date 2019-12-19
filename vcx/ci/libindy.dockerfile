@@ -39,9 +39,10 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
     && apt-get install -y nodejs
 
 # Install Rust
-ARG RUST_VER="1.39.0"
-ENV RUST_ARCHIVE=rust-${RUST_VER}-x86_64-unknown-linux-gnu.tar.gz
-ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
+ARG RUST_VER
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUST_VER
+ENV PATH /root/.cargo/bin:$PATH
+RUN cargo install cargo-deb --color=never
 
 # Install Gradle
 RUN wget -q https://services.gradle.org/distributions/gradle-3.4.1-bin.zip
