@@ -79,8 +79,10 @@ export interface IFFIEntryPoint {
   // wallet
   vcx_wallet_get_token_info: (commandId: number, payment: number | undefined | null, cb: any) => number,
   vcx_wallet_create_payment_address: (commandId: number, seed: string | null, cb: any) => number,
-  vcx_wallet_sign_with_address: (commandID: number, address: string, message: number, messageLen: number, cb: any) => number,
-  vcx_wallet_verify_with_address: (commandID: number, address: string, message: number, messageLen: number, signature: number, signatureLen: number, cb: any) => number,
+  vcx_wallet_sign_with_address: (commandID: number, address: string, message: number, messageLen: number, cb: any) =>
+    number,
+  vcx_wallet_verify_with_address: (commandID: number, address: string, message: number, messageLen: number,
+                                   signature: number, signatureLen: number, cb: any) => number,
   vcx_wallet_send_tokens: (commandId: number, payment: number, tokens: string, recipient: string, cb: any) => number,
   vcx_wallet_add_record: (commandId: number, type: string, id: string, value: string, tags: string, cb: any) => number,
   vcx_wallet_update_record_value: (commandId: number, type: string, id: string, value: string, cb: any) => number,
@@ -103,7 +105,6 @@ export interface IFFIEntryPoint {
   vcx_update_webhook_url: (webhookUrl: string) => number,
   vcx_pool_set_handle: (handle: number) => void,
   vcx_endorse_transaction: (commandId: number, transaction: string, cb: any) => number,
-
 
   // connection
   vcx_connection_delete_connection: (commandId: number, handle: number, cb: any) => number,
@@ -137,7 +138,7 @@ export interface IFFIEntryPoint {
   vcx_issuer_send_credential: (commandId: number, credentialHandle: number, connectionHandle: number, cb: any) =>
     number,
   vcx_issuer_get_credential_msg: (commandId: number, credentialHandle: number, connectionHandle: number, cb: any) =>
-   number,
+    number,
   vcx_issuer_send_credential_offer: (commandId: number, credentialHandle: number, connectionHandle: number, cb: any) =>
     number,
   vcx_issuer_get_credential_offer_msg: (commandId: number, credentialHandle: number, connectionHandle: number,
@@ -203,9 +204,11 @@ export interface IFFIEntryPoint {
   // credentialdef
   vcx_credentialdef_create: (commandId: number, sourceId: string, credentialDefName: string, schemaId: string,
                              issuerDid: string | null, tag: string, config: string, payment: number, cb: any) => number
+  vcx_credentialdef_create_with_id: (commandId: number, sourceId: string, credentialDefId: string,
+                                     issuerDid: string | null, revocationConfig: string | null, cb: any) => number
   vcx_credentialdef_prepare_for_endorser: (commandId: number, sourceId: string, credentialDefName: string,
-                             schemaId: string, issuerDid: string | null, tag: string, config: string, endorser: string,
-                             cb: any) => number
+                                           schemaId: string, issuerDid: string | null, tag: string, config: string,
+                                           endorser: string, cb: any) => number
   vcx_credentialdef_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_credentialdef_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_credentialdef_release: (handle: number) => number,
@@ -219,7 +222,7 @@ export interface IFFIEntryPoint {
   vcx_schema_create: (commandId: number, sourceId: string, schemaName: string, version: string, schemaData: string,
                       paymentHandle: number, cb: any) => number,
   vcx_schema_prepare_for_endorser: (commandId: number, sourceId: string, schemaName: string, version: string,
-                      schemaData: string, endorser: string, cb: any) => number,
+                                    schemaData: string, endorser: string, cb: any) => number,
   vcx_schema_get_schema_id: (commandId: number, handle: number, cb: any) => number,
   vcx_schema_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_schema_serialize: (commandId: number, handle: number, cb: any) => number,
@@ -393,6 +396,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   // credentialDef
   vcx_credentialdef_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_credentialdef_create_with_id: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
+    FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_credentialdef_prepare_for_endorser: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_credentialdef_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
@@ -414,15 +419,15 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_schema_get_attributes: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_schema_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
-  vcx_schema_prepare_for_endorser: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
-    FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_schema_prepare_for_endorser: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
+    FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_schema_get_schema_id: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]],
   vcx_schema_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_schema_release: [FFI_ERROR_CODE, [FFI_SCHEMA_HANDLE]],
   vcx_schema_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]],
   vcx_schema_get_payment_txn: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
   vcx_schema_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
-  vcx_schema_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
+  vcx_schema_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]]
 
 }
 

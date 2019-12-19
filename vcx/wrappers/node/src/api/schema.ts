@@ -67,7 +67,7 @@ export interface ISchemaLookupData {
 
 export enum SchemaState {
   Built = 0,
-  Published = 1,
+  Published = 1
 }
 
 // tslint:disable max-classes-per-file
@@ -134,14 +134,16 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
    * schema1 = await Schema.prepareForEndorser(data)
    * ```
    */
-  public static async prepareForEndorser ({ endorser, data, sourceId }: ISchemaPrepareForEndorserData): Promise<Schema> {
+  public static async prepareForEndorser ({ endorser, data, sourceId }: ISchemaPrepareForEndorserData):
+    Promise<Schema> {
     try {
       const schema = new Schema(sourceId, { name: data.name, schemaId: '', schemaAttrs: data })
 
       const schemaForEndorser = await
       createFFICallbackPromise<{ transaction: string, handle: number }>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_schema_prepare_for_endorser(0, sourceId, schema._name, data.version, JSON.stringify(data.attrNames), endorser, cb)
+            const rc = rustAPI().vcx_schema_prepare_for_endorser(0, sourceId, schema._name, data.version,
+              JSON.stringify(data.attrNames), endorser, cb)
             if (rc) {
               reject(rc)
             }
@@ -300,6 +302,74 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
   }
 
   /**
+   *
+   * Checks if schema is published on the Ledger and updates the the state
+   *
+   * Example:
+   * ```
+   * await schema.updateState()
+   * ```
+   * @returns {Promise<void>}
+   */
+  public async updateState (): Promise<void> {
+    try {
+      await createFFICallbackPromise<number>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_schema_update_state(0, this.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'uint32'],
+          (handle: number, err: any, state: SchemaState) => {
+            if (err) {
+              reject(err)
+            }
+            resolve(state)
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Get the current state of the schema object
+   *
+   * Example:
+   * ```
+   * state = await schema.getState()
+   * ```
+   * @returns {Promise<SchemaState>}
+   */
+  public async getState (): Promise<SchemaState> {
+    try {
+      const stateRes = await createFFICallbackPromise<SchemaState>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_schema_get_state(0, this.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'uint32'],
+          (handle: number, err: number, state: SchemaState) => {
+            if (err) {
+              reject(err)
+            }
+            resolve(state)
+          })
+      )
+      return stateRes
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
    * Get the ledger ID of the object
    *
    * Example:
@@ -341,74 +411,6 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
             })
         )
       return schemaId
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
-
-  /**
-   *
-   * Checks if schema is published on the Ledger and updates the the state
-   *
-   * Example:
-   * ```
-   * await schema.updateState()
-   * ```
-   * @returns {Promise<void>}
-   */
-  public async updateState (): Promise<void> {
-    try {
-      await createFFICallbackPromise<number>(
-        (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_schema_update_state(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
-        },
-        (resolve, reject) => ffi.Callback(
-          'void',
-          ['uint32', 'uint32', 'uint32'],
-          (handle: number, err: any, state: SchemaState) => {
-            if (err) {
-              reject(err)
-            }
-            resolve(state)
-          })
-      )
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
-
-  /**
-   * Get the current state of the schema object
-   *
-   * Example:
-   * ```
-   * state = await schema.getState()
-   * ```
-   * @returns {Promise<SchemaState>}
-   */
-  public async getState (): Promise<SchemaState> {
-    try {
-      const stateRes = await createFFICallbackPromise<SchemaState>(
-        (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_schema_get_state(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
-        },
-        (resolve, reject) => ffi.Callback(
-          'void',
-          ['uint32', 'uint32', 'uint32'],
-          (handle: number, err: number, state: SchemaState) => {
-            if (err) {
-              reject(err)
-            }
-            resolve(state)
-          })
-      )
-      return stateRes
     } catch (err) {
       throw new VCXInternalError(err)
     }
