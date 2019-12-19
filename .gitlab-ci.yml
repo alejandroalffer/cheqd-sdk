@@ -424,7 +424,7 @@ test-java-wrapper-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-java:latest
   dependencies:
     - build-libvcx-from-latest
-  only:
+  except:
     refs:
       - /^docker-.*/
 
