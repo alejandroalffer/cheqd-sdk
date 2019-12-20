@@ -9,6 +9,7 @@ use messages::get_message::Message;
 
 /// Delete a Connection object and release its handle
 ///
+/// 
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
