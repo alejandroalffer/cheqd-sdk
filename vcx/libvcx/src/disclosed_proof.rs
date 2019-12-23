@@ -1407,12 +1407,11 @@ mod tests {
 
     #[test]
     fn test_generate_reject_proof() {
-        init!("false");
+        init!("true");
 
         let proof: DisclosedProof = Default::default();
         let generated_reject = proof.generate_reject_proof_msg();
-        println!("generated_reject: {}", generated_reject.unwrap());
-        assert!(false);
+        assert!(generated_reject.is_ok());
     }
 
     #[test]
