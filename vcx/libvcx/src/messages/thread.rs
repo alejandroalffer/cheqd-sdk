@@ -5,10 +5,8 @@ pub struct Thread {
     pub thid: Option<String>,
     pub pthid: Option<String>,
     #[serde(default)]
-    #[serde(rename = "senderOrder")] //TODO check with RFCs
     pub sender_order: u32,
     #[serde(default)]
-    #[serde(rename = "receivedOrders")] //TODO check with RFCs
     pub received_orders: HashMap<String, u32>,
 }
 
