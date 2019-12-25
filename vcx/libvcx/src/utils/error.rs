@@ -114,6 +114,7 @@ pub static RETRIEVE_DEAD_DROP: Error = Error{ code_num: 1099, message: "Failed t
 pub static INVALID_ATTACHMENT_ENCODING: Error = Error { code_num: 1100, message: "Failed to decode attachment"};
 pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1101, message: "This type of attachment can not be used"};
 pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1102, message: "Unknown mime type"};
+pub static ACTION_NOT_SUPPORTED: Error = Error { code_num: 1103, message: "Action is not supported"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -217,6 +218,7 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_ATTACHMENT_ENCODING);
         insert_c_message(&mut m, &UNKNOWN_ATTACHMENT_ENCODING);
         insert_c_message(&mut m, &UNKNOWN_MIME_TYPE);
+        insert_c_message(&mut m, &ACTION_NOT_SUPPORTED);
 
         m
     };
