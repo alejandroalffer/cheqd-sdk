@@ -42,6 +42,10 @@ extern crate rmpv;
 
 extern crate base64;
 
+extern crate strum;
+#[macro_use]
+extern crate strum_macros;
+
 #[macro_use]
 pub mod utils;
 pub mod settings;

@@ -15,7 +15,7 @@ import com.sun.jna.Pointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java9.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Created by abdussami on 03/06/18.
@@ -414,6 +414,46 @@ public class ConnectionApi extends VcxJava.API {
         int commandHandle = addFuture(future);
         int result = LibVcx.api.vcx_connection_get_pw_did(commandHandle, connectionHandle, vcxConnectionGetTheirPwDidCB);
         checkResult(future, result);
+
+        return future;
+    }
+
+    private static Callback voidCb = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
+            if (! checkCallback(future, err)) return;
+            Void result = null;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<Void> connectionSendPing(
+            int connectionHandle,
+            String comment
+    ) throws VcxException {
+        logger.debug("sendPing() called with: connectionHandle = [" + connectionHandle + "], comment = [" + comment + "]");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_connection_send_ping(commandHandle, connectionHandle, comment, voidCb);
+        checkResult(result);
+
+        return future;
+    }
+
+    public static CompletableFuture<Void> connectionSendDiscoveryFeatures(
+            int connectionHandle,
+            String query,
+            String comment
+    ) throws VcxException {
+        logger.debug("connectionSendDiscoveryFeatures() called with: connectionHandle = [" + connectionHandle + "], query = [" + query + "], comment = [" + comment + "]");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_connection_send_discovery_features(commandHandle, connectionHandle, query, comment, voidCb);
+        checkResult(result);
 
         return future;
     }

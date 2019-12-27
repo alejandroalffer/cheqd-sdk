@@ -5,7 +5,7 @@ import com.evernym.sdk.vcx.connection.ConnectionApi;
 import com.evernym.sdk.vcx.connection.InvalidConnectionHandleException;
 import com.evernym.sdk.vcx.vcx.VcxApi;
 import com.evernym.sdk.vcx.utils.UtilsApi;
-import java9.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -211,5 +211,22 @@ class ConnectionApiTest {
         Awaitility.await().until(futureUpdateState::isDone);
         int updateStateResult = futureUpdateState.get();
         assert(updateStateResult== 4 );
+    }
+
+    @DisplayName("send ping")
+    void sendPing() {
+        Assertions.assertThrows(ExecutionException.class, () -> {
+            Integer connectionHandle = _createConnection();
+            TestHelper.getResultFromFuture(ConnectionApi.connectionSendPing(connectionHandle, null));
+        });
+    }
+
+    @Test
+    @DisplayName("send discovery features")
+    void sendDiscoveryFeatures() {
+        Assertions.assertThrows(ExecutionException.class, () -> {
+            Integer connectionHandle = _createConnection();
+            TestHelper.getResultFromFuture(ConnectionApi.connectionSendDiscoveryFeatures(connectionHandle, null, null));
+        });
     }
 }

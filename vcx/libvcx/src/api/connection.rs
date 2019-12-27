@@ -391,7 +391,7 @@ pub extern fn vcx_connection_update_state_with_message(command_handle: u32,
     };
 
     spawn(move || {
-        let rc = match process_acceptance_message(connection_handle, message) {
+        let rc = match update_state_with_message(connection_handle, message) {
             Ok(x) => {
                 trace!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);
@@ -552,6 +552,57 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
                       command_handle, e);
 
                 cb(command_handle, e.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// comment: (Optional) human-friendly description of the ping.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_send_ping(command_handle: u32,
+                                       connection_handle: u32,
+                                       comment: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_connection_send_ping >>>");
+
+    check_useful_opt_c_str!(comment, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_send_ping(command_handle: {}, connection_handle: {}, comment: {:?})",
+           command_handle, connection_handle, comment);
+
+    spawn(move || {
+        match send_ping(connection_handle, comment) {
+            Ok(()) => {
+                trace!("vcx_connection_send_ping(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_connection_send_ping(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
             }
         };
 
@@ -824,6 +875,59 @@ pub extern fn vcx_connection_get_their_pw_did(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+
+/// Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// query: (Optional) query string to match against supported message types.
+///
+/// comment: (Optional) human-friendly description of the query.
+///
+/// cb: Callback that provides success or failure of request
+#[no_mangle]
+pub extern fn vcx_connection_send_discovery_features(command_handle: u32,
+                                                     connection_handle: u32,
+                                                     query: *const c_char,
+                                                     comment: *const c_char,
+                                                     cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_connection_send_discovery_features >>>");
+
+    check_useful_opt_c_str!(query, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(comment, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_send_discovery_features(command_handle: {}, connection_handle: {}, query: {:?}, comment: {:?})",
+           command_handle, connection_handle, query, comment);
+
+    spawn(move || {
+        match send_discovery_features(connection_handle, query, comment) {
+            Ok(()) => {
+                trace!("vcx_connection_send_discovery_features(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_connection_send_discovery_features(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1000,7 +1104,7 @@ mod tests {
         init!("true");
 
         let msg = format!("My message");
-        ;
+
         let msg_len = msg.len();
 
         let connection_handle = ::connection::tests::build_test_connection();

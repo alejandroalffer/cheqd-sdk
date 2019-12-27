@@ -12,6 +12,7 @@ pub mod message_type;
 pub mod payload;
 pub mod wallet_backup;
 pub mod deaddrop;
+#[macro_use]
 pub mod thread;
 
 use std::u8;
