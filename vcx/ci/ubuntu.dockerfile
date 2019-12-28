@@ -45,8 +45,8 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 &&
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" && \
     add-apt-repository 'deb https://repo.sovrin.org/deb xenial master'
 
-ARG LIBINDY_VER="1.13.0"
-ARG LIBNULL_VER="1.13.0"
+ARG LIBINDY_VER="1.14.0"
+ARG LIBNULL_VER="1.14.0"
 
 RUN apt-get update && apt-get install -y \
     libindy=${LIBINDY_VER} \
