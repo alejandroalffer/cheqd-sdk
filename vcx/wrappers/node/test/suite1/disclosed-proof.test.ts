@@ -196,14 +196,6 @@ describe('DisclosedProof', () => {
     })
   })
 
-  describe('rejectProof:', async () => {
-    it('success', async () => {
-      const data = await dataDisclosedProofCreateWithRequest()
-      const disclosedProof = await disclosedProofCreateWithRequest(data)
-      await disclosedProof.rejectProof(data.connection)
-    })
-  })
-
   describe('declinePresentationRequest:', () => {
     it('success', async () => {
       const data = await dataDisclosedProofCreateWithRequest()
@@ -214,6 +206,14 @@ describe('DisclosedProof', () => {
           { connection: data.connection, reason: 'some reason', proposal: null } as any))
       assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
     })
-  })
+ })
+
+ describe('rejectProof:', async () => {
+    it('success', async () => {
+      const data = await dataDisclosedProofCreateWithRequest()
+      const disclosedProof = await disclosedProofCreateWithRequest(data)
+      await disclosedProof.rejectProof(data.connection)
+    })
+ })
 
 })
