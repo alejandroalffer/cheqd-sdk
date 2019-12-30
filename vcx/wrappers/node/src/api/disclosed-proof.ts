@@ -283,6 +283,43 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
       throw new VCXInternalError(err)
     }
   }
+
+  /**
+   * Sends the proof reject to the Connection
+   *
+   * Example:
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * await disclosedProof.rejectProof(connection)
+   * ```
+   */
+  public async rejectProof (connection: Connection): Promise<void> {
+    try {
+      await createFFICallbackPromise<void>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_disclosed_proof_reject_proof(0, this.handle, connection.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32'],
+            (xcommandHandle: number, err: number) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve()
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
   /**
    * Generates the proof message for sending.
    *
@@ -295,7 +332,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
    *    {},
    *    mapValues(attrs, () => valSelfAttested)
    *  })
-   * await disclosedProof.getProofMsg(connection)
+   * await disclosedProof.getProofMessage(connection)
    * ```
    */
   public async getProofMessage (): Promise<string> {
@@ -326,6 +363,45 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
       throw new VCXInternalError(err)
     }
   }
+
+  /**
+   * Generates the proof reject message for sending.
+   *
+   * Example:
+   * ```
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * await disclosedProof.getRejectMessage(connection)
+   * ```
+   */
+  public async getRejectMessage (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_disclosed_proof_get_reject_msg(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`proof ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
   /**
    * Generates the proof
    *
