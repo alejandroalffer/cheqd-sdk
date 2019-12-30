@@ -72,6 +72,15 @@ public class DisclosedProofApiTest {
     }
 
     @Test
+    @DisplayName("get reject message")
+    void getRejectMessage() throws VcxException, ExecutionException, InterruptedException {
+        int proofHandle = TestHelper.getResultFromFuture(DisclosedProofApi.proofCreateWithRequest(sourceId, proofRequest));
+        assert (proofHandle != 0);
+        String msg = TestHelper.getResultFromFuture(DisclosedProofApi.getRejectMsg(proofHandle));
+        assert (msg.length() > 0);
+    }
+
+    @Test
     @DisplayName("decline request")
     void declineRequest() throws VcxException, ExecutionException, InterruptedException {
         int proofHandle = TestHelper.getResultFromFuture(DisclosedProofApi.proofCreateWithRequest(sourceId, proofRequest));
