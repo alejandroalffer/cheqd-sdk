@@ -111,6 +111,7 @@ pub static CREATE_WALLET_BACKUP: Error = Error{ code_num: 1096, message: "Failed
 pub static RETRIEVE_EXPORTED_WALLET: Error = Error{ code_num: 1097, message: "Failed to retrieve exported wallet"};
 pub static INVALID_MSG_VERSION: Error = Error{ code_num: 1098, message: "Invalid A2A Message version"};
 pub static RETRIEVE_DEAD_DROP: Error = Error{ code_num: 1099, message: "Failed to retrieve Dead Drop payload"};
+pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1100, message: "Invalid redirect details structure"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -211,6 +212,7 @@ lazy_static! {
         insert_c_message(&mut m, &UKNOWN_LIBINDY_TRANSACTION_REJECTION);
         insert_c_message(&mut m, &MISSING_PAYMENT_METHOD);
         insert_c_message(&mut m, &LOGGING_ERROR);
+        insert_c_message(&mut m, &INVALID_REDIRECT_DETAILS);
 
         m
     };
@@ -423,6 +425,11 @@ mod tests {
     #[test]
     fn test_invalid_invite_details() {
         assert_eq!(error_message(&INVALID_INVITE_DETAILS.code_num), INVALID_INVITE_DETAILS.message);
+    }
+
+    #[test]
+    fn test_invalid_redirect_details() {
+        assert_eq!(error_message(&INVALID_REDIRECT_DETAILS.code_num), INVALID_REDIRECT_DETAILS.message);
     }
 
     #[test]
