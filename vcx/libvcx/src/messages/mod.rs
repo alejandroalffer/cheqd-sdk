@@ -727,6 +727,7 @@ impl MessageStatusCode {
             MessageStatusCode::Accepted => "message accepted",
             MessageStatusCode::Rejected => "message rejected",
             MessageStatusCode::Reviewed => "message reviewed",
+            MessageStatusCode::Redirected => "message redirected",
         }
     }
 }

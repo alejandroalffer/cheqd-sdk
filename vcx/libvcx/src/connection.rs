@@ -1,11 +1,11 @@
-        use serde_json;
+use serde_json;
 use serde_json::Value;
 use rmp_serde;
 
 use api::VcxStateType;
 use settings;
 use messages;
-use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, to_u8, SerializableObjectWithState, ObjectWithVersion};
+use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, to_u8, SerializableObjectWithState};
 use messages::invite::{InviteDetail, RedirectDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectionDetails};
 use messages::payload::Payloads;
 use messages::thread::Thread;
@@ -354,12 +354,11 @@ impl Connection {
                 if message.status_code == MessageStatusCode::Accepted && message.msg_type == RemoteMessageType::ConnReqAnswer {
                     self.process_acceptance_message(message)?;
                 } else if message.status_code == MessageStatusCode::Redirected && message.msg_type == RemoteMessageType::ConnReqRedirect {
-                    let rc = process_redirect_message(handle, &message);
+                    let rc = self.process_redirect_message(&message);
                     if rc.is_err() {
-                        force_v2_parse_redirection_details(handle, &message)?;
+                        self.force_v2_parse_redirection_details(&message)?;
                     }
-                }
-                else {
+                } else {
                     warn!("Unexpected message: {:?}", message);
                 }
             }
@@ -739,71 +738,73 @@ pub fn parse_acceptance_details(message: &Message) -> VcxResult<SenderDetail> {
     }
 }
 
-pub fn parse_redirection_details(handle: u32, message: &Message) -> VcxResult<RedirectDetail> {
-    debug!("connection {} parsing redirect details for message {:?}", get_source_id(handle).unwrap_or_default(), message);
-    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
+impl Connection {
+    pub fn parse_redirection_details(&self, message: &Message) -> VcxResult<RedirectDetail> {
+        debug!("connection {} parsing redirect details for message {:?}", self.source_id, message);
+        let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
-    let payload = message.payload
-        .as_ref()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Payload not found"))?;
+        let payload = message.payload
+            .as_ref()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Payload not found"))?;
 
-    match payload {
-        MessagePayload::V1(payload) => {
-            // TODO: check returned verkey
-            let (_, payload) = crypto::parse_msg(&my_vk, &messages::to_u8(&payload))
-                .map_err(|err| err.map(VcxErrorKind::InvalidMessagePack, "Cannot decrypt connection payload"))?;
+        match payload {
+            MessagePayload::V1(payload) => {
+                // TODO: check returned verkey
+                let (_, payload) = crypto::parse_msg(&my_vk, &messages::to_u8(&payload))
+                    .map_err(|err| err.map(VcxErrorKind::InvalidMessagePack, "Cannot decrypt connection payload"))?;
 
-            let response: ConnectionPayload = rmp_serde::from_slice(&payload[..])
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot parse connection payload: {}", err)))?;
+                let response: ConnectionPayload = rmp_serde::from_slice(&payload[..])
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot parse connection payload: {}", err)))?;
 
-            let payload = messages::to_u8(&response.msg);
+                let payload = messages::to_u8(&response.msg);
 
-            let response: RedirectionDetails = rmp_serde::from_slice(&payload[..])
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize RedirectDetails: {}", err)))?;
+                let response: RedirectionDetails = rmp_serde::from_slice(&payload[..])
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize RedirectDetails: {}", err)))?;
 
-            Ok(response.redirect_detail)
-        }
-        MessagePayload::V2(payload) => {
-            let payload = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
-            let response: RedirectionDetails = serde_json::from_str(&payload.msg)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize RedirectDetails: {}", err)))?;
+                Ok(response.redirect_detail)
+            }
+            MessagePayload::V2(payload) => {
+                let payload = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
+                let response: RedirectionDetails = serde_json::from_str(&payload.msg)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize RedirectDetails: {}", err)))?;
 
-            Ok(response.redirect_detail)
+                Ok(response.redirect_detail)
+            }
         }
     }
-}
 
-pub fn force_v2_parse_acceptance_details(handle: u32, message: &Message) -> VcxResult<SenderDetail> {
-    debug!("forcing connection {} parsing acceptance details for message {:?}", get_source_id(handle).unwrap_or_default(), message);
-    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
+    pub fn force_v2_parse_acceptance_details(&mut self, message: &Message) -> VcxResult<SenderDetail> {
+        debug!("forcing connection {} parsing acceptance details for message {:?}", self.source_id, message);
+        let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
-    let payload = message.payload
-        .as_ref()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Payload not found"))?;
+        let payload = message.payload
+            .as_ref()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Payload not found"))?;
 
-    match payload {
-        MessagePayload::V1(payload) => {
-            let vec = to_u8(payload);
-            let json: Value = serde_json::from_slice(&vec[..])
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;
-            ;
+        match payload {
+            MessagePayload::V1(payload) => {
+                let vec = to_u8(payload);
+                let json: Value = serde_json::from_slice(&vec[..])
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;
+                ;
 
-            let payload = Payloads::decrypt_payload_v12(&my_vk, &json)?;
-            let response: AcceptanceDetails = serde_json::from_value(payload.msg)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
+                let payload = Payloads::decrypt_payload_v12(&my_vk, &json)?;
+                let response: AcceptanceDetails = serde_json::from_value(payload.msg)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
 
-            set_their_pw_did(handle, &response.sender_detail.did).ok();
-            set_their_pw_verkey(handle, &response.sender_detail.verkey).ok();
-            set_state(handle, VcxStateType::VcxStateAccepted).ok();
+                self.set_their_pw_did(&response.sender_detail.did);
+                self.set_their_pw_verkey(&response.sender_detail.verkey);
+                self.set_state(VcxStateType::VcxStateAccepted);
 
-            Ok(response.sender_detail)
-        }
-        MessagePayload::V2(payload) => {
-            let payload = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
-            let response: AcceptanceDetails = serde_json::from_str(&payload.msg)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
+                Ok(response.sender_detail)
+            }
+            MessagePayload::V2(payload) => {
+                let payload = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
+                let response: AcceptanceDetails = serde_json::from_str(&payload.msg)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
 
-            Ok(response.sender_detail)
+                Ok(response.sender_detail)
+            }
         }
     }
 }
@@ -817,40 +818,43 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
     })
 }
 
-pub fn force_v2_parse_redirection_details(handle: u32, message: &Message) -> VcxResult<RedirectDetail> {
-    debug!("forcing connection {} parsing redirection details for message {:?}", get_source_id(handle).unwrap_or_default(), message);
-    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
+impl Connection {
+    pub fn force_v2_parse_redirection_details(&mut self, message: &Message) -> VcxResult<RedirectDetail> {
+        debug!("forcing connection {} parsing redirection details for message {:?}", self.source_id, message);
+        let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
-    let payload = message.payload
-        .as_ref()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Payload not found"))?;
+        let payload = message.payload
+            .as_ref()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Payload not found"))?;
 
-    match payload {
-        MessagePayload::V1(payload) => {
-            let vec = to_u8(payload);
-            let json: Value = serde_json::from_slice(&vec[..])
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;;
+        match payload {
+            MessagePayload::V1(payload) => {
+                let vec = to_u8(payload);
+                let json: Value = serde_json::from_slice(&vec[..])
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;
+                ;
 
-            let payload = Payloads::decrypt_payload_v12(&my_vk, &json)?;
-            let response:RedirectionDetails = serde_json::from_value(payload.msg)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize RedirectionDetails: {}", err)))?;
+                let payload = Payloads::decrypt_payload_v12(&my_vk, &json)?;
+                let response: RedirectionDetails = serde_json::from_value(payload.msg)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize RedirectionDetails: {}", err)))?;
 
-            set_redirect_details(handle, &response.redirect_detail).ok();
-            set_state(handle, VcxStateType::VcxStateRedirected).ok();
+                self.set_redirect_detail(response.redirect_detail.clone());
+                self.set_state(VcxStateType::VcxStateRedirected);
 
-            Ok(response.redirect_detail)
-        }
-        MessagePayload::V2(payload) => {
-            let payload = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
-            let response: RedirectionDetails = serde_json::from_str(&payload.msg)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize RedirectionDetails: {}", err)))?;
+                Ok(response.redirect_detail)
+            }
+            MessagePayload::V2(payload) => {
+                let payload = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
+                let response: RedirectionDetails = serde_json::from_str(&payload.msg)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize RedirectionDetails: {}", err)))?;
 
-            Ok(response.redirect_detail)
+                Ok(response.redirect_detail)
+            }
         }
     }
 }
 
-pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u32> {
+pub fn process_acceptance_message(handle: u32, message: &Message) -> VcxResult<u32> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
             Connections::V1(ref mut connection) => {
@@ -880,14 +884,29 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
         .or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
+impl Connection {
+    pub fn process_redirect_message(&mut self, message: &Message) -> VcxResult<u32> {
+        let details = self.parse_redirection_details(&message)
+            .map_err(|err| err.extend("Cannot parse redirection details"))?;
+
+        self.set_redirect_detail(details);
+        self.set_state(VcxStateType::VcxStateRedirected);
+
+        Ok(error::SUCCESS.code_num)
+    }
+}
+
 pub fn process_redirect_message(handle: u32, message: &Message) -> VcxResult<u32> {
-    let details = parse_redirection_details(handle, &message)
-        .map_err(|err| err.extend("Cannot parse redirection details"))?;
-
-    set_redirect_details(handle, &details).ok();
-    set_state(handle, VcxStateType::VcxStateRedirected).ok();
-
-    Ok(error::SUCCESS.code_num)
+    CONNECTION_MAP.get_mut(handle, |connection| {
+        match connection {
+            Connections::V1(ref mut connection) => {
+                connection.process_redirect_message(&message.clone())
+            }
+            Connections::V3(ref mut connection) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
+    })
 }
 
 pub fn delete_connection(handle: u32) -> VcxResult<u32> {
@@ -927,15 +946,30 @@ pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
 }
 
 pub fn redirect(handle: u32, redirect_handle: u32) -> VcxResult<u32> {
-    let rc = CONNECTION_MAP.get(redirect_handle, |rc| { Ok(rc.clone()) })?;
+    let rc = CONNECTION_MAP.get(redirect_handle, |connection| {
+        match connection {
+            Connections::V1(ref connection) => {
+                Ok(connection.clone())
+            }
+            Connections::V3(ref connection) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
+    })?;
 
-    CONNECTION_MAP.get_mut(handle, |t| {
-        debug!("redirecting connection {}", t.get_source_id());
-        t.create_agent_pairwise()?;
-        t.update_agent_profile(&ConnectionOptions::default())?;
-        t.redirect(&rc)
+    CONNECTION_MAP.get_mut(handle, |connection| {
+        match connection {
+            Connections::V1(ref mut connection) => {
+                debug!("redirecting connection {}", connection.get_source_id());
+                connection.create_agent_pairwise()?;
+                connection.update_agent_profile(&ConnectionOptions::default())?;
+                connection.redirect(&rc)
+            }
+            Connections::V3(ref mut connection) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
     })
-
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
@@ -1026,16 +1060,16 @@ pub fn set_invite_details(handle: u32, invite_detail: &InviteDetail) -> VcxResul
 pub fn get_redirect_details(handle: u32) -> VcxResult<String> {
     debug!("get redirect details for connection {}", get_source_id(handle).unwrap_or_default());
 
-    CONNECTION_MAP.get(handle, |t| {
-        serde_json::to_string(&t.redirect_detail)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidRedirectDetail, format!("Cannot serialize RedirectDetail: {}", err)))
-    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
-}
-
-pub fn set_redirect_details(handle: u32, redirect_detail: &RedirectDetail) -> VcxResult<()> {
-    CONNECTION_MAP.get_mut(handle, |cxn| {
-        cxn.set_redirect_detail(redirect_detail.clone());
-        Ok(())
+    CONNECTION_MAP.get(handle, |connection| {
+        match connection {
+            Connections::V1(ref connection) => {
+                serde_json::to_string(&connection.redirect_detail)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidRedirectDetail, format!("Cannot serialize RedirectDetail: {}", err)))
+            }
+            Connections::V3(ref connection) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
@@ -1127,6 +1161,7 @@ impl Into<(Connection, ActorDidExchangeState)> for ConnectionV3 {
             uuid: String::new(),
             endpoint: String::new(),
             invite_detail: None,
+            redirect_detail: None,
             invite_url: None,
             agent_did: self.agent_info().agent_did.clone(),
             agent_vk: self.agent_info().agent_vk.clone(),
@@ -1354,7 +1389,7 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
-            version: Some(ProtocolTypes::V1)
+            version: Some(ProtocolTypes::V1),
         };
 
         let handle = CONNECTION_MAP.add(Connections::V1(c)).unwrap();
@@ -1453,12 +1488,10 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
-            version: None
+            version: None,
         };
 
-        let handle = CONNECTION_MAP.add(c).unwrap();
-
-        parse_redirection_details(handle, &response).unwrap();
+        c.parse_redirection_details(&response).unwrap();
 
         // test that it fails
         let bad_response = Message {
@@ -1473,7 +1506,7 @@ pub mod tests {
             decrypted_payload: None,
         };
 
-        match parse_redirection_details(handle, &bad_response) {
+        match c.parse_redirection_details(&bad_response) {
             Ok(_) => assert_eq!(0, 1), // we should not receive this
             // TODO: Refactor Error
             // TODO: Fix this test to be a correct Error Type
@@ -1514,7 +1547,7 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
-            version: None
+            version: None,
         };
 
         parse_acceptance_details(&response).unwrap();
@@ -1641,7 +1674,7 @@ pub mod tests {
         init!("true");
         let handle = create_connection("test_process_acceptance_message").unwrap();
         let message = serde_json::from_str(INVITE_ACCEPTED_RESPONSE).unwrap();
-        assert_eq!(error::SUCCESS.code_num, process_acceptance_message(handle, message).unwrap());
+        assert_eq!(error::SUCCESS.code_num, process_acceptance_message(handle, &message).unwrap());
     }
 
     #[test]
@@ -1675,7 +1708,7 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
-            version: None
+            version: None,
         };
 
         let handle = CONNECTION_MAP.add(Connections::V1(c)).unwrap();
@@ -1711,9 +1744,6 @@ pub mod tests {
         let details: InviteDetail = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();
         assert_eq!(set_invite_details(1, &details).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
         ;
-        let details: RedirectDetail = serde_json::from_str(REDIRECT_DETAIL_STRING).unwrap();
-        assert_eq!(set_redirect_details(1, &details).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
         assert_eq!(set_pw_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
         ;
     }
@@ -1725,6 +1755,7 @@ pub mod tests {
         let handle = create_connection_with_invite("alice", &details).unwrap();
         assert_eq!(release(handle).unwrap(), ());
     }
+
     #[test]
     fn test_different_protocol_version() {
         init!("true");
@@ -1737,7 +1768,7 @@ pub mod tests {
         let serialized = to_string(handle).unwrap();
         println!("{}", serialized);
         let details = r#"{"version":"2.0","id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
-                let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
+        let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
         let details = serde_json::to_string(&unabbrv_details).unwrap();
 
         let handle = create_connection_with_invite("alice", &details).unwrap();
