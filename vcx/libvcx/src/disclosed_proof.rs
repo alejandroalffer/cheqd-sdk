@@ -650,13 +650,27 @@ pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
 
 pub fn generate_reject_proof_msg(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get_mut(handle, |obj| {
-        obj.generate_reject_proof_msg()
+        match obj {
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.generate_reject_proof_msg()
+            }
+            DisclosedProofs::V3(ref mut obj) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
     })
 }
 
 pub fn reject_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     HANDLE_MAP.get_mut(handle, |obj| {
-        obj.reject_proof(connection_handle)
+        match obj {
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.reject_proof(connection_handle)
+            }
+            DisclosedProofs::V3(ref mut obj) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
     })
 }
 
