@@ -7,7 +7,7 @@ use serde_json::{self, Value};
 use utils::futures::*;
 
 use domain::a2connection::*;
-use domain::invite::{InviteDetail, SenderDetail, ForwardAgentDetail};
+use domain::invite::{InviteDetail, SenderDetail, RedirectDetail, ForwardAgentDetail};
 use domain::key_deligation_proof::KeyDlgProof;
 use domain::status::{MessageStatusCode, ConnectionStatus};
 use domain::message_type::*;
@@ -103,6 +103,8 @@ pub enum A2AMessageV2 {
     ConnectionRequestResponse(ConnectionRequestResponse),
     ConnectionRequestAnswer(ConnectionRequestAnswer),
     ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
+    ConnectionRequestRedirect(ConnectionRequestRedirect),
+    ConnectionRequestRedirectResponse(ConnectionRequestRedirectResponse),
     SendRemoteMessage(SendRemoteMessage),
     SendRemoteMessageResponse(SendRemoteMessageResponse),
 }
@@ -209,6 +211,7 @@ pub struct SendMessages {
 #[serde(untagged)]
 #[derive(Debug, Deserialize, Serialize)]
 pub enum MessageDetail {
+    ConnectionRequestRedirect(ConnectionRequestRedirectMessageDetail),
     ConnectionRequestAnswer(ConnectionRequestAnswerMessageDetail),
     ConnectionRequest(ConnectionRequestMessageDetail),
     ConnectionRequestResp(ConnectionRequestMessageDetailResp),
@@ -336,6 +339,7 @@ pub struct FailedMessageUpdateInfo {
 pub enum RemoteMessageType {
     ConnReq,
     ConnReqAnswer,
+    ConnReqRedirect,
     CredOffer,
     CredReq,
     Cred,
@@ -349,6 +353,7 @@ impl Serialize for RemoteMessageType {
         let value = match self {
             RemoteMessageType::ConnReq => "connReq",
             RemoteMessageType::ConnReqAnswer => "connReqAnswer",
+            RemoteMessageType::ConnReqRedirect => "connReqRedirect",
             RemoteMessageType::CredOffer => "credOffer",
             RemoteMessageType::CredReq => "credReq",
             RemoteMessageType::Cred => "cred",
@@ -366,6 +371,7 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
         match value.as_str() {
             Some("connReq") => Ok(RemoteMessageType::ConnReq),
             Some("connReqAnswer") => Ok(RemoteMessageType::ConnReqAnswer),
+            Some("connReqRedirect") => Ok(RemoteMessageType::ConnReqRedirect),
             Some("credOffer") => Ok(RemoteMessageType::CredOffer),
             Some("credReq") => Ok(RemoteMessageType::CredReq),
             Some("cred") => Ok(RemoteMessageType::Cred),
@@ -432,6 +438,35 @@ impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
             sender_agency_detail: con_req_answer.sender_agency_detail,
             answer_status_code: con_req_answer.answer_status_code,
             thread: Some(con_req_answer.thread),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestRedirectMessageDetail {
+    #[serde(rename = "keyDlgProof")]
+    pub key_dlg_proof: Option<KeyDlgProof>,
+    #[serde(rename = "senderDetail")]
+    pub sender_detail: SenderDetail,
+    #[serde(rename = "redirectDetail")]
+    pub redirect_detail: RedirectDetail,
+    #[serde(rename = "senderAgencyDetail")]
+    pub sender_agency_detail: ForwardAgentDetail,
+    #[serde(rename = "answerStatusCode")]
+    pub answer_status_code: MessageStatusCode,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread: Option<Thread>
+}
+
+impl From<ConnectionRequestRedirect> for ConnectionRequestRedirectMessageDetail {
+    fn from(con_req_redirect: ConnectionRequestRedirect) -> ConnectionRequestRedirectMessageDetail {
+        ConnectionRequestRedirectMessageDetail {
+            key_dlg_proof: con_req_redirect.key_dlg_proof,
+            sender_detail: con_req_redirect.sender_detail,
+            redirect_detail: con_req_redirect.redirect_detail,
+            sender_agency_detail: con_req_redirect.sender_agency_detail,
+            answer_status_code: con_req_redirect.answer_status_code,
+            thread: Some(con_req_redirect.thread),
         }
     }
 }
@@ -564,6 +599,35 @@ pub struct ConnectionRequestAnswerResponse {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestRedirectResponse {
+    #[serde(rename = "@id")]
+    pub id: String,
+    pub sent: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestRedirect {
+    #[serde(rename = "sendMsg")]
+    pub send_msg: bool,
+    #[serde(rename = "@id")]
+    pub id: String,
+    #[serde(rename = "replyToMsgId")]
+    pub reply_to_msg_id: Option<String>,
+    #[serde(rename = "keyDlgProof")]
+    pub key_dlg_proof: Option<KeyDlgProof>,
+    #[serde(rename = "senderDetail")]
+    pub sender_detail: SenderDetail,
+    #[serde(rename = "redirectDetail")]
+    pub redirect_detail: RedirectDetail,
+    #[serde(rename = "senderAgencyDetail")]
+    pub sender_agency_detail: ForwardAgentDetail,
+    #[serde(rename = "answerStatusCode")]
+    pub answer_status_code: MessageStatusCode,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SendRemoteMessage {
     pub mtype: RemoteMessageType,
@@ -626,6 +690,8 @@ pub enum A2AMessageKinds {
     ConnectionRequestResponse,
     ConnectionRequestAnswer,
     ConnectionRequestAnswerResponse,
+    ConnectionRequestRedirect,
+    ConnectionRequestRedirectResponse,
     SendRemoteMessage,
     SendRemoteMessageResponse,
     UpdateComMethod,
@@ -660,6 +726,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::ConnectionRequestResponse => MessageFamilies::Connecting,
             A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Connecting,
             A2AMessageKinds::ConnectionRequestAnswerResponse => MessageFamilies::Connecting,
+            A2AMessageKinds::ConnectionRequestRedirect => MessageFamilies::Connecting,
+            A2AMessageKinds::ConnectionRequestRedirectResponse => MessageFamilies::Connecting,
             A2AMessageKinds::UpdateMessageStatus => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageStatusUpdated => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateMessageStatusByConnections => MessageFamilies::Pairwise,
@@ -708,6 +776,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::ConnectionRequestResponse => "CONN_REQUEST_RESP".to_string(),
             A2AMessageKinds::ConnectionRequestAnswer => "ACCEPT_CONN_REQ".to_string(),
             A2AMessageKinds::ConnectionRequestAnswerResponse => "CONN_REQUEST_ANSWER_RESP".to_string(),
+            A2AMessageKinds::ConnectionRequestRedirect => "REDIRECT_CONN_REQ".to_string(),
+            A2AMessageKinds::ConnectionRequestRedirectResponse => "CONN_REQ_REDIRECTED".to_string(),
             A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
             A2AMessageKinds::GetConfigs => "GET_CONFIGS".to_string(),
@@ -726,6 +796,8 @@ impl<'de> Deserialize<'de> for A2AMessageV1 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
         let message_type: MessageTypeV1 = serde_json::from_value(value["@type"].clone()).map_err(de::Error::custom)?;
+
+        println!("Deserialize for A2AMessageV1, message_type: {:?}", message_type);
 
         match message_type.name.as_str() {
             "FWD" => {
@@ -1074,6 +1146,16 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map(|msg| A2AMessageV2::ConnectionRequestAnswerResponse(msg))
                     .map_err(de::Error::custom)
             }
+            "REDIRECT_CONN_REQ" => {
+                ConnectionRequestRedirect::deserialize(value)
+                    .map(|msg| A2AMessageV2::ConnectionRequestRedirect(msg))
+                    .map_err(de::Error::custom)
+            }
+            "CONN_REQ_REDIRECTED" => {
+                ConnectionRequestRedirectResponse::deserialize(value)
+                    .map(|msg| A2AMessageV2::ConnectionRequestRedirectResponse(msg))
+                    .map_err(de::Error::custom)
+            }
             "SEND_REMOTE_MSG" => {
                 SendRemoteMessage::deserialize(value)
                     .map(|msg| A2AMessageV2::SendRemoteMessage(msg))
@@ -1200,6 +1282,8 @@ impl Serialize for A2AMessageV2 {
             A2AMessageV2::ConnectionRequestResponse(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConnectionRequestResponse),
             A2AMessageV2::ConnectionRequestAnswer(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConnectionRequestAnswer),
             A2AMessageV2::ConnectionRequestAnswerResponse(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConnectionRequestAnswerResponse),
+            A2AMessageV2::ConnectionRequestRedirect(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConnectionRequestRedirect),
+            A2AMessageV2::ConnectionRequestRedirectResponse(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConnectionRequestRedirectResponse),
             A2AMessageV2::SendRemoteMessage(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::SendRemoteMessage),
             A2AMessageV2::SendRemoteMessageResponse(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::SendRemoteMessageResponse),
         }.map_err(ser::Error::custom)?;

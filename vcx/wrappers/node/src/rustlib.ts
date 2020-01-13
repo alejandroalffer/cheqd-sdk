@@ -168,6 +168,8 @@ export interface IFFIEntryPoint {
                                      cb: any) => number,
   vcx_disclosed_proof_get_proof_msg: (commandId: number, handle: number, cb: any) => number,
   vcx_disclosed_proof_get_reject_msg: (commandId: number, handle: number, cb: any) => number,
+  vcx_connection_redirect: (commandId: number, connectionHandle: number, redirectConnectionHandle: number, cb: any) => number,
+  vcx_connection_get_redirect_details: (commandId: number, handle: number, cb: any) => number,
   vcx_disclosed_proof_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_disclosed_proof_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_disclosed_proof_update_state: (commandId: number, handle: number, cb: any) => number,

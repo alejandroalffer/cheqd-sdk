@@ -22,7 +22,8 @@ use self::update_connection::{DeleteConnectionBuilder, UpdateConnection, UpdateC
 use self::update_profile::{UpdateProfileDataBuilder, UpdateConfigs, UpdateConfigsResponse};
 use self::invite::{
     SendInviteBuilder, ConnectionRequest, SendInviteMessageDetails, SendInviteMessageDetailsResponse, ConnectionRequestResponse,
-    AcceptInviteBuilder, ConnectionRequestAnswer, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse
+    RedirectConnectionMessageDetails, ConnectionRequestRedirect, ConnectionRequestRedirectResponse,
+    AcceptInviteBuilder, RedirectConnectionBuilder, ConnectionRequestAnswer, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse
 };
 use self::get_message::{GetMessagesBuilder, GetMessagesReq, GetMessages, GetMessagesResponse, MessagesByConnections};
 use self::send_message::SendMessageBuilder;
@@ -248,6 +249,9 @@ pub enum A2AMessageV2 {
     ConnectionRequestAnswer(ConnectionRequestAnswer),
     ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
 
+    ConnectionRequestRedirect(ConnectionRequestRedirect),
+    ConnectionRequestRedirectResponse(ConnectionRequestRedirectResponse),
+
     UpdateConnection(UpdateConnection),
     UpdateConnectionResponse(UpdateConnectionResponse),
     UpdateMessageStatusByConnections(UpdateMessageStatusByConnections),
@@ -371,6 +375,16 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "ACCEPT_CONN_REQ_RESP" => {
                 ConnectionRequestAnswerResponse::deserialize(value)
                     .map(|msg| A2AMessageV2::ConnectionRequestAnswerResponse(msg))
+                    .map_err(de::Error::custom)
+            }
+            "REDIRECT_CONN_REQ" => {
+                ConnectionRequestRedirect::deserialize(value)
+                    .map(|msg| A2AMessageV2::ConnectionRequestRedirect(msg))
+                    .map_err(de::Error::custom)
+            }
+            "CONN_REQ_REDIRECTED" => {
+                ConnectionRequestRedirectResponse::deserialize(value)
+                    .map(|msg| A2AMessageV2::ConnectionRequestRedirectResponse(msg))
                     .map_err(de::Error::custom)
             }
             "SEND_REMOTE_MSG" => {
@@ -596,6 +610,7 @@ pub struct MessageSent {
 #[derive(Debug, Deserialize, Serialize)]
 pub enum MessageDetail {
     ConnectionRequestAnswer(AcceptInviteMessageDetails),
+    ConnectionRequestRedirect(RedirectConnectionMessageDetails),
     ConnectionRequest(SendInviteMessageDetails),
     ConnectionRequestResp(SendInviteMessageDetailsResponse),
     General(GeneralMessageDetail),
@@ -637,6 +652,7 @@ pub enum RemoteMessageType {
     Other(String),
     ConnReq,
     ConnReqAnswer,
+    ConnReqRedirect,
     CredOffer,
     CredReq,
     Cred,
@@ -653,6 +669,7 @@ impl Serialize for RemoteMessageType {
         let value = match self {
             RemoteMessageType::ConnReq => "connReq",
             RemoteMessageType::ConnReqAnswer => "connReqAnswer",
+            RemoteMessageType::ConnReqRedirect => "connReqRedirect",
             RemoteMessageType::CredOffer => "credOffer",
             RemoteMessageType::CredReq => "credReq",
             RemoteMessageType::Cred => "cred",
@@ -674,6 +691,7 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
         match value.as_str() {
             Some("connReq") => Ok(RemoteMessageType::ConnReq),
             Some("connReqAnswer") | Some("CONN_REQ_ACCEPTED") => Ok(RemoteMessageType::ConnReqAnswer),
+            Some("connReqRedirect") | Some("CONN_REQ_REDIRECTED") => Ok(RemoteMessageType::ConnReqRedirect),
             Some("credOffer") => Ok(RemoteMessageType::CredOffer),
             Some("credReq") => Ok(RemoteMessageType::CredReq),
             Some("cred") => Ok(RemoteMessageType::Cred),
@@ -697,6 +715,7 @@ pub enum MessageStatusCode {
     Accepted,
     Rejected,
     Reviewed,
+    Redirected,
 }
 
 impl MessageStatusCode {
@@ -721,6 +740,7 @@ impl std::string::ToString for MessageStatusCode {
             MessageStatusCode::Accepted => "MS-104",
             MessageStatusCode::Rejected => "MS-105",
             MessageStatusCode::Reviewed => "MS-106",
+            MessageStatusCode::Redirected => "MS-107",
         }.to_string()
     }
 }
@@ -742,6 +762,7 @@ impl<'de> Deserialize<'de> for MessageStatusCode {
             Some("MS-104") => Ok(MessageStatusCode::Accepted),
             Some("MS-105") => Ok(MessageStatusCode::Rejected),
             Some("MS-106") => Ok(MessageStatusCode::Reviewed),
+            Some("MS-107") => Ok(MessageStatusCode::Redirected),
             _ => Err(de::Error::custom("Unexpected message type."))
         }
     }
@@ -774,6 +795,7 @@ pub enum A2AMessageKinds {
     ComMethodUpdated,
     ConnectionRequest,
     ConnectionRequestAnswer,
+    ConnectionRequestRedirect,
     SendRemoteMessage,
     SendRemoteMessageResponse,
     BackupInit,
@@ -808,6 +830,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::UpdateConnectionStatus => MessageFamilies::Pairwise,
             A2AMessageKinds::ConnectionRequest => MessageFamilies::Connecting,
             A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Connecting,
+            A2AMessageKinds::ConnectionRequestRedirect => MessageFamilies::Connecting,
             A2AMessageKinds::UpdateMessageStatusByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageStatusUpdatedByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConfigs => MessageFamilies::Configs,
@@ -850,6 +873,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::UpdateConnectionStatus => "UPDATE_CONN_STATUS".to_string(),
             A2AMessageKinds::ConnectionRequest => "CONN_REQUEST".to_string(),
             A2AMessageKinds::ConnectionRequestAnswer => "ACCEPT_CONN_REQ".to_string(),
+            A2AMessageKinds::ConnectionRequestRedirect => "REDIRECT_CONN_REQ".to_string(),
             A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
             A2AMessageKinds::UpdateComMethod => "UPDATE_COM_METHOD".to_string(),
@@ -1148,6 +1172,8 @@ pub fn send_invite() -> SendInviteBuilder { SendInviteBuilder::create() }
 pub fn delete_connection() -> DeleteConnectionBuilder { DeleteConnectionBuilder::create() }
 
 pub fn accept_invite() -> AcceptInviteBuilder { AcceptInviteBuilder::create() }
+
+pub fn redirect_connection() -> RedirectConnectionBuilder { RedirectConnectionBuilder::create() }
 
 pub fn update_data() -> UpdateProfileDataBuilder { UpdateProfileDataBuilder::create() }
 
