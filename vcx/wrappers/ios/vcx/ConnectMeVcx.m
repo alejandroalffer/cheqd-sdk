@@ -999,6 +999,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+
 - (void) proofCreateWithRequest:(NSString *) source_id
                withProofRequest:(NSString *) proofRequest
                  withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle))completion {
