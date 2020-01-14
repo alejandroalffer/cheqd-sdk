@@ -141,12 +141,11 @@ class Connection(VcxStateful):
             Connection.get_redirect_details.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_connection_handle = c_uint32(self.handle)
-        result = await do_call('vcx_connection_get_redirect_details',
-                               c_connection_handle,
-                               Connection.get_redirect_details.cb)
+        details = await do_call('vcx_connection_get_redirect_details',
+                                c_connection_handle,
+                                Connection.get_redirect_details.cb)
 
-        self.logger.debug("vcx_connection_get_redirect_details completed")
-        return result
+        return json.loads(details.decode())
 
     async def send_message(self, msg: str, msg_type: str, msg_title: str, ref_msg_id: str = None) -> str:
         """
