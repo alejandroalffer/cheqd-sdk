@@ -1,31 +1,31 @@
 use settings;
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agent_v2};
 use messages::message_type::MessageTypes;
 use error::VcxResult;
 use utils::httpclient;
-use messages::wallet_backup::{prepare_message_for_agency_v2};
+//use messages::wallet_backup::{prepare_message_for_agency_v2};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Backup {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
-    wallet: Vec<u8>,
+    wallet: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BackupBuilder {
-    wallet: Vec<u8>,
+    wallet: String,
 }
 
 impl BackupBuilder {
     pub fn create() -> BackupBuilder {
         BackupBuilder {
-            wallet: Vec::new(),
+            wallet: String::new(),
         }
     }
 
     pub fn wallet_data(&mut self, wallet_data: Vec<u8>) -> &mut Self {
-        self.wallet = wallet_data;
+        self.wallet = base64::encode(&wallet_data);
         self
     }
 
@@ -53,7 +53,7 @@ impl BackupBuilder {
         let agency_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?;
         let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
-        prepare_message_for_agency_v2(&message, &agency_did, &agency_vk, &my_vk)
+        prepare_message_for_agent_v2(vec![message], &my_vk, &agency_did, &agency_vk)
     }
 }
 
