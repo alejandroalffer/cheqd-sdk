@@ -479,7 +479,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
                 return;
               }
               if (!details) {
-                reject(`proof ${this.sourceId} returned empty string`);
+                reject(`no redirect details returned`);
                 return;
               }
               resolve(details);
