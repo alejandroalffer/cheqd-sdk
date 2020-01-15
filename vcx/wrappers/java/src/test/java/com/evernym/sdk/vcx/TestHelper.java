@@ -96,10 +96,10 @@ class TestHelper {
                 0
                 ));
     }
-    static int _createCredentialDefWithId() throws VcxException, ExecutionException, InterruptedException {
+    static int _createCredentialDefWithId(String credDefId) throws VcxException, ExecutionException, InterruptedException {
         return  getResultFromFuture(CredentialDefApi.credentialDefCreateWithId(
                 "testCredentialDefSourceId",
-                "testCredentialDefId",
+                credDefId,
                 null,
                 null
         ));

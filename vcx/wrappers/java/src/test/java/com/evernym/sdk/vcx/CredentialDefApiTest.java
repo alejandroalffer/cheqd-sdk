@@ -42,7 +42,7 @@ public class CredentialDefApiTest {
     @Test
     @DisplayName("create a credential def with id")
     void createCredentialDefWithId() throws VcxException, ExecutionException, InterruptedException {
-        int credentialDef = TestHelper._createCredentialDefWithId();
+        int credentialDef = TestHelper._createCredentialDefWithId("testCredentialDefId");
         Assertions.assertNotEquals(0,credentialDef);
     }
     @Test

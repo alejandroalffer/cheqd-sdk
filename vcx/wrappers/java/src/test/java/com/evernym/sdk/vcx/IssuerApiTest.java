@@ -31,8 +31,11 @@ public class IssuerApiTest {
     @DisplayName("create a credential")
     void createCredential() throws VcxException, ExecutionException, InterruptedException {
         int credDefHandle = TestHelper._createCredentialDef();
+        String credDefId = CredentialDefApi.credentialDefGetCredentialDefId(credDefHandle).get();
+        CredentialDefApi.credentialDefRelease(credDefHandle);
+        int newCredDefHandle = TestHelper._createCredentialDefWithId(credDefId);
         String credData = "{\"name\":\"joe\",\"age\":\"41\"}";
-        int result = TestHelper.getResultFromFuture(IssuerApi.issuerCreateCredential(sourceId, credDefHandle, null, credData, "cred-name", "0"));
+        int result = TestHelper.getResultFromFuture(IssuerApi.issuerCreateCredential(sourceId, newCredDefHandle, null, credData, "cred-name", "0"));
         assert (result != 0);
     }
 }
