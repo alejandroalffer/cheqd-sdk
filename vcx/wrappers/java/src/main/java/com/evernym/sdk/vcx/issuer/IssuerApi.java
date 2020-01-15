@@ -19,11 +19,11 @@ public class IssuerApi extends VcxJava.API {
         // TODO: This callback and jna definition needs to be fixed for this API
         // it should accept connection handle as well
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err, int credntialHandle) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], credntialHandle = [" + credntialHandle + "]");
+        public void callback(int commandHandle, int err, int credentialHandle) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], credentialHandle = [" + credentialHandle + "]");
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            Integer result = credntialHandle;
+            Integer result = credentialHandle;
             future.complete(result);
         }
     };
