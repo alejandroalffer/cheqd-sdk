@@ -655,7 +655,7 @@ pub mod tests {
             init!("agency");
             set_consumer();
 
-            let len = 2300000;
+            let len = 400000;
             let buf = vec![0x41u8; len];
             let buf_str = ::std::str::from_utf8(&buf).unwrap();
             add_record("whatever", "bigbyte", buf_str, None).unwrap();

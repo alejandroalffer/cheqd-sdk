@@ -9,23 +9,23 @@ use utils::httpclient;
 pub struct Backup {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
-    wallet: String,
+    wallet: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BackupBuilder {
-    wallet: String,
+    wallet: Vec<u8>,
 }
 
 impl BackupBuilder {
     pub fn create() -> BackupBuilder {
         BackupBuilder {
-            wallet: String::new(),
+            wallet: Vec::new(),
         }
     }
 
     pub fn wallet_data(&mut self, wallet_data: Vec<u8>) -> &mut Self {
-        self.wallet = base64::encode(&wallet_data);
+        self.wallet = wallet_data;
         self
     }
 
