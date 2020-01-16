@@ -158,7 +158,6 @@ impl Connection {
 
     fn redirect(&mut self, redirect_to: &Connection) -> VcxResult<u32> {
         trace!("Connection::redirect >>> redirect_to: {:?}", redirect_to);
-        println!("Connection::redirect >>> redirect_to: {:?}", redirect_to);
 
         let details: &InviteDetail = self.invite_detail.as_ref()
             .ok_or(VcxError::from_msg(VcxErrorKind::GeneralConnectionError, format!("Invite details not found for: {}", self.source_id)))?;
