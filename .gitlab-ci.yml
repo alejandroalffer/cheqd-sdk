@@ -645,5 +645,4 @@ publish-mobile-sdk:
     refs:
       - master@dev/vcx/indy-sdk
   script:
-    - chmod +x vcx/ci/scripts/githubArtifacts.py
     - vcx/ci/scripts/githubArtifacts.py vcx/wrappers/java/artifacts/aar/*.aar IOSBuilds/libvcx{partial,all}/vcx.libvcx*.zip
