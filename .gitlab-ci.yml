@@ -636,3 +636,14 @@ publish-packages:
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" node-vcx-*.tgz https://kraken.corp.evernym.com/repo/npm/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" python3-vcx-*.tar.gz https://kraken.corp.evernym.com/repo/portal_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" python3-vcx-*.tar.gz https://kraken.corp.evernym.com/repo/python/upload
+
+publish-mobile-sdk:
+  stage: publish
+  image: ${CI_REGISTRY_IMAGE}/vcx-python:${CI_COMMIT_REF_SLUG}
+  extends: .tags_micro
+  only:
+    refs:
+      - master@dev/vcx/indy-sdk
+  script:
+    - chmod +x vcx/ci/scripts/githubArtifacts.py
+    - vcx/ci/scripts/githubArtifacts.py vcx/wrappers/java/artifacts/aar/*.aar IOSBuilds/libvcx{partial,all}/vcx.libvcx*.zip
