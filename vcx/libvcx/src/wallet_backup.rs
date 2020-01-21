@@ -763,6 +763,7 @@ pub mod tests {
         #[cfg(feature = "wallet_backup")]
         #[cfg(feature = "agency")]
         #[cfg(feature = "pool_tests")]
+        #[cfg(feature = "too_long_request")]
         #[test]
         fn recovery_creates_file_structure_for_undefined_path_recovery_success() {
             init!("agency");
@@ -820,6 +821,7 @@ pub mod tests {
     #[cfg(feature = "wallet_backup")]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "too_long_request")]
     #[test]
     fn recovery_full() {
         // 1.  Provision 1st time (Provision Async) + (Init)

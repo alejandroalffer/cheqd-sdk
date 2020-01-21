@@ -204,7 +204,7 @@ mod tests {
 
         assert_eq!(
             err.unwrap_err().to_string(),
-            "Error: Message failed in post\n  Caused by: POST failed with: {\"detail\":\"java.lang.RuntimeException: invalid address\",\"statusCode\":\"GNR-105\",\"statusMsg\":\"unhandled error\"}\n"
+            "Error: Message failed in post\n  Caused by: POST failed with: {\"statusCode\":\"GNR-105\",\"statusMsg\":\"unhandled error\"}\n"
         );
         teardown!("agency");
     }
