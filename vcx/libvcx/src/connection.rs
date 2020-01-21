@@ -739,8 +739,8 @@ pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
 
     CONNECTION_MAP.get_mut(handle, |t| {
         debug!("establish connection {}", t.get_source_id());
-        t.create_agent_pairwise()?;
         t.update_agent_profile(&options_obj)?;
+        t.create_agent_pairwise()?;
         t.connect(&options_obj)
     })
 }
@@ -750,8 +750,8 @@ pub fn redirect(handle: u32, redirect_handle: u32) -> VcxResult<u32> {
 
     CONNECTION_MAP.get_mut(handle, |t| {
         debug!("redirecting connection {}", t.get_source_id());
-        t.create_agent_pairwise()?;
         t.update_agent_profile(&ConnectionOptions::default())?;
+        t.create_agent_pairwise()?;
         t.redirect(&rc)
     })
 
