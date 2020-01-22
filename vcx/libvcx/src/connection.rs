@@ -186,7 +186,6 @@ impl Connection {
 
     fn redirect(&mut self, redirect_to: &Connection) -> VcxResult<u32> {
         trace!("Connection::redirect >>> redirect_to: {:?}", redirect_to);
-        println!("Connection::redirect >>> redirect_to: {:?}", redirect_to);
 
         let details: &InviteDetail = self.invite_detail.as_ref()
             .ok_or(VcxError::from_msg(VcxErrorKind::GeneralConnectionError, format!("Invite details not found for: {}", self.source_id)))?;
@@ -961,8 +960,8 @@ pub fn redirect(handle: u32, redirect_handle: u32) -> VcxResult<u32> {
         match connection {
             Connections::V1(ref mut connection) => {
                 debug!("redirecting connection {}", connection.get_source_id());
-                connection.create_agent_pairwise()?;
                 connection.update_agent_profile(&ConnectionOptions::default())?;
+                connection.create_agent_pairwise()?;
                 connection.redirect(&rc)
             }
             Connections::V3(ref mut connection) => {

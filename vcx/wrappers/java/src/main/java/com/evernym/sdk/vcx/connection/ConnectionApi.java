@@ -201,8 +201,7 @@ public class ConnectionApi extends VcxJava.API {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], redirectDetails = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            String result = redirectDetails;
-            future.complete(result);
+            future.complete(redirectDetails);
         }
     };
 

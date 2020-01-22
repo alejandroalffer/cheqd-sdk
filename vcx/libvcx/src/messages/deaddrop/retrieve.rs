@@ -1,6 +1,5 @@
 use settings;
-use messages::wallet_backup::prepare_message_for_agency_v2;
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, parse_message_from_response};
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, parse_message_from_response, prepare_message_for_agent_v2};
 use messages::message_type::{ MessageTypes };
 use error::{VcxResult, VcxErrorKind, VcxError};
 use utils::httpclient;
@@ -95,7 +94,7 @@ impl RetrieveDeadDropBuilder {
         let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
         let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
-        prepare_message_for_agency_v2(&message, &agency_did, &agency_vk, &my_vk)
+        prepare_message_for_agent_v2(vec![message], &my_vk,  &agency_did, &agency_vk)
     }
 }
 
@@ -174,7 +173,6 @@ mod tests {
         ::utils::devsetup::tests::set_consumer();
 
         let wb = init_backup();
-
         let dead_drop_result = retrieve_dead_drop()
             .recovery_vk(&wb.recovery_vk).unwrap()
             .dead_drop_address(&wb.dd_address).unwrap()
@@ -206,7 +204,7 @@ mod tests {
 
         assert_eq!(
             err.unwrap_err().to_string(),
-            "Error: Message failed in post\n  Caused by: POST failed with: {\"detail\":\"java.lang.RuntimeException: invalid address\",\"statusCode\":\"GNR-105\",\"statusMsg\":\"unhandled error\"}\n"
+            "Error: Message failed in post\n  Caused by: POST failed with: {\"statusCode\":\"GNR-105\",\"statusMsg\":\"unhandled error\"}\n"
         );
         teardown!("agency");
     }

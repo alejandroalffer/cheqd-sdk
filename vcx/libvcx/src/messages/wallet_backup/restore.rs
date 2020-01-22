@@ -1,5 +1,4 @@
-use messages::wallet_backup::prepare_message_for_agency_v2;
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, parse_message_from_response};
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, parse_message_from_response, prepare_message_for_agent_v2};
 use messages::message_type::{ MessageTypes };
 use error::{VcxResult, VcxErrorKind, VcxError};
 use utils::httpclient;
@@ -77,7 +76,7 @@ impl BackupRestoreBuilder {
         let agency_vk = self.agent_vk.clone().ok_or(init_err("agency_vk"))?;
         let recovery_vk = self.recovery_vk.clone().ok_or(init_err("recovery_vk"))?;
 
-        prepare_message_for_agency_v2(&message, &agency_did, &agency_vk, &recovery_vk)
+        prepare_message_for_agent_v2(vec![message], &recovery_vk, &agency_did, &agency_vk)
     }
 }
 
@@ -137,6 +136,7 @@ mod tests {
 
         let (agent_did, agent_vk) = create_and_store_my_did(Some(::utils::constants::MY2_SEED)).unwrap();
         let (my_did, my_vk) = create_and_store_my_did(Some(::utils::constants::MY1_SEED)).unwrap();
+        settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY, &my_vk);
         let (agency_did, agency_vk) = create_and_store_my_did(Some(::utils::constants::MY3_SEED)).unwrap();
 
         let msg = wallet_backup_restore()

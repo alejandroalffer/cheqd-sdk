@@ -1,9 +1,9 @@
 use settings;
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agent_v2};
 use messages::message_type::MessageTypes;
 use error::VcxResult;
 use utils::httpclient;
-use messages::wallet_backup::{prepare_message_for_agency_v2};
+//use messages::wallet_backup::{prepare_message_for_agency_v2};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Backup {
@@ -53,7 +53,7 @@ impl BackupBuilder {
         let agency_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?;
         let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
-        prepare_message_for_agency_v2(&message, &agency_did, &agency_vk, &my_vk)
+        prepare_message_for_agent_v2(vec![message], &my_vk, &agency_did, &agency_vk)
     }
 }
 
