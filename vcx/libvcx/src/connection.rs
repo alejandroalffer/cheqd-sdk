@@ -1,23 +1,24 @@
-        use serde_json;
-use serde_json::Value;
+use std::collections::HashMap;
+
 use rmp_serde;
+use serde_json;
+use serde_json::Value;
 
 use api::VcxStateType;
-use settings;
-use messages;
-use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion, to_u8};
-use messages::invite::{InviteDetail, RedirectDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectionDetails};
-use messages::payload::{Payloads, Thread};
-use messages::get_message::{Message, MessagePayload};
-use object_cache::ObjectCache;
 use error::prelude::*;
+use messages;
+use messages::{GeneralMessage, MessageStatusCode, ObjectWithVersion, RemoteMessageType, to_u8};
+use messages::get_message::{Message, MessagePayload};
+use messages::invite::{AcceptanceDetails, InviteDetail, Payload as ConnectionPayload, RedirectDetail, RedirectionDetails, SenderDetail};
+use messages::payload::{Payloads, Thread};
+use object_cache::ObjectCache;
+use settings;
+use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::error;
-use utils::libindy::signus::create_my_did;
-use utils::libindy::crypto;
-use utils::json::mapped_key_rewrite;
-use utils::constants::{ DEFAULT_SERIALIZE_VERSION };
 use utils::json::KeyMatch;
-use std::collections::HashMap;
+use utils::json::mapped_key_rewrite;
+use utils::libindy::crypto;
+use utils::libindy::signus::create_my_did;
 
 lazy_static! {
     static ref CONNECTION_MAP: ObjectCache<Connection> = Default::default();
@@ -903,14 +904,17 @@ fn unabbrv_event_detail(val: Value) -> VcxResult<Value> {
 
 #[cfg(test)]
 pub mod tests {
-    use utils::constants::*;
-    use utils::httpclient;
-    use messages::get_message::*;
     use std::thread;
     use std::time::Duration;
-    use utils::constants::INVITE_DETAIL_STRING;
-    use super::*;
+
     use rand::Rng;
+
+    use messages::get_message::*;
+    use utils::constants::*;
+    use utils::constants::INVITE_DETAIL_STRING;
+    use utils::httpclient;
+
+    use super::*;
 
     pub fn build_test_connection() -> u32 {
         let handle = create_connection("alice").unwrap();
@@ -1404,5 +1408,55 @@ pub mod tests {
         let handle = create_connection_with_invite("alice", &details).unwrap();
         let serialized = to_string(handle).unwrap();
         println!("{}", serialized);
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_connection_redirection_real() {
+        init!("agency");
+        //0. Create initial connection
+        let (faber, alice) = ::connection::tests::create_connected_connections();
+
+        //1. Faber sends another invite
+        ::utils::devsetup::tests::set_institution(); //Faber to Alice
+        let alice2 = create_connection("alice2").unwrap();
+        let my_public_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let options = json!({"use_public_did": true}).to_string();
+        connect(alice2, Some(options)).unwrap();
+        let details_for_alice2 = get_invite_details(alice2, false).unwrap();
+        println!("alice2 details: {}", details_for_alice2);
+
+        //2. Alice receives (recognizes that there is already a connection), calls different api (redirect rather than regular connect)
+        //BE CONSUMER AND REDIRECT INVITE FROM INSTITUTION
+        ::utils::devsetup::tests::set_consumer();
+        let faber_duplicate = create_connection_with_invite("faber_duplicate", &details_for_alice2).unwrap();
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(faber_duplicate));
+        redirect(faber_duplicate, faber).unwrap();
+        let public_did = get_their_public_did(faber_duplicate).unwrap().unwrap();
+        assert_eq!(my_public_did, public_did);
+
+        //3. Faber waits for redirect state change
+        //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
+        ::utils::devsetup::tests::set_institution();
+        thread::sleep(Duration::from_millis(2000));
+        update_state(alice2, None).unwrap();
+        assert_eq!(VcxStateType::VcxStateRedirected as u32, get_state(alice2));
+
+        //4. Faber calls 'get_redirect_data' and based on data, finds old connection  (business logic of enterprise)
+        let redirect_data = get_redirect_details(alice2).unwrap();
+        println!("redirect_data: {}", redirect_data);
+
+        let rd: RedirectDetail = serde_json::from_str(&redirect_data).unwrap();
+        let alice_serialized = to_string(alice).unwrap();
+        let to_alice_old = Connection::from_str(&alice_serialized).unwrap();
+
+        // Assert redirected data match old connection to alice
+        assert_eq!(rd.did, to_alice_old.pw_did);
+        assert_eq!(rd.verkey, to_alice_old.pw_verkey);
+        assert_eq!(rd.public_did, to_alice_old.public_did);
+        assert_eq!(rd.their_did, to_alice_old.their_pw_did);
+        assert_eq!(rd.their_verkey, to_alice_old.their_pw_verkey);
+        assert_eq!(rd.their_public_did, to_alice_old.their_public_did);
     }
 }
