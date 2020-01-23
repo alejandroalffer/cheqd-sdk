@@ -12,7 +12,7 @@ cargo update-version ${VERSION} ${REVISION}
 echo "Updating Cargo"
 if [ "${RUST_FLAG}" != "--no-test" ]; then
     echo "Testing libvcx.so"
-    cargo test --no-default-features --features "ci" -- --test-threads=1
+    TEST_POOL_IP=$INDY_POOL_PORT_9701_TCP_ADDR cargo test -- --test-threads=1
 fi
 echo "Building libvcx.so"
 cargo build --no-default-features --features "ci"
