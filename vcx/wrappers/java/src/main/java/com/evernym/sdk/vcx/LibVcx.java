@@ -889,6 +889,6 @@ public abstract class LibVcx {
     }
 
     private static void initLogger() {
-        api.vcx_set_logger(null, Logger.enabled, Logger.log, Logger.flush);
+        // api.vcx_set_logger(null, Logger.enabled, Logger.log, Logger.flush);
     }
 }

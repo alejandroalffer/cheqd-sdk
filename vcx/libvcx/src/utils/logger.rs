@@ -69,9 +69,10 @@ impl LibvcxLogger {
             /////////////////////////////////////////////////////////////////////////////////////////////////
             // Temporary fix for the Android crashing
             /////////////////////////////////////////////////////////////////////////////////////////////////
-            #[cfg(target_os = "android")]
-            libindy::logger::set_default_logger(Some("DEBUG"))?;
+            // #[cfg(target_os = "android")]
+            // libindy::logger::set_default_logger(Some("DEBUG"))?;
             /////////////////////////////////////////////////////////////////////////////////////////////////
+            return Ok(())
         } else {
             /////////////////////////////////////////////////////////////////////////////////////////////////
             // These lines cause Android to crash when invoked in a nested Java Callback
@@ -171,23 +172,23 @@ impl LibvcxDefaultLogger {
 
         let pattern = pattern.or(env::var("RUST_LOG").ok());
         if cfg!(target_os = "android") {
-            #[cfg(target_os = "android")]
-            let log_filter = match pattern.as_ref() {
-                Some(val) => match val.to_lowercase().as_ref() {
-                    "error" => Filter::default().with_min_level(log::Level::Error),
-                    "warn" => Filter::default().with_min_level(log::Level::Warn),
-                    "info" => Filter::default().with_min_level(log::Level::Info),
-                    "debug" => Filter::default().with_min_level(log::Level::Debug),
-                    "trace" => Filter::default().with_min_level(log::Level::Trace),
-                    _ => Filter::default().with_min_level(log::Level::Error),
-                },
-                None => Filter::default().with_min_level(log::Level::Error)
-            };
+            // #[cfg(target_os = "android")]
+            // let log_filter = match pattern.as_ref() {
+            //     Some(val) => match val.to_lowercase().as_ref() {
+            //         "error" => Filter::default().with_min_level(log::Level::Error),
+            //         "warn" => Filter::default().with_min_level(log::Level::Warn),
+            //         "info" => Filter::default().with_min_level(log::Level::Info),
+            //         "debug" => Filter::default().with_min_level(log::Level::Debug),
+            //         "trace" => Filter::default().with_min_level(log::Level::Trace),
+            //         _ => Filter::default().with_min_level(log::Level::Error),
+            //     },
+            //     None => Filter::default().with_min_level(log::Level::Error)
+            // };
 
-            //Set logging to off when deploying production android app.
-            #[cfg(target_os = "android")]
-            android_logger::init_once(log_filter);
-            info!("Logging for Android");
+            // //Set logging to off when deploying production android app.
+            // #[cfg(target_os = "android")]
+            // android_logger::init_once(log_filter);
+            // info!("Logging for Android");
         } else {
             // This calls
             // log::set_max_level(logger.filter());
@@ -205,7 +206,8 @@ impl LibvcxDefaultLogger {
                 }
             }
         }
-        libindy::logger::set_default_logger(pattern.as_ref().map(String::as_str))
+        // libindy::logger::set_default_logger(pattern.as_ref().map(String::as_str))
+        Ok(())
     }
 
     extern fn enabled(_context: *const CVoid,
