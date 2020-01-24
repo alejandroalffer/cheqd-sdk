@@ -212,6 +212,9 @@ build-ios:
     - vcx/ci/scripts/iosBuild.sh ${indyBranch} ${libindyVersion} ${nullBranch} \
       ${libnullVersion} ${libsovtokenVersion}~${libsovtokenVersionExtra} ${iosSovtokenArtifact} ${rustVersion} ${full_vcx_version}
     - mv ~/IOSBuilds ./
+  only:
+    refs:
+      - /^docker-.*/
 
 .build_android:
   extends: .tags_large
@@ -237,7 +240,7 @@ build-android-x86-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-android:latest
   variables:
     ARCH: 'x86'
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -256,7 +259,7 @@ build-android-x86_64-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-android:latest
   variables:
     ARCH: 'x86_64'
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -275,7 +278,7 @@ build-android-arm-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-android:latest
   variables:
     ARCH: 'arm'
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -294,7 +297,7 @@ build-android-arm64-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-android:latest
   variables:
     ARCH: 'arm64'
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -344,7 +347,7 @@ build-libvcx-from-latest:
   extends: .build-libvcx
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy:latest
   stage: build
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -374,7 +377,7 @@ build-libvcx-rpm-from-latest:
   extends: .build-libvcx-rpm
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy-centos:latest
   stage: build
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -400,7 +403,7 @@ test-python-wrapper-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-python:latest
   dependencies:
     - build-libvcx-from-latest
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -424,7 +427,7 @@ test-java-wrapper-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-java:latest
   dependencies:
     - build-libvcx-from-latest
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -449,7 +452,7 @@ test-node-wrapper-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy:latest
   dependencies:
     - build-libvcx-from-latest
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -506,7 +509,7 @@ package-python-wrapper-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-python:latest
   dependencies:
     - build-libvcx-from-latest
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -536,7 +539,7 @@ package-java-wrapper-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-java:latest
   dependencies:
     - build-libvcx-from-latest
-  except:
+  only:
     refs:
       - /^docker-.*/
 
@@ -566,7 +569,7 @@ package-node-wrapper-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy:latest
   dependencies:
     - build-libvcx-from-latest
-  except:
+  only:
     refs:
       - /^docker-.*/
 

@@ -70,29 +70,29 @@ pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
 pub extern fn vcx_agent_provision_async(command_handle: u32,
                                         config: *const c_char,
                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, _config: *const c_char)>) -> u32 {
-    info!("vcx_agent_provision_async >>>");
+    // info!("vcx_agent_provision_async >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(config, VcxErrorKind::InvalidOption);
+    // check_useful_c_str!(config, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_agent_provision_async(command_handle: {}, json: {})",
-           command_handle, config);
+    // trace!("vcx_agent_provision_async(command_handle: {}, json: {})",
+    //        command_handle, config);
 
-    thread::spawn(move || {
-        match messages::agent_utils::connect_register_provision(&config) {
-            Err(e) => {
-                error!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: NULL", command_handle, e);
-                cb(command_handle, e.into(), ptr::null_mut());
-            }
-            Ok(s) => {
-                trace!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: {})",
-                       command_handle, error::SUCCESS.message, s);
-                let msg = CStringUtils::string_to_cstring(s);
-                cb(command_handle, 0, msg.as_ptr());
-            }
-        }
-    });
-
+    // thread::spawn(move || {
+    //     match messages::agent_utils::connect_register_provision(&config) {
+    //         Err(e) => {
+    //             error!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: NULL", command_handle, e);
+    //             cb(command_handle, e.into(), ptr::null_mut());
+    //         }
+    //         Ok(s) => {
+    //             trace!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: {})",
+    //                    command_handle, error::SUCCESS.message, s);
+    //             let msg = CStringUtils::string_to_cstring(s);
+    //             cb(command_handle, 0, msg.as_ptr());
+    //         }
+    //     }
+    // });
+    cb(command_handle, 0, CStringUtils::string_to_cstring("S".to_string()).as_ptr());
     error::SUCCESS.code_num
 }
 
