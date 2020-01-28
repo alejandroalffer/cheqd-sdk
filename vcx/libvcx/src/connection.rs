@@ -1,10 +1,7 @@
-use serde_json;
-use serde_json::Value;
-use std::collections::HashMap;
-
 use rmp_serde;
 use serde_json;
 use serde_json::Value;
+use std::collections::HashMap;
 
 use api::VcxStateType;
 use error::prelude::*;
@@ -16,15 +13,11 @@ use messages::thread::Thread;
 use messages::get_message::{Message, MessagePayload};
 use messages::send_message::SendMessageOptions;
 use messages::update_connection::send_delete_connection_message;
-use messages::payload::{Payloads, Thread};
 use messages::payload::PayloadKinds;
 use object_cache::ObjectCache;
 use settings;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::error;
-use utils::libindy::signus::create_my_did;
-use utils::libindy::crypto;
-use utils::json::mapped_key_rewrite;
 use utils::json::KeyMatch;
 use utils::json::mapped_key_rewrite;
 use utils::libindy::crypto;
