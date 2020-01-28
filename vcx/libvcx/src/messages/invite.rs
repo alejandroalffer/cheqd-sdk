@@ -1,12 +1,11 @@
-use settings;
+use error::prelude::*;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
 use messages::thread::Thread;
-use utils::constants::{ DEFAULT_ACK_CONNECTION_VERSION };
-use utils::httpclient;
+use settings;
 use utils::constants::*;
+use utils::httpclient;
 use utils::uuid::uuid;
-use error::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct SendInviteMessageDetails {
@@ -193,12 +192,14 @@ pub struct RedirectDetail {
     #[serde(rename = "verKey")]
     pub verkey: String,
     #[serde(rename = "publicDID")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub public_did: Option<String>,
     #[serde(rename = "theirDID")]
     pub their_did: String,
     #[serde(rename = "theirVerKey")]
     pub their_verkey: String,
     #[serde(rename = "theirPublicDID")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub their_public_did: Option<String>,
     pub signature: String,
 }
@@ -804,9 +805,10 @@ pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> VcxResult<Sender
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use messages::send_invite;
     use utils::libindy::signus::create_and_store_my_did;
+
+    use super::*;
 
     #[test]
     fn test_send_invite_set_values_and_post() {
