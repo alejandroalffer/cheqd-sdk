@@ -1,10 +1,8 @@
 use error::prelude::*;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
-use messages::payload::Thread;
 use messages::thread::Thread;
-use utils::constants::DEFAULT_ACK_CONNECTION_VERSION;
-use utils::httpclient;
+use settings;
 use utils::constants::*;
 use utils::httpclient;
 use utils::uuid::uuid;
