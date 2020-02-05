@@ -28,12 +28,16 @@ ARG indy_plenum_ver=1.11.0~dev937
 ARG indy_node_ver=1.11.0~dev1112
 ARG python3_indy_crypto_ver=0.4.5
 ARG indy_crypto_ver=0.4.5
-ARG python3_pyzmq_ver=18.1.0
+ARG python3_pyzmq_ver=17.0.0
+ARG token_ver=1.0.2~dev79
+ARG fees_ver=1.0.2~dev79
 
 RUN apt-get update -y && apt-get install -y \
         python3-pyzmq=${python3_pyzmq_ver} \
         indy-plenum=${indy_plenum_ver} \
         indy-node=${indy_node_ver} \
+        sovtoken=${token_ver} \
+        sovtokenfees=${fees_ver} \
         python3-indy-crypto=${python3_indy_crypto_ver} \
         libindy-crypto=${indy_crypto_ver} \
         vim
