@@ -104,6 +104,7 @@ dockerbuild-vcx-libindy:
       - .gitlab-ci.yml
       - vcx/ci/libindy.dockerfile
 
+
 dockerbuild-vcx-libindy-centos:
   stage: dockerbuild-pre
   extends: .kaniko_micro
@@ -333,6 +334,10 @@ build-android-armv7-from-latest:
     - cd ${CI_PROJECT_DIR}
     - apt-get update && apt-get install -y libindy=${libindyVersion} libsovtoken=${libsovtokenVersion}
     - vcx/ci/scripts/package.sh ${RUSTTESTFLAG} ${VCXVERSION} ${VCXREVISION}
+  services:
+    - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
+      alias: indy_pool
+
 build-libvcx-from-branch:
   extends: .build-libvcx
   stage: build
