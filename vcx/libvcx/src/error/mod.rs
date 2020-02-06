@@ -218,6 +218,8 @@ pub enum VcxErrorKind {
     #[fail(display = "Failed to retrieve dead drop payload")]
     RetrieveDeadDrop,
 
+    #[fail(display = "Cloud Backup exceeds max size limit")]
+    MaxBackupSize,
 }
 
 #[derive(Debug)]
@@ -386,6 +388,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::RetrieveExportedWallet => error::RETRIEVE_EXPORTED_WALLET.code_num,
             VcxErrorKind::InvalidMsgVersion => error::INVALID_MSG_VERSION.code_num,
             VcxErrorKind::RetrieveDeadDrop => error::RETRIEVE_DEAD_DROP.code_num,
+            VcxErrorKind::MaxBackupSize => error::MAX_BACKUP_SIZE.code_num,
         }
     }
 }

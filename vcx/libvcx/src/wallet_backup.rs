@@ -24,6 +24,7 @@ lazy_static! {
 }
 
 pub static RECOVERY_KEY_TYPE: &str = r#"RECOVERY_KEY"#;
+pub static MAX_WALLET_SIZE: usize = 5000000;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CloudAddress {
@@ -135,6 +136,11 @@ impl WalletBackup {
 
     fn backup(&mut self, exported_wallet_path: &str) -> VcxResult<u32> {
         let wallet_data = _read_exported_wallet(&self.keys.wallet_encryption_key, exported_wallet_path)?;
+
+        if wallet_data.len() > MAX_WALLET_SIZE {
+            error!("{}: greater than {}", VcxErrorKind::MaxBackupSize, MAX_WALLET_SIZE);
+            return Err(VcxError::from(VcxErrorKind::MaxBackupSize).into())
+        }
 
         messages::backup_wallet()
             .wallet_data(wallet_data)
@@ -672,6 +678,31 @@ pub mod tests {
             assert!(update_state(wallet_backup, None).is_ok());
             assert_eq!(get_state(wallet_backup), WalletBackupState::ReadyToExportWallet as u32);
             assert!(has_known_cloud_backup(wallet_backup));
+            teardown!("agency");
+        }
+
+        #[cfg(feature = "wallet_backup")]
+        #[cfg(feature = "agency")]
+        #[cfg(feature = "pool_tests")]
+        #[test]
+        fn backup_wallet_fails_when_size_is_over_max() {
+            init!("agency");
+            set_consumer();
+
+            let buf = vec![0x41u8; MAX_WALLET_SIZE as usize];
+            let buf_str = ::std::str::from_utf8(&buf).unwrap();
+            add_record("whatever", "bigbyte", buf_str, None).unwrap();
+            let wallet_backup = create_wallet_backup(SOURCE_ID, &backup_key_gen()).unwrap();
+            thread::sleep(Duration::from_millis(2000));
+
+            assert_eq!(get_state(wallet_backup), WalletBackupState::InitRequested as u32);
+            assert!(update_state(wallet_backup, None).is_ok());
+
+            let rc = backup_wallet(wallet_backup, FILE_PATH);
+            assert_eq!(
+                rc.unwrap_err().to_string(),
+                "Error: Cloud Backup exceeds max size limit\n  Caused by: Unknown Error\n"
+            );
             teardown!("agency");
         }
 
