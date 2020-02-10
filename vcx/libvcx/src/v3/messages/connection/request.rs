@@ -1,12 +1,16 @@
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::did_doc::*;
+use messages::thread::Thread;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Request {
     #[serde(rename = "@id")]
     pub id: MessageId,
     pub label: String,
-    pub connection: ConnectionData
+    pub connection: ConnectionData,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "~thread")]
+    pub thread: Option<Thread>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -25,7 +29,8 @@ impl Default for Request {
             connection: ConnectionData {
                 did: String::new(),
                 did_doc: DidDoc::default()
-            }
+            },
+            thread: None
         }
     }
 }
@@ -56,6 +61,12 @@ impl Request {
         self
     }
 
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread = Some(Thread::new().set_thid(id));
+        self
+    }
+
+
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::ConnectionRequest(self.clone()) // TODO: THINK how to avoid clone
     }
@@ -78,6 +89,7 @@ pub mod tests {
                 did: _did(),
                 did_doc: _did_doc()
             },
+            thread: None
         }
     }
 

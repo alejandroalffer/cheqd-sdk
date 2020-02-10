@@ -170,7 +170,7 @@ impl InvitedState {
             .set_keys(new_agent_info.recipient_keys(), new_agent_info.routing_keys()?);
 
         let signed_response = response.clone()
-            .set_thread_id(request.id.0.clone())
+            .set_thread_id(request.thread.as_ref().and_then(|thread| thread.pthid.clone()).unwrap_or_default())
             .encode(&prev_agent_info.pw_vk)?;
 
         new_agent_info.send_message(&signed_response.to_a2a_message(), &request.connection.did_doc)?;
@@ -234,7 +234,7 @@ impl DidExchangeSM {
                 DidExchangeSM {
                     source_id: source_id.to_string(),
                     state: ActorDidExchangeState::Invitee(DidExchangeState::Null(NullState {})),
-                    agent_info: AgentInfo::default()
+                    agent_info: AgentInfo::default(),
                 }
             }
         }
@@ -449,7 +449,8 @@ impl DidExchangeSM {
                                     .set_label(source_id.to_string())
                                     .set_did(agent_info.pw_did.to_string())
                                     .set_service_endpoint(agent_info.agency_endpoint()?)
-                                    .set_keys(agent_info.recipient_keys(), agent_info.routing_keys()?);
+                                    .set_keys(agent_info.recipient_keys(), agent_info.routing_keys()?)
+                                    .set_thread_id(state.invitation.id.0.clone());
 
                                 agent_info.send_message(&request.to_a2a_message(), &DidDoc::from(state.invitation.clone()))?;
                                 ActorDidExchangeState::Invitee(DidExchangeState::Requested((state, request).into()))
