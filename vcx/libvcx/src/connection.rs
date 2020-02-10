@@ -352,7 +352,10 @@ impl Connection {
         if self.state == VcxStateType::VcxStateOfferSent || self.state == VcxStateType::VcxStateInitialized {
             for message in response {
                 if message.status_code == MessageStatusCode::Accepted && message.msg_type == RemoteMessageType::ConnReqAnswer {
-                    self.process_acceptance_message(message)?;
+                    let rc = self.process_acceptance_message(&message);
+                    if rc.is_err() {
+                        self.force_v2_parse_acceptance_details(&message)?;
+                    }
                 } else if message.status_code == MessageStatusCode::Redirected && message.msg_type == RemoteMessageType::ConnReqRedirect {
                     let rc = self.process_redirect_message(&message);
                     if rc.is_err() {
@@ -367,8 +370,8 @@ impl Connection {
         Ok(error::SUCCESS.code_num)
     }
 
-    pub fn process_acceptance_message(&mut self, message: Message) -> VcxResult<u32> {
-        let details = parse_acceptance_details(&message)
+    pub fn process_acceptance_message(&mut self, message: &Message) -> VcxResult<u32> {
+        let details = parse_acceptance_details(message)
             .map_err(|err| err.extend("Cannot parse acceptance details"))?;
 
         self.set_their_pw_did(&details.did);
@@ -858,7 +861,7 @@ pub fn process_acceptance_message(handle: u32, message: &Message) -> VcxResult<u
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
             Connections::V1(ref mut connection) => {
-                connection.process_acceptance_message(message.clone())
+                connection.process_acceptance_message(&message)
             }
             Connections::V3(ref mut connection) => {
                 connection.update_state(Some(&json!(message).to_string()))?;
@@ -1818,9 +1821,10 @@ pub mod tests {
 
         let rd: RedirectDetail = serde_json::from_str(&redirect_data).unwrap();
         let alice_serialized = to_string(alice).unwrap();
-        let to_alice_old = Connection::from_str(&alice_serialized).unwrap();
 
-        // Assert redirected data match old connection to alice
+        let to_alice_old: Connection = ObjectWithVersion::deserialize(&alice_serialized)
+            .map(|obj: ObjectWithVersion<Connection>| obj.data).unwrap();
+
         assert_eq!(rd.did, to_alice_old.pw_did);
         assert_eq!(rd.verkey, to_alice_old.pw_verkey);
         assert_eq!(rd.public_did, to_alice_old.public_did);
