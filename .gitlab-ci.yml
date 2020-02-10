@@ -44,7 +44,7 @@ variables:
 .kaniko_micro:
   extends: .tags_micro
   image:
-    name: gcr.io/kaniko-project/executor:debug
+    name: gcr.io/kaniko-project/executor:debug-v0.16.0
     entrypoint: [""]
   script:
     - if [ "$CI_COMMIT_REF_SLUG" == 'master' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
