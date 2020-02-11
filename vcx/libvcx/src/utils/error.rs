@@ -112,6 +112,7 @@ pub static RETRIEVE_EXPORTED_WALLET: Error = Error{ code_num: 1097, message: "Fa
 pub static INVALID_MSG_VERSION: Error = Error{ code_num: 1098, message: "Invalid A2A Message version"};
 pub static RETRIEVE_DEAD_DROP: Error = Error{ code_num: 1099, message: "Failed to retrieve Dead Drop payload"};
 pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1100, message: "Invalid redirect details structure"};
+pub static MAX_BACKUP_SIZE: Error = Error{code_num: 1101, message: "Cloud Backup exceeds max size limit"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
