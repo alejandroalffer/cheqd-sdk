@@ -357,7 +357,6 @@ public class DisclosedProofApi extends VcxJava.API {
         return future;
     }
 
-
     private static Callback vcxProofDeserializeCB = new Callback() {
         public void callback(int command_handle, int err, int proofHandle) {
             logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], proofHandle = [" + proofHandle + "]");
@@ -382,15 +381,15 @@ public class DisclosedProofApi extends VcxJava.API {
         return future;
     }
 
-    private static Callback vcxDeclinePresentationRequestCB = new Callback() {
-        public void callback(int command_handle, int err) {
-            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
-            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(command_handle);
-            if (! checkCallback(future, err)) return;
+	private static Callback vcxDeclinePresentationRequestCB = new Callback() {
+		public void callback(int command_handle, int err) {
+			logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(command_handle);
+			if (! checkCallback(future, err)) return;
 
-            future.complete(null);
-        }
-    };
+			future.complete(null);
+		}
+	};
 
     public static CompletableFuture<Void> proofDeclineRequest(
             int proofHandle,
@@ -403,8 +402,8 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_decline_presentation_request(commandHandle, proofHandle, connectionHandle, reason, proposal, vcxDeclinePresentationRequestCB);
-        checkResult(result);
+		int result = LibVcx.api.vcx_disclosed_proof_decline_presentation_request(commandHandle, proofHandle, connectionHandle, reason, proposal, vcxDeclinePresentationRequestCB);
+		checkResult(result);
 
         return future;
     }

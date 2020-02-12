@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.14.2 - 2020-01-31
+* LibVCX Aries support:
+    * Implemented Basic Message RFC (IS-1189)
+* Indy-CLI changes:
+    * Added new command `pool set-protocol-version` to set a protocol version that will be used for ledger requests (IS-1391).
+    * Added new command `payment-address new` that does exactly the same work as the existing `payment-address create` command.
+     The new command was added to match the naming of `did new` command. The `payment-address create` command will be removed in future releases (IS-1415).
+* Bugfixes
+    * Updated behavior of `indy_store_their_did` function to allow updating of existing `theirDID` record`. It can be used to rotate a pairwise key (IS-1166).
+    * Enhanced validation of `schema_json`: added check that `id` is consistent with `name` and `version` values (IS-1430).
+    * Updated Vcx library to support "names" parameter in Proof Request Revealed Attributes (IS-1381)
+    * Added support of the additional format of `rev_states_json` which is used for proof creation. Both `rev_reg_def_id` and `credential_id` can be used as map keys. 
+    `credential_id` must be used in case of proving that two credentials matching the same `rev_reg_def_id` are not revoked at the same timestamp (IS-1447).
+    * others minor bugfixes
+
+## 1.14.1 - 2019-12-30
+* Bugfixes
+
+## 1.14.0 - 2019-12-27
+* LibVCX Aries support:
+    * Implemented Trust Ping RFC (IS-1435)
+    * Implemented Discover Features RFC (IS-1155)
+    * Implemented Service Decorator RFC (IS-1449)
+* Transaction author agreement changes (IS-1427):
+    * Extended the definition of `indy_build_txn_author_agreement_request` function to accept new parameters:
+        * `ratification_ts` - the date (timestamp) of TAA ratification by network government.
+        * `retirement_ts` - the date (timestamp) of TAA retirement.
+    * Added a new function `indy_build_disable_all_txn_author_agreements_request` to disable all Transaction Author Agreement on the ledger.
+    * new Indy-CLI commands:
+        * `ledger disable-all-txn-author-agreements` - to disable All Transaction Author Agreements on the ledger. 
+        * `ledger get-acceptance-mechanisms` - to get a list of acceptance mechanisms set on the ledger.
+* Bugfixes
+    * Added validation for `nonce` field in the proof request message. Now it must be a decimal number only represented as a string. It is highly recommended to use `indy_generate_nonce` function to generate a correct nonce.
+    * others minor bugfixes
+
+
 ## 1.13.0 - 2019-12-03
 * LibVCX Aries support:
     * Implemented Connection RFC (IS-1180)

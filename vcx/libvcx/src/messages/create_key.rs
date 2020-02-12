@@ -60,7 +60,7 @@ impl CreateKeyBuilder {
         CreateKeyBuilder {
             for_did: String::new(),
             for_verkey: String::new(),
-            version: settings::get_connecting_protocol_version()
+            version: settings::get_protocol_type()
         }
     }
 
@@ -76,10 +76,10 @@ impl CreateKeyBuilder {
         Ok(self)
     }
 
-    pub fn version(&mut self, version: Option<ProtocolTypes>) -> VcxResult<&mut Self> {
+    pub fn version(&mut self, version: &Option<ProtocolTypes>) -> VcxResult<&mut Self> {
         self.version = match version {
-            Some(version) => version,
-            None => settings::get_connecting_protocol_version(),
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
         };
         Ok(self)
     }
@@ -143,7 +143,6 @@ mod tests {
 
     #[test]
     fn test_create_key_set_values() {
-        let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let for_did = "11235yBzrpJQmNyZzgoTqB";
         let for_verkey = "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A";
 
@@ -156,9 +155,9 @@ mod tests {
     fn test_create_key_set_values_and_serialize() {
         init!("false");
 
-        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
+        let (_agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
         let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let (_agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);

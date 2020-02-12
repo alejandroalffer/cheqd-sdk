@@ -196,6 +196,14 @@ describe('DisclosedProof', () => {
     })
   })
 
+  describe('rejectProof:', async () => {
+    it('success', async () => {
+      const data = await dataDisclosedProofCreateWithRequest()
+      const disclosedProof = await disclosedProofCreateWithRequest(data)
+      await disclosedProof.rejectProof(data.connection)
+    })
+  })
+
   describe('declinePresentationRequest:', () => {
     it('success', async () => {
       const data = await dataDisclosedProofCreateWithRequest()

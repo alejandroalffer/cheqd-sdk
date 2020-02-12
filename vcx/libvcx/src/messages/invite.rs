@@ -3,8 +3,8 @@ use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
 use messages::thread::Thread;
 use settings;
-use utils::constants::*;
 use utils::httpclient;
+use utils::constants::*;
 use utils::uuid::uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -181,7 +181,9 @@ pub struct InviteDetail {
     pub version: Option<String>,
     pub target_name: String,
     pub status_msg: String,
-    pub thread_id: Option<String>
+    pub thread_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -297,7 +299,7 @@ impl SendInviteBuilder {
             agent_vk: String::new(),
             public_did: None,
             thread: Thread::new(),
-            version: settings::get_connecting_protocol_version()
+            version: settings::get_protocol_type()
         }
     }
 
@@ -336,10 +338,10 @@ impl SendInviteBuilder {
         Ok(())
     }
 
-    pub fn version(&mut self, version: &Option<String>) -> VcxResult<&mut Self> {
+    pub fn version(&mut self, version: &Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
         self.version = match version {
-            Some(version) => settings::ProtocolTypes::from(version.to_string()),
-            None => settings::get_connecting_protocol_version()
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
         };
         Ok(self)
     }
@@ -412,7 +414,7 @@ impl AcceptInviteBuilder {
             agent_vk: String::new(),
             reply_to_msg_id: None,
             thread: Thread::new(),
-            version: DEFAULT_ACK_CONNECTION_VERSION.clone()
+            version: settings::get_protocol_type()
         }
     }
 
@@ -450,7 +452,7 @@ impl AcceptInviteBuilder {
     pub fn version(&mut self, version: Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
         self.version = match version {
             Some(version) => version,
-            None => settings::get_connecting_protocol_version()
+            None => settings::get_protocol_type()
         };
         Ok(self)
     }
@@ -522,7 +524,7 @@ impl RedirectConnectionBuilder {
             agent_vk: String::new(),
             reply_to_msg_id: None,
             thread: Thread::new(),
-            version: DEFAULT_ACK_CONNECTION_VERSION.clone()
+            version: settings::get_protocol_type()
         }
     }
 
@@ -565,7 +567,7 @@ impl RedirectConnectionBuilder {
     pub fn version(&mut self, version: Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
         self.version = match version {
             Some(version) => version,
-            None => settings::get_connecting_protocol_version()
+            None => settings::get_protocol_type()
         };
         Ok(self)
     }
@@ -807,7 +809,6 @@ pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> VcxResult<Sender
 mod tests {
     use messages::send_invite;
     use utils::libindy::signus::create_and_store_my_did;
-
     use super::*;
 
     #[test]
@@ -815,8 +816,8 @@ mod tests {
         init!("false");
         let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
         let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let (_my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
+        let (_agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
@@ -837,7 +838,7 @@ mod tests {
     #[test]
     fn test_parse_send_invite_v1_response() {
         init!("indy");
-        let (result, url) = SendInviteBuilder::create().version(&Some("1.0".to_string())).unwrap().parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
+        let (result, url) = SendInviteBuilder::create().version(&Some(settings::ProtocolTypes::V1)).unwrap().parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
         let invite = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();
 
         assert_eq!(result, invite);
@@ -847,8 +848,8 @@ mod tests {
     #[test]
     fn test_parse_send_invite_v2_response() {
         init!("indy");
-        let (result, url) = SendInviteBuilder::create().version(&Some("2.0".to_string())).unwrap().parse_response(SEND_INVITE_V2_RESPONSE.to_vec()).unwrap();
-        let invite: InviteDetail = serde_json::from_str(INVITE_DETAIL_V2_STRING).unwrap();
+        let (_, _) = SendInviteBuilder::create().version(&Some(settings::ProtocolTypes::V2)).unwrap().parse_response(SEND_INVITE_V2_RESPONSE.to_vec()).unwrap();
+        let _: InviteDetail = serde_json::from_str(INVITE_DETAIL_V2_STRING).unwrap();
     }
 
     #[test]
@@ -887,8 +888,8 @@ mod tests {
         init!("false");
         let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
         let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let (_, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
+        let (_, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);

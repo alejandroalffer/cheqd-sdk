@@ -6,6 +6,7 @@ use utils::libindy::error_codes::map_rust_indy_sdk_error;
 
 use std::path::Path;
 use error::prelude::*;
+use indy::{WalletHandle, INVALID_WALLET_HANDLE};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WalletRecord {
@@ -50,14 +51,14 @@ impl RestoreWalletConfigs {
     }
 }
 
-pub static mut WALLET_HANDLE: i32 = 0;
+pub static mut WALLET_HANDLE: WalletHandle = INVALID_WALLET_HANDLE;
 
-pub fn set_wallet_handle(handle: i32) -> i32 {
+pub fn set_wallet_handle(handle: WalletHandle) -> WalletHandle {
     unsafe { WALLET_HANDLE = handle; }
     unsafe { WALLET_HANDLE }
 }
 
-pub fn get_wallet_handle() -> i32 { unsafe { WALLET_HANDLE } }
+pub fn get_wallet_handle() -> WalletHandle { unsafe { WALLET_HANDLE } }
 
 pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<()> {
     trace!("creating wallet: {}", wallet_name);
@@ -68,7 +69,7 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
 
     match wallet::create_wallet(&config, &credentials)
         .wait() {
-        Ok(x) => Ok(()),
+        Ok(()) => Ok(()),
         Err(x) => if x.error_code != ErrorCode::WalletAlreadyExistsError {
             warn!("could not create wallet {}: {:?}", wallet_name, x.message);
             Err(VcxError::from_msg(VcxErrorKind::WalletCreate, format!("could not create wallet {}: {:?}", wallet_name, x.message)))
@@ -79,10 +80,10 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
     }
 }
 
-pub fn open_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<i32> {
+pub fn open_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<WalletHandle> {
     trace!("open_wallet >>> wallet_name: {}", wallet_name);
     if settings::test_indy_mode_enabled() {
-        return Ok(set_wallet_handle(1));
+        return Ok(set_wallet_handle(WalletHandle(1)));
     }
 
     let config = settings::get_wallet_config(wallet_name, wallet_type, storage_config);
@@ -97,9 +98,9 @@ pub fn open_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config:
     Ok(handle)
 }
 
-pub fn init_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<i32> {
+pub fn init_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<WalletHandle> {
     if settings::test_indy_mode_enabled() {
-        return Ok(set_wallet_handle(1));
+        return Ok(set_wallet_handle(WalletHandle(1)));
     }
 
     create_wallet(wallet_name, wallet_type, storage_config, storage_creds)?;
@@ -110,14 +111,14 @@ pub fn close_wallet() -> VcxResult<()> {
     trace!("close_wallet >>>");
 
     if settings::test_indy_mode_enabled() {
-        set_wallet_handle(0);
+        set_wallet_handle(INVALID_WALLET_HANDLE);
         return Ok(());
     }
     let result = wallet::close_wallet(get_wallet_handle())
         .wait()
         .map_err(map_rust_indy_sdk_error);
 
-    set_wallet_handle(0);
+    set_wallet_handle(INVALID_WALLET_HANDLE);
     result
 }
 
@@ -125,7 +126,7 @@ pub fn delete_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
     trace!("delete_wallet >>> wallet_name: {}", wallet_name);
 
     if settings::test_indy_mode_enabled() {
-        set_wallet_handle(0);
+        set_wallet_handle(INVALID_WALLET_HANDLE);
         return Ok(());
     }
 
@@ -182,8 +183,8 @@ pub fn update_record_value(xtype: &str, id: &str, value: &str) -> VcxResult<()> 
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn export(wallet_handle: i32, path: &Path, backup_key: &str) -> VcxResult<()> {
-    trace!("export >>> wallet_handle: {}, path: {:?}, backup_key: ****", wallet_handle, path);
+pub fn export(wallet_handle: WalletHandle, path: &Path, backup_key: &str) -> VcxResult<()> {
+    trace!("export >>> wallet_handle: {:?}, path: {:?}, backup_key: ****", wallet_handle, path);
 
     let export_config = json!({ "key": backup_key, "path": &path}).to_string();
     wallet::export_wallet(wallet_handle, &export_config)
@@ -244,12 +245,12 @@ pub mod tests {
 
     pub fn delete_test_wallet(name: &str) {
         match close_wallet() {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         };
 
         match delete_wallet(name, None, None, None) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         };
     }
@@ -257,7 +258,7 @@ pub mod tests {
     #[test]
     fn test_wallet() {
         init!("false");
-        assert!(get_wallet_handle() > 0);
+        assert_ne!(get_wallet_handle(), INVALID_WALLET_HANDLE);
         assert_eq!(VcxErrorKind::WalletCreate, init_wallet(&String::from(""), None, None, None).unwrap_err().kind());
     }
 
@@ -335,7 +336,6 @@ pub mod tests {
         let xtype = "type1";
         let id = "id1";
         let value = "value1";
-        let options = "{}";
 
         ::api::vcx::vcx_shutdown(true);
 
@@ -461,7 +461,6 @@ pub mod tests {
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_add_new_record_with_no_tag";
 
         add_record(record_type, id, record, None).unwrap();
     }
@@ -473,7 +472,6 @@ pub mod tests {
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_add_duplicate_record_fails";
 
         add_record(record_type, id, record, None).unwrap();
         let rc = add_record(record_type, id, record, None);
@@ -488,7 +486,6 @@ pub mod tests {
         let record_type = "Type";
         let record_type2 = "Type2";
         let id = "123";
-        let wallet_n = "test_add_duplicate_record_fails";
 
         add_record(record_type, id, record, None).unwrap();
         add_record(record_type2, id, record, None).unwrap();
@@ -505,7 +502,6 @@ pub mod tests {
             "retrieveValue": false,
             "retrieveTags": false
         }).to_string();
-        let wallet_n = "test_retrieve_missing_record_fails";
 
         let rc = get_record(record_type, id, &options);
         assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::WalletRecordNotFound);
@@ -519,7 +515,6 @@ pub mod tests {
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_retrieve_record_success";
         let options = json!({
             "retrieveType": true,
             "retrieveValue": true,
@@ -550,7 +545,6 @@ pub mod tests {
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_delete_record_success";
         let options = json!({
             "retrieveType": true,
             "retrieveValue": true,
@@ -570,7 +564,6 @@ pub mod tests {
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_update_record_value_fails_with_no_initial_record";
 
         let rc = update_record_value(record_type, id, record);
         assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::WalletRecordNotFound);
@@ -584,7 +577,6 @@ pub mod tests {
         let changed_record = "Record2";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_update_record_value_success";
         let options = json!({
             "retrieveType": true,
             "retrieveValue": true,

@@ -47,7 +47,7 @@ impl AgentInfo {
             Create User Pairwise Agent in old way.
             Send Messages corresponding to V2 Protocol to avoid code changes on Agency side.
         */
-        let (agent_did, agent_vk) = create_agent_keys("", &pw_did, &pw_vk, Some(ProtocolTypes::V2))?;
+        let (agent_did, agent_vk) = create_agent_keys("", &pw_did, &pw_vk, ProtocolTypes::V2)?;
 
         Ok(AgentInfo { pw_did, pw_vk, agent_did, agent_vk })
     }
@@ -86,7 +86,7 @@ impl AgentInfo {
                                                &self.agent_vk,
                                                None,
                                                Some(vec![MessageStatusCode::Received]),
-                                               None)?;
+                                               &Some(ProtocolTypes::V2))?;
 
 
         let mut a2a_messages: HashMap<String, A2AMessage> = HashMap::new();
@@ -107,7 +107,7 @@ impl AgentInfo {
                                                    &self.agent_vk,
                                                    Some(vec![msg_id.to_string()]),
                                                    None,
-                                                   None)?;
+                                                   &Some(ProtocolTypes::V2))?;
 
         let message =
             messages
@@ -122,12 +122,19 @@ impl AgentInfo {
     pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
         trace!("Agent::decode_message >>>");
 
-        EncryptionEnvelope::open(&self.pw_vk, message.payload()?)
+        EncryptionEnvelope::open(message.payload()?)
     }
 
     pub fn send_message(&self, message: &A2AMessage, did_dod: &DidDoc) -> VcxResult<()> {
         trace!("Agent::send_message >>> message: {:?}, did_doc: {:?}", message, did_dod);
-        let envelope = EncryptionEnvelope::create(&message, &self.pw_vk, &did_dod)?;
+        let envelope = EncryptionEnvelope::create(&message, Some(&self.pw_vk), &did_dod)?;
+        httpclient::post_message(&envelope.0, &did_dod.get_endpoint())?;
+        Ok(())
+    }
+
+    pub fn send_message_anonymously(message: &A2AMessage, did_dod: &DidDoc) -> VcxResult<()> {
+        trace!("Agent::send_message_anonymously >>> message: {:?}, did_doc: {:?}", message, did_dod);
+        let envelope = EncryptionEnvelope::create(&message, None, &did_dod)?;
         httpclient::post_message(&envelope.0, &did_dod.get_endpoint())?;
         Ok(())
     }

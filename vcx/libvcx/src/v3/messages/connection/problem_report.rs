@@ -1,7 +1,8 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
+use v3::messages::localization::Localization;
 use messages::thread::Thread;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ProblemReport {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -30,17 +31,6 @@ pub enum ProblemCode {
     ResponseProcessingError
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Localization {
-    locale: Locales
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum Locales {
-    #[serde(rename = "en")]
-    En,
-}
-
 impl ProblemReport {
     pub fn create() -> ProblemReport {
         ProblemReport::default()
@@ -57,32 +47,14 @@ impl ProblemReport {
         self.explain = Some(explain);
         self
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::ConnectionProblemReport(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
-impl Default for ProblemReport {
-    fn default() -> ProblemReport {
-        ProblemReport {
-            id: MessageId::new(),
-            problem_code: None,
-            explain: None,
-            localization: None,
-            thread: Thread::new(),
-        }
-    }
-}
+threadlike!(ProblemReport);
+a2a_message!(ProblemReport, ConnectionProblemReport);
 
-impl Default for Localization {
-    fn default() -> Localization {
-        Localization { locale: Locales::En }
+impl Default for ProblemCode {
+    fn default() -> ProblemCode {
+        ProblemCode::Empty
     }
 }
 
@@ -114,7 +86,7 @@ pub mod tests {
         let report: ProblemReport = ProblemReport::default()
             .set_problem_code(_problem_code())
             .set_explain(_explain())
-            .set_thread_id(_thread_id());
+            .set_thread_id(&_thread_id());
 
         assert_eq!(_problem_report(), report);
     }

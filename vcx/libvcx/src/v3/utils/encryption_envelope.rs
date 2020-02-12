@@ -10,7 +10,7 @@ pub struct EncryptionEnvelope(pub Vec<u8>);
 
 impl EncryptionEnvelope {
     pub fn create(message: &A2AMessage,
-                  pw_verkey: &str,
+                  pw_verkey: Option<&str>,
                   did_doc: &DidDoc) -> VcxResult<EncryptionEnvelope> {
         trace!("EncryptionEnvelope::create >>> message: {:?}, pw_verkey: {:?}, did_doc: {:?}", message, pw_verkey, did_doc);
 
@@ -22,7 +22,7 @@ impl EncryptionEnvelope {
     }
 
     fn encrypt_for_pairwise(message: &A2AMessage,
-                            pw_verkey: &str,
+                            pw_verkey: Option<&str>,
                             did_doc: &DidDoc) -> VcxResult<Vec<u8>> {
         let message = match message {
             A2AMessage::Generic(message_) => message_.to_string(),
@@ -31,7 +31,7 @@ impl EncryptionEnvelope {
 
         let receiver_keys = json!(did_doc.recipient_keys()).to_string();
 
-        crypto::pack_message(Some(&pw_verkey), &receiver_keys, message.as_bytes())
+        crypto::pack_message(pw_verkey, &receiver_keys, message.as_bytes())
     }
 
     fn wrap_into_forward_messages(mut message: Vec<u8>,
@@ -61,7 +61,7 @@ impl EncryptionEnvelope {
         crypto::pack_message(None, &receiver_keys, message.as_bytes())
     }
 
-    pub fn open(my_vk: &str, payload: Vec<u8>) -> VcxResult<A2AMessage> {
+    pub fn open(payload: Vec<u8>) -> VcxResult<A2AMessage> {
         let unpacked_msg = crypto::unpack_message(&payload)?;
 
         let message: ::serde_json::Value = ::serde_json::from_slice(unpacked_msg.as_slice())
@@ -98,7 +98,7 @@ pub mod tests {
 
         let message = A2AMessage::Ack(_ack());
 
-        let res = EncryptionEnvelope::create(&message, &setup.key, &DidDoc::default());
+        let res = EncryptionEnvelope::create(&message, Some(&setup.key), &DidDoc::default());
         assert_eq!(res.unwrap_err().kind(), VcxErrorKind::InvalidLibindyParam);
     }
 
@@ -109,16 +109,16 @@ pub mod tests {
 
         let message = A2AMessage::Ack(_ack());
 
-        let envelope = EncryptionEnvelope::create(&message, &setup.key, &_did_doc_4()).unwrap();
-        assert_eq!(message, EncryptionEnvelope::open(&_key_1(), envelope.0).unwrap());
+        let envelope = EncryptionEnvelope::create(&message, Some(&setup.key), &_did_doc_4()).unwrap();
+        assert_eq!(message, EncryptionEnvelope::open(envelope.0).unwrap());
     }
 
     #[test]
     fn test_encryption_envelope_works_for_routing_keys() {
         _setup();
         let setup = test_setup::key();
-        let key_1 = create_key(None, None).unwrap();
-        let key_2 = create_key(None, None).unwrap();
+        let key_1 = create_key(None).unwrap();
+        let key_2 = create_key(None).unwrap();
 
         let mut did_doc = DidDoc::default();
         did_doc.set_service_endpoint(_service_endpoint());
@@ -126,9 +126,9 @@ pub mod tests {
 
         let ack = A2AMessage::Ack(_ack());
 
-        let envelope = EncryptionEnvelope::create(&ack, &setup.key, &did_doc).unwrap();
+        let envelope = EncryptionEnvelope::create(&ack, Some(&setup.key), &did_doc).unwrap();
 
-        let message_1 = EncryptionEnvelope::open(&key_1, envelope.0).unwrap();
+        let message_1 = EncryptionEnvelope::open(envelope.0).unwrap();
 
         let message_1 = match message_1 {
             A2AMessage::Forward(forward) => {
@@ -138,7 +138,7 @@ pub mod tests {
             _ => return assert!(false)
         };
 
-        let message_2 = EncryptionEnvelope::open(&key_2, message_1).unwrap();
+        let message_2 = EncryptionEnvelope::open(message_1).unwrap();
 
         let message_2 = match message_2 {
             A2AMessage::Forward(forward) => {
@@ -148,6 +148,6 @@ pub mod tests {
             _ => return assert!(false)
         };
 
-        assert_eq!(ack, EncryptionEnvelope::open(&_key_1(), message_2).unwrap());
+        assert_eq!(ack, EncryptionEnvelope::open(message_2).unwrap());
     }
 }

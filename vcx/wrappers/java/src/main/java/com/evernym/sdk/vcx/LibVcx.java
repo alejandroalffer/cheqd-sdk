@@ -23,6 +23,7 @@ public abstract class LibVcx {
         public int vcx_init_minimal(String config);
 
         public String vcx_error_c_message(int error_code);
+        public String vcx_version();
         public int vcx_shutdown(boolean delete);
         public int vcx_reset();
 
@@ -164,6 +165,28 @@ public abstract class LibVcx {
          */
         public int vcx_connection_delete_connection(int command_handle, int connection_handle, Callback cb);
 
+        /**
+         * Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel
+         */
+        public int vcx_connection_send_ping(int command_handle, int connection_handle, String comment, Callback cb);
+
+        /**
+         * Send discovery features message to the specified connection to discover which features it supports, and to what extent
+         */
+        public int vcx_connection_send_discovery_features(int command_handle, int connection_handle, String query, String comment, Callback cb);
+
+
+        /**
+         * credential issuer object
+         *
+         * Used for offering and managing a credential with an identity owner.
+         */
+        /** Get my pairwise did from connection */
+        public int vcx_connection_get_pw_did(int command_handle, int connection_handle, Callback cb);
+
+        /** Get their pairwise did from connection */
+        public int vcx_connection_get_their_pw_did(int command_handle, int connection_handle, Callback cb);
+
         /** Send a message to the specified connection
          ///
          /// #params
@@ -229,12 +252,6 @@ public abstract class LibVcx {
          /// Error code as a u32
          */
         public int vcx_connection_verify_signature(int command_handle, int connection_handle, byte[] data_raw, int data_len, byte[] signature_raw, int signature_len, Callback cb);
-
-        /** Get my pairwise did from connection */
-        public int vcx_connection_get_pw_did(int command_handle, int connection_handle, Callback cb);
-
-        /** Get their pairwise did from connection */
-        public int vcx_connection_get_their_pw_did(int command_handle, int connection_handle, Callback cb);
 
         /**
          * credential issuer object

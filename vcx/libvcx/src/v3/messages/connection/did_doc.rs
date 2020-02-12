@@ -1,14 +1,20 @@
+use v3::messages::connection::invite::Invitation;
+
 use error::prelude::*;
 use url::Url;
+use messages::validation::validate_verkey;
 
 pub const CONTEXT: &str = "https://w3id.org/did/v1";
 pub const KEY_TYPE: &str = "Ed25519VerificationKey2018";
 pub const KEY_AUTHENTICATION_TYPE: &str = "Ed25519SignatureAuthentication2018";
+pub const SERVICE_SUFFIX: &str = "indy";
+pub const SERVICE_TYPE: &str = "IndyAgent";
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct DidDoc {
     #[serde(rename = "@context")]
     pub context: String,
+    #[serde(default)]
     pub id: String,
     #[serde(default)]
     #[serde(rename = "publicKey")]
@@ -60,15 +66,7 @@ impl Default for DidDoc {
             id: String::new(),
             public_key: vec![],
             authentication: vec![],
-            service: vec![Service {
-                // TODO: FIXME Several services????
-                id: String::from("did:example:123456789abcdefghi;did-communication"),
-                type_: String::from("did-communication"),
-                priority: 0,
-                service_endpoint: String::new(),
-                recipient_keys: Vec::new(),
-                routing_keys: Vec::new(),
-            }],
+            service: vec![Service::default()],
         }
     }
 }
@@ -108,7 +106,7 @@ impl DidDoc {
                 self.authentication.push(
                     Authentication {
                         type_: String::from(KEY_AUTHENTICATION_TYPE),
-                        public_key: key_reference.clone()
+                        public_key: key_reference.clone(),
                     });
 
 
@@ -122,6 +120,7 @@ impl DidDoc {
         routing_keys
             .iter()
             .for_each(|key| {
+                // Note: comment lines 123 - 134 and append key instead key_reference to be compatible with Streetcred
                 id += 1;
 
                 let key_id = id.to_string();
@@ -145,35 +144,42 @@ impl DidDoc {
 
     pub fn validate(&self) -> VcxResult<()> {
         if self.context != CONTEXT {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)))
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)));
         }
 
         if self.id.is_empty() {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"))
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"));
         }
-        
+
         for service in self.service.iter() {
             Url::parse(&service.service_endpoint)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported endpoint: {:?}", service.service_endpoint)))?;
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Invalid endpoint \"{:?}\", err: {:?}", service.service_endpoint, err)))?;
 
             service.recipient_keys
                 .iter()
-                .map(|key| {
-                    self.validate_public_key(key)
-                        .and_then(|public_key|
-                            self.validate_authentication(&public_key.id)
-                        )
-                })
+                .map(|key| self.validate_recipient_key(key))
                 .collect::<VcxResult<()>>()?;
 
             service.routing_keys
                 .iter()
-                .map(|key| {
-                    self.validate_public_key(key).map(|_| ())
-                })
+                .map(|key| self.validate_routing_key(key))
                 .collect::<VcxResult<()>>()?;
         }
 
+        Ok(())
+    }
+
+    fn validate_recipient_key(&self, key: &str) -> VcxResult<()> {
+        let public_key = self.validate_public_key(key)?;
+        self.validate_authentication(&public_key.id)
+    }
+
+    fn validate_routing_key(&self, key: &str) -> VcxResult<()> {
+        if DidDoc::_key_parts(key).len() == 2 {
+            self.validate_public_key(key)?;
+        } else {
+            validate_verkey(key)?;
+        }
         Ok(())
     }
 
@@ -187,12 +193,14 @@ impl DidDoc {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported PublicKey type: {:?}", key.type_)));
         }
 
+        validate_verkey(&key.public_key_base_58)?;
+
         Ok(key)
     }
 
     fn validate_authentication(&self, target_key: &str) -> VcxResult<()> {
-        if self.authentication.is_empty(){
-            return Ok(())
+        if self.authentication.is_empty() {
+            return Ok(());
         }
 
         let key = self.authentication.iter().find(|key_|
@@ -250,20 +258,36 @@ impl DidDoc {
 
         self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string())
             .map(|key| key.public_key_base_58.clone())
-            .unwrap_or_default()
+            .unwrap_or(id)
     }
 
     fn _build_key_reference(did: &str, id: &str) -> String {
         format!("{}#{}", did, id)
     }
 
+    fn _key_parts(key: &str) -> Vec<&str> {
+        key.split("#").collect()
+    }
+
     fn _parse_key_reference(key_reference: &str) -> String {
-        let pars: Vec<&str> = key_reference.split("#").collect();
+        let pars: Vec<&str> = DidDoc::_key_parts(key_reference);
         pars.get(1).or(pars.get(0)).map(|s| s.to_string()).unwrap_or_default()
     }
 }
 
-use v3::messages::connection::invite::Invitation;
+impl Default for Service {
+    fn default() -> Service {
+        Service {
+            // TODO: FIXME Several services????
+            id: format!("did:example:123456789abcdefghi;{}", SERVICE_SUFFIX),
+            type_: String::from(SERVICE_TYPE),
+            priority: 0,
+            service_endpoint: String::new(),
+            recipient_keys: Vec::new(),
+            routing_keys: Vec::new(),
+        }
+    }
+}
 
 impl From<Invitation> for DidDoc {
     fn from(invite: Invitation) -> DidDoc {
@@ -350,12 +374,10 @@ pub mod tests {
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
             ],
             service: vec![Service {
-                id: String::from("did:example:123456789abcdefghi;did-communication"),
-                type_: String::from("did-communication"),
-                priority: 0,
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_reference_1()],
                 routing_keys: vec![_key_reference_2(), _key_reference_3()],
+                ..Default::default()
             }],
         }
     }
@@ -373,12 +395,10 @@ pub mod tests {
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
             ],
             service: vec![Service {
-                id: String::from("did:example:123456789abcdefghi;did-communication"),
-                type_: String::from("did-communication"),
-                priority: 0,
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_1()],
                 routing_keys: vec![_key_2(), _key_3()],
+                ..Default::default()
             }],
         }
     }
@@ -396,12 +416,10 @@ pub mod tests {
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_1() }
             ],
             service: vec![Service {
-                id: String::from("did:example:123456789abcdefghi;did-communication"),
-                type_: String::from("did-communication"),
-                priority: 0,
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_1()],
                 routing_keys: vec![_key_2(), _key_3()],
+                ..Default::default()
             }],
         }
     }
@@ -417,12 +435,29 @@ pub mod tests {
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_1() }
             ],
             service: vec![Service {
-                id: String::from("did:example:123456789abcdefghi;did-communication"),
-                type_: String::from("did-communication"),
-                priority: 0,
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_1()],
                 routing_keys: vec![],
+                ..Default::default()
+            }],
+        }
+    }
+
+    pub fn _did_doc_5() -> DidDoc {
+        DidDoc {
+            context: String::from(CONTEXT),
+            id: _id(),
+            public_key: vec![
+                Ed25519PublicKey { id: _key_reference_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+            ],
+            authentication: vec![
+                Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
+            ],
+            service: vec![Service {
+                service_endpoint: _service_endpoint(),
+                recipient_keys: vec![_key_1()],
+                routing_keys: vec![_key_2(), _key_3()],
+                ..Default::default()
             }],
         }
     }
@@ -443,6 +478,7 @@ pub mod tests {
         _did_doc_2().validate().unwrap();
         _did_doc_3().validate().unwrap();
         _did_doc_4().validate().unwrap();
+        _did_doc_5().validate().unwrap();
     }
 
     #[test]
@@ -453,6 +489,10 @@ pub mod tests {
     #[test]
     fn test_did_doc_resolve_keys_works() {
         let (recipient_keys, routing_keys) = _did_doc().resolve_keys();
+        assert_eq!(_recipient_keys(), recipient_keys);
+        assert_eq!(_routing_keys(), routing_keys);
+
+        let (recipient_keys, routing_keys) = _did_doc_2().resolve_keys();
         assert_eq!(_recipient_keys(), recipient_keys);
         assert_eq!(_routing_keys(), routing_keys);
     }

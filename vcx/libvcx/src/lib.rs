@@ -1,6 +1,4 @@
 #![cfg_attr(feature = "fatal_warnings", deny(warnings))]
-#![allow(unused_variables)]
-#![allow(dead_code)]
 #![crate_name = "vcx"]
 //this is needed for some large json macro invocations
 #![recursion_limit = "128"]
@@ -15,7 +13,6 @@ extern crate futures;
 
 #[macro_use]
 extern crate log;
-extern crate log4rs;
 
 extern crate libc;
 
@@ -37,10 +34,17 @@ extern crate uuid;
 extern crate failure;
 
 extern crate rmp_serde;
+extern crate indy_sys;
 extern crate json;
 extern crate rmpv;
 
 extern crate base64;
+
+extern crate strum;
+#[macro_use]
+extern crate strum_macros;
+
+extern crate chrono;
 
 #[macro_use]
 pub mod utils;
@@ -65,6 +69,7 @@ pub mod wallet_backup;
 pub mod v3;
 
 #[allow(unused_imports)]
+#[allow(dead_code)]
 #[cfg(test)]
 mod tests {
 
@@ -279,7 +284,7 @@ mod tests {
             attrs_list.as_array_mut().unwrap().push(json!(format!("key{}",i)));
         }
         let attrs_list = attrs_list.to_string();
-        let (schema_id, schema_json, cred_def_id, cred_def_json, cred_def_handle, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, false);
+        let (schema_id, _schema_json, cred_def_id, _cred_def_json, cred_def_handle, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, false);
         let mut credential_data = json!({});
         for i in 1..number_of_attributes {
             credential_data[format!("key{}", i)] = json!([format!("value{}",i)]);
@@ -347,7 +352,7 @@ mod tests {
         // CREATE SCHEMA AND CRED DEF
         println!("creating schema/credential_def and paying fees");
         let attrs_list = json!(["address1", "address2", "city", "state", "zip"]).to_string();
-        let (schema_id, schema_json, cred_def_id, cred_def_json, cred_def_handle, rev_reg_id) =
+        let (schema_id, _schema_json, cred_def_id, _cred_def_json, cred_def_handle, rev_reg_id) =
             ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, true);
 
         // AS INSTITUTION SEND CREDENTIAL OFFER
@@ -378,7 +383,7 @@ mod tests {
         proof::update_state(proof_req_handle, None).unwrap();
         assert_eq!(proof::get_proof_state(proof_req_handle).unwrap(), ProofStateType::ProofValidated as u32);
         println!("proof validated!");
-        let wallet = ::utils::libindy::payments::get_wallet_token_info().unwrap();
+        let _wallet = ::utils::libindy::payments::get_wallet_token_info().unwrap();
 
         // AS INSTITUTION REVOKE CRED
         revoke_credential(credential_offer, rev_reg_id);

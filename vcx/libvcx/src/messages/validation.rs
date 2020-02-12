@@ -6,6 +6,7 @@ use self::rust_base58::FromBase58;
 use utils::qualifier::Qualifier;
 use url::Url;
 use error::prelude::*;
+use settings::Actors;
 
 pub fn validate_did(did: &str) -> VcxResult<String> {
     if Qualifier::is_fully_qualified(did) {
@@ -52,6 +53,11 @@ pub fn validate_url(url: &str) -> VcxResult<String> {
     Ok(url.to_string())
 }
 
+pub fn validate_actors(actors: &str) -> VcxResult<Vec<Actors>> {
+    ::serde_json::from_str(&actors)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Invalid actors: {:?}", err)))
+}
+
 pub fn validate_phone_number(p_num: &str) -> VcxResult<String> {
     Ok(String::from(p_num))
 }
@@ -64,7 +70,7 @@ mod tests {
     fn test_did_is_b58_and_valid_length() {
         let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         match validate_did(&to_did) {
-            Err(x) => panic!("Should be valid did"),
+            Err(_) => panic!("Should be valid did"),
             Ok(x) => assert_eq!(x, to_did.to_string())
         }
     }
@@ -74,7 +80,7 @@ mod tests {
         let to_did = "8XFh8yBzrpJQmNyZzgoT";
         match validate_did(&to_did) {
             Err(x) => assert_eq!(x.kind(), VcxErrorKind::InvalidDid),
-            Ok(x) => panic!("Should be invalid did"),
+            Ok(_) => panic!("Should be invalid did"),
         }
     }
 
@@ -83,7 +89,7 @@ mod tests {
         let to_did = "8*Fh8yBzrpJQmNyZzgoTqB";
         match validate_did(&to_did) {
             Err(x) => assert_eq!(x.kind(), VcxErrorKind::NotBase58),
-            Ok(x) => panic!("Should be invalid did"),
+            Ok(_) => panic!("Should be invalid did"),
         }
     }
 
@@ -91,7 +97,7 @@ mod tests {
     fn test_verkey_is_b58_and_valid_length() {
         let verkey = "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A";
         match validate_verkey(&verkey) {
-            Err(x) => panic!("Should be valid verkey"),
+            Err(_) => panic!("Should be valid verkey"),
             Ok(x) => assert_eq!(x, verkey)
         }
     }
@@ -101,7 +107,7 @@ mod tests {
         let verkey = "8XFh8yBzrpJQmNyZzgoT";
         match validate_verkey(&verkey) {
             Err(x) => assert_eq!(x.kind(), VcxErrorKind::InvalidVerkey),
-            Ok(x) => panic!("Should be invalid verkey"),
+            Ok(_) => panic!("Should be invalid verkey"),
         }
     }
 
@@ -110,7 +116,7 @@ mod tests {
         let verkey = "*kVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A";
         match validate_verkey(&verkey) {
             Err(x) => assert_eq!(x.kind(), VcxErrorKind::NotBase58),
-            Ok(x) => panic!("Should be invalid verkey"),
+            Ok(_) => panic!("Should be invalid verkey"),
         }
     }
 }

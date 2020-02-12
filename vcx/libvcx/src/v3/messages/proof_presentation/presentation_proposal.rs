@@ -1,13 +1,13 @@
-use v3::messages::a2a::{A2AMessage, A2AMessageKinds, MessageId};
+use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::a2a::message_type::MessageType;
+use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::mime_type::MimeType;
 use messages::thread::Thread;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct PresentationProposal {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>,
     pub presentation_proposal: PresentationPreview,
@@ -15,7 +15,7 @@ pub struct PresentationProposal {
     pub thread: Thread,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct PresentationPreview {
     #[serde(rename = "@type")]
     #[serde(default = "default_presentation_preview_type")]
@@ -44,30 +44,8 @@ pub struct Predicate {
 }
 
 fn default_presentation_preview_type() -> MessageType {
-    MessageType::build(A2AMessageKinds::PresentationPreview)
+    MessageType::build(MessageFamilies::CredentialIssuance, "presentation-preview")
 }
-
-impl Default for PresentationProposal {
-    fn default() -> PresentationProposal {
-        PresentationProposal {
-            id: MessageId::new(),
-            comment: None,
-            presentation_proposal: PresentationPreview::default(),
-            thread: Thread::new(),
-        }
-    }
-}
-
-impl Default for PresentationPreview {
-    fn default() -> PresentationPreview {
-        PresentationPreview {
-            _type: MessageType::build(A2AMessageKinds::PresentationPreview),
-            attributes: Vec::new(),
-            predicates: Vec::new(),
-        }
-    }
-}
-
 impl PresentationProposal {
     pub fn create() -> Self {
         PresentationProposal::default()
@@ -82,17 +60,10 @@ impl PresentationProposal {
         self.presentation_proposal = presentation_preview;
         self
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::PresentationProposal(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
+threadlike!(PresentationProposal);
+a2a_message!(PresentationProposal);
 
 #[cfg(test)]
 pub mod tests {
@@ -134,7 +105,7 @@ pub mod tests {
     fn test_presentation_proposal_build_works() {
         let presentation_proposal: PresentationProposal = PresentationProposal::default()
             .set_comment(_comment())
-            .set_thread_id(thread_id())
+            .set_thread_id(&thread_id())
             .set_presentation_preview(_presentation_preview());
 
         assert_eq!(_presentation_proposal(), presentation_proposal);

@@ -3,7 +3,7 @@ import time
 from random import randint
 
 from indy import ledger, did, wallet, pool
-from src.utils import get_pool_genesis_txn_path, run_coroutine, PROTOCOL_VERSION
+from src.utils import get_pool_genesis_txn_path, run_coroutine, PROTOCOL_VERSION, ensure_previous_request_applied
 import logging
 
 
@@ -64,7 +64,9 @@ async def demo():
     txn_agreement_req = \
         await ledger.build_txn_author_agreement_request(trustee['did'],
                                                         trustee['txn_agreement']['text'],
-                                                        trustee['txn_agreement']['version'])
+                                                        trustee['txn_agreement']['version'],
+                                                        int(time.time()),
+                                                        None)
     await ledger.sign_and_submit_request(trustee['pool'], trustee['wallet'], trustee['did'], txn_agreement_req)
 
     # User initialization
@@ -110,12 +112,16 @@ async def demo():
 
     # User gets Transaction Agreement from the ledger
     get_txn_author_agreement_req = await ledger.build_get_txn_author_agreement_request(user['did'], None)
-    get_txn_author_agreement_resp = json.loads(await ledger.submit_request(user['pool'], get_txn_author_agreement_req))
+    get_txn_author_agreement_resp = json.loads(
+        await ensure_previous_request_applied(user['pool'], get_txn_author_agreement_req,
+                                              lambda response: response['result']['data'] is not None))
     user['txn_agreement'] = get_txn_author_agreement_resp['result']['data']
 
     # User gets Acceptance Mechanisms from the ledger
     get_acc_mech_req = await ledger.build_get_acceptance_mechanisms_request(user['did'], None, None)
-    get_acc_mech_resp = json.loads(await ledger.submit_request(user['pool'], get_acc_mech_req))
+    get_acc_mech_resp = json.loads(
+        await ensure_previous_request_applied(user['pool'], get_acc_mech_req,
+                                              lambda response: response['result']['data'] is not None))
     user['acceptance_mechanisms'] = get_acc_mech_resp['result']['data']
 
     #       User sends ATTRIB transaction to Ledger
@@ -136,7 +142,7 @@ async def demo():
 
     # Trustee reset Transaction Agreement
     txn_agreement_req = \
-        await ledger.build_txn_author_agreement_request(trustee['did'], '', str(randint(0, 1000)))
+        await ledger.build_disable_all_txn_author_agreements_request(trustee['did'])
     await ledger.sign_and_submit_request(trustee['pool'], trustee['wallet'], trustee['did'], txn_agreement_req)
 
     #       User sends ATTRIB transaction to Ledger without Transaction Agreement
@@ -163,7 +169,6 @@ async def demo():
 
     logger.info("Transaction Author Agreement sample -> completed")
 
-
 if __name__ == '__main__':
     run_coroutine(demo)
-    time.sleep(1)  # FIXME waiting for libindy thread complete
+time.sleep(1)  # FIXME waiting for libindy thread complete

@@ -10,6 +10,7 @@ use messages::validation;
 use std::fs;
 use std::io::prelude::*;
 use serde_json::Value;
+use strum::IntoEnumIterator;
 
 use error::prelude::*;
 
@@ -49,6 +50,7 @@ pub static CONFIG_USE_LATEST_PROTOCOLS: &'static str = "use_latest_protocols";
 pub static CONFIG_POOL_CONFIG: &'static str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
 pub static COMMUNICATION_METHOD: &str = "communication_method"; // proprietary or aries
+pub static ACTORS: &str = "actors"; // inviter, invitee, issuer, holder, prover, verifier, sender, receiver
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
@@ -155,11 +157,8 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
 
     validate_optional_config_val(config.get(CONFIG_WEBHOOK_URL), VcxErrorKind::InvalidUrl, Url::parse)?;
 
-    Ok(error::SUCCESS.code_num)
-}
+    validate_optional_config_val(config.get(ACTORS), VcxErrorKind::InvalidOption, validation::validate_actors)?;
 
-fn validate_wallet_key(key: &str) -> VcxResult<u32> {
-    if key == UNINITIALIZED_WALLET_KEY { return Err(VcxError::from(VcxErrorKind::MissingWalletKey)); }
     Ok(error::SUCCESS.code_num)
 }
 
@@ -183,14 +182,14 @@ pub fn test_indy_mode_enabled() -> bool {
 
     match config.get(CONFIG_ENABLE_TEST_MODE) {
         None => false,
-        Some(value) => value == "true" ||  value == "indy"
+        Some(value) => value == "true" || value == "indy"
     }
 }
 
 pub fn get_threadpool_size() -> usize {
     let size = match get_config_value(CONFIG_THREADPOOL_SIZE) {
         Ok(x) => x.parse::<usize>().unwrap_or(DEFAULT_THREADPOOL_SIZE),
-        Err(x) => DEFAULT_THREADPOOL_SIZE,
+        Err(_) => DEFAULT_THREADPOOL_SIZE,
     };
 
     if size > MAX_THREADPOOL_SIZE {
@@ -217,12 +216,17 @@ pub fn process_config_string(config: &str, do_validation: bool) -> VcxResult<u32
 
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {
-            set_config_value(key, value.as_str().ok_or(VcxError::from(VcxErrorKind::InvalidJson))?);
+            match value {
+                Value::String(value_) => set_config_value(key, &value_),
+                Value::Array(value_) => set_config_value(key, &json!(value_).to_string()),
+                Value::Object(value_) => set_config_value(key, &json!(value_).to_string()),
+                _ => return Err(VcxError::from(VcxErrorKind::InvalidJson)),
+            }
         }
     }
 
     if do_validation {
-        validate_config(&SETTINGS.read().or(Err(VcxError::from(VcxErrorKind::InvalidConfiguration)))?.clone() )
+        validate_config(&SETTINGS.read().or(Err(VcxError::from(VcxErrorKind::InvalidConfiguration)))?.clone())
     } else {
         Ok(error::SUCCESS.code_num)
     }
@@ -277,7 +281,7 @@ pub fn set_config_value(key: &str, value: &str) {
         .insert(key.to_string(), value.to_string());
 }
 
-pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>) -> String {
+pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>) -> String { // TODO: _storage_config must be used
     let mut config = json!({
         "id": wallet_name,
         "storage_type": wallet_type
@@ -289,7 +293,7 @@ pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, storage_c
     config.to_string()
 }
 
-pub fn get_wallet_credentials(storage_creds: Option<&str>) -> String {
+pub fn get_wallet_credentials(_storage_creds: Option<&str>) -> String { // TODO: storage_creds must be used?
     let key = get_config_value(CONFIG_WALLET_KEY).unwrap_or(UNINITIALIZED_WALLET_KEY.to_string());
     let mut credentials = json!({"key": key});
 
@@ -328,10 +332,31 @@ pub fn get_communication_method() -> VcxResult<String> {
     get_config_value(COMMUNICATION_METHOD)
 }
 
+pub fn get_actors() -> Vec<Actors> {
+    get_config_value(ACTORS)
+        .and_then(|actors|
+            ::serde_json::from_str(&actors)
+                .map_err(|_| VcxError::from(VcxErrorKind::InvalidOption))
+        ).unwrap_or_else(|_| Actors::iter().collect())
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, EnumIter)]
+#[serde(rename_all="lowercase")]
+pub enum Actors {
+    Inviter,
+    Invitee,
+    Issuer,
+    Holder,
+    Prover,
+    Verifier,
+    Sender,
+    Receiver
+}
+
 pub const ARIES_COMMUNICATION_METHOD: &str = "aries";
 
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ProtocolTypes {
     #[serde(rename = "1.0")]
     V1,
@@ -397,7 +422,7 @@ pub fn remove_file_if_exists(filename: &str) {
     trace!("remove_file_if_exists >>> filename: {}", filename);
     if Path::new(filename).exists() {
         match fs::remove_file(filename) {
-            Ok(t) => (),
+            Ok(()) => (),
             Err(e) => println!("Unable to remove file: {:?}", e)
         }
     }
@@ -452,6 +477,8 @@ pub mod tests {
 
     #[test]
     fn test_process_file() {
+        clear_config();
+
         let config_path_buf = get_temp_dir_path(Some("test_init.json"));
         let config_path = config_path_buf.to_str().unwrap();
 
@@ -478,6 +505,8 @@ pub mod tests {
 
     #[test]
     fn test_process_config_str() {
+        clear_config();
+
         let content = json!({
             "pool_name" : "pool1",
             "config_name":"config1",
@@ -532,8 +561,6 @@ pub mod tests {
     #[test]
     fn test_validate_config_failures() {
         let invalid = "invalid";
-        let valid_did = DEFAULT_DID;
-        let valid_ver = DEFAULT_VERKEY;
 
         ::utils::libindy::wallet::set_wallet_handle(0);
         let mut config: HashMap<String, String> = HashMap::new();
@@ -672,5 +699,34 @@ pub mod tests {
         assert_eq!(get_config_value("institution_name").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
         assert_eq!(get_config_value("genesis_path").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
         assert_eq!(get_config_value("wallet_key").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
+    }
+
+    #[test]
+    fn test_process_config_str_for_actors() {
+        clear_config();
+
+        let mut config = json!({
+            "pool_name" : "pool1",
+            "config_name":"config1",
+            "wallet_name":"test_read_config_file",
+            "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
+            "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
+            "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
+            "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "institution_name" : "evernym enterprise",
+            "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "genesis_path":"/tmp/pool1.txn",
+            "wallet_key":"key",
+            "actors": ["invitee", "holder"]
+        });
+
+        process_config_string(&config.to_string(), true).unwrap();
+
+        assert_eq!(vec![Actors::Invitee, Actors::Holder], get_actors());
+
+        // passed invalid actor
+        config["actors"] = json!(["wrong"]);
+        assert_eq!(process_config_string(&config.to_string(), true).unwrap_err().kind(), VcxErrorKind::InvalidOption);
     }
 }

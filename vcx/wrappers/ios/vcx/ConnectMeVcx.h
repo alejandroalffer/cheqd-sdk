@@ -193,7 +193,7 @@ withSelectedCredentials:(NSString *)selectedCredentials
 withConnectionHandle:(vcx_connection_handle_t)connection_handle
     withCompletion:(void (^)(NSError *error))completion;
 
-- (void) proofReject: (vcx_proof_handle_t)proof_handle 
+- (void) proofReject: (vcx_proof_handle_t)proof_handle
       withConnectionHandle:(vcx_connection_handle_t)connection_handle
       withCompletion: (void (^)(NSError *error))completion;
 

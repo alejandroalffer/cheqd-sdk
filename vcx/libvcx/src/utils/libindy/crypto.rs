@@ -69,14 +69,17 @@ pub fn pack_message(sender_vk: Option<&str>, receiver_keys: &str, msg: &[u8]) ->
 
 pub fn unpack_message(msg: &[u8]) -> VcxResult<Vec<u8>> {
     if settings::test_indy_mode_enabled() { return Ok(Vec::from(msg).to_owned()); }
+
     crypto::unpack_message(::utils::libindy::wallet::get_wallet_handle(), msg)
         .wait()
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn create_key(seed: Option<&str>, _: Option<String>) -> VcxResult<String> {
+pub fn create_key(seed: Option<&str>) -> VcxResult<String> {
 
     let key_json = json!({"seed": seed}).to_string();
+    println!("key_json: {}", key_json);
+    println!("wallet_handle: {:?}", ::utils::libindy::wallet::get_wallet_handle());
     crypto::create_key(::utils::libindy::wallet::get_wallet_handle(), Some(&key_json))
         .wait()
         .map_err(map_rust_indy_sdk_error)

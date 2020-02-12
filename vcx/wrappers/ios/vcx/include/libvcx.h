@@ -187,60 +187,11 @@ vcx_error_t vcx_connection_send_message(vcx_command_handle_t command_handle,
                                         const char *send_message_options,
                                         void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *msg_id));
 
-/// Generate a signature for the specified data
-///
-/// #params
-///
-/// command_handle: command handle to map callback to user context.
-///
-/// connection_handle: connection to receive the message
-///
-/// data_raw: raw data buffer for signature
-///
-/// data:len: length of data buffer
-///
-/// cb: Callback that provides the generated signature
-///
-/// #Returns
-/// Error code as a u32
-vcx_error_t vcx_connection_sign_data(vcx_command_handle_t command_handle,
-                                     vcx_connection_handle_t connection_handle,
-                                     vcx_data_t *data_raw,
-                                     vcx_u32_t data_len,
-                                     void(*cb)(vcx_command_handle_t command_handle,
-                                               vcx_error_t err,
-                                               vcx_data_t *signature_raw,
-                                               vcx_u32_t signature_len));
+/** Generate a signature for the specified data */
+vcx_error_t vcx_connection_sign_data(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, uint8_t const* data_raw, unsigned int data_len, void (*cb)(vcx_command_handle_t, vcx_error_t err, uint8_t const* signature_raw, unsigned int signature_len));
 
-/// Verify the signature is valid for the specified data
-///
-/// #params
-///
-/// command_handle: command handle to map callback to user context.
-///
-/// connection_handle: connection to receive the message
-///
-/// data_raw: raw data buffer for signature
-///
-/// data_len: length of data buffer
-///
-/// signature_raw: raw data buffer for signature
-///
-/// signature_len: length of data buffer
-///
-/// cb: Callback that specifies whether the signature was valid or not
-///
-/// #Returns
-/// Error code as a u32
-vcx_error_t vcx_connection_verify_signature(vcx_command_handle_t command_handle,
-                                            vcx_connection_handle_t connection_handle,
-                                            vcx_data_t *data_raw,
-                                            vcx_u32_t data_len,
-                                            vcx_data_t *signature_raw,
-                                            vcx_u32_t signature_len,
-                                            void (*cb)(vcx_command_handle_t command_handle,
-                                                       vcx_error_t err,
-                                                       vcx_bool_t valid));
+/** Verify the signature is valid for the specified data */
+vcx_error_t vcx_connection_verify_signature(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, uint8_t const* data_raw, unsigned int data_len, uint8_t const* signature_raw, unsigned int signature_len, void (*cb)(vcx_command_handle_t, vcx_error_t err, vcx_bool_t valid));
 
 /**
  * credential issuer object

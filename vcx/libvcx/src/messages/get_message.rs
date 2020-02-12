@@ -91,7 +91,7 @@ pub struct GetMessagesBuilder {
     uids: Option<Vec<String>>,
     status_codes: Option<Vec<MessageStatusCode>>,
     pairwise_dids: Option<Vec<String>>,
-    version: ProtocolTypes
+    version: ProtocolTypes,
 }
 
 impl GetMessagesBuilder {
@@ -107,7 +107,7 @@ impl GetMessagesBuilder {
             exclude_payload: None,
             status_codes: None,
             pairwise_dids: None,
-            version: DEFAULT_GET_MSG_VERSION.clone()
+            version: settings::get_protocol_type(),
         }
     }
 
@@ -141,10 +141,10 @@ impl GetMessagesBuilder {
         Ok(self)
     }
 
-    pub fn version(&mut self, version: &Option<String>) -> VcxResult<&mut Self> {
+    pub fn version(&mut self, version: &Option<ProtocolTypes>) -> VcxResult<&mut Self> {
         self.version = match version {
-            Some(version) => settings::ProtocolTypes::from(version.to_string()),
-            None => DEFAULT_GET_MSG_VERSION.clone()
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
         };
         Ok(self)
     }
@@ -186,7 +186,7 @@ impl GetMessagesBuilder {
             return Ok(Vec::new());
         }
 
-        let response = GetMessagesBuilder::parse_download_messages_response(response, &self.version)?;
+        let response = self.parse_download_messages_response(response)?;
 
         Ok(response)
     }
@@ -220,9 +220,9 @@ impl GetMessagesBuilder {
         prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
-    fn parse_download_messages_response(response: Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<MessageByConnection>> {
-        trace!("parse_download_messages_response >>> version {:?}", version);
-        let mut response = parse_response_from_agency(&response, version)?;
+    fn parse_download_messages_response(&self, response: Vec<u8>) -> VcxResult<Vec<MessageByConnection>> {
+        trace!("parse_download_messages_response >>>");
+        let mut response = parse_response_from_agency(&response, &self.version)?;
 
         trace!("parse_download_messages_response: parsed response {:?}", response);
         let msgs = match response.remove(0) {
@@ -321,7 +321,6 @@ pub struct Message {
     pub ref_msg_id: Option<String>,
     #[serde(skip_deserializing)]
     pub delivery_details: Vec<DeliveryDetails>,
-    #[serde(skip_deserializing)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub decrypted_payload: Option<String>,
 }
@@ -348,7 +347,7 @@ impl Message {
 
             if let Ok(decrypted_payload) = decrypted_payload {
                 new_message.decrypted_payload = ::serde_json::to_string(&decrypted_payload).ok();
-            } else if let Ok(decrypted_payload) = self._decrypt_v3_message(vk) {
+            } else if let Ok(decrypted_payload) = self._decrypt_v3_message() {
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(decrypted_payload)).ok()
             } else {
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(null)).ok();
@@ -358,14 +357,14 @@ impl Message {
         new_message
     }
 
-    fn _decrypt_v3_message(&self, vk: &str) -> VcxResult<::messages::payload::PayloadV1> {
+    fn _decrypt_v3_message(&self) -> VcxResult<::messages::payload::PayloadV1> {
         use v3::messages::a2a::A2AMessage;
         use v3::utils::encryption_envelope::EncryptionEnvelope;
         use ::issuer_credential::{CredentialOffer, CredentialMessage};
         use ::messages::payload::{PayloadTypes, PayloadV1, PayloadKinds};
         use std::convert::TryInto;
 
-        let a2a_message = EncryptionEnvelope::open(vk, self.payload()?)?;
+        let a2a_message = EncryptionEnvelope::open(self.payload()?)?;
 
         let (kind, msg) = match a2a_message {
             A2AMessage::PresentationRequest(presentation_request) => {
@@ -396,7 +395,7 @@ impl Message {
     }
 }
 
-pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>, status_codes: Option<Vec<MessageStatusCode>>, version: Option<String>) -> VcxResult<Vec<Message>> {
+pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>, status_codes: Option<Vec<MessageStatusCode>>, version: &Option<ProtocolTypes>) -> VcxResult<Vec<Message>> {
     trace!("get_connection_messages >>> pw_did: {}, pw_vk: {}, agent_vk: {}, msg_uid: {:?}",
            pw_did, pw_vk, agent_vk, msg_uid);
 
@@ -407,7 +406,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .agent_vk(&agent_vk)?
         .uid(msg_uid)?
         .status_codes(status_codes)?
-        .version(&Some(::settings::get_protocol_type().to_string()))?
+        .version(version)?
         .send_secure()
         .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, "Cannot get messages"))?;
 
@@ -419,7 +418,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, None)?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &None)?; // TODO: FIXME version should be param
     trace!("checking for ref_msg: {:?}", message);
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
@@ -427,7 +426,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
         _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, None)?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &None)?;  // TODO: FIXME version should be param
 
     trace!("checking for pending message: {:?}", message);
 
@@ -524,8 +523,7 @@ mod tests {
     fn test_parse_get_connection_messages_response() {
         init!("true");
 
-        let json: serde_json::Value = rmp_serde::from_slice(GET_ALL_MESSAGES_RESPONSE).unwrap();
-        let result = GetMessagesBuilder::parse_download_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec(), &ProtocolTypes::V1).unwrap();
+        let result = GetMessagesBuilder::create().version(&Some(ProtocolTypes::V1)).unwrap().parse_download_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 1)
     }
 
@@ -536,12 +534,6 @@ mod tests {
             to: "3Xk9vxK9jeiqVaCPrEQ8bg".to_string(),
             status_code: "MDS-101".to_string(),
             last_updated_date_time: "2017-12-14T03:35:20.444Z[UTC]".to_string(),
-        };
-
-        let delivery_details2 = DeliveryDetails {
-            to: "3Xk9vxK9jeiqVaCPrEQ8bg".to_string(),
-            status_code: "MDS-101".to_string(),
-            last_updated_date_time: "2017-12-14T03:35:20.500Z[UTC]".to_string(),
         };
 
         let msg1 = Message {
@@ -577,7 +569,7 @@ mod tests {
         let bundle = Bundled::create(data).encode().unwrap();
         let message = crypto::prep_msg(&my_vk, &verkey, &bundle[..]).unwrap();
 
-        let result = GetMessagesBuilder::create_v1().parse_response(message).unwrap();
+        let _result = GetMessagesBuilder::create().parse_response(message).unwrap();
     }
 
     #[cfg(feature = "agency")]
@@ -609,7 +601,7 @@ mod tests {
     fn test_download_messages() {
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (faber, alice) = ::connection::tests::create_connected_connections();
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
 
         let (_, cred_def_handle) = ::credential_def::tests::create_cred_def_real(false);
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
