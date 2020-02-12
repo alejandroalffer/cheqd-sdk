@@ -177,8 +177,6 @@ pub struct InviteDetail {
     pub conn_req_id: String,
     pub sender_detail: SenderDetail,
     pub sender_agency_detail: SenderAgencyDetail,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
     pub target_name: String,
     pub status_msg: String,
     pub thread_id: Option<String>,

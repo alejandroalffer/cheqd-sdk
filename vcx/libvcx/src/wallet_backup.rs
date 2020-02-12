@@ -195,7 +195,7 @@ fn gen_vk(wallet_encryption_key: &str) -> VcxResult<String> {
 
     let vk_seed = sha256_hex(wallet_encryption_key.as_bytes());
 
-    create_key(Some(&vk_seed), None)
+    create_key(Some(&vk_seed))
         .and_then(|v| _add_generated_vk(&wallet_encryption_key, &v))
         .or_else(|e| _handle_duplicate_vk(e, &wallet_encryption_key) )
 }

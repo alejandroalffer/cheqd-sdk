@@ -6,6 +6,7 @@ use error::prelude::*;
 use wallet_backup::{create_wallet_backup, backup_wallet, get_source_id, get_state, from_string, to_string, update_state, restore_wallet};
 use messages::get_message::Message;
 use std::ptr;
+use indy_sys::CommandHandle;
 
 /// -> Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent
 ///
@@ -23,10 +24,10 @@ use std::ptr;
 ///
 #[no_mangle]
 #[allow(unused_assignments)]
-pub extern fn vcx_wallet_backup_create(command_handle: u32,
+pub extern fn vcx_wallet_backup_create(command_handle: CommandHandle,
                                        source_id: *const c_char,
                                        wallet_encryption_key: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, wallet_backup_handle: u32)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, wallet_backup_handle: u32)>) -> u32 {
     info!("vcx_wallet_backup_create >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -75,10 +76,10 @@ pub extern fn vcx_wallet_backup_create(command_handle: u32,
 /// is scheduled to begin in a separate thread.
 
 #[no_mangle]
-pub extern fn vcx_wallet_backup_backup(command_handle: u32,
+pub extern fn vcx_wallet_backup_backup(command_handle: CommandHandle,
                                        wallet_backup_handle: u32,
                                        path: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_wallet_backup_backup >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -120,9 +121,9 @@ pub extern fn vcx_wallet_backup_backup(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_wallet_backup_update_state(command_handle: u32,
+pub extern fn vcx_wallet_backup_update_state(command_handle: CommandHandle,
                                              wallet_backup_handle: u32,
-                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_wallet_backup_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -165,10 +166,10 @@ pub extern fn vcx_wallet_backup_update_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_wallet_backup_update_state_with_message(command_handle: u32,
+pub extern fn vcx_wallet_backup_update_state_with_message(command_handle: CommandHandle,
                                                           wallet_backup_handle: u32,
                                                           message: *const c_char,
-                                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_wallet_backup_update_state_with_message >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -215,9 +216,9 @@ pub extern fn vcx_wallet_backup_update_state_with_message(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_wallet_backup_serialize(command_handle: u32,
+pub extern fn vcx_wallet_backup_serialize(command_handle: CommandHandle,
                                           wallet_backup_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, data: *const c_char)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, data: *const c_char)>) -> u32 {
     info!("vcx_wallet_backup_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -260,9 +261,9 @@ pub extern fn vcx_wallet_backup_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_wallet_backup_deserialize(command_handle: u32,
+pub extern fn vcx_wallet_backup_deserialize(command_handle: CommandHandle,
                                             wallet_backup_str: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, handle: u32)>) -> u32 {
+                                            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, handle: u32)>) -> u32 {
     info!("vcx_wallet_backup_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);

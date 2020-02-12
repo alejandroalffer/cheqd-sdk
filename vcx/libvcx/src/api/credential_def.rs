@@ -123,12 +123,12 @@ pub extern fn vcx_credentialdef_create(command_handle: CommandHandle,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_create_with_id(command_handle: u32,
+pub extern fn vcx_credentialdef_create_with_id(command_handle: CommandHandle,
                                                source_id: *const c_char,
                                                cred_def_id: *const c_char,
                                                issuer_did: *const c_char,
                                                revocation_config: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
+                                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_handle: u32)>) -> u32 {
     info!("vcx_credentialdef_create_with_id >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);

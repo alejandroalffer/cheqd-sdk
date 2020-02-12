@@ -176,7 +176,7 @@ mod tests {
 
         let mut builder = create_keys();
 
-        let (for_did, for_verkey) = builder.version(Some(ProtocolTypes::V1)).unwrap().parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
+        let (for_did, for_verkey) = builder.version(&Some(ProtocolTypes::V1)).unwrap().parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
 
         assert_eq!(for_did, "U5LXs4U7P9msh647kToezy");
         assert_eq!(for_verkey, "FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq");
@@ -188,7 +188,7 @@ mod tests {
 
         let mut builder = create_keys();
 
-        let (for_did, for_verkey) = builder.version(Some(ProtocolTypes::V2)).unwrap().parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()).unwrap();
+        let (for_did, for_verkey) = builder.version(&Some(ProtocolTypes::V2)).unwrap().parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()).unwrap();
 
         assert_eq!(for_did, "MNepeSWtGfhnv8jLB1sFZC");
         assert_eq!(for_verkey, "C73MRnns4qUjR5N4LRwTyiXVPKPrA5q4LCT8PZzxVdt9");

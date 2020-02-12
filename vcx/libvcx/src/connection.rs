@@ -7,7 +7,7 @@ use api::VcxStateType;
 use error::prelude::*;
 use messages;
 use messages::{GeneralMessage, MessageStatusCode, ObjectWithVersion, RemoteMessageType, to_u8, SerializableObjectWithState};
-use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
+use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectDetail, RedirectionDetails};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
 use messages::send_message::SendMessageOptions;
@@ -111,7 +111,7 @@ impl Connection {
                 .agent_vk(&self.agent_vk)?
                 .public_did(self.public_did.as_ref().map(String::as_str))?
                 .thread(&Thread::new())?
-                .version(&Some(::settings::get_protocol_type().to_string()))?
+                .version(&Some(::settings::get_protocol_type()))?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot send invite"))?;
 
@@ -1255,7 +1255,6 @@ impl From<(Connection, ActorDidExchangeState)> for ConnectionV3 {
 
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::did_doc::DidDoc;
-use settings::ProtocolTypes;
 
 pub fn get_messages(handle: u32) -> VcxResult<HashMap<String, A2AMessage>> {
     CONNECTION_MAP.get_mut(handle, |connection| {

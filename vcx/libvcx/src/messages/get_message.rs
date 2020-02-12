@@ -470,7 +470,7 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
             .uid(uids)?
             .status_codes(status_codes)?
             .pairwise_dids(pairwise_dids)?
-            .version(&Some(::settings::get_protocol_type().to_string()))?
+            .version(&Some(::settings::get_protocol_type()))?
             .download_messages()?;
 
     trace!("message returned: {:?}", response);

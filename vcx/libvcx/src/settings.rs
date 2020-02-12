@@ -13,6 +13,7 @@ use serde_json::Value;
 use strum::IntoEnumIterator;
 
 use error::prelude::*;
+use indy_sys::INVALID_WALLET_HANDLE;
 
 pub static CONFIG_POOL_NAME: &str = "pool_name";
 pub static CONFIG_PROTOCOL_TYPE: &str = "protocol_type";
@@ -135,7 +136,7 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
     trace!("validate_config >>> config: {:?}", config);
 
     //Mandatory parameters
-    if ::utils::libindy::wallet::get_wallet_handle() == 0 && config.get(CONFIG_WALLET_KEY).is_none() {
+    if ::utils::libindy::wallet::get_wallet_handle() == INVALID_WALLET_HANDLE && config.get(CONFIG_WALLET_KEY).is_none() {
         return Err(VcxError::from(VcxErrorKind::MissingWalletKey));
     }
 
@@ -562,7 +563,7 @@ pub mod tests {
     fn test_validate_config_failures() {
         let invalid = "invalid";
 
-        ::utils::libindy::wallet::set_wallet_handle(0);
+        ::utils::libindy::wallet::set_wallet_handle(INVALID_WALLET_HANDLE);
         let mut config: HashMap<String, String> = HashMap::new();
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::MissingWalletKey);
 

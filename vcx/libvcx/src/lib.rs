@@ -35,8 +35,6 @@ extern crate failure;
 
 extern crate rmp_serde;
 extern crate indy_sys;
-extern crate json;
-extern crate rmpv;
 
 extern crate base64;
 

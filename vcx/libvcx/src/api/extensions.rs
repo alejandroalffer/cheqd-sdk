@@ -26,7 +26,7 @@ pub extern fn vcx_pack_message(command_handle: i32,
                                sender: *const c_char,
                                cb: Option<extern fn(xcommand_handle: i32, err: i32, jwe_data: *const u8, jwe_len: u32)>) -> i32 {
     unsafe {
-        indy_pack_message(command_handle, wallet::get_wallet_handle(), message, message_len, receiver_keys, sender, cb)
+        indy_pack_message(command_handle, wallet::get_wallet_handle().0, message, message_len, receiver_keys, sender, cb)
     }
 }
 
@@ -37,6 +37,6 @@ pub extern fn vcx_unpack_message(command_handle: i32,
                                  jwe_len: u32,
                                  cb: Option<extern fn(xcommand_handle: i32, err: i32, res_json_data : *const u8, res_json_len : u32)>) -> i32 {
     unsafe {
-        indy_unpack_message(command_handle, wallet::get_wallet_handle(), jwe_data, jwe_len, cb)
+        indy_unpack_message(command_handle, wallet::get_wallet_handle().0, jwe_data, jwe_len, cb)
     }
 }
