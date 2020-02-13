@@ -26,18 +26,20 @@ from vcx.state import State, ProofState
 # 'wallet_key': encryption key for encoding wallet
 # 'payment_method': method that will be used for payments
 provisionConfig = {
-  'agency_url':'http://localhost:8080',
-  'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
-  'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
-  'wallet_name':'faber_wallet',
-  'wallet_key':'123',
-  'payment_method': 'null',
-  'enterprise_seed':'000000000000000000000000Trustee1'
+    'agency_url': 'http://localhost:8080',
+    'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
+    'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
+    'wallet_name': 'faber_wallet',
+    'wallet_key': '123',
+    'payment_method': 'null',
+    'enterprise_seed': '000000000000000000000000Trustee1',
+    'protocol_type': '2.0',
+    'communication_method': 'aries',
+    'use_latest_protocols': True,
 }
 
 
 async def main():
-
     payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
     payment_plugin.nullpay_init()
 
@@ -47,8 +49,12 @@ async def main():
     # Set some additional configuration options specific to faber
     config['institution_name'] = 'Faber'
     config['institution_logo_url'] = 'http://robohash.org/234'
-    config['genesis_path'] = 'genesis.txn'
-    
+    config['genesis_path'] = 'docker.txn'
+    config['payment_method'] = 'null'
+    config['protocol_type'] = '2.0'
+    config['communication_method'] = 'aries'
+    config['use_latest_protocols'] = 'true'
+
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
 
@@ -141,3 +147,4 @@ async def main():
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
+    sleep(1)

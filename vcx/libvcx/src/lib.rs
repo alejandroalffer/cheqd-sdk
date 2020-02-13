@@ -40,6 +40,8 @@ extern crate rmp_serde;
 extern crate json;
 extern crate rmpv;
 
+extern crate base64;
+
 #[macro_use]
 pub mod utils;
 pub mod settings;
@@ -59,6 +61,8 @@ pub mod credential;
 pub mod object_cache;
 pub mod disclosed_proof;
 pub mod wallet_backup;
+
+pub mod v3;
 
 #[allow(unused_imports)]
 #[cfg(test)]

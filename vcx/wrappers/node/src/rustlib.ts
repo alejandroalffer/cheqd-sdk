@@ -102,6 +102,7 @@ export interface IFFIEntryPoint {
   vcx_wallet_export: (commandId: number, importPath: string, backupKey: string, cb: any) => number,
   vcx_wallet_validate_payment_address: (commandId: number, paymentAddress: string, cb: any) => number,
   vcx_update_institution_info: (institutionName: string, institutionLogoUrl: string) => number,
+  vcx_update_webhook_url: (webhookUrl: string) => number,
   vcx_pool_set_handle: (handle: number) => void,
   vcx_endorse_transaction: (commandId: number, transaction: string, cb: any) => number,
 
@@ -179,6 +180,9 @@ export interface IFFIEntryPoint {
   vcx_disclosed_proof_retrieve_credentials: (commandId: number, handle: number, cb: any) => number,
   vcx_disclosed_proof_generate_proof: (commandId: number, handle: number, selectedCreds: string,
                                        selfAttestedAttrs: string, cb: any) => number,
+  vcx_disclosed_proof_decline_presentation_request: (commandId: number, handle: number, connectionHandle: number,
+                                                     reason: string | undefined | null,
+                                                     proposal: string | undefined | null, cb: any) => number,
 
   // credential
   vcx_credential_create_with_offer: (commandId: number, sourceId: string, offer: string, cb: any) => number,
@@ -248,6 +252,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_agent_provision_async: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_agent_update_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_update_institution_info: [FFI_ERROR_CODE, [FFI_STRING_DATA, FFI_STRING_DATA]],
+  vcx_update_webhook_url: [FFI_ERROR_CODE, [FFI_STRING_DATA]],
   vcx_mint_tokens: [FFI_VOID, [FFI_STRING_DATA, FFI_STRING_DATA]],
   vcx_messages_download: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
@@ -381,6 +386,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_disclosed_proof_retrieve_credentials: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_disclosed_proof_generate_proof: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_disclosed_proof_decline_presentation_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE,
+    FFI_CONNECTION_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
 
   // credential
   vcx_credential_create_with_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,

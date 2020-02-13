@@ -2,7 +2,6 @@ use settings;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV2 };
 use utils::httpclient;
-use utils::constants::{CREATE_KEYS_RESPONSE, CREATE_KEYS_V2_RESPONSE};
 use error::prelude::*;
 use settings::ProtocolTypes;
 
@@ -89,10 +88,7 @@ impl CreateKeyBuilder {
         trace!("CreateKeyMsg::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            match self.version {
-                settings::ProtocolTypes::V1 => return self.parse_response(&CREATE_KEYS_RESPONSE.to_vec()),
-                settings::ProtocolTypes::V2 => return self.parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()),
-            }
+            return Ok((String::from("U5LXs4U7P9msh647kToezy"), String::from("FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq")));
         }
 
         let data = self.prepare_request()?;
@@ -132,7 +128,7 @@ impl CreateKeyBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),
             A2AMessage::Version2(A2AMessageV2::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),
-            _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
+            _ => Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
         }
     }
 }
@@ -140,7 +136,8 @@ impl CreateKeyBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
+    use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED, CREATE_KEYS_V2_RESPONSE};
+    use utils::constants::CREATE_KEYS_RESPONSE;
     use utils::libindy::signus::create_and_store_my_did;
     use messages::create_keys;
 

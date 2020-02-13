@@ -72,6 +72,15 @@ public class DisclosedProofApiTest {
     }
 
     @Test
+    @DisplayName("decline request")
+    void declineRequest() throws VcxException, ExecutionException, InterruptedException {
+        int proofHandle = TestHelper.getResultFromFuture(DisclosedProofApi.proofCreateWithRequest(sourceId, proofRequest));
+        Assertions.assertThrows(InvalidConnectionHandleException.class, ()-> {
+            TestHelper.getResultFromFuture(DisclosedProofApi.proofDeclineRequest(proofHandle, 0, null, null));
+        });
+    }
+
+    @Test
     @DisplayName("get reject message")
     void getRejectMessage() throws VcxException, ExecutionException, InterruptedException {
         int proofHandle = TestHelper.getResultFromFuture(DisclosedProofApi.proofCreateWithRequest(sourceId, proofRequest));

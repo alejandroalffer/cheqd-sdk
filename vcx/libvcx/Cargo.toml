@@ -1,7 +1,7 @@
 [package]
 
 name = "libvcx"
-version = "0.4.2"
+version = "0.5.0"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 publish = false
 description = "This is the official SDK for Evernym's VCX"
@@ -22,6 +22,7 @@ pool_tests = []
 agency = []
 agency_v2 = []
 wallet_backup = []
+aries = []
 # Causes the build to fail on all warnings
 fatal_warnings = []
 
@@ -52,8 +53,8 @@ base64 = "0.8.0"
 openssl = "0.10"
 hex = "0.3.2"
 num-traits = "0.2.0"
-indy = { version = "1.12.0", path = "../../wrappers/rust/" }
-indy-sys = { version = "1.12.0", path = "../../wrappers/rust/indy-sys/" }
+indy = { version = "1.13.0", path = "../../wrappers/rust/" }
+indy-sys = { version = "1.13.0", path = "../../wrappers/rust/indy-sys/" }
 log-panics = "2.0.0"
 tokio-threadpool = "0.1.6"
 futures = "0.1.23"
@@ -78,7 +79,7 @@ dirs = "1.0.4"
 [package.metadata.deb]
 maintainer = "Evernym, Inc."
 copyright = "2018, Evernym Inc."
-depends = "$auto, libindy (=1.12.0)"
+depends = "$auto, libindy (=1.13.0)"
 extended-description = """\
 This is Evernym's SDK for managing Verifiable Credential eXchange against an Indy network. For specific instructions on building see the README in the corresponding github repo https://github.com/evernym/sdk"""
 section = "admin"

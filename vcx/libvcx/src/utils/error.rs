@@ -111,8 +111,12 @@ pub static CREATE_WALLET_BACKUP: Error = Error{ code_num: 1096, message: "Failed
 pub static RETRIEVE_EXPORTED_WALLET: Error = Error{ code_num: 1097, message: "Failed to retrieve exported wallet"};
 pub static INVALID_MSG_VERSION: Error = Error{ code_num: 1098, message: "Invalid A2A Message version"};
 pub static RETRIEVE_DEAD_DROP: Error = Error{ code_num: 1099, message: "Failed to retrieve Dead Drop payload"};
-pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1100, message: "Invalid redirect details structure"};
-pub static MAX_BACKUP_SIZE: Error = Error{code_num: 1101, message: "Cloud Backup exceeds max size limit"};
+pub static INVALID_ATTACHMENT_ENCODING: Error = Error { code_num: 1100, message: "Failed to decode attachment"};
+pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1101, message: "This type of attachment can not be used"};
+pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1102, message: "Unknown mime type"};
+pub static ACTION_NOT_SUPPORTED: Error = Error { code_num: 1103, message: "Action is not supported"};
+pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1104, message: "Invalid redirect details structure"};
+pub static MAX_BACKUP_SIZE: Error = Error{code_num: 1105, message: "Cloud Backup exceeds max size limit"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -213,6 +217,10 @@ lazy_static! {
         insert_c_message(&mut m, &UKNOWN_LIBINDY_TRANSACTION_REJECTION);
         insert_c_message(&mut m, &MISSING_PAYMENT_METHOD);
         insert_c_message(&mut m, &LOGGING_ERROR);
+        insert_c_message(&mut m, &INVALID_ATTACHMENT_ENCODING);
+        insert_c_message(&mut m, &UNKNOWN_ATTACHMENT_ENCODING);
+        insert_c_message(&mut m, &UNKNOWN_MIME_TYPE);
+        insert_c_message(&mut m, &ACTION_NOT_SUPPORTED);
         insert_c_message(&mut m, &INVALID_REDIRECT_DETAILS);
 
         m
@@ -239,6 +247,7 @@ fn insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
 
 }
 
+#[derive(Clone, Copy)]
 pub struct Error {
     pub code_num: u32,
     pub message: &'static str

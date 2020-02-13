@@ -18,9 +18,9 @@ variables:
   libsovtokenVersion: "1.0.3"
   libsovtokenVersionExtra: "13"
   indyBranch: 'stable'
-  libindyVersion: "1.12.0"
+  libindyVersion: "1.13.0"
   nullBranch: 'stable'
-  libnullVersion: "1.12.0"
+  libnullVersion: "1.13.0"
   androidSovtokenArtifact: "libsovtoken_1.0.3-201910091207-1c7ff32_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.3-201910091236-1c7ff32_all.zip"
 
@@ -579,11 +579,12 @@ package-node-wrapper-from-latest:
 ## - Jobs : Publish - ##
 publish-android:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-android:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/vcx-android:latest
   extends: .tags_micro
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - vcx-aries-support
   script:
     - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
     - export vcxRevision=$(git rev-parse --short HEAD)
@@ -595,11 +596,12 @@ publish-android:
 
 publish-ios:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/vcx-libindy:latest
   extends: .tags_micro
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - vcx-aries-support
   dependencies:
     - build-ios
   script:
@@ -612,11 +614,12 @@ publish-ios:
 
 publish-java-wrapper:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-java:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/vcx-java:latest
   extends: .tags_micro
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - vcx-aries-support
   script:
     - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
     - sudo chmod +x vcx/wrappers/java/ci/publishJar.sh
@@ -624,7 +627,7 @@ publish-java-wrapper:
 
 publish-packages:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/vcx-libindy:latest
   extends: .tags_micro
   only:
     refs:
