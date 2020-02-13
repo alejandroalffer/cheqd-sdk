@@ -16,13 +16,13 @@ variables:
   staticLibVersion: "20190607"
   rustVersion: "1.37.0"
   libsovtokenVersion: "1.0.5"
-  libsovtokenVersionExtra: "13"
+  libsovtokenVersionExtra: "15"
   indyBranch: 'stable'
   libindyVersion: "1.14.0"
   nullBranch: 'stable'
   libnullVersion: "1.14.0"
-  androidSovtokenArtifact: "libsovtoken_1.0.3-201910091207-1c7ff32_all.zip"
-  iosSovtokenArtifact: "libsovtoken_1.0.3-201910091236-1c7ff32_all.zip"
+  androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
+  iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
 
 ## - Anchors - ##
 .tags_micro:
