@@ -18,9 +18,9 @@ variables:
   libsovtokenVersion: "1.0.5"
   libsovtokenVersionExtra: "15"
   indyBranch: 'stable'
-  libindyVersion: "1.14.0"
+  libindyVersion: "1.14.1"
   nullBranch: 'stable'
-  libnullVersion: "1.14.0"
+  libnullVersion: "1.14.1"
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
 
