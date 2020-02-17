@@ -6,7 +6,6 @@ use messages::payload::Payloads;
 use utils::httpclient;
 use error::prelude::*;
 use settings::ProtocolTypes;
-use utils::constants::DEFAULT_GET_MSG_VERSION;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]

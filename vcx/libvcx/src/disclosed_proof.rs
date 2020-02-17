@@ -17,7 +17,7 @@ use messages::get_message::Message;
 use error::prelude::*;
 use settings;
 use utils::{httpclient, error};
-use utils::constants::{DEFAULT_SERIALIZE_VERSION, CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF, DEFAULT_REJECTED_PROOF};
+use utils::constants::{CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF, DEFAULT_REJECTED_PROOF};
 use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, RevState};
 use utils::libindy::anoncreds;
 use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};

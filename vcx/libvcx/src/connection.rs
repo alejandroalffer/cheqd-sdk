@@ -1,25 +1,25 @@
+use std::collections::HashMap;
+
 use rmp_serde;
 use serde_json;
 use serde_json::Value;
-use std::collections::HashMap;
 
 use api::VcxStateType;
 use error::prelude::*;
 use messages;
-use messages::{GeneralMessage, MessageStatusCode, ObjectWithVersion, RemoteMessageType, to_u8, SerializableObjectWithState};
-use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectDetail, RedirectionDetails};
+use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, SerializableObjectWithState};
+use messages::invite::{InviteDetail, RedirectDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectionDetails};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
 use messages::send_message::SendMessageOptions;
 use messages::get_message::{Message, MessagePayload};
 use object_cache::ObjectCache;
 use settings;
-use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::error;
-use utils::json::KeyMatch;
-use utils::json::mapped_key_rewrite;
-use utils::libindy::crypto;
 use utils::libindy::signus::create_my_did;
+use utils::libindy::crypto;
+use utils::json::mapped_key_rewrite;
+use utils::json::KeyMatch;
 
 use v3::handlers::connection::connection::Connection as ConnectionV3;
 use v3::handlers::connection::states::ActorDidExchangeState;
@@ -810,7 +810,7 @@ impl Connection {
 
         match payload {
             MessagePayload::V1(payload) => {
-                let vec = to_u8(payload);
+                let vec = messages::to_u8(payload);
                 let json: Value = serde_json::from_slice(&vec[..])
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;
 
@@ -873,7 +873,7 @@ impl Connection {
 
         match payload {
             MessagePayload::V1(payload) => {
-                let vec = to_u8(payload);
+                let vec = messages::to_u8(payload);
                 let json: Value = serde_json::from_slice(&vec[..])
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;
 
