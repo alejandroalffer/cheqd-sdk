@@ -382,8 +382,6 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_CALLBACK_PTR]],
   vcx_disclosed_proof_reject_proof: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],
-  vcx_disclosed_proof_reject_proof: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
-    FFI_CALLBACK_PTR]],
   vcx_disclosed_proof_get_proof_msg: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_disclosed_proof_get_reject_msg: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_disclosed_proof_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
@@ -453,7 +451,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_schema_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]],
   vcx_schema_get_payment_txn: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
   vcx_schema_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
-  vcx_schema_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]]
+  vcx_schema_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
 
 }
 

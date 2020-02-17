@@ -124,12 +124,12 @@ export async function getLedgerAuthorAgreement (): Promise<string> {
       (resolve, reject) => Callback(
         'void',
         ['uint32','uint32','string'],
-        (xhandle: number, err: number, _agreement: string) => {
+        (xhandle: number, err: number, agreement: string) => {
           if (err) {
             reject(err)
             return
           }
-          resolve(_agreement)
+          resolve(agreement)
         })
     )
     return agreement
