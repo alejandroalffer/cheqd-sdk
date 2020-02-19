@@ -6,7 +6,6 @@ use std::ptr;
 use connection::*;
 use error::prelude::*;
 use messages::get_message::Message;
-use messages::{MessageStatusCode, RemoteMessageType};
 use indy_sys::CommandHandle;
 
 /*
