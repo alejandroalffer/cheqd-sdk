@@ -58,12 +58,13 @@ RUN /tmp/installCert.sh
 # Add sovrin to sources.list
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 && \
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" && \
-    add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master"
+    add-apt-repository "deb https://repo.sovrin.org/sdk/deb bionic stable" && \
+    add-apt-repository "deb https://repo.sovrin.org/sdk/deb bionic master"
 
 # these are default values if they are not passed into the environment with
 # the --build-arg flag from 'docker build' command.
-ARG LIBINDY_VER=1.14.0
-ARG LIBNULL_VER=1.14.0
+ARG LIBINDY_VER=1.14.1
+ARG LIBNULL_VER=1.14.1
 
 RUN apt-get update && apt-get install -y \
     libindy=${LIBINDY_VER} \
