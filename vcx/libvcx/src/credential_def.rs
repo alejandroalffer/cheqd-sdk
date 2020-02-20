@@ -462,7 +462,8 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_cred_def_without_rev_will_have_no_rev_id() {
-        init!("ledger_zero_fees");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let (_, handle) = create_cred_def_real(false);
         let rev_reg_id = get_rev_reg_id(handle).unwrap();
         assert!(rev_reg_id.is_none());
@@ -499,7 +500,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_revocable_fails_with_no_tails_file() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -665,7 +666,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_endorse_cred_def_with_revocation() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let (_, schema_id, did, revocation_details) = prepare_create_cred_def_data(true);
 

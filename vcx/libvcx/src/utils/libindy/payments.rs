@@ -554,7 +554,7 @@ pub fn add_new_did(role: Option<&str>) -> (String, String) {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::devsetup::{SetupMocks, SetupDefaults, SetupLibraryWalletPool};
+    use utils::devsetup::{SetupMocks, SetupDefaults, SetupLibraryWalletPool, SetupLibraryWalletPoolZeroFees};
 
     static ZERO_FEES: &str = r#"{"0":0, "1":0, "101":0, "10001":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 
@@ -659,7 +659,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_wallet_token_info_real() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let wallet_info = get_wallet_token_info().unwrap();
         assert_eq!(wallet_info.balance, 50000000000);
@@ -790,7 +790,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_pay_for_txn_fails_with_insufficient_tokens_in_wallet() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         mint_tokens_and_set_fees(Some(0), Some(0), Some(r#"{"101":50000000001}"#.to_string()), None).unwrap();
 
@@ -805,7 +805,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_payment_request() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let payment_address = build_test_address("2ZrAm5Jc3sP4NAXMQbaWzDxEa12xxJW3VgWjbbPtMPQCoznJyS");
         let payment_address = payment_address.as_str();
@@ -834,7 +834,7 @@ pub mod tests {
     #[test]
     #[ignore]
     fn test_build_payment_request_bogus_payment_method() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let payment_address = "pay:bogus:123";
         let result_from_paying = pay_a_payee(0, payment_address);
@@ -847,7 +847,7 @@ pub mod tests {
     #[ignore] // FIXME: there are no auth rules for XFER transaction on the ledger.
     #[test]
     fn test_fees_transferring_tokens() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let payment_address = build_test_address("2ZrAm5Jc3sP4NAXMQbaWzDxEa12xxJW3VgWjbbPtMPQCoznJyS");
         let payment_address = payment_address.as_str();
@@ -930,7 +930,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_custom_mint_tokens() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         //50000000000 comes from setup_ledger_env
         token_setup(Some(4), Some(1430000), false);
@@ -943,7 +943,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_empty_fees() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let fees = get_ledger_fees().unwrap();
         println!("fees: {}", fees);
@@ -953,7 +953,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_zero_fees() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         mint_tokens_and_set_fees(Some(0), Some(0), Some("{\"101\":0, \"102\":0}".to_string()), None).unwrap();
         let fees = get_ledger_fees().unwrap();

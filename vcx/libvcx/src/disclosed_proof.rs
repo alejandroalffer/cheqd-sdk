@@ -1137,7 +1137,8 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieve_credentials() {
-        init!("ledger_zero_fees");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
         let (_, _, req, _) = ::utils::libindy::anoncreds::tests::create_proof();
 
@@ -1153,7 +1154,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieve_credentials_emtpy() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let mut req = json!({
            "nonce":"123432421212",
@@ -1180,7 +1181,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_case_for_proof_req_doesnt_matter_for_retrieve_creds() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -1413,7 +1414,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_proof() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
@@ -1469,7 +1470,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_self_attested_proof() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let mut proof_req = ProofRequestMessage::create();
         let indy_proof_req = json!({
@@ -1506,7 +1507,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_proof_with_predicates() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
@@ -1600,7 +1601,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_empty() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         // empty vector
         assert_eq!(build_rev_states_json(Vec::new().as_mut()).unwrap(), "{}".to_string());
@@ -1623,7 +1624,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_no_cache() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let attrs = r#"["address1","address2","city","state","zip"]"#;
         let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
@@ -1662,7 +1663,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_cached() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let current_timestamp = time::get_time().sec as u64;
         let cached_rev_state = "{\"some\": \"json\"}".to_string();
@@ -1715,7 +1716,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_with_older_cache() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let current_timestamp = time::get_time().sec as u64;
         let cached_timestamp = current_timestamp - 100;
@@ -1769,7 +1770,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_with_newer_cache() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let current_timestamp = time::get_time().sec as u64;
         let cached_timestamp = current_timestamp + 100;
