@@ -26,7 +26,7 @@ use self::invite::{
     RedirectConnectionMessageDetails, ConnectionRequestRedirect, ConnectionRequestRedirectResponse,
     AcceptInviteBuilder, RedirectConnectionBuilder, ConnectionRequestAnswer, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse
 };
-use self::get_message::{GetMessagesBuilder, GetMessagesReq, GetMessages, GetMessagesResponse, MessagesByConnections};
+use self::get_message::{GetMessagesBuilder, GetMessages, GetMessagesResponse, MessagesByConnections};
 use self::send_message::SendMessageBuilder;
 use self::update_message::{UpdateMessageStatusByConnections, UpdateMessageStatusByConnectionsResponse};
 use self::proofs::proof_request::ProofRequestMessage;
@@ -40,7 +40,6 @@ use error::prelude::*;
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
 use settings::ProtocolTypes;
-use messages::create_key::CreateKeyReq;
 use messages::deaddrop::retrieve::{RetrieveDeadDrop, RetrievedDeadDropResult, RetrieveDeadDropBuilder};
 
 #[derive(Debug, Serialize)]
@@ -234,7 +233,7 @@ pub enum A2AMessageV2 {
     CreateAgentResponse(CreateAgentResponse),
 
     /// PW Connection
-    CreateKey(CreateKeyReq),
+    CreateKey(CreateKey),
     CreateKeyResponse(CreateKeyResponse),
     ConnectionRequest(ConnectionRequest),
     ConnectionRequestResponse(ConnectionRequestResponse),
@@ -242,7 +241,7 @@ pub enum A2AMessageV2 {
     SendRemoteMessage(SendRemoteMessage),
     SendRemoteMessageResponse(SendRemoteMessageResponse),
 
-    GetMessages(GetMessagesReq),
+    GetMessages(GetMessages),
     GetMessagesResponse(GetMessagesResponse),
     GetMessagesByConnections(GetMessages),
     GetMessagesByConnectionsResponse(MessagesByConnections),
@@ -319,7 +318,7 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map_err(de::Error::custom)
             }
             "CREATE_KEY" => {
-                CreateKeyReq::deserialize(value)
+                CreateKey::deserialize(value)
                     .map(A2AMessageV2::CreateKey)
                     .map_err(de::Error::custom)
             }
@@ -329,7 +328,7 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map_err(de::Error::custom)
             }
             "GET_MSGS" => {
-                GetMessagesReq::deserialize(value)
+                GetMessages::deserialize(value)
                     .map(A2AMessageV2::GetMessages)
                     .map_err(de::Error::custom)
             }
