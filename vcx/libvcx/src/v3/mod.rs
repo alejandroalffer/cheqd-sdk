@@ -12,6 +12,8 @@ pub mod test {
     use utils::devsetup::tests::{init_plugin, config_with_wallet_handle};
     use messages::agent_utils::connect_register_provision;
     use utils::libindy::wallet::*;
+    use v3::messages::a2a::A2AMessage;
+    use indy_sys::WalletHandle;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -19,6 +21,7 @@ pub mod test {
 
     pub mod setup {
         use settings::{CONFIG_WALLET_KEY_DERIVATION, DEFAULT_WALLET_KEY};
+        use indy_sys::WalletHandle;
 
         pub fn base_config() -> ::serde_json::Value {
             json!({
@@ -55,7 +58,7 @@ pub mod test {
 
         pub struct AgencyModeSetup {
             pub wallet_name: String,
-            pub wallet_handle: i32,
+            pub wallet_handle: WalletHandle,
         }
 
         impl AgencyModeSetup {
@@ -111,9 +114,18 @@ pub mod test {
         }
     }
 
+    fn download_message(did: String) -> ::messages::get_message::Message {
+        let mut messages = ::messages::get_message::download_messages(Some(vec![did]), Some(vec![String::from("MS-103")]), None).unwrap();
+        assert_eq!(1, messages.len());
+        let mut messages = messages.pop().unwrap();
+        assert_eq!(1, messages.msgs.len());
+        let message = messages.msgs.pop().unwrap();
+        message
+    }
+
     pub struct Faber {
         pub wallet_name: String,
-        pub wallet_handle: i32,
+        pub wallet_handle: WalletHandle,
         pub connection_handle: u32,
         pub config: String,
         pub schema_handle: u32,
@@ -202,7 +214,7 @@ pub mod test {
         pub fn create_schema(&mut self) {
             self.activate();
             let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
-            let data = r#"["name","date","degree"]"#.to_string();
+            let data = r#"["name","date","degree", "empty_param"]"#.to_string();
             let name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
             let version: String = String::from("1.0");
 
@@ -221,11 +233,11 @@ pub mod test {
         }
 
         pub fn create_presentation_request(&self) -> u32 {
-            let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
             let requested_attrs = json!([
                 {"name": "name"},
                 {"name": "date"},
-                {"name": "degree"}
+                {"name": "degree"},
+                {"name": "empty_param", "restrictions": {"attr::empty_param::value": ""}}
             ]).to_string();
 
             ::proof::create_proof(String::from("alice_degree"),
@@ -251,6 +263,35 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
+        pub fn update_state_with_message(&self, expected_state: u32) -> A2AMessage {
+            self.activate();
+            let did = ::connection::get_pw_did(self.connection_handle).unwrap();
+            let message = download_message(did);
+
+            let a2a_message = ::connection::decode_message(self.connection_handle, message.clone()).unwrap();
+
+            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
+            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+
+            a2a_message
+        }
+
+        pub fn ping(&self) {
+            self.activate();
+            ::connection::send_ping(self.connection_handle, None).unwrap();
+        }
+
+        pub fn discovery_features(&self) {
+            self.activate();
+            ::connection::send_discovery_features(self.connection_handle, None, None).unwrap();
+        }
+
+        pub fn connection_info(&self) -> ::serde_json::Value {
+            self.activate();
+            let details = ::connection::get_invite_details(self.connection_handle, false).unwrap();
+            ::serde_json::from_str(&details).unwrap()
+        }
+
         pub fn offer_credential(&mut self) {
             self.activate();
 
@@ -259,6 +300,7 @@ pub mod test {
                 "name": "alice",
                 "date": "05-2018",
                 "degree": "maths",
+                "empty_param": ""
             }).to_string();
 
             self.credential_handle = ::issuer_credential::issuer_credential_create(self.cred_def_handle,
@@ -316,7 +358,7 @@ pub mod test {
 
     pub struct Alice {
         pub wallet_name: String,
-        pub wallet_handle: i32,
+        pub wallet_handle: WalletHandle,
         pub connection_handle: u32,
         pub config: String,
         pub credential_handle: u32,
@@ -371,6 +413,19 @@ pub mod test {
             self.activate();
             ::connection::update_state(self.connection_handle, None).unwrap();
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+        }
+
+        pub fn update_state_with_message(&self, expected_state: u32) -> A2AMessage {
+            self.activate();
+            let did = ::connection::get_pw_did(self.connection_handle).unwrap();
+            let message = download_message(did);
+
+            let a2a_message = ::connection::decode_message(self.connection_handle, message.clone()).unwrap();
+
+            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
+            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+
+            a2a_message
         }
 
         pub fn accept_offer(&mut self) {
@@ -431,6 +486,28 @@ pub mod test {
 
             self.presentation_handle = ::disclosed_proof::create_proof("degree", &presentation_request_json).unwrap();
             ::disclosed_proof::decline_presentation_request(self.presentation_handle, self.connection_handle, Some(String::from("reason")), None).unwrap();
+        }
+
+        pub fn propose_presentation(&mut self) {
+            self.activate();
+            let presentation_request_json = self.get_proof_request_messages();
+
+            self.presentation_handle = ::disclosed_proof::create_proof("degree", &presentation_request_json).unwrap();
+            let proposal_data = json!({
+                "attributes": [
+                    {
+                        "name": "first name"
+                    }
+                ],
+                "predicates": [
+                    {
+                        "name": "age",
+                        "predicate": ">",
+                        "threshold": 18
+                    }
+                ]
+            });
+            ::disclosed_proof::decline_presentation_request(self.presentation_handle, self.connection_handle, None, Some(proposal_data.to_string())).unwrap();
         }
 
         pub fn ensure_presentation_verified(&self) {
@@ -495,7 +572,51 @@ pub mod test {
         // Decline Presentation
         faber.request_presentation();
         alice.decline_presentation_request();
-        faber.update_proof_state(4, 2);
+        faber.update_proof_state(0, 2);
+
+        // Propose Presentation
+        faber.request_presentation();
+        alice.propose_presentation();
+        faber.update_proof_state(0, 2);
+    }
+
+    #[cfg(feature = "aries")]
+    #[test]
+    fn aries_demo_update_state_with_message_flow() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Connection
+        let invite = faber.create_invite();
+        alice.accept_invite(&invite);
+
+        faber.update_state_with_message(3);
+        alice.update_state_with_message(4);
+        faber.update_state_with_message(4);
+
+        // Ping
+        faber.ping();
+
+        let message = alice.update_state_with_message(4);
+        assert_match!(A2AMessage::Ping(_), message);
+
+        let message = faber.update_state_with_message(4);
+        assert_match!(A2AMessage::PingResponse(_), message);
+
+        // Discovery Features
+        faber.discovery_features();
+
+        let message = alice.update_state_with_message(4);
+        assert_match!(A2AMessage::Query(_), message);
+
+        let message = faber.update_state_with_message(4);
+        assert_match!(A2AMessage::Disclose(_), message);
+
+        let faber_connection_info = faber.connection_info();
+        assert!(faber_connection_info["protocols"].as_array().unwrap().len() > 0);
     }
 }
 

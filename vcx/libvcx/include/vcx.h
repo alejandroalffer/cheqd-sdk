@@ -232,7 +232,7 @@ vcx_error_t vcx_connection_serialize(vcx_command_handle_t command_handle,
                                   vcx_connection_handle_t connection_handle,
                                   void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the connection and updates the the state attribute
+// Checks for any state change in the connection and updates the state attribute
 //
 // #Params
 // command_handle: command handle to map callback to user context.
@@ -246,6 +246,53 @@ vcx_error_t vcx_connection_serialize(vcx_command_handle_t command_handle,
 vcx_error_t vcx_connection_update_state(vcx_command_handle_t command_handle,
                                      vcx_connection_handle_t connection_handle,
                                      void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// comment: (Optional) human-friendly description of the ping.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_send_ping(vcx_u32_t command_handle,
+                                     vcx_connection_handle_t connection_handle,
+                                     const char* comment,
+                                     void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// query: (Optional) query string to match against supported message types.
+///
+/// comment: (Optional) human-friendly description of the query.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_send_discovery_features(vcx_u32_t command_handle,
+                                                   vcx_connection_handle_t connection_handle,
+                                                   const char* query,
+                                                   const char* comment,
+                                                   void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 // Takes the Connection object and returns callers pw_did associated with this connection
 //
@@ -457,7 +504,7 @@ vcx_error_t vcx_credential_serialize(vcx_command_handle_t command_handle,
                                   vcx_credential_handle_t handle,
                                   void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the credential and updates the the state attribute.  If it detects a credential it
+// Checks for any state change in the credential and updates the state attribute.  If it detects a credential it
 // will store the credential in the wallet and update the state.
 //
 // #Params
@@ -643,7 +690,7 @@ vcx_error_t vcx_credentialdef_serialize(vcx_command_handle_t command_handle,
                                      vcx_credential_handle_t credentialdef_handle,
                                      void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-/// Checks if credential definition is published on the Ledger and updates the the state
+/// Checks if credential definition is published on the Ledger and updates the state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -989,7 +1036,7 @@ vcx_error_t vcx_disclosed_proof_serialize(vcx_command_handle_t command_handle,
                                           vcx_disclosed_proof_handle_t proof_handle,
                                           void (*cb)(vcx_command_handle_t, vcx_error_t, const char *));
 
-// Checks for any state change in the disclosed proof and updates the the state attribute
+// Checks for any state change in the disclosed proof and updates the state attribute
 //
 // #Params
 // command_handle: command handle to map callback to user context.
@@ -1180,7 +1227,7 @@ vcx_error_t vcx_issuer_credential_serialize(vcx_command_handle_t command_handle,
                                          vcx_issuer_credential_handle_t credential_handle,
                                          void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the credential and updates the the state attribute
+// Checks for any state change in the credential and updates the state attribute
 //
 // #Params
 // command_handle: command handle to map callback to user context.
@@ -1624,7 +1671,7 @@ vcx_error_t vcx_schema_serialize(vcx_command_handle_t command_handle,
                               vcx_schema_handle_t schema_handle,
                               void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-/// Checks if schema is published on the Ledger and updates the the state
+/// Checks if schema is published on the Ledger and updates the state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

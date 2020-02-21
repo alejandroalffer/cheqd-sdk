@@ -4,9 +4,8 @@ use messages::get_message::MessagePayload;
 use settings::{ProtocolTypes, get_protocol_type};
 use utils::libindy::crypto;
 use error::prelude::*;
-
-use serde_json::Value;
 use messages::thread::Thread;
+use serde_json::Value;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(untagged)]
@@ -112,7 +111,7 @@ impl Payloads {
         Ok(my_payload)
     }
 
-    pub fn decrypt_payload_v2(my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV2> {
+    pub fn decrypt_payload_v2(_my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV2> {
         let payload = ::serde_json::to_vec(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
@@ -137,7 +136,7 @@ impl Payloads {
         Ok(my_payload)
     }
 
-    pub fn decrypt_payload_v12(my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV12> {
+    pub fn decrypt_payload_v12(_my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV12> {
         let payload = ::serde_json::to_vec(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 

@@ -7,15 +7,29 @@ import { ISerializedData } from './common'
 import { VCXBase } from './vcx-base'
 import { PaymentManager } from './vcx-payment-txn'
 
+/**
+ * @interface Interface that represents the parameters for `Schema.create` function.
+ * @description
+ */
 export interface ISchemaCreateData {
+  // Enterprise's personal identification for the user.
   sourceId: string,
+  // list of attributes that will make up the schema (the number of attributes should be less or equal than 125)
   data: ISchemaAttrs,
+  // future use (currently uses any address in the wallet)
   paymentHandle: number
 }
 
+/**
+ * @interface Interface that represents the parameters for `Schema.prepareForEndorser` function.
+ * @description
+ */
 export interface ISchemaPrepareForEndorserData {
+  // Enterprise's personal identification for the user.
   sourceId: string,
+  // list of attributes that will make up the schema (the number of attributes should be less or equal than 125)
   data: ISchemaAttrs,
+  // DID of the Endorser that will submit the transaction.
   endorser: string
 }
 
@@ -23,7 +37,7 @@ export interface ISchemaPrepareForEndorserData {
  * @interface
  * @description
  * name: name of schema
- * version:
+ * version: version of the scheme
  * attrNames: a list of named attribtes inteded to be added to the schema
  * (the number of attributes should be less or equal than 125)
  */
@@ -67,7 +81,7 @@ export interface ISchemaLookupData {
 
 export enum SchemaState {
   Built = 0,
-  Published = 1
+  Published = 1,
 }
 
 // tslint:disable max-classes-per-file
@@ -77,7 +91,7 @@ export class SchemaPaymentManager extends PaymentManager {
 
 export class Schema extends VCXBase<ISchemaSerializedData> {
   /**
-   * Builds a generic Schema object
+   * Creates a new Schema object that is written to the ledger
    *
    * Example:
    * ```
@@ -116,7 +130,7 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
   }
 
   /**
-   * Builds a generic Schema object that will be published by Endorser later.
+   * Builds a new Schema object that will be published by Endorser later.
    *
    * Example:
    * ```
@@ -302,8 +316,55 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
   }
 
   /**
+   * Get the ledger ID of the object
    *
-   * Checks if schema is published on the Ledger and updates the the state
+   * Example:
+   * ```
+   * data: {
+   *     attrNames: [
+   *       'attr1',
+   *       'attr2'
+   *     ],
+   *     name: 'Schema',
+   *     version: '1.0.0'
+   *   },
+   *   paymentHandle: 0,
+   *   sourceId: 'testSchemaSourceId'
+   * }
+   * schema1 = await Schema.create(data)
+   * id1 = await schema1.getSchemaId()
+   * ```
+   */
+  protected async getSchemaId (): Promise<string> {
+    try {
+      const schemaId = await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_schema_get_schema_id(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xcommandHandle: number, err: number, schemaIdVal: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              this._schemaId = schemaIdVal
+              resolve(schemaIdVal)
+            })
+        )
+      return schemaId
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   *
+   * Checks if schema is published on the Ledger and updates the state
    *
    * Example:
    * ```
@@ -364,53 +425,6 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
           })
       )
       return stateRes
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
-
-  /**
-   * Get the ledger ID of the object
-   *
-   * Example:
-   * ```
-   * data: {
-   *     attrNames: [
-   *       'attr1',
-   *       'attr2'
-   *     ],
-   *     name: 'Schema',
-   *     version: '1.0.0'
-   *   },
-   *   paymentHandle: 0,
-   *   sourceId: 'testSchemaSourceId'
-   * }
-   * schema1 = await Schema.create(data)
-   * id1 = await schema1.getSchemaId()
-   * ```
-   */
-  protected async getSchemaId (): Promise<string> {
-    try {
-      const schemaId = await createFFICallbackPromise<string>(
-          (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_schema_get_schema_id(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
-          },
-          (resolve, reject) => ffi.Callback(
-            'void',
-            ['uint32', 'uint32', 'string'],
-            (xcommandHandle: number, err: number, schemaIdVal: string) => {
-              if (err) {
-                reject(err)
-                return
-              }
-              this._schemaId = schemaIdVal
-              resolve(schemaIdVal)
-            })
-        )
-      return schemaId
     } catch (err) {
       throw new VCXInternalError(err)
     }

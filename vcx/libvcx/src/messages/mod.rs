@@ -12,6 +12,7 @@ pub mod message_type;
 pub mod payload;
 pub mod wallet_backup;
 pub mod deaddrop;
+#[macro_use]
 pub mod thread;
 
 use std::u8;
@@ -25,7 +26,7 @@ use self::invite::{
     RedirectConnectionMessageDetails, ConnectionRequestRedirect, ConnectionRequestRedirectResponse,
     AcceptInviteBuilder, RedirectConnectionBuilder, ConnectionRequestAnswer, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse
 };
-use self::get_message::{GetMessagesBuilder, GetMessagesReq, GetMessages, GetMessagesResponse, MessagesByConnections};
+use self::get_message::{GetMessagesBuilder, GetMessages, GetMessagesResponse, MessagesByConnections};
 use self::send_message::SendMessageBuilder;
 use self::update_message::{UpdateMessageStatusByConnections, UpdateMessageStatusByConnectionsResponse};
 use self::proofs::proof_request::ProofRequestMessage;
@@ -39,7 +40,6 @@ use error::prelude::*;
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
 use settings::ProtocolTypes;
-use messages::create_key::CreateKeyReq;
 use messages::deaddrop::retrieve::{RetrieveDeadDrop, RetrievedDeadDropResult, RetrieveDeadDropBuilder};
 
 #[derive(Debug, Serialize)]
@@ -233,7 +233,7 @@ pub enum A2AMessageV2 {
     CreateAgentResponse(CreateAgentResponse),
 
     /// PW Connection
-    CreateKey(CreateKeyReq),
+    CreateKey(CreateKey),
     CreateKeyResponse(CreateKeyResponse),
     ConnectionRequest(ConnectionRequest),
     ConnectionRequestResponse(ConnectionRequestResponse),
@@ -241,7 +241,7 @@ pub enum A2AMessageV2 {
     SendRemoteMessage(SendRemoteMessage),
     SendRemoteMessageResponse(SendRemoteMessageResponse),
 
-    GetMessages(GetMessagesReq),
+    GetMessages(GetMessages),
     GetMessagesResponse(GetMessagesResponse),
     GetMessagesByConnections(GetMessages),
     GetMessagesByConnectionsResponse(MessagesByConnections),
@@ -318,7 +318,7 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map_err(de::Error::custom)
             }
             "CREATE_KEY" => {
-                CreateKeyReq::deserialize(value)
+                CreateKey::deserialize(value)
                     .map(A2AMessageV2::CreateKey)
                     .map_err(de::Error::custom)
             }
@@ -328,7 +328,7 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map_err(de::Error::custom)
             }
             "GET_MSGS" => {
-                GetMessagesReq::deserialize(value)
+                GetMessages::deserialize(value)
                     .map(A2AMessageV2::GetMessages)
                     .map_err(de::Error::custom)
             }
@@ -364,7 +364,7 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             }
             "ACCEPT_CONN_REQ" => {
                 ConnectionRequestAnswer::deserialize(value)
-                    .map(|msg| A2AMessageV2::ConnectionRequestAnswer(msg))
+                    .map(A2AMessageV2::ConnectionRequestAnswer)
                     .map_err(de::Error::custom)
             }
             "CONN_REQUEST_ANSWER_RESP" => {
@@ -374,17 +374,17 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             }
             "ACCEPT_CONN_REQ_RESP" => {
                 ConnectionRequestAnswerResponse::deserialize(value)
-                    .map(|msg| A2AMessageV2::ConnectionRequestAnswerResponse(msg))
+                    .map(A2AMessageV2::ConnectionRequestAnswerResponse)
                     .map_err(de::Error::custom)
             }
             "REDIRECT_CONN_REQ" => {
                 ConnectionRequestRedirect::deserialize(value)
-                    .map(|msg| A2AMessageV2::ConnectionRequestRedirect(msg))
+                    .map(A2AMessageV2::ConnectionRequestRedirect)
                     .map_err(de::Error::custom)
             }
             "CONN_REQ_REDIRECTED" => {
                 ConnectionRequestRedirectResponse::deserialize(value)
-                    .map(|msg| A2AMessageV2::ConnectionRequestRedirectResponse(msg))
+                    .map(A2AMessageV2::ConnectionRequestRedirectResponse)
                     .map_err(de::Error::custom)
             }
             "SEND_REMOTE_MSG" => {
@@ -563,6 +563,7 @@ impl Forward {
     }
 }
 
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct CreateMessage {
     #[serde(rename = "@type")]
@@ -724,10 +725,10 @@ impl MessageStatusCode {
             MessageStatusCode::Created => "message created",
             MessageStatusCode::Sent => "message sent",
             MessageStatusCode::Received => "message received",
+            MessageStatusCode::Redirected => "message redirected",
             MessageStatusCode::Accepted => "message accepted",
             MessageStatusCode::Rejected => "message rejected",
             MessageStatusCode::Reviewed => "message reviewed",
-            MessageStatusCode::Redirected => "message redirected",
         }
     }
 }
@@ -992,7 +993,7 @@ impl<T> Bundled<T> {
 pub fn try_i8_bundle(data: Vec<u8>) -> VcxResult<Bundled<Vec<u8>>> {
     let bundle: Bundled<Vec<i8>> =
         rmp_serde::from_slice(&data[..])
-            .map_err(|err| {
+            .map_err(|_| {
                 warn!("could not deserialize bundle with i8, will try u8");
                 VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Could not deserialize bundle with i8")
             })?;

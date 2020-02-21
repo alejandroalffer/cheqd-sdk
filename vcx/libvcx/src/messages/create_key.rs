@@ -1,6 +1,6 @@
 use settings;
 use messages::*;
-use messages::message_type::{MessageTypes, MessageTypeV2 };
+use messages::message_type::MessageTypes;
 use utils::httpclient;
 use error::prelude::*;
 use settings::ProtocolTypes;
@@ -24,16 +24,6 @@ impl CreateKey {
             for_verkey: for_verkey.to_string(),
         }
     }
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub struct CreateKeyReq {
-    #[serde(rename = "@type")]
-    msg_type: MessageTypeV2,
-    #[serde(rename = "forDID")]
-    for_did: String,
-    #[serde(rename = "forDIDVerKey")]
-    for_verkey: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -60,7 +50,7 @@ impl CreateKeyBuilder {
         CreateKeyBuilder {
             for_did: String::new(),
             for_verkey: String::new(),
-            version: settings::get_connecting_protocol_version()
+            version: settings::get_protocol_type()
         }
     }
 
@@ -76,10 +66,10 @@ impl CreateKeyBuilder {
         Ok(self)
     }
 
-    pub fn version(&mut self, version: Option<ProtocolTypes>) -> VcxResult<&mut Self> {
+    pub fn version(&mut self, version: &Option<ProtocolTypes>) -> VcxResult<&mut Self> {
         self.version = match version {
-            Some(version) => version,
-            None => settings::get_connecting_protocol_version(),
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
         };
         Ok(self)
     }
@@ -104,15 +94,10 @@ impl CreateKeyBuilder {
                 A2AMessage::Version1(
                     A2AMessageV1::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
                 ),
-            settings::ProtocolTypes::V2 => {
-                let msg = CreateKeyReq {
-                    msg_type: MessageTypes::build_v2(A2AMessageKinds::CreateKey),
-                    for_did: self.for_did.clone(),
-                    for_verkey: self.for_verkey.clone()
-                };
-
-                A2AMessage::Version2(A2AMessageV2::CreateKey(msg))
-            },
+            settings::ProtocolTypes::V2 =>
+                A2AMessage::Version2(
+                    A2AMessageV2::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
+                )
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -143,7 +128,6 @@ mod tests {
 
     #[test]
     fn test_create_key_set_values() {
-        let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let for_did = "11235yBzrpJQmNyZzgoTqB";
         let for_verkey = "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A";
 
@@ -156,9 +140,9 @@ mod tests {
     fn test_create_key_set_values_and_serialize() {
         init!("false");
 
-        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
+        let (_agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
         let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let (_agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
@@ -177,7 +161,7 @@ mod tests {
 
         let mut builder = create_keys();
 
-        let (for_did, for_verkey) = builder.version(Some(ProtocolTypes::V1)).unwrap().parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
+        let (for_did, for_verkey) = builder.version(&Some(ProtocolTypes::V1)).unwrap().parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
 
         assert_eq!(for_did, "U5LXs4U7P9msh647kToezy");
         assert_eq!(for_verkey, "FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq");
@@ -189,7 +173,7 @@ mod tests {
 
         let mut builder = create_keys();
 
-        let (for_did, for_verkey) = builder.version(Some(ProtocolTypes::V2)).unwrap().parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()).unwrap();
+        let (for_did, for_verkey) = builder.version(&Some(ProtocolTypes::V2)).unwrap().parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()).unwrap();
 
         assert_eq!(for_did, "MNepeSWtGfhnv8jLB1sFZC");
         assert_eq!(for_verkey, "C73MRnns4qUjR5N4LRwTyiXVPKPrA5q4LCT8PZzxVdt9");

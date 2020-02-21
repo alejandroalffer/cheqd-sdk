@@ -105,11 +105,6 @@ public class VcxException extends Exception {
            // TODO
            e.printStackTrace();
         }
-
-        this.sdkMessage = "error";
-        this.sdkFullMessage = "message";
-        this.sdkCause = "cause";
-        this.sdkBacktrace = "backtrace";
     }
 
     /**

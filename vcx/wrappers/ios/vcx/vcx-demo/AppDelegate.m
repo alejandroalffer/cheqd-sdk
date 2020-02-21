@@ -1,19 +1,39 @@
 //
 //  AppDelegate.m
-//  testlibvcx
+//  vcx-demo
 //
-//  Created by Norman Jarvis on 7/24/18.
-//  Copyright © 2018 Norman Jarvis. All rights reserved.
+//  Created by yaswanthsvist on 4/30/18.
+//  Copyright © 2018 GuestUser. All rights reserved.
 //
 
 #import "AppDelegate.h"
+#import "ConnectMeVcx.h"
+/*
+ typedef unsigned int vcx_error_t;
+ typedef unsigned int vcx_schema_handle_t;
+ typedef unsigned int vcx_credentialdef_handle_t;
+ typedef unsigned int vcx_connection_handle_t;
+ typedef unsigned int vcx_credential_handle_t;
+ typedef unsigned int vcx_proof_handle_t;
+ typedef unsigned int vcx_command_handle_t;
+ typedef unsigned int vcx_bool_t;
+
+ vcx_error_t vcx_init(vcx_command_handle_t handle, const char *config_path,void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
+ */
+
 
 @interface AppDelegate ()
 
 @end
 
-@implementation AppDelegate
+//void VcxWrapperProvisionCallback(vcx_command_handle_t command_handle, vcx_error_t err, const char *config) {
+//    NSData *dataData = [NSData dataWithBytes:config length:sizeof(config)];
+//    [Console log:dataData];
+//}
 
+
+
+@implementation AppDelegate
 
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
