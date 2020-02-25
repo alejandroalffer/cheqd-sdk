@@ -515,7 +515,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_file() {
-        init!("ledger_zero_fees");
+        let _setup = SetupWalletAndPool::init();
 
         let config = TempFile::create_with_data("test_init.json", &config());
 
@@ -548,7 +548,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_config() {
-        init!("ledger_zero_fees");
+        let _setup = SetupWalletAndPool::init();
 
         _vcx_init_with_config_c_closure(&config()).unwrap();
 
@@ -622,7 +622,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_with_default_values() {
-        init!("ledger_zero_fees");
+        let _setup = SetupWalletAndPool::init();
 
         _vcx_init_with_config_c_closure("{}").unwrap();
     }
@@ -630,7 +630,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_called_twice_fails() {
-        init!("ledger_zero_fees");
+        let _setup = SetupWalletAndPool::init();
 
         _vcx_init_with_config_c_closure("{}").unwrap();
 
@@ -645,26 +645,25 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_called_twice_passes_after_shutdown() {
-        init!("ledger_zero_fees");
+        let _setup = SetupDefaults::init();
 
-            wallet::create_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
-            pool::tests::create_test_pool();
+        wallet::create_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+        pool::tests::create_test_pool();
 
-            _vcx_init_with_config_c_closure("{}").unwrap();
+        _vcx_init_with_config_c_closure("{}").unwrap();
 
-            //Assert config values were set correctly
-            assert_eq!(settings::get_config_value("wallet_name").unwrap(), settings::DEFAULT_WALLET_NAME);
+        //Assert config values were set correctly
+        assert_eq!(settings::get_config_value("wallet_name").unwrap(), settings::DEFAULT_WALLET_NAME);
 
-            //Verify shutdown was successful
-            vcx_shutdown(true);
-            assert_eq!(settings::get_config_value("wallet_name").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
-        }
+        //Verify shutdown was successful
+        vcx_shutdown(true);
+        assert_eq!(settings::get_config_value("wallet_name").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_fails_with_open_wallet() {
-        let _setup = SetupLibraryWalletPoolZeroFees::init();
+        let _setup = SetupLibraryWalletPool::init();
 
         let config = TempFile::create_with_data("test_init.json", &config());
 
@@ -971,7 +970,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_minimal() {
-        let _setup = SetupLibraryWalletPoolZeroFees::init();
+        let _setup = SetupLibraryWalletPool::init();
 
         let config = get_settings();
 

@@ -655,7 +655,8 @@ mod tests {
     }
     #[test]
     fn test_vcx_create_credentialdef_from_id_success() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create_with_id(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),

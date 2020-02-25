@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn test_parse_create_keys_v2_response() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let mut builder = create_keys();
 

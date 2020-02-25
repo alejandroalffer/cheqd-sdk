@@ -74,16 +74,16 @@ mod tests {
     use std::thread;
     use std::time::Duration;
     use messages::wallet_backup::received_expected_message;
+    use utils::devsetup::*;
 
     #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_wallet_backup() {
-        init!("false");
+        let _setup = SetupLibraryWalletPool::init();
 
-        let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
-        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let (_, agent_vk) = create_and_store_my_did(Some(MY2_SEED), None).unwrap();
+        let (_, my_vk) = create_and_store_my_did(Some(MY1_SEED), None).unwrap();
+        let (_, agency_vk) = create_and_store_my_did(Some(MY3_SEED), None).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
@@ -103,8 +103,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_backup_real() {
-        init!("agency");
-        ::utils::devsetup::tests::set_consumer();
+        let _setup = SetupConsumer::init();
 
         wallet_backup_init()
             .recovery_vk(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
@@ -114,16 +113,13 @@ mod tests {
         thread::sleep(Duration::from_millis(2000));
 
         assert!(backup_wallet().wallet_data(vec![1, 2, 3]).send_secure().is_ok());
-
-        teardown!("agency");
     }
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_received_backup_ack_true() {
-        init!("agency");
-        ::utils::devsetup::tests::set_consumer();
+        let _setup = SetupConsumer::init();
 
         wallet_backup_init()
             .recovery_vk(settings::CONFIG_WALLET_BACKUP_KEY).unwrap()
@@ -136,8 +132,5 @@ mod tests {
         thread::sleep(Duration::from_millis(2000));
 
         assert_eq!(received_expected_message(None, RemoteMessageType::WalletBackupAck).unwrap(), true);
-
-        teardown!("agency")
     }
-
 }

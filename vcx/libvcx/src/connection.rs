@@ -8,7 +8,7 @@ use api::VcxStateType;
 use error::prelude::*;
 use messages;
 use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, SerializableObjectWithState};
-use messages::invite::{InviteDetail, RedirectDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectionDetails};
+use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectDetail, RedirectionDetails};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
 use messages::send_message::SendMessageOptions;
@@ -477,7 +477,7 @@ pub fn get_ver_str(handle: u32) -> VcxResult<Option<String>> {
     CONNECTION_MAP.get(handle, |connection| {
         match connection {
             Connections::V1(ref connection) => Ok(connection.get_version().as_ref().map(ProtocolTypes::to_string)),
-            Connections::V3(ref connection) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
+            Connections::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
         }
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }

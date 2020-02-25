@@ -70,13 +70,12 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
     match wallet::create_wallet(&config, &credentials)
         .wait() {
         Ok(()) => Ok(()),
-        Err(err) if err.error_code == ErrorCode::WalletAlreadyExistsError => {
-            warn!("wallet \"{}\" already exists. skipping creation", wallet_name);
+        Err(x) => if x.error_code != ErrorCode::WalletAlreadyExistsError {
+            warn!("could not create wallet {}: {:?}", wallet_name, x.message);
+            Err(VcxError::from_msg(VcxErrorKind::WalletCreate, format!("could not create wallet {}: {:?}", wallet_name, x.message)))
+        } else {
+            warn!("could not create wallet {}: {:?}", wallet_name, x.message);
             Ok(())
-        }
-        Err(err) => {
-            warn!("could not create wallet {}: {:?}", wallet_name, err.message);
-            Err(VcxError::from_msg(VcxErrorKind::WalletCreate, format!("could not create wallet {}: {:?}", wallet_name, err.message)))
         }
     }
 }
@@ -192,8 +191,7 @@ pub fn export(wallet_handle: WalletHandle, path: &str, backup_key: &str) -> VcxR
 pub fn import(config: &str) -> VcxResult<()> {
     trace!("import >>> config {}", config);
 
-    let config: serde_json::Value = serde_json::from_str(config)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse config: {}", err)))?;
+    settings::process_config_string(config, true)?;
 
     let restore_config = RestoreWalletConfigs::from_str(config)?;
 
@@ -283,32 +281,30 @@ pub mod tests {
 
     #[test]
     fn test_wallet_import_export_with_different_wallet_key() {
-        settings::set_defaults();
-        teardown!("false");
+        let _setup = SetupDefaults::init();
 
-        let export_path = export_test_wallet();
+        let (export_wallet_path, wallet_name) = export_test_wallet();
 
-        let xtype = "type1";
-        let id = "id1";
-        let value = "value1";
-        let options = "{}";
+        delete_wallet(&wallet_name, None, None, None).unwrap();
 
-        ::api::vcx::vcx_shutdown(true);
+        let (type_, id, value) = _record();
+
+        ::settings::clear_config();
 
         let import_config = json!({
-            settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
+            settings::CONFIG_WALLET_NAME: &wallet_name,
             settings::CONFIG_WALLET_KEY: "new key",
-            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_wallet_path.path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
+
         import(&import_config).unwrap();
-        open_wallet(&settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+        open_wallet(&wallet_name, None, None, None).unwrap();
 
         // If wallet was successfully imported, there will be an error trying to add this duplicate record
-        assert_eq!(add_record(xtype, id, value, None).unwrap_err().kind(), VcxErrorKind::DuplicationWalletRecord);
-        thread::sleep(Duration::from_secs(1));
-        ::api::vcx::vcx_shutdown(true);
-        delete_import_wallet_path(export_path);
+        assert_eq!(add_record(type_, id, value, None).unwrap_err().kind(), VcxErrorKind::DuplicationWalletRecord);
+
+        delete_wallet(&wallet_name, None, None, None).unwrap();
     }
 
     #[test]

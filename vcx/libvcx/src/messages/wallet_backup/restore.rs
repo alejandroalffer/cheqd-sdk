@@ -93,28 +93,28 @@ mod tests {
     use settings;
     use messages::wallet_backup_restore;
     use utils::libindy::signus::create_and_store_my_did;
-    use utils::devsetup::tests::{test_wallet, delete_connected_wallets};
     use wallet_backup::tests::{init_backup, TestBackupData, backup_wallet_utils, RECORD_VALUE, RECORD_TYPE, ID, PATH};
     use std::fs::File;
     use utils::libindy::wallet;
     use std::io::Write;
+    use utils::devsetup::{SetupLibraryWalletPoolZeroFees, SetupLibraryAgencyV1, SetupDefaults};
+    use utils::libindy::wallet::delete_wallet;
 
     pub fn restore_wallet_utils(encrypted_wallet: &[u8], wb: &TestBackupData) -> serde_json::Value {
-        delete_connected_wallets(&test_wallet());
-        ::api::vcx::vcx_shutdown(true);
+        let wallet_name = "restored_wallet";
 
         let mut ofile = File::create(PATH).unwrap();
         ofile.write_all(encrypted_wallet).unwrap();
 
         let import_config = json!({
-            settings::CONFIG_WALLET_NAME: &test_wallet(),
+            settings::CONFIG_WALLET_NAME: &wallet_name,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
             settings::CONFIG_EXPORTED_WALLET_PATH: PATH.to_string(),
             settings::CONFIG_WALLET_BACKUP_KEY: wb.encryption_key.to_string(),
         }).to_string();
 
         wallet::import(&import_config).unwrap();
-        wallet::open_wallet(&test_wallet(), None, None, None).unwrap();
+        wallet::open_wallet(&wallet_name, None, None, None).unwrap();
 
         let options = json!({
             "retrieveType": true,
@@ -125,19 +125,18 @@ mod tests {
         let record: serde_json::Value = serde_json::from_str(&record).unwrap();
 
         ::std::fs::remove_file(PATH).unwrap();
-        delete_connected_wallets(&test_wallet());
+        delete_wallet(&wallet_name, None, None, None).ok();
         record
     }
 
 
     #[test]
     fn test_backup_restore() {
-        init!("ledger_zero_fees");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
-        let (agent_did, agent_vk) = create_and_store_my_did(Some(::utils::constants::MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(Some(::utils::constants::MY1_SEED)).unwrap();
+        let (agent_did, agent_vk) = create_and_store_my_did(Some(::utils::constants::MY2_SEED), None).unwrap();
+        let (_, my_vk) = create_and_store_my_did(Some(::utils::constants::MY1_SEED), None).unwrap();
         settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY, &my_vk);
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(::utils::constants::MY3_SEED)).unwrap();
 
         let msg = wallet_backup_restore()
             .recovery_vk(&my_vk).unwrap()
@@ -153,8 +152,9 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_backup_restore_no_backup_real() {
-        init!("agency");
-        ::utils::devsetup::tests::set_consumer();
+        let _setup = SetupLibraryAgencyV1::init();
+
+        ::utils::devsetup::set_consumer();
 
         let wb = init_backup();
 
@@ -165,27 +165,33 @@ mod tests {
             .send_secure();
 
         assert!( err.unwrap_err().to_string().contains("GNR-111") );
-        teardown!("agency");
     }
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_backup_restore_backup_real() {
-        init!("agency");
-        ::utils::devsetup::tests::set_consumer();
-        let wb = backup_wallet_utils();
+        let wb;
+        let encrypted_wallet;
+        {
+            let _setup = SetupLibraryAgencyV1::init();
 
-        let backup = wallet_backup_restore()
-            .recovery_vk(&wb.recovery_vk).unwrap()
-            .agent_did(&settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap()).unwrap()
-            .agent_vk(&settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY).unwrap()).unwrap()
-            .send_secure().unwrap();
+            ::utils::devsetup::set_consumer();
+            wb = backup_wallet_utils();
 
-        let encrypted_wallet: &[u8] = &base64::decode(&backup.wallet).unwrap();
-        let record = restore_wallet_utils(encrypted_wallet, &wb);
+            let backup = wallet_backup_restore()
+                .recovery_vk(&wb.recovery_vk).unwrap()
+                .agent_did(&settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap()).unwrap()
+                .agent_vk(&settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY).unwrap()).unwrap()
+                .send_secure().unwrap();
+
+            encrypted_wallet = base64::decode(&backup.wallet).unwrap();
+        }
+
+        let _setup = SetupDefaults::init();
+
+        let record = restore_wallet_utils(&encrypted_wallet, &wb);
 
         assert_eq!(&record, &json!({"value":RECORD_VALUE, "type": RECORD_TYPE, "id": ID, "tags": {}}));
-        teardown!("agency");
     }
 }

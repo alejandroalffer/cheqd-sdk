@@ -13,6 +13,7 @@ use std::borrow::Borrow;
 
 use error::prelude::*;
 use utils::file::read_file;
+use indy_sys::INVALID_WALLET_HANDLE;
 
 pub static CONFIG_POOL_NAME: &str = "pool_name";
 pub static CONFIG_PROTOCOL_TYPE: &str = "protocol_type";
@@ -450,7 +451,7 @@ pub mod tests {
         })
     }
 
-    fn config_json() -> String {
+    pub fn config_json() -> String {
         base_config().to_string()
     }
 
