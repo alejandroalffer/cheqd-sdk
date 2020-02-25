@@ -222,6 +222,9 @@ pub enum VcxErrorKind {
 
     #[fail(display = "Cloud Backup exceeds max size limit")]
     MaxBackupSize,
+
+    #[fail(display = "No Agent pairwise information")]
+    NoAgentInformation,
 }
 
 #[derive(Debug)]
@@ -392,6 +395,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::InvalidMsgVersion => error::INVALID_MSG_VERSION.code_num,
             VcxErrorKind::RetrieveDeadDrop => error::RETRIEVE_DEAD_DROP.code_num,
             VcxErrorKind::MaxBackupSize => error::MAX_BACKUP_SIZE.code_num,
+            VcxErrorKind::NoAgentInformation => error::NO_AGENT_INFO.code_num,
         }
     }
 }
