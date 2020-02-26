@@ -194,7 +194,7 @@ pub fn log_settings() {
     trace!("loaded settings: {:?}", settings.to_string());
 }
 
-pub fn mock_indy_test_mode_enabled() -> bool {
+pub fn indy_mocks_enabled() -> bool {
     let config = SETTINGS.read().unwrap();
 
     match config.get(CONFIG_ENABLE_TEST_MODE) {
@@ -203,7 +203,7 @@ pub fn mock_indy_test_mode_enabled() -> bool {
     }
 }
 
-pub fn mock_agency_test_mode_enabled() -> bool {
+pub fn agency_mocks_enabled() -> bool {
     let config = SETTINGS.read().unwrap();
 
     match config.get(CONFIG_ENABLE_TEST_MODE) {
