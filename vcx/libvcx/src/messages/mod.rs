@@ -12,6 +12,7 @@ pub mod message_type;
 pub mod payload;
 pub mod wallet_backup;
 pub mod deaddrop;
+pub mod agent_provisioning;
 #[macro_use]
 pub mod thread;
 
@@ -41,6 +42,7 @@ use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
 use settings::ProtocolTypes;
 use messages::deaddrop::retrieve::{RetrieveDeadDrop, RetrievedDeadDropResult, RetrieveDeadDropBuilder};
+use messages::agent_utils::AgentCreated;
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -230,6 +232,7 @@ pub enum A2AMessageV2 {
     SignUp(SignUp),
     SignUpResponse(SignUpResponse),
     CreateAgent(CreateAgent),
+    AgentCreated(AgentCreated),
     CreateAgentResponse(CreateAgentResponse),
 
     /// PW Connection
@@ -310,6 +313,11 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "CREATE_AGENT" => {
                 CreateAgent::deserialize(value)
                     .map(A2AMessageV2::CreateAgent)
+                    .map_err(de::Error::custom)
+            }
+            "AGENT_CREATED" if message_type.version == "0.7" => {
+                AgentCreated::deserialize(value)
+                    .map(A2AMessageV2::AgentCreated)
                     .map_err(de::Error::custom)
             }
             "AGENT_CREATED" => {

@@ -298,7 +298,7 @@ fn reconstitute_restored_wallet(recovery_config: &RestoreWalletConfigs, encrypte
     info!("Deleting temporary wallet before the recovered wallet is imported");
     wallet::delete_wallet(&settings::get_config_value(settings::CONFIG_WALLET_NAME)?, None, None, None)?;
 
-    wallet::import(&recovery_config.to_string()?)?;
+    import(&recovery_config.to_string()?)?;
 
     //Todo: Fix libindy
     // Deletes recovered encrypted wallet from the temporary location on the file system
@@ -306,7 +306,7 @@ fn reconstitute_restored_wallet(recovery_config: &RestoreWalletConfigs, encrypte
     let path = Path::new(&recovery_config.exported_wallet_path);
     fs::remove_file(path).map_err(|err| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
 
-    wallet::open_wallet(&recovery_config.wallet_name, None, None, None)?;
+    open_wallet(&recovery_config.wallet_name, None, None, None)?;
     Ok(())
 }
 
@@ -891,7 +891,7 @@ pub mod tests {
         ::settings::set_config_value(::settings::CONFIG_WALLET_NAME,&consumer_wallet_name);
         ::settings::set_config_value(::settings::CONFIG_WALLET_BACKUP_KEY,backup_key_gen().as_str());
 
-        wallet::open_wallet(&consumer_wallet_name, None, None, None).unwrap();
+        open_wallet(&consumer_wallet_name, None, None, None).unwrap();
 
         // 9. retrieve config data
         let options = json!({
@@ -908,7 +908,7 @@ pub mod tests {
 
         // 11. Full init with previously stored config
         process_config_string(&retrieved_config_p1, true).unwrap();
-        wallet::open_wallet(&consumer_wallet_name, None, None, None).unwrap();
+        open_wallet(&consumer_wallet_name, None, None, None).unwrap();
 
         let record = serde_json::from_str::<serde_json::Value>(&wallet::get_record(config_wallet_key, config_wallet_key, &options).unwrap()).unwrap();
         let retrieved_config_p2: String = serde_json::from_value(record.get("value").unwrap().to_owned()).unwrap();

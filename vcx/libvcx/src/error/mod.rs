@@ -225,6 +225,9 @@ pub enum VcxErrorKind {
 
     #[fail(display = "No Agent pairwise information")]
     NoAgentInformation,
+
+    #[fail(display = "Token provided by sponsor is invalid")]
+    InvalidProvisioningToken
 }
 
 #[derive(Debug)]
@@ -396,6 +399,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::RetrieveDeadDrop => error::RETRIEVE_DEAD_DROP.code_num,
             VcxErrorKind::MaxBackupSize => error::MAX_BACKUP_SIZE.code_num,
             VcxErrorKind::NoAgentInformation => error::NO_AGENT_INFO.code_num,
+            VcxErrorKind::InvalidProvisioningToken => error::INVALID_PROVISION_TOKEN.code_num,
         }
     }
 }

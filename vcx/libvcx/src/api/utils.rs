@@ -17,6 +17,58 @@ pub struct UpdateAgentInfo {
     id: String,
     value: String,
 }
+/// Provision an agent in the agency, populate configuration and wallet for this agent.
+/// NOTE: for asynchronous call use vcx_agent_provision_async
+///
+/// #Params
+/// config: configuration
+/// token: {
+///          "id": String,
+///          "sponsor": String, //Name of Enterprise sponsoring the provisioning
+///          "nonce": String,
+///          "timestamp": String,
+///          "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
+///          "sponsor_vk": String,
+///        }
+///
+/// #Returns
+/// Configuration (wallet also populated), on error returns NULL
+#[no_mangle]
+pub extern fn vcx_provision_agent_with_token(config: *const c_char, token: *const c_char) -> *mut c_char {
+    info!("vcx_provision_agent >>>");
+
+    let config = match CStringUtils::c_str_to_string(config) {
+        Ok(Some(val)) => val,
+        _ => {
+            let _res: u32 = VcxError::from_msg(VcxErrorKind::InvalidOption, "Invalid pointer has been passed").into();
+            return ptr::null_mut();
+        }
+    };
+
+    let token = match CStringUtils::c_str_to_string(token) {
+        Ok(Some(val)) => val,
+        _ => {
+            let _res: u32 = VcxError::from_msg(VcxErrorKind::InvalidOption, "Invalid pointer has been passed").into();
+            return ptr::null_mut();
+        }
+    };
+
+    trace!("vcx_provision_agent_with_token(config: {}, token: {})", config, token);
+
+    match messages::agent_provisioning::agent_provisioning_v0_7::provision(&config, &token) {
+        Err(e) => {
+            error!("Provision Agent Error {}.", e);
+            let _res: u32 = e.into();
+            ptr::null_mut()
+        }
+        Ok(s) => {
+            debug!("Provision Agent Successful");
+            let msg = CStringUtils::string_to_cstring(s);
+
+            msg.into_raw()
+        }
+    }
+}
 
 /// Provision an agent in the agency, populate configuration and wallet for this agent.
 /// NOTE: for asynchronous call use vcx_agent_provision_async
