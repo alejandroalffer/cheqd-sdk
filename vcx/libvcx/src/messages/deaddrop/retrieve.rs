@@ -121,14 +121,16 @@ mod tests {
     use wallet_backup::WalletBackup;
     use utils::libindy::crypto::sign;
     use rand::Rng;
+    use utils::devsetup::*;
 
     #[cfg(feature = "wallet_backup")]
     #[test]
     fn test_dead_drop_retrieve() {
-        init!("ledger_zero_fees");
-        let (agent_did, agent_vk) = create_and_store_my_did(Some(::utils::constants::MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(Some(::utils::constants::MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(::utils::constants::MY3_SEED)).unwrap();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
+        let (_, agent_vk) = create_and_store_my_did(Some(::utils::constants::MY2_SEED), None).unwrap();
+        let (_, my_vk) = create_and_store_my_did(Some(::utils::constants::MY1_SEED), None).unwrap();
+        let (_, agency_vk) = create_and_store_my_did(Some(::utils::constants::MY3_SEED), None).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
@@ -150,8 +152,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieve_dead_drop_real() {
-        init!("agency");
-        ::utils::devsetup::tests::set_consumer();
+        let _setup = SetupConsumer::init();
 
         let wb = init_backup();
 
@@ -161,7 +162,6 @@ mod tests {
             .locator(&wb.locator).unwrap()
             .signature(&wb.sig).unwrap()
             .send_secure().is_ok());
-        teardown!("agency");
     }
 
     #[cfg(feature = "wallet_backup")]
@@ -169,8 +169,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieved_dead_drop_result_real() {
-        init!("agency");
-        ::utils::devsetup::tests::set_consumer();
+        let _setup = SetupConsumer::init();
 
         let wb = init_backup();
         let dead_drop_result = retrieve_dead_drop()
@@ -182,7 +181,6 @@ mod tests {
 
         let entry = dead_drop_result.entry.unwrap();
         assert_eq!(entry.address, wb.dd_address.clone());
-        teardown!("agency");
     }
 
     #[cfg(feature = "wallet_backup")]
@@ -190,8 +188,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieved_dead_drop_fails_with_invalid_address() {
-        init!("agency");
-        ::utils::devsetup::tests::set_consumer();
+        let _setup = SetupConsumer::init();
 
         let wb = init_backup();
 
@@ -206,7 +203,6 @@ mod tests {
             err.unwrap_err().to_string(),
             "Error: Message failed in post\n  Caused by: POST failed with: {\"statusCode\":\"GNR-105\",\"statusMsg\":\"unhandled error\"}\n"
         );
-        teardown!("agency");
     }
 
     #[cfg(feature = "wallet_backup")]
@@ -214,8 +210,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieve_dd_with_none_stored_returns_none() {
-        init!("agency");
-        ::utils::devsetup::tests::set_consumer();
+        let _setup = SetupConsumer::init();
 
         let backup_key = rand::thread_rng()
             .gen_ascii_chars()
@@ -233,6 +228,5 @@ mod tests {
             .send_secure().unwrap();
 
         assert!(empty_backup.entry.is_none());
-        teardown!("agency");
     }
 }
