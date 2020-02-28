@@ -16,7 +16,6 @@ use utils::openssl::sha256_hex;
 use std::io::{Write, Error};
 use utils::libindy::wallet;
 use std::path::PathBuf;
-use settings::mock_agency_test_mode_enabled;
 use rand::Rng;
 
 lazy_static! {
@@ -92,7 +91,7 @@ impl WalletBackup {
 
     fn update_state(&mut self, message: Option<Message>) -> VcxResult<u32> {
         debug!("updating state for wallet_backup {}", self.source_id);
-        if mock_agency_test_mode_enabled() { return Ok(self.get_state()); }
+        if settings::agency_mocks_enabled() { return Ok(self.get_state()); }
 
         match self.state {
             WalletBackupState::InitRequested =>
@@ -191,7 +190,7 @@ fn gen_keys(wallet_encryption_key: &str) -> VcxResult<WalletBackupKeys> {
 }
 
 fn gen_vk(wallet_encryption_key: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(settings::DEFAULT_WALLET_BACKUP_KEY.to_string()); }
+    if settings::agency_mocks_enabled() { return Ok(settings::DEFAULT_WALLET_BACKUP_KEY.to_string()); }
 
     let vk_seed = sha256_hex(wallet_encryption_key.as_bytes());
 
@@ -215,7 +214,7 @@ fn _handle_duplicate_vk(err: VcxError, id: &str) -> VcxResult<String> {
 
 fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
     info!("gen_deaddrop_address >>> vk: {}", vk);
-    if settings::mock_indy_test_mode_enabled() { return Ok(DeadDropAddress { address: String::new(), locator: String::new() }); }
+    if settings::agency_mocks_enabled() { return Ok(DeadDropAddress { address: String::new(), locator: String::new() }); }
 
     let locator = sha256_hex(&sign(vk, "wallet-backup".as_bytes())?);
     Ok(DeadDropAddress {
@@ -226,7 +225,7 @@ fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
 
 fn gen_cloud_address(vk: &str) -> VcxResult<Vec<u8>> {
     info!("gen_cloud_address >>> vk: {}", vk);
-    if settings::mock_indy_test_mode_enabled() { return Ok(Vec::new()); }
+    if settings::agency_mocks_enabled() { return Ok(Vec::new()); }
     let cloud_address = CloudAddress {
         version: None,
         agent_did: settings::get_config_value(::settings::CONFIG_REMOTE_TO_SDK_DID)?,
@@ -251,7 +250,7 @@ pub fn backup_wallet(handle: u32, exported_wallet_path: &str) -> VcxResult<u32> 
 }
 
 fn _read_exported_wallet(backup_key: &str, exported_wallet_path: &str) -> VcxResult<Vec<u8>> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(Vec::new()); }
+    if settings::agency_mocks_enabled() { return Ok(Vec::new()); }
 
     let tmp_dir = _unique_tmp_dir(exported_wallet_path)?;
 

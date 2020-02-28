@@ -664,7 +664,7 @@ mod tests {
                                             CString::new("6vkhW3L28AophhA68SSzRS").unwrap().into_raw(),
                                             ptr::null(),
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
