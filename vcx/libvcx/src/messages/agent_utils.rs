@@ -75,9 +75,12 @@ pub struct CreateAgent {
 }
 
 impl CreateAgent {
-    pub fn build(from_did: Option<String>, from_vk: Option<String>, token: Option<ProvisionToken>) -> CreateAgent {
+    pub fn build(from_did: Option<String>,
+                 from_vk: Option<String>,
+                 token: Option<ProvisionToken>,
+                 create_agent_kind: Option<A2AMessageKinds>) -> CreateAgent {
         CreateAgent {
-            msg_type: MessageTypes::build(A2AMessageKinds::CreateAgent),
+            msg_type: MessageTypes::build(create_agent_kind.unwrap_or(A2AMessageKinds::CreateAgent)),
             from_did,
             from_vk,
             token
@@ -345,7 +348,7 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     }
 
     let message = A2AMessage::Version1(
-        A2AMessageV1::CreateAgent(CreateAgent::build(None, None, None))
+        A2AMessageV1::CreateAgent(CreateAgent::build(None, None, None, None))
     );
 
     let mut response = send_message_to_agency(&message, &agency_pw_did)?;
@@ -401,7 +404,7 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
 
     /* STEP 3 - CREATE AGENT */
     let message = A2AMessage::Version2(
-        A2AMessageV2::CreateAgent(CreateAgent::build(None, None, None))
+        A2AMessageV2::CreateAgent(CreateAgent::build(None, None, None, None))
     );
 
     let mut response = send_message_to_agency(&message, &agency_pw_did)?;

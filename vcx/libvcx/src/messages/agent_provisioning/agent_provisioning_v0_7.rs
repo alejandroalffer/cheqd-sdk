@@ -46,16 +46,15 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
     /* STEP 2 - CREATE AGENT */
     debug!("Creating an agent");
     println!("Creating an agent");
-    let mut ca = CreateAgent::build(Some(my_did.to_string()), Some(my_vk.to_string()), Some(token));
-    if let MessageTypes::MessageTypeV2(msg) = &ca.msg_type {
-        ca.msg_type = MessageTypes::MessageTypeV2(MessageTypeV2 {
-            did: msg.did.to_string(),
-            family: msg.family.to_owned(),
-            version: "0.7".to_string(),
-            type_: msg.type_.to_string(),
-        });
-    }
-    let message = A2AMessage::Version2(A2AMessageV2::CreateAgent(ca));
+
+    let message = A2AMessage::Version2(
+        A2AMessageV2::CreateAgent(
+            CreateAgent::build(Some(my_did.to_string()),
+                               Some(my_vk.to_string()),
+                               Some(token),
+                               Some(A2AMessageKinds::CreateAgentV2))
+        )
+    );
 
     let mut response = send_message_to_agency(&message, &agency_pw_did)?;
 
