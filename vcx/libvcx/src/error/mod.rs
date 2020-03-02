@@ -200,6 +200,8 @@ pub enum VcxErrorKind {
     NoEndpoint,
     #[fail(display = "Error Retrieving messages from API")]
     InvalidMessages,
+    #[fail(display = "Invalid A2A Message version")]
+    InvalidMsgVersion,
 
     #[fail(display = "Common error {}", 0)]
     Common(u32),
@@ -207,6 +209,19 @@ pub enum VcxErrorKind {
     LiibndyError(u32),
     #[fail(display = "Unknown libindy error")]
     UnknownLiibndyError,
+
+    // Wallet Backup
+    #[fail(display = "Could not create WalletBackup")]
+    CreateWalletBackup,
+
+    #[fail(display = "Failed to retrieve exported wallet")]
+    RetrieveExportedWallet,
+
+    #[fail(display = "Failed to retrieve dead drop payload")]
+    RetrieveDeadDrop,
+
+    #[fail(display = "Cloud Backup exceeds max size limit")]
+    MaxBackupSize,
 }
 
 #[derive(Debug)]
@@ -372,6 +387,11 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::ActionNotSupported => error::ACTION_NOT_SUPPORTED.code_num,
             VcxErrorKind::Common(num) => num,
             VcxErrorKind::LiibndyError(num) => num,
+            VcxErrorKind::CreateWalletBackup => error::CREATE_WALLET_BACKUP.code_num,
+            VcxErrorKind::RetrieveExportedWallet => error::RETRIEVE_EXPORTED_WALLET.code_num,
+            VcxErrorKind::InvalidMsgVersion => error::INVALID_MSG_VERSION.code_num,
+            VcxErrorKind::RetrieveDeadDrop => error::RETRIEVE_DEAD_DROP.code_num,
+            VcxErrorKind::MaxBackupSize => error::MAX_BACKUP_SIZE.code_num,
         }
     }
 }

@@ -10,6 +10,8 @@ pub mod disclosed_proof;
 pub mod wallet;
 pub mod logger;
 pub mod return_types_u32;
+pub mod extensions;
+pub mod wallet_backup;
 
 use std::fmt;
 
@@ -104,6 +106,15 @@ enum_number!(ProofStateType
     ProofUndefined = 0,
     ProofValidated = 1,
     ProofInvalid = 2,
+});
+
+enum_number!(WalletBackupState
+{
+    Uninitialized = 0,
+    InitRequested = 1,
+    ReadyToExportWallet = 2,
+    BackupInProgress = 3,
+    BackupStored = 4,
 });
 
 enum_number!(PublicEntityStateType

@@ -107,12 +107,16 @@ pub static INVALID_REV_ENTRY: Error = Error{ code_num: 1092, message: "Unable to
 pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1093, message: "Invalid Credential Revocation timestamp"};
 pub static UNKNOWN_SCHEMA_REJECTION: Error = Error{ code_num: 1094, message: "Unknown Rejection of Schema Creation, refer to libindy documentation"};
 pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1095, message: "Failed to create Revocation Registration Definition"};
-/* EC 1096 - 1099 are reserved for proprietary forks of libVCX */
+pub static CREATE_WALLET_BACKUP: Error = Error{ code_num: 1096, message: "Failed to create Wallet Backup"};
+pub static RETRIEVE_EXPORTED_WALLET: Error = Error{ code_num: 1097, message: "Failed to retrieve exported wallet"};
+pub static INVALID_MSG_VERSION: Error = Error{ code_num: 1098, message: "Invalid A2A Message version"};
+pub static RETRIEVE_DEAD_DROP: Error = Error{ code_num: 1099, message: "Failed to retrieve Dead Drop payload"};
 pub static INVALID_ATTACHMENT_ENCODING: Error = Error { code_num: 1100, message: "Failed to decode attachment"};
 pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1101, message: "This type of attachment can not be used"};
 pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1102, message: "Unknown mime type"};
 pub static ACTION_NOT_SUPPORTED: Error = Error { code_num: 1103, message: "Action is not supported"};
 pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1104, message: "Invalid redirect details structure"};
+pub static MAX_BACKUP_SIZE: Error = Error{code_num: 1105, message: "Cloud Backup exceeds max size limit"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -234,15 +238,6 @@ fn insert_c_message(map: &mut HashMap<u32, CString>, error: &Error) {
 
 }
 
-// Helper function for static defining of error messages. Does limited checking that it can.
-fn _insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
-    if map.contains_key(&error.code_num) {
-        panic!("Error Code number was repeated which is not allowed! (likely a copy/paste error)")
-    }
-    map.insert(error.code_num, error.message);
-
-}
-
 #[derive(Clone, Copy)]
 pub struct Error {
     pub code_num: u32,
@@ -267,13 +262,6 @@ pub fn error_message(code_num:&u32) -> String {
     match ERROR_C_MESSAGES.get(code_num) {
         Some(msg) => msg.to_str().unwrap().to_string(),
         None => error_message(&UNKNOWN_ERROR.code_num),
-    }
-}
-
-pub fn error_string(code_num:u32) -> String {
-    match ERROR_C_MESSAGES.get(&code_num) {
-        Some(msg) => format!("{}-{}", code_num, msg.to_str().unwrap_or(UNKNOWN_ERROR.message)),
-        None => format!("{}-{}", code_num, UNKNOWN_ERROR.message),
     }
 }
 

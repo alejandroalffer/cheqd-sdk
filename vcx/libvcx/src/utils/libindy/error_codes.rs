@@ -15,6 +15,7 @@ pub fn map_indy_error<T, C: PrimInt>(rtn: T, error_code: C) -> Result<T, u32> {
 }
 
 pub fn map_rust_indy_sdk_error(error: IndyError) -> VcxError {
+    warn!("map_rust_indy_sdk_error >>> error: {:?}", error.message);
     match error.error_code as u32 {
         100..=111 => VcxError::from_msg(VcxErrorKind::InvalidLibindyParam, error.message),
         113 => VcxError::from_msg(VcxErrorKind::LibindyInvalidStructure, error.message),
@@ -68,9 +69,12 @@ pub fn map_indy_error_code<C: PrimInt>(error_code: C) -> u32 {
 pub mod tests {
     use super::*;
     use indy::ErrorCode;
+    use utils::devsetup::SetupDefaults;
 
     #[test]
     fn test_invalid_param_err() {
+        let _setup = SetupDefaults::init();
+
         let err100: IndyError = IndyError {
             error_code: ErrorCode::CommonInvalidParam1,
             message: String::new(),

@@ -13,10 +13,15 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
-default = []
+#default = []
+default = ["pool_tests", "agency", "wallet_backup"]
+too_long_request = [] # These tests are waiting for the agency fixes regarding the length of request
+#default = ["pool_tests","agency"]
+#default = ["pool_tests","agency_v2"]
 pool_tests = []
 agency = []
 agency_v2 = []
+wallet_backup = []
 aries = []
 # Causes the build to fail on all warnings
 fatal_warnings = []
@@ -42,6 +47,7 @@ rust-base58 = "0.0.4"
 rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
+hex = "0.3.2"
 num-traits = "0.2.0"
 indy = { version = "1.14.2", path = "../../wrappers/rust/" }
 indy-sys = { version = "1.14.2", path = "../../wrappers/rust/indy-sys/" }
@@ -49,7 +55,7 @@ tokio-threadpool = "0.1.6"
 futures = "0.1.23"
 libloading = "0.5.0"
 uuid = {version = "0.7.1", default-features = false, features = ["v4"]}
-failure = "0.1.5"
+failure = "0.1.6"
 strum = "0.16.0"
 strum_macros = "0.16.0"
 
@@ -70,7 +76,7 @@ depends = "$auto, libindy (=1.14.1)"
 extended-description = """\
 This is Evernym's SDK for managing Verifiable Credential eXchange against an Indy network. For specific instructions on building see the README in the corresponding github repo https://github.com/evernym/sdk"""
 section = "admin"
-revision = "338ad01"
+revision = "a26ad4f"
 priority = "optional"
 assets = [
     ["target/debug/libvcx.so.*", "usr/lib/", "644"],

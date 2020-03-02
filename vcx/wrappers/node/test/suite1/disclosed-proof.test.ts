@@ -214,6 +214,6 @@ describe('DisclosedProof', () => {
           { connection: data.connection, reason: 'some reason', proposal: null } as any))
       assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
     })
-  })
+ })
 
 })

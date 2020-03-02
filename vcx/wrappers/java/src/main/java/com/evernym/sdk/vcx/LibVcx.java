@@ -27,17 +27,23 @@ public abstract class LibVcx {
         public int vcx_shutdown(boolean delete);
         public int vcx_reset();
 
-    /**
-     * Helper API for testing purposes.
-     */
+        /**
+         * Sovtoken & nullpay
+         */
+        public int sovtoken_init();
+//        public int nullpay_init();
+
+        /**
+         * Helper API for testing purposes.
+         */
         public void vcx_set_next_agency_response(int msg);
         public void vcx_get_current_error(PointerByReference error);
 
-    /**
-     * Schema object
-     *
-     * For creating, validating and committing a schema to the sovrin ledger.
-     */
+        /**
+         * Schema object
+         *
+         * For creating, validating and committing a schema to the sovrin ledger.
+         */
 
         /**
          * Creates a schema from a json string. Populates a handle to the new schema.
@@ -87,12 +93,12 @@ public abstract class LibVcx {
 
 
 
-    /**
-     * connection object
-     *
-     * For creating a connection with an identity owner for interactions such as exchanging
-     * claims and proofs.
-     */
+        /**
+         * connection object
+         *
+         * For creating a connection with an identity owner for interactions such as exchanging
+         * claims and proofs.
+         */
 
         /**
          * Creates a connection object to a specific identity owner. Populates a handle to the new connection.
@@ -181,6 +187,72 @@ public abstract class LibVcx {
         /** Get their pairwise did from connection */
         public int vcx_connection_get_their_pw_did(int command_handle, int connection_handle, Callback cb);
 
+        /** Send a message to the specified connection
+         ///
+         /// #params
+         ///
+         /// command_handle: command handle to map callback to user context.
+         ///
+         /// connection_handle: connection to receive the message
+         ///
+         /// msg: actual message to send
+         ///
+         /// send_message_options: config options json string that contains following options
+         ///     {
+         ///         msg_type: String, // type of message to send
+         ///         msg_title: String, // message title (user notification)
+         ///         ref_msg_id: Option<String>, // If responding to a message, id of the message
+         ///     }
+         ///
+         /// cb: Callback that provides array of matching messages retrieved
+         ///
+         /// #Returns
+         /// Error code as a u32
+         */
+        public int vcx_connection_send_message(int command_handle, int connection_handle, String msg, String send_message_options, Callback cb);
+
+        /** Generate a signature for the specified data
+         ///
+         /// #params
+         ///
+         /// command_handle: command handle to map callback to user context.
+         ///
+         /// connection_handle: connection to receive the message
+         ///
+         /// data_raw: raw data buffer for signature
+         ///
+         /// data:len: length of data buffer
+         ///
+         /// cb: Callback that provides the generated signature
+         ///
+         /// #Returns
+         /// Error code as a u32
+         */
+        public int vcx_connection_sign_data(int command_handle, int connection_handle, byte[] data_raw, int data_len, Callback cb);
+
+        /** Verify the signature is valid for the specified data
+         ///
+         /// #params
+         ///
+         /// command_handle: command handle to map callback to user context.
+         ///
+         /// connection_handle: connection to receive the message
+         ///
+         /// data_raw: raw data buffer for signature
+         ///
+         /// data_len: length of data buffer
+         ///
+         /// signature_raw: raw data buffer for signature
+         ///
+         /// signature_len: length of data buffer
+         ///
+         /// cb: Callback that specifies whether the signature was valid or not
+         ///
+         /// #Returns
+         /// Error code as a u32
+         */
+        public int vcx_connection_verify_signature(int command_handle, int connection_handle, byte[] data_raw, int data_len, byte[] signature_raw, int signature_len, Callback cb);
+
         /**
          * credential issuer object
          *
@@ -230,11 +302,11 @@ public abstract class LibVcx {
         public int vcx_issuer_accept_credential(int credential_handle);
 
 
-    /**
-     * proof object
-     *
-     * Used for requesting and managing a proof request with an identity owner.
-     */
+        /**
+         * proof object
+         *
+         * Used for requesting and managing a proof request with an identity owner.
+         */
 
         /**
          * Creates a proof object.  Populates a handle to the new proof.
@@ -297,11 +369,11 @@ public abstract class LibVcx {
          */
         public int vcx_proof_release(int proof_handle);
 
-    /**
-     * disclosed_proof object
-     *
-     * Used for sending a disclosed_proof to an identity owner.
-     */
+        /**
+         * disclosed_proof object
+         *
+         * Used for sending a disclosed_proof to an identity owner.
+         */
 
         /**
          * Creates a disclosed_proof object.  Populates a handle to the new disclosed_proof.
@@ -401,6 +473,141 @@ public abstract class LibVcx {
 
         public int vcx_set_active_txn_author_agreement_meta(String text, String version, String hash, String accMechType, long timeOfAcceptance);
 
+        /// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// submitter_did: DID of the request sender.
+        /// text: a content of the TTA.
+        /// version: a version of the TTA (unique UTF-8 string).
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// #Returns
+        /// Request result as json.
+        ///
+        /// #Errors
+        /// Common*
+        // void           (*cb)(indy_handle_t command_handle_,
+        //                        indy_error_t  err,
+        //                        const char*   request_json)
+        public int indy_build_txn_author_agreement_request(int command_handle, String submitter_did, String text, String version, Callback cb);
+
+
+
+        /// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// submitter_did: (Optional) DID of the request sender.
+        /// data: (Optional) specifies a condition for getting specific TAA.
+        /// Contains 3 mutually exclusive optional fields:
+        /// {
+        ///     hash: Optional<str> - hash of requested TAA,
+        ///     version: Optional<str> - version of requested TAA.
+        ///     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
+        /// }
+        /// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+        ///
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// #Returns
+        /// Request result as json.
+        ///
+        /// #Errors
+        /// Common*
+        // void           (*cb)(indy_handle_t command_handle_,
+        // indy_error_t  err,
+        // const char*   request_json)
+        public int indy_build_get_txn_author_agreement_request(int command_handle, String submitter_did, String data, Callback cb);
+
+
+        /// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
+        /// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// submitter_did: DID of the request sender.
+        /// aml: a set of new acceptance mechanisms:
+        /// {
+        ///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+        ///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+        ///     ...
+        /// }
+        /// version: a version of new acceptance mechanisms. (Note: unique on the Ledger)
+        /// aml_context: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// #Returns
+        /// Request result as json.
+        ///
+        /// #Errors
+        /// Common*
+        // void           (*cb)(indy_handle_t command_handle_,
+        // indy_error_t  err,
+        // const char*   request_json)
+        public int indy_build_acceptance_mechanisms_request(int command_handle, String submitter_did, String aml, String version, String aml_context, Callback cb);
+
+        /// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
+        /// valid for specified time or the latest one.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// submitter_did: (Optional) DID of the request sender.
+        /// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
+        /// version: (Optional) version of acceptance mechanisms.
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// NOTE: timestamp and version cannot be specified together.
+        ///
+        /// #Returns
+        /// Request result as json.
+        ///
+        /// #Errors
+        /// Common*
+        // void           (*cb)(indy_handle_t command_handle_,
+        // indy_error_t  err,
+        // const char*   request_json)
+        public int indy_build_get_acceptance_mechanisms_request(int command_handle, String submitter_did, Long  timestamp, String version, Callback cb);
+
+        /// Append transaction author agreement acceptance data to a request.
+        /// This function should be called before signing and sending a request
+        /// if there is any transaction author agreement set on the Ledger.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// This function may calculate hash by itself or consume it as a parameter.
+        /// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// request_json: original request data json.
+        /// text and version - (optional) raw data about TAA from ledger.
+        ///     These parameters should be passed together.
+        ///     These parameters are required if taa_digest parameter is omitted.
+        /// taa_digest - (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+        /// mechanism - mechanism how user has accepted the TAA
+        /// time - UTC timestamp when user has accepted the TAA
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// #Returns
+        /// Updated request result as json.
+        ///
+        /// #Errors
+        /// Common*
+        // void           (*cb)(indy_handle_t command_handle_,
+        // indy_error_t  err,
+        // const char*   request_with_meta_json)
+        public int  indy_append_txn_author_agreement_acceptance_to_request(int command_handle, String request_json, String text, String version, String taa_digest, String mechanism, Long time, Callback cb);
+
+
         public int vcx_pool_set_handle(int handle);
 
         public int vcx_get_request_price(int command_handle, String action_json, String requester_info_json, Callback cb);
@@ -477,6 +684,28 @@ public abstract class LibVcx {
         /** Set wallet handle manually */
         public int vcx_wallet_set_handle(int handle);
 
+        /** Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent */
+        public int vcx_wallet_backup_create(int command_handle, String sourceID, String backupKey, Callback cb);
+
+        /** Wallet Backup to the Cloud */
+        public int vcx_wallet_backup_backup(int command_handle, int walletBackupHandle, String path, Callback cb);
+
+        /** Checks for any state change and updates the the state attribute */
+        public int vcx_wallet_backup_update_state(int commandHandle, int walletBackupHandle, Callback cb);
+
+        /* Checks the message any state change and updates the the state attribute */
+        public int vcx_wallet_backup_update_state_with_message(int commandHandle, int walletBackupHandle,  String message, Callback cb);
+
+        /** Takes the wallet backup object and returns a json string of all its attributes */
+        public int vcx_wallet_backup_serialize(int commandHandle, int walletBackupHandle, Callback cb);
+
+        /* Takes a json string representing an wallet backup object and recreates an object matching the json */
+        public int vcx_wallet_backup_deserialize(int commandHandle, String walletBackupStr, Callback cb);
+
+        /** Retrieve Backup from the cloud and Import the encrypted file back into the wallet */
+        public int vcx_wallet_backup_restore(int command_handle, String config, Callback cb);
+
+
         /** Sign with payment address **/
         public int vcx_wallet_sign_with_address(int command_handle, String address, byte[] message_raw, int message_len, Callback cb);
 
@@ -525,6 +754,9 @@ public abstract class LibVcx {
         /** Create a credential definition from the given schema that will be published by Endorser later. */
         int vcx_credentialdef_prepare_for_endorser(int command_handle, String source_id, String credentialdef_name, String schema_id, String issuer_did, String tag,  String config, String endorser, Callback cb);
 
+        /** Creates a credential definition from the given credential definition id. */
+        int vcx_credentialdef_create_with_id(int command_handle, String source_id, String credentialdef_id, String issuer_did, String revocation_config, Callback cb);
+
         /** Populates status with the current state of this credential. */
         int vcx_credentialdef_serialize(int command_handle, int credentialdef_handle, Callback cb);
 
@@ -550,9 +782,16 @@ public abstract class LibVcx {
 
         /** Set custom logger implementation. */
         int vcx_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
+
         /** Set stdout logger implementation. */
         int vcx_set_default_logger(String log_level);
 
+        /**
+         * Evernym extensions
+         */
+
+        int indy_crypto_anon_crypt(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
+        int indy_crypto_anon_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
     }
 
     /*
@@ -568,6 +807,7 @@ public abstract class LibVcx {
         } catch (UnsatisfiedLinkError ex) {
             // Library could not be found in standard OS locations.
             // Call init(File file) explicitly with absolute library path.
+            ex.printStackTrace();
         }
     }
 
@@ -621,6 +861,29 @@ public abstract class LibVcx {
         return api != null;
     }
 
+    public static void logMessage(String loggerName, int level, String message) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(loggerName);
+        switch (level) {
+            case 1:
+                logger.error(message);
+                break;
+            case 2:
+                logger.warn(message);
+                break;
+            case 3:
+                logger.info(message);
+                break;
+            case 4:
+                logger.debug(message);
+                break;
+            case 5:
+                logger.trace(message);
+                break;
+            default:
+                break;
+        }
+    }
+
     private static class Logger {
         private static Callback enabled = null;
 
@@ -628,31 +891,20 @@ public abstract class LibVcx {
 
             @SuppressWarnings({"unused", "unchecked"})
             public void callback(Pointer context, int level, String target, String message, String module_path, String file, int line) {
+
                 detach(false);
 
-                org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(String.format("%s.native.%s", LibVcx.class.getName(), target.replace("::", ".")));
-
-                String logMessage = String.format("%s:%d | %s", file, line, message);
-
-                switch (level) {
-                    case 1:
-                        logger.error(logMessage);
-                        break;
-                    case 2:
-                        logger.warn(logMessage);
-                        break;
-                    case 3:
-                        logger.info(logMessage);
-                        break;
-                    case 4:
-                        logger.debug(logMessage);
-                        break;
-                    case 5:
-                        logger.trace(logMessage);
-                        break;
-                    default:
-                        break;
+                // NOTE: We must restrict the size of the message because the message could be the whole
+                // contents of a file, like a 10 MB log file and we do not want all of that content logged
+                // into the log file itself... This is what the log statement would look like
+                // 2019-02-19 04:34:12.813-0700 ConnectMe[9216:8454774] Debug indy::commands::crypto | src/commands/crypto.rs:286 | anonymous_encrypt <<< res:
+                if (message.length() > 102400) {
+                    // if message is more than 100K then log only 10K of the message
+                    message = message.substring(0, 10240);
                 }
+                String loggerName = String.format("%s.native.%s", LibVcx.class.getName(), target.replace("::", "."));
+                String msg = String.format("%s:%d | %s", file, line, message);
+                logMessage(loggerName, level, msg);
             }
         };
 

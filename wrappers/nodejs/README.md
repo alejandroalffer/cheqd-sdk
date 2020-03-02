@@ -161,11 +161,11 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 #### issuerRotateCredentialDefStart \( wh, credDefId, config \) -&gt; credDef
 
  Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
- 
+
  Use `issuerRotateCredentialDefApply` function to set temporary keys as the main.
- 
+
  **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
- 
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `credDefId`: String - an identifier of created credential definition stored in the wallet
 * `config`: Json - \(optional\) type-specific configuration of credential definition as json:
@@ -178,9 +178,9 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 #### issuerRotateCredentialDefApply \( wh, credDefId \) -&gt; void
 
  Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
- 
+
  **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
- 
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `credDefId`: String - an identifier of created credential definition stored in the wallet
 * __->__  void
@@ -225,7 +225,7 @@ This call requires access to pre-configured blob storage writer instance handle 
     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
 }
 ````
-* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails 
+* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails
 
 NOTE:
 Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
@@ -1149,7 +1149,7 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 #### cryptoAuthCrypt \( wh, senderVk, recipientVk, messageRaw \) -&gt; encryptedMsgRaw
 
   **** THIS FUNCTION WILL BE DEPRECATED USE packMessage INSTEAD ****
-  
+
 Encrypt a message by authenticated-encryption scheme.
 
 Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -1172,7 +1172,7 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 #### cryptoAuthDecrypt \( wh, recipientVk, encryptedMsgRaw \) -&gt; \[ senderVk, decryptedMsgRaw \]
 
   **** THIS FUNCTION WILL BE DEPRECATED USE unpackMessage INSTEAD ****
-  
+
 Decrypt a message by authenticated-encryption scheme.
 
 Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -1241,7 +1241,7 @@ Note to use DID keys with this function you can call keyForDid to get key id (ve
 * `receiverKeys`: Array - an array of strings which contains receiver's keys the message is being encrypted for.
     Example: \['receiver edge_agent_1 verkey', 'receiver edge_agent_2 verkey'\]
 * `senderVk`: String - the sender's verkey as a string When null pointer is used in this parameter, anoncrypt is used
-* __->__ `jwe`: Buffer - a JWE 
+* __->__ `jwe`: Buffer - a JWE
 ```
 using authcrypt alg:
 {
@@ -2066,7 +2066,7 @@ Builds a AUTH_RULE request. Request to change authentication rules for a ledger 
     * "EDIT" - to edit an existing one
 * `field`: String - transaction field.
 * `oldValue`: String - \(Optional\) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-* `newValue`: String - \(Optional\) new value that can be used to fill the field. 
+* `newValue`: String - \(Optional\) new value that can be used to fill the field.
 * `constraint`: Json - set of constraints required for execution of an action in the following format:
 ```
  {
@@ -2075,7 +2075,7 @@ Builds a AUTH_RULE request. Request to change authentication rules for a ledger 
      role - <string> (optional) role of a user which satisfy to constrain.
      sig_count - <u32> the number of signatures required to execution action.
      need_to_be_owner - <bool> (optional) if user must be an owner of transaction (false by default).
-     off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default). 
+     off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default).
      metadata - <object> (optional) additional parameters of the constraint.
  }
 can be combined by
@@ -2087,7 +2087,7 @@ can be combined by
 
 Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
 
-More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule   
+More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule
 
 * __->__ `request`: Json
 
@@ -2116,7 +2116,7 @@ Builds a AUTH_RULES request. Request to change multiple authentication rules for
 
 Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
 
-More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules   
+More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
 
 * __->__ `request`: Json
 
@@ -2136,7 +2136,7 @@ NOTE: Either none or all transaction related parameters must be specified (`oldV
 * `action`: String - target action type. Can be either "ADD" or "EDIT".
 * `field`: String - target transaction field.
 * `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (mandatory for EDIT action).
-* `newValue`: String - \(Optional\) new value that can be used to fill the field. 
+* `newValue`: String - \(Optional\) new value that can be used to fill the field.
 
 * __->__ `request`: Json
 
@@ -2144,7 +2144,7 @@ Errors: `Common*`
 
 #### buildTxnAuthorAgreementRequest \( submitterDid, text, version, ratificationTimestamp, retirementTimestamp \) -&gt; request
 
-Builds a TXN_AUTHR_AGRMT request. 
+Builds a TXN_AUTHR_AGRMT request.
 Request to add a new version of Transaction Author Agreement to the ledger.
 
 EXPERIMENTAL
@@ -2195,7 +2195,7 @@ Errors: `Common*`
 
 #### buildGetTxnAuthorAgreementRequest \( submitterDid, data \) -&gt; request
 
-Builds a GET_TXN_AUTHR_AGRMT request. 
+Builds a GET_TXN_AUTHR_AGRMT request.
 Request to get a specific Transaction Author Agreement from the ledger.
 
 EXPERIMENTAL
@@ -2218,7 +2218,7 @@ Errors: `Common*`
 
 #### buildAcceptanceMechanismsRequest \( submitterDid, aml, version, amlContext \) -&gt; request
 
-Builds a SET_TXN_AUTHR_AGRMT_AML request. 
+Builds a SET_TXN_AUTHR_AGRMT_AML request.
 Request to add a new list of acceptance mechanisms for transaction author agreement.
 Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
 
@@ -2243,7 +2243,7 @@ Errors: `Common*`
 
 #### buildGetAcceptanceMechanismsRequest \( submitterDid, timestamp \) -&gt; request
 
-Builds a GET_TXN_AUTHR_AGRMT_AML request. 
+Builds a GET_TXN_AUTHR_AGRMT_AML request.
 Request to get a list of  acceptance mechanisms from the ledger valid for specified time or the latest one.
 
 EXPERIMENTAL
@@ -2276,7 +2276,7 @@ If all text, version and taaDigest parameters are specified, a check integrity o
      * `text` and `version` parameters are required if taaDigest parameter is omitted.
 * `taaDigest`: String - \(Optional\) hash on text and version. Digest is sha256 hash calculated on concatenated strings: version || text. This parameter is required if text and version parameters are omitted.
 * `accMechType`: String - mechanism how user has accepted the TAA.
-* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk. 
+* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
 
 * __->__ `request`: Json
 

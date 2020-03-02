@@ -99,6 +99,84 @@ pub extern fn vcx_credentialdef_create(command_handle: CommandHandle,
 
     error::SUCCESS.code_num
 }
+/// Create a new CredentialDef object from a cred_def_id
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the user.
+///
+/// cred_def_id: reference to already created cred def
+///
+/// issuer_did: did corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
+///
+/// revocation_config: Information given during the initial create of the cred def if revocation was enabled
+///  {
+///     tails_file: Option<String>,  // Path to tails file
+///     rev_reg_id: Option<String>,
+///     rev_reg_def: Option<String>,
+///     rev_reg_entry: Option<String>,
+///  }
+///
+/// cb: Callback that provides CredentialDef handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_credentialdef_create_with_id(command_handle: CommandHandle,
+                                               source_id: *const c_char,
+                                               cred_def_id: *const c_char,
+                                               issuer_did: *const c_char,
+                                               revocation_config: *const c_char,
+                                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_handle: u32)>) -> u32 {
+    info!("vcx_credentialdef_create_with_id >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(cred_def_id, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(revocation_config, VcxErrorKind::InvalidOption);
+
+    let issuer_did: String = if !issuer_did.is_null() {
+        check_useful_c_str!(issuer_did, VcxErrorKind::InvalidOption);
+        issuer_did.to_owned()
+    } else {
+        match settings::get_config_value(settings::CONFIG_INSTITUTION_DID) {
+            Ok(x) => x,
+            Err(x) => return x.into(),
+        }
+    };
+
+    trace!("vcx_credentialdef_create_with_id(command_handle: {}, source_id: {}, cred_def_id: {} issuer_did: {}, revocation_config: {:?})",
+           command_handle,
+           source_id,
+           cred_def_id,
+           issuer_did,
+           revocation_config
+    );
+
+    spawn(move|| {
+        let ( rc, handle) = match credential_def::create_credentialdef_from_id(source_id,
+                                                                               cred_def_id,
+                                                                               issuer_did,
+                                                                               revocation_config ) {
+            Ok(x) => {
+                trace!("vcx_credentialdef_create_with_id_cb(command_handle: {}, rc: {}, credentialdef_handle: {}), source_id: {:?}",
+                       command_handle, error::SUCCESS.message, x, credential_def::get_source_id(x).unwrap_or_default());
+                (error::SUCCESS.code_num, x)
+            }
+            Err(x) => {
+                warn!("vcx_credentialdef_create_with_id(command_handle: {}, rc: {}, credentialdef_handle: {}), source_id: {:?}",
+                      command_handle, x, 0, "");
+                (x.into(), 0)
+            }
+        };
+        cb(command_handle, rc, handle);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
 
 /// Create a new CredentialDef object that will be published by Endorser later.
 ///
@@ -535,14 +613,16 @@ mod tests {
 
     use super::*;
     use std::ffi::CString;
-    use std::time::Duration;
     use settings;
     use api::return_types_u32;
     use utils::constants::{SCHEMA_ID};
+    use utils::devsetup::*;
+    use utils::timeout::TimeoutUtils;
 
     #[test]
     fn test_vcx_create_credentialdef_success() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -553,12 +633,13 @@ mod tests {
                                             CString::new("{}").unwrap().into_raw(),
                                             0,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_create_credentialdef_fails() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
+
         settings::set_defaults();
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
@@ -570,12 +651,26 @@ mod tests {
                                             CString::new("{}").unwrap().into_raw(),
                                             0,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert!(cb.receive(Some(Duration::from_secs(10))).is_err());
+        assert!(cb.receive(TimeoutUtils::some_medium()).is_err());
+    }
+    #[test]
+    fn test_vcx_create_credentialdef_from_id_success() {
+        let _setup = SetupMocks::init();
+
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credentialdef_create_with_id(cb.command_handle,
+                                            CString::new("Test Source ID").unwrap().into_raw(),
+                                            CString::new("Test Credential Def").unwrap().into_raw(),
+                                            CString::new("6vkhW3L28AophhA68SSzRS").unwrap().into_raw(),
+                                            ptr::null(),
+                                            Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_credentialdef_serialize() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -587,16 +682,17 @@ mod tests {
                                             0,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
 
-        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_medium()).unwrap();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_credentialdef_serialize(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        let cred = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let cred = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert!(cred.is_some());
     }
 
     #[test]
     fn test_vcx_credentialdef_deserialize_succeeds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
 
         let original = r#"{"version":"1.0", "data": {"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:1697","issuer_did":"2hoqvcwupRTUNkXn6ArYzs","tag":"tag","name":"Test Credential Definition","rev_ref_def":null,"rev_reg_entry":null,"rev_reg_id":null,"source_id":"SourceId"}}"#;
@@ -604,14 +700,15 @@ mod tests {
                                                  CString::new(original).unwrap().into_raw(),
                                                  Some(cb.get_callback())), error::SUCCESS.code_num);
 
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_short()).unwrap();
         assert!(handle > 0);
 
     }
 
     #[test]
     fn test_vcx_credentialdef_deserialize_succeeds_with_old_data() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
 
         let original = r#"{"data":{"id":"V4SGRU86Z58d6TV7PBUe6f:3:CL:912:tag1","name":"color","payment_txn":null,"source_id":"1","tag":"tag1"},"version":"1.0"}"#;
@@ -619,7 +716,7 @@ mod tests {
                                                  CString::new(original).unwrap().into_raw(),
                                                  Some(cb.get_callback())), error::SUCCESS.code_num);
 
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_short()).unwrap();
         assert!(handle > 0);
 
     }
@@ -627,7 +724,7 @@ mod tests {
 
     #[test]
     fn test_vcx_credentialdef_release() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
@@ -640,7 +737,7 @@ mod tests {
                                             0,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
 
-        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_medium()).unwrap();
         let unknown_handle = handle + 1;
         assert_eq!(vcx_credentialdef_release(unknown_handle), error::INVALID_CREDENTIAL_DEF_HANDLE.code_num);
     }
@@ -648,7 +745,8 @@ mod tests {
 
     #[test]
     fn test_vcx_creddef_get_id() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -659,15 +757,16 @@ mod tests {
                                             CString::new("{}").unwrap().into_raw(),
                                             0,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_medium()).unwrap();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_credentialdef_get_cred_def_id(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_get_payment_txn() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let handle = credential_def::create_and_publish_credentialdef("sid".to_string(),
                                                                       "name".to_string(),
@@ -676,12 +775,13 @@ mod tests {
                                                                       "{}".to_string()).unwrap();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let _rc = vcx_credentialdef_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_prepare_cred_def_success() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let cb = return_types_u32::Return_U32_U32_STR_STR_STR::new().unwrap();
         assert_eq!(vcx_credentialdef_prepare_for_endorser(cb.command_handle,
@@ -693,7 +793,7 @@ mod tests {
                                             CString::new("{}").unwrap().into_raw(),
                                                           CString::new("V4SGRU86Z58d6TV7PBUe6f").unwrap().into_raw(),
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        let (_handle, cred_def_transaction, rev_reg_def_transaction, rev_reg_delta_transaction) = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let (_handle, cred_def_transaction, rev_reg_def_transaction, rev_reg_delta_transaction) = cb.receive(TimeoutUtils::some_short()).unwrap();
         let cred_def_transaction = cred_def_transaction.unwrap();
         let cred_def_transaction: serde_json::Value = serde_json::from_str(&cred_def_transaction).unwrap();
         let expected_cred_def_transaction: serde_json::Value = serde_json::from_str(::utils::constants::REQUEST_WITH_ENDORSER).unwrap();
@@ -704,7 +804,8 @@ mod tests {
 
     #[test]
     fn test_vcx_prepare_cred_def_with_revocation_success() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let cb = return_types_u32::Return_U32_U32_STR_STR_STR::new().unwrap();
         assert_eq!(vcx_credentialdef_prepare_for_endorser(cb.command_handle,
@@ -716,7 +817,7 @@ mod tests {
                                             CString::new(credential_def::tests::revocation_details(true).to_string()).unwrap().into_raw(),
                                                           CString::new("V4SGRU86Z58d6TV7PBUe6f").unwrap().into_raw(),
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        let (_handle, cred_def_transaction, rev_reg_def_transaction, rev_reg_delta_transaction) = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let (_handle, cred_def_transaction, rev_reg_def_transaction, rev_reg_delta_transaction) = cb.receive(TimeoutUtils::some_short()).unwrap();
         let cred_def_transaction = cred_def_transaction.unwrap();
         let cred_def_transaction: serde_json::Value = serde_json::from_str(&cred_def_transaction).unwrap();
         let expected_cred_def_transaction: serde_json::Value = serde_json::from_str(::utils::constants::REQUEST_WITH_ENDORSER).unwrap();
@@ -727,7 +828,8 @@ mod tests {
 
     #[test]
     fn test_vcx_cred_def_get_state() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let (handle, _, _, _) = credential_def::prepare_credentialdef_for_endorser("testid".to_string(),
                                                                                    "Test Credential Def".to_string(),
                                                                                    "6vkhW3L28AophhA68SSzRS".to_string(),
@@ -738,17 +840,17 @@ mod tests {
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
             let _rc = vcx_credentialdef_get_state(cb.command_handle, handle, Some(cb.get_callback()));
-            assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Built as u32)
+            assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), ::api::PublicEntityStateType::Built as u32)
         }
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
             let _rc = vcx_credentialdef_update_state(cb.command_handle, handle, Some(cb.get_callback()));
-            assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Published as u32);
+            assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), ::api::PublicEntityStateType::Published as u32);
         }
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
             let _rc = vcx_credentialdef_get_state(cb.command_handle, handle, Some(cb.get_callback()));
-            assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Published as u32)
+            assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), ::api::PublicEntityStateType::Published as u32)
         }
     }
 }

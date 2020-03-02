@@ -10,6 +10,8 @@ pub mod update_connection;
 pub mod update_message;
 pub mod message_type;
 pub mod payload;
+pub mod wallet_backup;
+pub mod deaddrop;
 #[macro_use]
 pub mod thread;
 
@@ -29,12 +31,16 @@ use self::send_message::SendMessageBuilder;
 use self::update_message::{UpdateMessageStatusByConnections, UpdateMessageStatusByConnectionsResponse};
 use self::proofs::proof_request::ProofRequestMessage;
 use self::agent_utils::{Connect, ConnectResponse, SignUp, SignUpResponse, CreateAgent, CreateAgentResponse, UpdateComMethod, ComMethodUpdated};
+use self::wallet_backup::backup_init::{BackupInit, BackupProvisioned, BackupInitBuilder};
+use self::wallet_backup::backup::{Backup, BackupAck, BackupBuilder};
+use self::wallet_backup::restore::{BackupRestore, BackupRestored, BackupRestoreBuilder};
 use self::message_type::*;
 use error::prelude::*;
 
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
 use settings::ProtocolTypes;
+use messages::deaddrop::retrieve::{RetrieveDeadDrop, RetrievedDeadDropResult, RetrieveDeadDropBuilder};
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -256,6 +262,18 @@ pub enum A2AMessageV2 {
     UpdateConfigsResponse(UpdateConfigsResponse),
     UpdateComMethod(UpdateComMethod),
     ComMethodUpdated(ComMethodUpdated),
+
+    /// Wallet Backup
+    BackupProvision(BackupInit),
+    BackupProvisioned(BackupProvisioned),
+    Backup(Backup),
+    BackupAck(BackupAck),
+    BackupRestore(BackupRestore),
+    BackupRestored(BackupRestored),
+
+    /// Dead Drop
+    RetrieveDeadDrop(RetrieveDeadDrop),
+    RetrievedDeadDropResult(RetrievedDeadDropResult),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV2 {
@@ -417,6 +435,46 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "COM_METHOD_UPDATED" => {
                 ComMethodUpdated::deserialize(value)
                     .map(A2AMessageV2::ComMethodUpdated)
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_INIT_BACKUP" => {
+                BackupInit::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupProvision(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_READY" => {
+                BackupProvisioned::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupProvisioned(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP" => {
+                Backup::deserialize(value)
+                    .map(|msg| A2AMessageV2::Backup(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_ACK" => {
+                BackupAck::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupAck(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_RESTORE" => {
+                BackupRestore::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupRestore(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_RESTORED" => {
+                BackupRestored::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupRestored(msg))
+                    .map_err(de::Error::custom)
+            }
+            "DEAD_DROP_RETRIEVE" => {
+                RetrieveDeadDrop::deserialize(value)
+                    .map(|msg| A2AMessageV2::RetrieveDeadDrop(msg))
+                    .map_err(de::Error::custom)
+            }
+            "DEAD_DROP_RETRIEVED_RESULT" => {
+                RetrievedDeadDropResult::deserialize(value)
+                    .map(|msg| A2AMessageV2::RetrievedDeadDropResult(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -601,6 +659,10 @@ pub enum RemoteMessageType {
     Cred,
     ProofReq,
     Proof,
+    WalletBackupProvisioned,
+    WalletBackupAck,
+    WalletBackupRestored,
+    RetrievedDeadDropResult,
 }
 
 impl Serialize for RemoteMessageType {
@@ -614,6 +676,10 @@ impl Serialize for RemoteMessageType {
             RemoteMessageType::Cred => "cred",
             RemoteMessageType::ProofReq => "proofReq",
             RemoteMessageType::Proof => "proof",
+            RemoteMessageType::WalletBackupProvisioned => "WALLET_BACKUP_READY",
+            RemoteMessageType::WalletBackupAck => "WALLET_BACKUP_ACK",
+            RemoteMessageType::WalletBackupRestored => "WALLET_BACKUP_RESTORED",
+            RemoteMessageType::RetrievedDeadDropResult => "DEAD_DROP_RETRIEVE_RESULT",
             RemoteMessageType::Other(_type) => _type,
         };
         Value::String(value.to_string()).serialize(serializer)
@@ -626,12 +692,16 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
         match value.as_str() {
             Some("connReq") => Ok(RemoteMessageType::ConnReq),
             Some("connReqAnswer") | Some("CONN_REQ_ACCEPTED") => Ok(RemoteMessageType::ConnReqAnswer),
-            Some("connReqRedirect") | Some("CONN_REQ_REDIRECTED") | Some("connReqRedirected")  => Ok(RemoteMessageType::ConnReqRedirect),
+            Some("connReqRedirect") | Some("CONN_REQ_REDIRECTED") | Some("connReqRedirected") => Ok(RemoteMessageType::ConnReqRedirect),
             Some("credOffer") => Ok(RemoteMessageType::CredOffer),
             Some("credReq") => Ok(RemoteMessageType::CredReq),
             Some("cred") => Ok(RemoteMessageType::Cred),
             Some("proofReq") => Ok(RemoteMessageType::ProofReq),
             Some("proof") => Ok(RemoteMessageType::Proof),
+            Some("WALLET_BACKUP_READY") => Ok(RemoteMessageType::WalletBackupProvisioned),
+            Some("WALLET_BACKUP_ACK") => Ok(RemoteMessageType::WalletBackupAck),
+            Some("WALLET_BACKUP_RESTORED") => Ok(RemoteMessageType::WalletBackupRestored),
+            Some("DEAD_DROP_RETRIEVE_RESULT") => Ok(RemoteMessageType::RetrievedDeadDropResult),
             Some(_type) => Ok(RemoteMessageType::Other(_type.to_string())),
             _ => Err(de::Error::custom("Unexpected message type."))
         }
@@ -730,20 +800,28 @@ pub enum A2AMessageKinds {
     ConnectionRequestRedirect,
     SendRemoteMessage,
     SendRemoteMessageResponse,
+    BackupInit,
+    BackupReady,
+    Backup,
+    BackupAck,
+    BackupRestore,
+    BackupRestored,
+    RetrieveDeadDrop,
+    RetrievedDeadDropResult,
 }
 
 impl A2AMessageKinds {
     pub fn family(&self) -> MessageFamilies {
         match self {
             A2AMessageKinds::Forward => MessageFamilies::Routing,
-            A2AMessageKinds::Connect => MessageFamilies::Onboarding,
-            A2AMessageKinds::Connected => MessageFamilies::Onboarding,
-            A2AMessageKinds::CreateAgent => MessageFamilies::Onboarding,
-            A2AMessageKinds::AgentCreated => MessageFamilies::Onboarding,
-            A2AMessageKinds::SignUp => MessageFamilies::Onboarding,
-            A2AMessageKinds::SignedUp => MessageFamilies::Onboarding,
-            A2AMessageKinds::CreateKey => MessageFamilies::Pairwise,
-            A2AMessageKinds::KeyCreated => MessageFamilies::Pairwise,
+            A2AMessageKinds::Connect => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::Connected => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::CreateAgent => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::AgentCreated => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::SignUp => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::SignedUp => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::CreateKey => MessageFamilies::Connecting,
+            A2AMessageKinds::KeyCreated => MessageFamilies::Connecting,
             A2AMessageKinds::CreateMessage => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageDetail => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageCreated => MessageFamilies::Pairwise,
@@ -752,9 +830,9 @@ impl A2AMessageKinds {
             A2AMessageKinds::GetMessagesByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::Messages => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConnectionStatus => MessageFamilies::Pairwise,
-            A2AMessageKinds::ConnectionRequest => MessageFamilies::Pairwise,
-            A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Pairwise,
-            A2AMessageKinds::ConnectionRequestRedirect => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequest => MessageFamilies::Connecting,
+            A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Connecting,
+            A2AMessageKinds::ConnectionRequestRedirect => MessageFamilies::Connecting,
             A2AMessageKinds::UpdateMessageStatusByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageStatusUpdatedByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConfigs => MessageFamilies::Configs,
@@ -763,6 +841,14 @@ impl A2AMessageKinds {
             A2AMessageKinds::ComMethodUpdated => MessageFamilies::Configs,
             A2AMessageKinds::SendRemoteMessage => MessageFamilies::Routing,
             A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Routing,
+            A2AMessageKinds::BackupInit => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupReady => MessageFamilies::WalletBackup,
+            A2AMessageKinds::Backup => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupAck => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupRestore => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupRestored => MessageFamilies::WalletBackup,
+            A2AMessageKinds::RetrieveDeadDrop => MessageFamilies::DeadDrop,
+            A2AMessageKinds::RetrievedDeadDropResult => MessageFamilies::DeadDrop,
         }
     }
 
@@ -796,6 +882,14 @@ impl A2AMessageKinds {
             A2AMessageKinds::ComMethodUpdated => "COM_METHOD_UPDATED".to_string(),
             A2AMessageKinds::SendRemoteMessage => "SEND_REMOTE_MSG".to_string(),
             A2AMessageKinds::SendRemoteMessageResponse => "REMOTE_MSG_SENT".to_string(),
+            A2AMessageKinds::BackupInit => "WALLET_INIT_BACKUP".to_string(),
+            A2AMessageKinds::BackupReady => "WALLET_BACKUP_READY".to_string(),
+            A2AMessageKinds::Backup => "WALLET_BACKUP".to_string(),
+            A2AMessageKinds::BackupAck => "WALLET_BACKUP_ACK".to_string(),
+            A2AMessageKinds::BackupRestore => "WALLET_BACKUP_RESTORE".to_string(),
+            A2AMessageKinds::BackupRestored => "WALLET_BACKUP_RESTORED".to_string(),
+            A2AMessageKinds::RetrieveDeadDrop => "DEAD_DROP_RETRIEVE".to_string(),
+            A2AMessageKinds::RetrievedDeadDropResult => "DEAD_DROP_RETRIEVE_RESULT".to_string(),
         }
     }
 }
@@ -900,7 +994,7 @@ pub fn try_i8_bundle(data: Vec<u8>) -> VcxResult<Bundled<Vec<u8>>> {
     let bundle: Bundled<Vec<i8>> =
         rmp_serde::from_slice(&data[..])
             .map_err(|_| {
-                warn!("could not deserialize bundle with i8, will try u8");
+                trace!("could not deserialize bundle with i8, will try u8");
                 VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Could not deserialize bundle with i8")
             })?;
 
@@ -1091,12 +1185,23 @@ pub fn send_message() -> SendMessageBuilder { SendMessageBuilder::create() }
 
 pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
 
+pub fn wallet_backup_init() -> BackupInitBuilder { BackupInitBuilder::create() }
+
+pub fn wallet_backup_restore() -> BackupRestoreBuilder { BackupRestoreBuilder::create() }
+
+pub fn retrieve_dead_drop() -> RetrieveDeadDropBuilder { RetrieveDeadDropBuilder::create() }
+
+pub fn backup_wallet() -> BackupBuilder { BackupBuilder::create() }
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::devsetup::*;
 
     #[test]
     fn test_to_u8() {
+        let _setup = SetupDefaults::init();
+
         let vec: Vec<i8> = vec![-127, -89, 98, 117, 110, 100, 108, 101, 100, -111, -36, 5, -74];
 
         let buf = to_u8(&vec);
@@ -1105,6 +1210,8 @@ pub mod tests {
 
     #[test]
     fn test_to_i8() {
+        let _setup = SetupDefaults::init();
+
         let vec: Vec<u8> = vec![129, 167, 98, 117, 110, 100, 108, 101, 100, 145, 220, 19, 13];
         let buf = to_i8(&vec);
         println!("new bundle: {:?}", buf);
@@ -1112,6 +1219,8 @@ pub mod tests {
 
     #[test]
     fn test_general_message_null_parameters() {
+        let _setup = SetupDefaults::init();
+
         let details = GeneralMessageDetail {
             msg_type: MessageTypeV1 {
                 name: "Name".to_string(),
@@ -1129,6 +1238,8 @@ pub mod tests {
 
     #[test]
     fn test_create_message_null_parameters() {
+        let _setup = SetupDefaults::init();
+
         let details = CreateMessage {
             msg_type: MessageTypeV1 {
                 name: "Name".to_string(),
