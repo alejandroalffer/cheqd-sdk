@@ -335,7 +335,7 @@ impl Connection {
                 .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL)?)?
                 .webhook_url(&webhook_url)?
                 .use_public_did(&self.public_did)?
-                .version(&self.version)?
+                .version(&Some(ProtocolTypes::V1))?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot update agent profile"))?;
         }
