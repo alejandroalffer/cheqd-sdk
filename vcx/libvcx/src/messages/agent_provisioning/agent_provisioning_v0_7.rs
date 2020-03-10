@@ -1,5 +1,4 @@
 use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
-use messages::message_type::{MessageTypes, MessageTypeV2};
 use utils::libindy::wallet;
 use error::prelude::*;
 use messages::agent_utils::{parse_config, set_config_values, configure_wallet, get_final_config, connect_v2, send_message_to_agency, CreateAgent, AgentCreated};
@@ -72,19 +71,18 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
 mod tests {
     use super::*;
     use settings;
+    use std::time::{Duration, SystemTime};
+    use chrono::prelude::*;
+    use utils::constants;
+    use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_consumer_env};
+    use utils::plugins::init_plugin;
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_agent_provisioning_0_7() {
-        use std::time::{Duration, SystemTime};
-        use chrono::prelude::*;
-        use utils::constants;
-        use utils::devsetup::tests::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT};
-        ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
-        ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
-        ::utils::libindy::pool::tests::delete_test_pool();
-        ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+        cleanup_consumer_env();
+        init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
 
         let id = "id";
         let sponsor = "evernym-test-sponsor";
@@ -96,7 +94,7 @@ mod tests {
         let keys = ::utils::libindy::crypto::create_key(Some("000000000000000000000000Trustee1")).unwrap();
         let sig = ::utils::libindy::crypto::sign(&keys, &(format!("{}{}{}", nonce, time, id)).as_bytes()).unwrap();
         let encoded_val = base64::encode(&sig);
-        let seed1 = ::utils::devsetup::tests::create_new_seed();
+        let seed1 = ::utils::devsetup::create_new_seed();
         wallet::close_wallet();
         wallet::delete_wallet(&enterprise_wallet_name, None, None, None);
 

@@ -81,7 +81,7 @@ impl MessageFamilies {
     pub fn version(&self) -> &'static str {
         match self {
             MessageFamilies::AgentProvisioning => "0.5",
-            MessageFamilies::AgentProvisioning => "0.7",
+            MessageFamilies::AgentProvisioningV2 => "0.7",
             MessageFamilies::Connecting => "0.6",
             MessageFamilies::Routing => "1.0",
             MessageFamilies::Onboarding => "1.0",
