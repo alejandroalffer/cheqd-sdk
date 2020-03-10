@@ -25,7 +25,7 @@ use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
 use v3::handlers::proof_presentation::prover::prover::Prover;
 
 use std::convert::TryInto;
-use connection::{get_agent_info, MyAgentInfo};
+use connection::{get_agent_info, MyAgentInfo, get_agent_attr};
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<DisclosedProofs>  = Default::default();
@@ -49,8 +49,13 @@ impl Default for DisclosedProof {
             proof_request: None,
             proof: None,
             link_secret_alias: settings::DEFAULT_LINK_SECRET_ALIAS.to_string(),
+            my_did: None,
+            my_vk: None,
+            their_did: None,
+            their_vk: None,
+            agent_did: None,
+            agent_vk: None,
             thread: Some(Thread::new()),
-            agent_info: None
         }
     }
 }
@@ -62,8 +67,13 @@ pub struct DisclosedProof {
     proof_request: Option<ProofRequestMessage>,
     proof: Option<ProofMessage>,
     link_secret_alias: String,
-    thread: Option<Thread>,
-    agent_info: Option<MyAgentInfo>
+    my_did: Option<String>,
+    my_vk: Option<String>,
+    their_did: Option<String>,
+    their_vk: Option<String>,
+    agent_did: Option<String>,
+    agent_vk: Option<String>,
+    thread: Option<Thread>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -151,7 +161,7 @@ pub fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Vcx
         (&cred_info.rev_reg_id, &cred_info.cred_rev_id, &cred_info.tails_file) {
             if rtn.get(&rev_reg_id).is_none() {
                 let (from, to) = if let Some(ref interval) = cred_info.revocation_interval
-                    { (interval.from, interval.to) } else { (None, None) };
+                { (interval.from, interval.to) } else { (None, None) };
 
                 //                let from = from.unwrap_or(0);
                 //                let to = to.unwrap_or(time::get_time().sec as u64);
@@ -406,10 +416,7 @@ impl DisclosedProof {
             .as_ref()
             .ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
 
-        let their_did = agent_info.their_pw_did
-            .as_ref()
-            .map(String::as_str)
-            .unwrap_or_default();
+        let their_did = get_agent_attr(&agent_info.their_pw_did)?;
 
         self.thread
             .as_mut()
@@ -450,7 +457,7 @@ impl DisclosedProof {
             .send_secure()
             .map_err(|err| err.extend("Could not send proof"))?;
 
-        self.agent_info = Some(agent_info);
+        apply_agent_info(self, &agent_info);
         self.state = VcxStateType::VcxStateAccepted;
         Ok(error::SUCCESS.code_num)
     }
@@ -524,6 +531,16 @@ fn handle_err(err: VcxError) -> VcxError {
     } else {
         err
     }
+}
+
+fn apply_agent_info(proof: &mut DisclosedProof, agent_info: &MyAgentInfo) -> DisclosedProof {
+    proof.my_did = agent_info.my_pw_did.clone();
+    proof.my_vk = agent_info.my_pw_vk.clone();
+    proof.their_did = agent_info.their_pw_did.clone();
+    proof.their_vk = agent_info.their_pw_vk.clone();
+    proof.agent_did = agent_info.pw_agent_did.clone();
+    proof.agent_vk = agent_info.pw_agent_vk.clone();
+    proof.to_owned()
 }
 
 pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
@@ -817,8 +834,8 @@ mod tests {
     use serde_json::Value;
     use utils::{
         constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID,
-        ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID, ADDRESS_CRED_REV_ID,
-        ADDRESS_REV_REG_ID, REV_REG_ID, CRED_REV_ID, TEST_TAILS_FILE, REV_STATE_JSON },
+                     ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID, ADDRESS_CRED_REV_ID,
+                     ADDRESS_REV_REG_ID, REV_REG_ID, CRED_REV_ID, TEST_TAILS_FILE, REV_STATE_JSON },
         get_temp_dir_path
     };
     #[cfg(feature = "pool_tests")]
@@ -1500,7 +1517,7 @@ mod tests {
                 "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()
               },
            },
-           "predicates":{ 
+           "predicates":{
                "zip_3": {
                 "credential": all_creds["attrs"]["zip_3"][0],
                }
