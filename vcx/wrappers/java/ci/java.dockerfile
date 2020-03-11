@@ -8,6 +8,6 @@ RUN apt-get update -y && apt-get install -y \
     openjdk-8-jdk \
     maven
 
-RUN echo "java ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers 
+RUN echo "java ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 USER java

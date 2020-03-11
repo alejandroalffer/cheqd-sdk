@@ -424,7 +424,6 @@ pub mod tests {
 
         assert_eq!(1, update_state(handle).unwrap());
         assert_eq!(1, get_state(handle).unwrap());
-        ::utils::libindy::wallet::close_wallet();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -434,6 +433,5 @@ pub mod tests {
 
         let handle = create_schema_real();
         assert_eq!(1, get_state(handle).unwrap());
-        ::utils::libindy::wallet::close_wallet();
     }
 }

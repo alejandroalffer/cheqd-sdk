@@ -17,7 +17,7 @@
  typedef unsigned int vcx_proof_handle_t;
  typedef unsigned int vcx_command_handle_t;
  typedef unsigned int vcx_bool_t;
- 
+
  vcx_error_t vcx_init(vcx_command_handle_t handle, const char *config_path,void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
  */
 
@@ -60,7 +60,7 @@
 
 
 - (void)applicationDidBecomeActive:(UIApplication *)application {
-    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+
 }
 
 

@@ -376,10 +376,10 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
     try {
       await createFFICallbackPromise<number>(
         (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_schema_update_state(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
+          const rc = rustAPI().vcx_schema_update_state(0, this.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
         },
         (resolve, reject) => ffi.Callback(
           'void',
@@ -409,10 +409,10 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
     try {
       const stateRes = await createFFICallbackPromise<SchemaState>(
         (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_schema_get_state(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
+          const rc = rustAPI().vcx_schema_get_state(0, this.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
         },
         (resolve, reject) => ffi.Callback(
           'void',

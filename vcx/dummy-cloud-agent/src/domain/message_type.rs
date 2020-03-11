@@ -49,6 +49,8 @@ pub struct MessageTypeV2 {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum MessageFamilies {
+    Connecting,
+    AgentProvisioning,
     Routing,
     Onboarding,
     Pairwise,
@@ -60,6 +62,8 @@ pub enum MessageFamilies {
 impl MessageFamilies {
     pub fn version(&self) -> &'static str {
         match self {
+            MessageFamilies::AgentProvisioning => "0.5",
+            MessageFamilies::Connecting => "0.6",
             MessageFamilies::Routing => "1.0",
             MessageFamilies::Onboarding => "1.0",
             MessageFamilies::Pairwise => "1.0",
@@ -73,6 +77,8 @@ impl MessageFamilies {
 impl From<String> for MessageFamilies {
     fn from(family: String) -> Self {
         match family.as_str() {
+            "agent-provisioning" => MessageFamilies::AgentProvisioning,
+            "connecting" => MessageFamilies::Connecting,
             "routing" => MessageFamilies::Routing,
             "onboarding" => MessageFamilies::Onboarding,
             "pairwise" => MessageFamilies::Pairwise,
@@ -86,6 +92,8 @@ impl From<String> for MessageFamilies {
 impl ::std::string::ToString for MessageFamilies {
     fn to_string(&self) -> String {
         match self {
+            MessageFamilies::AgentProvisioning => "agent-provisioning".to_string(),
+            MessageFamilies::Connecting => "connecting".to_string(),
             MessageFamilies::Routing => "routing".to_string(),
             MessageFamilies::Onboarding => "onboarding".to_string(),
             MessageFamilies::Pairwise => "pairwise".to_string(),

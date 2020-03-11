@@ -24,13 +24,13 @@ import static org.hyperledger.indy.sdk.Callbacks.boolCallback;
 
 /**
  * Functionality for anonymous credentials
- * 
+ *
  * These functions wrap the Ursa algorithm as documented in this paper:
  * https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
  *
  * And is documented in this HIPE:
  * https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
- * 
+ *
  */
 public class Anoncreds extends IndyJava.API {
 
@@ -217,11 +217,11 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
 	 * and secrets used for credentials revocation.
-	 * 
+	 *
 	 * Credential definition entity contains private and public parts. Private part will be stored in the wallet. Public part
 	 * will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
 	 * to Indy distributed ledger.
-	 * 
+	 *
 	 * It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 	 *
 	 * Note: Use combination of `issuerRotateCredentialDefStart` and `issuerRotateCredentialDefApply` functions
@@ -265,7 +265,7 @@ public class Anoncreds extends IndyJava.API {
 	 * }
 	 * Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
 	 * They should not be parsed and are likely to change in future versions.
-	 * 
+	 *
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<IssuerCreateAndStoreCredentialDefResult> issuerCreateAndStoreCredentialDef(
@@ -387,14 +387,14 @@ public class Anoncreds extends IndyJava.API {
 	 * secrets used for credentials revocation
 	 * - Revocation registry state that stores the information about revoked entities in a non-disclosing way. The state can be
 	 * represented as ordered list of revocation registry entries were each entry represents the list of revocation or issuance operations.
-	 * 
+	 *
 	 * Revocation registry definition entity contains private and public parts. Private part will be stored in the wallet. Public part
 	 * will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing REVOC_REG_DEF transaction
 	 * to Indy distributed ledger.
-	 * 
+	 *
 	 * Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
 	 * This call initializes the state in the wallet and returns the initial entry.
-	 * 
+	 *
 	 * Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
 	 * revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
 	 * This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
@@ -532,13 +532,13 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
-	 * 
+	 *
 	 * Cred Request must match Cred Offer. The credential definition and revocation registry definition
 	 * referenced in Cred Offer and Cred Request must be already created and stored into the wallet.
-	 * 
+	 *
 	 * Information for this credential revocation will be store in the wallet as part of revocation registry under
 	 * generated cred_revoc_id local for this wallet.
-	 * 
+	 *
 	 * This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
 	 * Note that it is possible to accumulate deltas to reduce ledger load.
 	 *
@@ -562,7 +562,7 @@ public class Anoncreds extends IndyJava.API {
 	 *         "rev_reg_def_id", Optional[string],
 	 *         "values": "see credValuesJson above",
 	 *         // Fields below can depend on Cred Def type
-	 *         "signature": {signature} 
+	 *         "signature": {signature}
 	 *                      (opaque type that contains data structures internal to Ursa.
 	 *                       It should not be parsed and are likely to change in future versions).
 	 *         "signature_correctness_proof": {signature_correctness_proof}
@@ -762,7 +762,7 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Creates a credential request for the given credential offer.
-	 * 
+	 *
 	 * The method creates a blinded master secret for a master secret identified by a provided name.
 	 * The master secret identified by the name must be already stored in the secure wallet (see proverCreateMasterSecret)
 	 * The blinded master secret is a part of the credential request.
@@ -846,7 +846,7 @@ public class Anoncreds extends IndyJava.API {
 	 *         "attr::{attribute name}::marker": "1",
 	 *         "attr::{attribute name}::value": "attribute raw value",
 	 *     }
-	 * 
+	 *
 	 * @param wallet              A Wallet.
 	 * @param credId              (optional, default is a random one) Identifier by which credential will be stored in the wallet
 	 * @param credReqMetadataJson Credential request metadata created by proverCreateCredentialReq
@@ -1079,7 +1079,7 @@ public class Anoncreds extends IndyJava.API {
 	 *        "issuer_did": string, (Optional)
 	 *        "cred_def_id": string, (Optional)
 	 *     }
-	 *                        
+	 *
 	 * @return A future that resolves to a json with credentials for the given proof request.
 	 *     {
 	 *         "attrs": {
@@ -1099,7 +1099,7 @@ public class Anoncreds extends IndyJava.API {
 	 *         "rev_reg_id": Optional<string>, - identifier of revocation registry definition
 	 *         "cred_rev_id": Optional<string> - identifier of credential in the revocation registry definition
 	 *     }
-	 *     
+	 *
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> proverGetCredentialsForProofReq(
@@ -1231,7 +1231,7 @@ public class Anoncreds extends IndyJava.API {
 	 *         "issuer_did": <credential issuer did>,
 	 *         "cred_def_id": <credential definition id>,
 	 *         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
-	 *                       	
+	 *
 	 * @return A future resolving to a Proof json
 	 * For each requested attribute either a proof (with optionally revealed attribute value) or
 	 * self-attested attribute value is provided.

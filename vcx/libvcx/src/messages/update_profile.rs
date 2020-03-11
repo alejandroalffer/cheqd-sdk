@@ -41,7 +41,7 @@ impl UpdateProfileDataBuilder {
             to_did: String::new(),
             configs: Vec::new(),
             agent_payload: String::new(),
-            version: settings::get_protocol_type()
+            version: ProtocolTypes::V1
         }
     }
 
@@ -108,7 +108,7 @@ impl UpdateProfileDataBuilder {
                 A2AMessage::Version1(
                     A2AMessageV1::UpdateConfigs(
                         UpdateConfigs {
-                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateConfigs),
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::UpdateConfigs)),
                             configs: self.configs.clone()
                         }
                     )
