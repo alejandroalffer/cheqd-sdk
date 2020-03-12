@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-OUTPUTDIR="output/$PACKAGE_TYPE"
+OUTPUTDIR="output"
 CURDIR=$(pwd)
 export PATH=${PATH}:$(pwd)/vcx/ci/scripts
 cd vcx/libvcx/
@@ -28,6 +28,6 @@ cargo build --no-default-features --features "ci"
 echo "Updating libvcx.so File with Version"
 cargo update-so
 echo "Creating Libvcx Debian File"
-cargo deb --no-build --variant libvcx-xenial
+cargo deb --no-build --deb-version ${VERSION}-${REVISION}-${PACKAGE_TYPE} --variant libvcx-${PACKAGE_TYPE}
 echo "Moving Libvcx Debian File to Output Directory"
 cp target/debian/*.deb $CURDIR/$OUTPUTDIR

@@ -347,7 +347,7 @@ build-android-armv7-from-latest:
     paths:
       - output/*
   script:
-    - mkdir -p ${CI_PROJECT_DIR}/output/${PACKAGE_TYPE}
+    - mkdir -p ${CI_PROJECT_DIR}/output
     - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
     - export VCXREVISION=$(git rev-parse --short HEAD)
     - export VCXVERSION=$(${CI_PROJECT_DIR}/vcx/ci/scripts/toml_utils.py ${CI_PROJECT_DIR}/vcx/libvcx/Cargo.toml)
@@ -438,7 +438,7 @@ build-libvcx-rpm-from-latest:
     PACKAGE_TYPE: 'bionic'
   script:
     - export PYTHONPATH="${CI_PROJECT_DIR}/vcx/wrappers/python3:vcx/wrappers/python3"
-    - sudo dpkg -i ${CI_PROJECT_DIR}/output/${PACKAGE_TYPE}/libvcx_*.deb
+    - sudo dpkg -i ${CI_PROJECT_DIR}/output/libvcx*${PACKAGE_TYPE}*.deb
     - vcx/wrappers/python3/ci/test.sh
 test-python-wrapper-from-branch:
   extends: .test-python-wrapper
@@ -464,7 +464,7 @@ test-python-wrapper-from-latest:
   variables:
     PACKAGE_TYPE: 'bionic'
   script:
-    - sudo dpkg -i ${CI_PROJECT_DIR}/output/${PACKAGE_TYPE}/libvcx_*.deb
+    - sudo dpkg -i ${CI_PROJECT_DIR}/output/libvcx*${PACKAGE_TYPE}*.deb
     - cd vcx/wrappers/java && ./gradlew --no-daemon test
 test-java-wrapper-from-branch:
   extends: .test-java-wrapper
@@ -490,7 +490,7 @@ test-java-wrapper-from-latest:
   variables:
     PACKAGE_TYPE: 'bionic'
   script:
-    - sudo dpkg -i ${CI_PROJECT_DIR}/output/${PACKAGE_TYPE}/libvcx_*.deb
+    - sudo dpkg -i ${CI_PROJECT_DIR}/output/libvcx*${PACKAGE_TYPE}*.deb
     - cd vcx/wrappers/node && npm i npm@6.1.0
     - cd ${CI_PROJECT_DIR} && vcx/wrappers/node/ci/test.sh
 test-node-wrapper-ubuntu18-from-branch:
@@ -545,7 +545,7 @@ package-android-from-latest:
     paths:
       - output/*
   script:
-    - sudo dpkg -i ${CI_PROJECT_DIR}/output/bionic/libvcx_*.deb
+    - sudo dpkg -i ${CI_PROJECT_DIR}/output/libvcx*bionic*.deb
     - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
     - cd -
     - vcx/wrappers/python3/ci/package.sh
@@ -575,7 +575,7 @@ package-python-wrapper-from-latest:
     paths:
       - vcx/wrappers/java/artifacts/
   script:
-    - sudo dpkg -i ${CI_PROJECT_DIR}/output/bionic/libvcx_*.deb
+    - sudo dpkg -i ${CI_PROJECT_DIR}/output/libvcx*bionic*.deb
     - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
     - cd -
     - vcx/wrappers/java/ci/buildJar.sh $(python3 vcx/ci/scripts/toml_utils.py vcx/libvcx/Cargo.toml)
@@ -605,7 +605,7 @@ package-java-wrapper-from-latest:
     paths:
       - output/*
   script:
-    - sudo dpkg -i ${CI_PROJECT_DIR}/output/bionic/libvcx_*.deb
+    - sudo dpkg -i ${CI_PROJECT_DIR}/output/libvcx*bionic*.deb
     - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
     - cd -
     - vcx/wrappers/node/ci/package.sh
@@ -689,18 +689,16 @@ publish-packages:
     - ls -al ${CI_PROJECT_DIR}/output
     #https://gitlab.com/gitlab-org/gitlab-ce/issues/27436
     - export KRAKEN_CREDENTIALS=$(echo ${KRAKEN_CREDENTIALS_B64} | base64 -d)
-    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload xenial
-    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload xenial
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*xenial*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*bionic*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*.rpm https://kraken.corp.evernym.com/repo/portal_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*.rpm https://kraken.corp.evernym.com/repo/centos7/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" node-vcx-*.tgz https://kraken.corp.evernym.com/repo/portal_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" node-vcx-*.tgz https://kraken.corp.evernym.com/repo/npm/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" python3-vcx-*.tar.gz https://kraken.corp.evernym.com/repo/portal_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" python3-vcx-*.tar.gz https://kraken.corp.evernym.com/repo/python/upload
-
-#      - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload bionic
-#      - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload bionic
-
 
 publish-mobile-sdk:
   stage: publish
