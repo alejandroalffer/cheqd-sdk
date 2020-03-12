@@ -8,6 +8,7 @@ use messages::thread::Thread;
 use utils::{httpclient, constants};
 use utils::uuid::uuid;
 use error::prelude::*;
+use utils::agent_info::get_agent_info;
 use utils::httpclient::AgencyMock;
 
 #[derive(Debug)]
@@ -119,7 +120,8 @@ impl SendMessageBuilder {
                 }
                 1
             }
-            settings::ProtocolTypes::V2 => 0
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 => 0
         };
 
         match response.remove(index) {
@@ -161,7 +163,8 @@ impl GeneralMessage for SendMessageBuilder {
                     vec![A2AMessage::Version1(A2AMessageV1::CreateMessage(create)),
                          A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::General(detail)))]
                 }
-                settings::ProtocolTypes::V2 => {
+                settings::ProtocolTypes::V2 |
+                settings::ProtocolTypes::V3 => {
                     let msg: ::serde_json::Value = ::serde_json::from_slice(self.payload.as_slice())
                         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
@@ -210,12 +213,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
         return Err(VcxError::from(VcxErrorKind::NotReady));
     }
 
-    let agent_did = connection::get_agent_did(connection_handle)?;
-    let agent_vk = connection::get_agent_verkey(connection_handle)?;
-    let did = connection::get_pw_did(connection_handle)?;
-    let vk = connection::get_pw_verkey(connection_handle)?;
-    let remote_vk = connection::get_their_pw_verkey(connection_handle)?;
-    let version = connection::get_version(connection_handle)?;
+    let agent_info = get_agent_info()?.pw_info(connection_handle)?;
 
     let msg_options: SendMessageOptions = serde_json::from_str(msg_options).map_err(|_| {
         error!("Invalid SendMessage msg_options");
@@ -224,17 +222,22 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
 
     let response =
         send_message()
-            .to(&did)?
-            .to_vk(&vk)?
+            .to(&agent_info.my_pw_did()?)?
+            .to_vk(&agent_info.my_pw_vk()?)?
             .msg_type(&RemoteMessageType::Other(msg_options.msg_type.clone()))?
-            .edge_agent_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_options.msg_type.clone()), None)?
-            .agent_did(&agent_did)?
-            .agent_vk(&agent_vk)?
+            .edge_agent_payload(&agent_info.my_pw_vk()?,
+                                &agent_info.their_pw_vk()?,
+                                &msg,
+                                PayloadKinds::Other(msg_options.msg_type.clone()),
+                                None
+            )?
+            .agent_did(&agent_info.pw_agent_did()?)?
+            .agent_vk(&agent_info.pw_agent_vk()?)?
             .set_title(&msg_options.msg_title)?
             .set_detail(&msg_options.msg_title)?
             .ref_msg_id(msg_options.ref_msg_id.clone())?
             .status_code(&MessageStatusCode::Accepted)?
-            .version(version)?
+            .version(agent_info.version()?.clone())?
             .send_secure()?;
 
     let msg_uid = response.get_msg_uid()?;

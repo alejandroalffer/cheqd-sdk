@@ -547,7 +547,8 @@ impl Forward {
                     }
                 )))
             }
-            settings::ProtocolTypes::V2 => {
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 => {
                 let msg = serde_json::from_slice(msg.as_slice())
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
@@ -897,7 +898,8 @@ impl A2AMessageKinds {
 pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
     match version {
         settings::ProtocolTypes::V1 => bundle_for_agency_v1(message, &agency_did),
-        settings::ProtocolTypes::V2 => pack_for_agency_v2(message, agency_did)
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 => pack_for_agency_v2(message, agency_did)
     }
 }
 
@@ -933,7 +935,8 @@ fn pack_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u
 fn parse_response_from_agency(response: &Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<A2AMessage>> {
     match version {
         settings::ProtocolTypes::V1 => parse_response_from_agency_v1(response),
-        settings::ProtocolTypes::V2 => parse_response_from_agency_v2(response)
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 => parse_response_from_agency_v2(response)
     }
 }
 
@@ -1056,7 +1059,8 @@ fn prepare_forward_message_for_agency_v2(message: &ForwardV2, agency_vk: &str) -
 pub fn prepare_message_for_agent(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
     match version {
         settings::ProtocolTypes::V1 => prepare_message_for_agent_v1(messages, pw_vk, agent_did, agent_vk),
-        settings::ProtocolTypes::V2 => prepare_message_for_agent_v2(messages, pw_vk, agent_did, agent_vk)
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 => prepare_message_for_agent_v2(messages, pw_vk, agent_did, agent_vk)
     }
 }
 
