@@ -70,7 +70,9 @@ serde_json = "1.0"
 serde_derive = "1.0"
 
 [package.metadata.deb]
-depends = "libindy (= 1.14.4)"
+maintainer = "Evernym, Inc."
+copyright = "2018, Evernym Inc."
+depends = "$auto, libindy (=1.14.1)"
 extended-description = """\
 This is the official SDK for Hyperledger Indy, which provides a\
   distributed-ledger-based foundation for self-sovereign identity.\
@@ -84,11 +86,12 @@ section = "admin"
 revision = "a26ad4f"
 priority = "optional"
 assets = [
-    ["target/release/libvcx.so", "usr/lib/", "644"],
-    ["include/vcx.h", "usr/share/libvcx/", "644"]
+    ["target/debug/libvcx.so.*", "usr/lib/", "644"],
+    ["include/vcx.h", "usr/share/libvcx/", "644"],
+    ["scripts/provision_agent_keys.py", "usr/share/libvcx/", "655"]
+
 ]
-maintainer-scripts = "./debian"
-changelog = "./debian/changelog"
+maintainer-scripts = "./scripts"
 
 [package.metadata.deb.variants.libvcx-xenial]
 name = "libvcx"
