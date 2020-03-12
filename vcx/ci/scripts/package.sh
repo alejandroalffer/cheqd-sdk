@@ -28,6 +28,6 @@ cargo build --no-default-features --features "ci"
 echo "Updating libvcx.so File with Version"
 cargo update-so
 echo "Creating Libvcx Debian File"
-cargo deb --no-build
+cargo deb --no-build --variant libvcx-xenial
 echo "Moving Libvcx Debian File to Output Directory"
 cp target/debian/*.deb $CURDIR/$OUTPUTDIR

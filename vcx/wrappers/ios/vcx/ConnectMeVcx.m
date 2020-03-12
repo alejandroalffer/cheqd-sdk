@@ -514,6 +514,41 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     }
 }
 
+
+- (void)connectionUpdateState:(VcxHandle) connectionHandle
+               withCompletion:(void (^)(NSError *error, NSInteger state))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_connection_update_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
+
+- (void)connectionGetState:(VcxHandle) connectionHandle
+            withCompletion:(void (^)(NSError *error, NSInteger state))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_credential_update_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
+
 - (void)agentUpdateInfo: (NSString *) config
             completion: (void (^)(NSError *error)) completion
 {

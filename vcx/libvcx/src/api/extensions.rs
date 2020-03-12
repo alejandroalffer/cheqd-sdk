@@ -19,7 +19,7 @@ extern {
 
 #[no_mangle]
 pub extern fn vcx_pack_message(command_handle: i32,
-                               wallet_handle: i32, //ignored
+                               _wallet_handle: i32, //ignored
                                message: *const u8,
                                message_len: u32,
                                receiver_keys: *const c_char,
@@ -32,7 +32,7 @@ pub extern fn vcx_pack_message(command_handle: i32,
 
 #[no_mangle]
 pub extern fn vcx_unpack_message(command_handle: i32,
-                                 wallet_handle: i32, //ignored
+                                 _wallet_handle: i32, //ignored
                                  jwe_data: *const u8,
                                  jwe_len: u32,
                                  cb: Option<extern fn(xcommand_handle: i32, err: i32, res_json_data : *const u8, res_json_len : u32)>) -> i32 {

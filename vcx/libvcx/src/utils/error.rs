@@ -36,7 +36,7 @@ pub static INVALID_ATTRIBUTES_STRUCTURE: Error = Error{code_num:1021, message: "
 pub static BIG_NUMBER_ERROR: Error = Error{code_num: 1022, message: "Could not encode string to a big integer."};
 pub static INVALID_PROOF: Error = Error{code_num: 1023, message: "Proof had invalid format"};
 pub static INVALID_GENESIS_TXN_PATH: Error = Error{code_num: 1024, message: "Must have valid genesis txn file path"};
-pub static CREATE_POOL_CONFIG_PARAMETERS: Error = Error{code_num: 1025, message: "Parameters for creating pool config are incorrect."};
+pub static POOL_LEDGER_CONNECT: Error = Error{code_num: 1025, message: "Connection to Pool Ledger."};
 pub static CREATE_POOL_CONFIG: Error = Error{code_num: 1026, message: "Formatting for Pool Config are incorrect."};
 pub static INVALID_PROOF_CREDENTIAL_DATA: Error = Error{code_num: 1027, message: "The Proof received does not have valid credentials listed."};
 pub static INDY_SUBMIT_REQUEST_ERR: Error = Error{code_num: 1028, message: "Call to indy submit request failed"};
@@ -86,7 +86,7 @@ pub static NO_PAYMENT_INFORMATION: Error = Error { code_num: 1071, message: "No 
 pub static DUPLICATE_WALLET_RECORD: Error = Error{ code_num: 1072, message: "Record already exists in the wallet"};
 pub static WALLET_RECORD_NOT_FOUND: Error = Error{ code_num: 1073, message: "Wallet record not found"};
 pub static IOERROR: Error = Error { code_num: 1074, message: "IO Error, possibly creating a backup wallet"};
-pub static INVALID_WALLET_STORAGE_PARAMETER: Error = Error { code_num: 1075, message: "Wallet Storage Parameter Either Malformed or Missing"};
+pub static WALLET_ACCESS_FAILED: Error = Error { code_num: 1075, message: "Attempt to open wallet with invalid credentials"};
 pub static MISSING_WALLET_NAME: Error = Error { code_num: 1076, message: "Missing wallet name in config"};
 pub static MISSING_EXPORTED_WALLET_PATH: Error = Error { code_num: 1077, message: "Missing exported wallet path in config"};
 pub static MISSING_BACKUP_KEY: Error = Error { code_num: 1078, message: "Missing exported backup key in config"};
@@ -117,6 +117,8 @@ pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1102, message: "Unknown 
 pub static ACTION_NOT_SUPPORTED: Error = Error { code_num: 1103, message: "Action is not supported"};
 pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1104, message: "Invalid redirect details structure"};
 pub static MAX_BACKUP_SIZE: Error = Error{code_num: 1105, message: "Cloud Backup exceeds max size limit"};
+/* EC 1105 is reserved for proprietary forks of libVCX */
+pub static NO_AGENT_INFO: Error = Error{code_num: 1106, message: "Agent pairwise information not found"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -148,7 +150,7 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_GENESIS_TXN_PATH);
         insert_c_message(&mut m, &CREATE_POOL_CONFIG);
         insert_c_message(&mut m, &INVALID_PROOF_CREDENTIAL_DATA);
-        insert_c_message(&mut m, &CREATE_POOL_CONFIG_PARAMETERS);
+        insert_c_message(&mut m, &POOL_LEDGER_CONNECT);
         insert_c_message(&mut m, &INDY_SUBMIT_REQUEST_ERR);
         insert_c_message(&mut m, &BUILD_CREDENTIAL_DEF_REQ_ERR);
         insert_c_message(&mut m, &NO_POOL_OPEN);
@@ -192,7 +194,7 @@ lazy_static! {
         insert_c_message(&mut m, &DUPLICATE_WALLET_RECORD);
         insert_c_message(&mut m, &WALLET_RECORD_NOT_FOUND);
         insert_c_message(&mut m, &IOERROR);
-        insert_c_message(&mut m, &INVALID_WALLET_STORAGE_PARAMETER);
+        insert_c_message(&mut m, &WALLET_ACCESS_FAILED);
         insert_c_message(&mut m, &OBJECT_CACHE_ERROR);
         insert_c_message(&mut m, &NO_PAYMENT_INFORMATION);
         insert_c_message(&mut m, &INDY_DUPLICATE_WALLET_RECORD);
@@ -222,6 +224,7 @@ lazy_static! {
         insert_c_message(&mut m, &UNKNOWN_MIME_TYPE);
         insert_c_message(&mut m, &ACTION_NOT_SUPPORTED);
         insert_c_message(&mut m, &INVALID_REDIRECT_DETAILS);
+        insert_c_message(&mut m, &NO_AGENT_INFO);
 
         m
     };
@@ -235,15 +238,6 @@ fn insert_c_message(map: &mut HashMap<u32, CString>, error: &Error) {
        panic!("Error Code number was repeated which is not allowed! (likely a copy/paste error)")
     }
     map.insert(error.code_num, CString::new(error.message).unwrap());
-
-}
-
-// Helper function for static defining of error messages. Does limited checking that it can.
-fn _insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
-    if map.contains_key(&error.code_num) {
-        panic!("Error Code number was repeated which is not allowed! (likely a copy/paste error)")
-    }
-    map.insert(error.code_num, error.message);
 
 }
 
@@ -271,13 +265,6 @@ pub fn error_message(code_num:&u32) -> String {
     match ERROR_C_MESSAGES.get(code_num) {
         Some(msg) => msg.to_str().unwrap().to_string(),
         None => error_message(&UNKNOWN_ERROR.code_num),
-    }
-}
-
-pub fn error_string(code_num:u32) -> String {
-    match ERROR_C_MESSAGES.get(&code_num) {
-        Some(msg) => format!("{}-{}", code_num, msg.to_str().unwrap_or(UNKNOWN_ERROR.message)),
-        None => format!("{}-{}", code_num, UNKNOWN_ERROR.message),
     }
 }
 
@@ -360,7 +347,7 @@ mod tests {
     }
     #[test]
     fn test_error_config() {
-        assert_eq!(error_message(&CREATE_POOL_CONFIG_PARAMETERS.code_num), CREATE_POOL_CONFIG_PARAMETERS.message);
+        assert_eq!(error_message(&POOL_LEDGER_CONNECT.code_num), POOL_LEDGER_CONNECT.message);
     }
     #[test]
     fn test_error_pool_config() {
