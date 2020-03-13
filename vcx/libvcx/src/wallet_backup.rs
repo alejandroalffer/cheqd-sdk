@@ -646,7 +646,7 @@ pub mod tests {
         fn backup_wallet_succeeds_real() {
             let _setup = SetupConsumer::init();
 
-            let five_mb = 5000000;
+            let five_mb = 4800000;
             let buf = vec![0x41u8; five_mb];
             let buf_str = ::std::str::from_utf8(&buf).unwrap();
             add_record("whatever", "bigbyte", buf_str, None).unwrap();
@@ -848,7 +848,7 @@ pub mod tests {
             original_config = settings::tests::config_json();
             wallet::add_record(config_wallet_key, config_wallet_key, &original_config, None).unwrap();
             
-            let five_mb = 5000000;
+            let five_mb = 4800000;
             let buf = vec![0x41u8; five_mb];
             let buf_str = ::std::str::from_utf8(&buf).unwrap();
             add_record("whatever", "bigbyte2", buf_str, None).unwrap();
