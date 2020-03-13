@@ -946,8 +946,6 @@ pub mod tests {
 
         let connection_handle = ::connection::tests::build_test_connection();
 
-        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
-
         let issuer_str = issuer_credential::tests::create_standard_issuer_credential(Some(connection_handle)).to_string().unwrap();
         let handle = issuer_credential::from_string(&issuer_str).unwrap();
         assert_eq!(issuer_credential::get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);

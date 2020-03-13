@@ -42,7 +42,7 @@ use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
 use settings::ProtocolTypes;
 use messages::deaddrop::retrieve::{RetrieveDeadDrop, RetrievedDeadDropResult, RetrieveDeadDropBuilder};
-use messages::agent_utils::AgentCreated;
+use messages::agent_provisioning::agent_provisioning_v0_7::{AgentCreated, ProvisionAgent};
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -232,8 +232,9 @@ pub enum A2AMessageV2 {
     SignUp(SignUp),
     SignUpResponse(SignUpResponse),
     CreateAgent(CreateAgent),
-    AgentCreated(AgentCreated),
     CreateAgentResponse(CreateAgentResponse),
+    ProvisionAgent(ProvisionAgent),
+    AgentCreated(AgentCreated),
 
     /// PW Connection
     CreateKey(CreateKey),
@@ -310,14 +311,19 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map(A2AMessageV2::SignUpResponse)
                     .map_err(de::Error::custom)
             }
-            "CREATE_AGENT" => {
-                CreateAgent::deserialize(value)
-                    .map(A2AMessageV2::CreateAgent)
+            "CREATE_AGENT" if message_type.version == "0.7" => {
+                ProvisionAgent::deserialize(value)
+                    .map(A2AMessageV2::ProvisionAgent)
                     .map_err(de::Error::custom)
             }
             "AGENT_CREATED" if message_type.version == "0.7" => {
                 AgentCreated::deserialize(value)
                     .map(A2AMessageV2::AgentCreated)
+                    .map_err(de::Error::custom)
+            }
+            "CREATE_AGENT" => {
+                CreateAgent::deserialize(value)
+                    .map(A2AMessageV2::CreateAgent)
                     .map_err(de::Error::custom)
             }
             "AGENT_CREATED" => {
@@ -786,7 +792,7 @@ pub enum A2AMessageKinds {
     SignUp,
     SignedUp,
     CreateAgent,
-    CreateAgentV2,
+    ProvisionAgent,
     AgentCreated,
     CreateKey,
     KeyCreated,
@@ -826,7 +832,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Connect => MessageFamilies::AgentProvisioning,
             A2AMessageKinds::Connected => MessageFamilies::AgentProvisioning,
             A2AMessageKinds::CreateAgent => MessageFamilies::AgentProvisioning,
-            A2AMessageKinds::CreateAgentV2 => MessageFamilies::AgentProvisioningV2,
+            A2AMessageKinds::ProvisionAgent => MessageFamilies::AgentProvisioningV2,
             A2AMessageKinds::AgentCreated => MessageFamilies::AgentProvisioning,
             A2AMessageKinds::SignUp => MessageFamilies::AgentProvisioning,
             A2AMessageKinds::SignedUp => MessageFamilies::AgentProvisioning,
@@ -868,7 +874,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Connect => "CONNECT".to_string(),
             A2AMessageKinds::Connected => "CONNECTED".to_string(),
             A2AMessageKinds::CreateAgent => "CREATE_AGENT".to_string(),
-            A2AMessageKinds::CreateAgentV2 => "CREATE_AGENT".to_string(),
+            A2AMessageKinds::ProvisionAgent => "CREATE_AGENT".to_string(),
             A2AMessageKinds::AgentCreated => "AGENT_CREATED".to_string(),
             A2AMessageKinds::SignUp => "SIGNUP".to_string(),
             A2AMessageKinds::SignedUp => "SIGNED_UP".to_string(),

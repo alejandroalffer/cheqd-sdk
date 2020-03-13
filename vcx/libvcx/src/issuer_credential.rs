@@ -1152,8 +1152,6 @@ pub mod tests {
     fn test_that_test_mode_enabled_bypasses_libindy_create_credential() {
         let _setup = SetupMocks::init();
         let mut credential = create_standard_issuer_credential(None);
-
-        let mut credential = create_standard_issuer_credential(None);
         credential.state = VcxStateType::VcxStateRequestReceived;
 
         let connection_handle = build_test_connection();

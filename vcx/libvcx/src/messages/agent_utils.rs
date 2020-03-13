@@ -4,7 +4,6 @@ use messages::message_type::MessageTypes;
 use utils::{error, httpclient, constants};
 use utils::libindy::{wallet, anoncreds};
 use utils::option_util::get_or_default;
-use messages::agent_provisioning::agent_provisioning_v0_7::ProvisionToken;
 use utils::libindy::signus::create_and_store_my_did;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
@@ -62,28 +61,13 @@ pub struct SignUpResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreateAgent {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
-    #[serde(rename = "fromDID")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    from_did: Option<String>,
-    #[serde(rename = "fromVerKey")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    from_vk: Option<String>,
-    #[serde(rename = "provisionToken")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    token: Option<ProvisionToken>,
+    msg_type: MessageTypes,
 }
 
 impl CreateAgent {
-    pub fn build(from_did: Option<String>,
-                 from_vk: Option<String>,
-                 token: Option<ProvisionToken>,
-                 create_agent_kind: Option<A2AMessageKinds>) -> CreateAgent {
+    pub fn build() -> CreateAgent {
         CreateAgent {
-            msg_type: MessageTypes::build(create_agent_kind.unwrap_or(A2AMessageKinds::CreateAgent)),
-            from_did,
-            from_vk,
-            token
+            msg_type: MessageTypes::build(A2AMessageKinds::CreateAgent),
         }
     }
 }
@@ -95,14 +79,6 @@ pub struct CreateAgentResponse {
     #[serde(rename = "withPairwiseDID")]
     pub from_did: String,
     #[serde(rename = "withPairwiseDIDVerKey")]
-    pub from_vk: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct AgentCreated {
-    #[serde(rename = "agentDID")]
-    pub from_did: String,
-    #[serde(rename = "agentVerKey")]
     pub from_vk: String,
 }
 
@@ -346,7 +322,7 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     AgencyMock::set_next_response(constants::AGENT_CREATED.to_vec());
 
     let message = A2AMessage::Version1(
-        A2AMessageV1::CreateAgent(CreateAgent::build(None, None, None, None))
+        A2AMessageV1::CreateAgent(CreateAgent::build())
     );
 
     let mut response = send_message_to_agency(&message, &agency_pw_did)?;
@@ -402,7 +378,7 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
 
     /* STEP 3 - CREATE AGENT */
     let message = A2AMessage::Version2(
-        A2AMessageV2::CreateAgent(CreateAgent::build(None, None, None, None))
+        A2AMessageV2::CreateAgent(CreateAgent::build())
     );
 
     let mut response = send_message_to_agency(&message, &agency_pw_did)?;

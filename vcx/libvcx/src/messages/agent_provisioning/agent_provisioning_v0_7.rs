@@ -1,8 +1,9 @@
 use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
 use utils::libindy::wallet;
 use error::prelude::*;
-use messages::agent_utils::{parse_config, set_config_values, configure_wallet, get_final_config, connect_v2, send_message_to_agency, CreateAgent, AgentCreated};
+use messages::agent_utils::{parse_config, set_config_values, configure_wallet, get_final_config, connect_v2, send_message_to_agency};
 use serde_json::from_str;
+use messages::message_type::MessageTypes;
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -16,6 +17,44 @@ pub struct ProvisionToken {
     sponsor_vk: String,
 }
 
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RequesterKeys {
+    #[serde(rename = "fromDID")]
+    pub my_did: String,
+    #[serde(rename = "fromVerKey")]
+    pub my_vk: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ProvisionAgent {
+    #[serde(rename = "@type")]
+    pub msg_type: MessageTypes,
+    #[serde(rename = "provisionToken")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    token: Option<ProvisionToken>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "requesterKeys")]
+    requester_keys: Option<RequesterKeys>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AgentCreated {
+    #[serde(rename = "selfDID")]
+    pub self_did: String,
+    #[serde(rename = "agentVerKey")]
+    pub agent_vk: String,
+}
+
+impl ProvisionAgent {
+    pub fn build(token: Option<ProvisionToken>, keys: Option<RequesterKeys>) -> ProvisionAgent {
+        ProvisionAgent {
+            msg_type: MessageTypes::build(A2AMessageKinds::ProvisionAgent),
+            requester_keys: keys,
+            token,
+        }
+    }
+}
 pub fn provision(config: &str, token: &str) -> VcxResult<String> {
     trace!("connect_register_provision >>> config: {:?}", config);
     let my_config = parse_config(config)?;
@@ -46,12 +85,10 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
     debug!("Creating an agent");
     println!("Creating an agent");
 
+    let keys = RequesterKeys {my_did: my_did.to_string(), my_vk: my_vk.to_string()};
     let message = A2AMessage::Version2(
-        A2AMessageV2::CreateAgent(
-            CreateAgent::build(Some(my_did.to_string()),
-                               Some(my_vk.to_string()),
-                               Some(token),
-                               Some(A2AMessageKinds::CreateAgentV2))
+        A2AMessageV2::ProvisionAgent(
+            ProvisionAgent::build(Some(token), Some(keys))
         )
     );
 
@@ -64,15 +101,15 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
         };
 
     println!("response: {:?}", response);
-    Ok((response.from_did, response.from_vk))
+    Ok((response.self_did, response.agent_vk))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use settings;
-    use std::time::{Duration, SystemTime};
-    use chrono::prelude::*;
+//    use std::time::{Duration, SystemTime};
+//    use chrono::prelude::*;
     use utils::constants;
     use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_consumer_env};
     use utils::plugins::init_plugin;
@@ -95,8 +132,8 @@ mod tests {
         let sig = ::utils::libindy::crypto::sign(&keys, &(format!("{}{}{}", nonce, time, id)).as_bytes()).unwrap();
         let encoded_val = base64::encode(&sig);
         let seed1 = ::utils::devsetup::create_new_seed();
-        wallet::close_wallet();
-        wallet::delete_wallet(&enterprise_wallet_name, None, None, None);
+        wallet::close_wallet().err();
+        wallet::delete_wallet(&enterprise_wallet_name, None, None, None).err();
 
         let protocol_type = "2.0";
         let config = json!({
@@ -123,7 +160,7 @@ mod tests {
             "sponsorVerKey": keys.to_string()
         }).to_string();
 
-        let enterprise_config = provision(&config, &token).unwrap();
+        let _enterprise_config = provision(&config, &token).unwrap();
 
         wallet::delete_wallet(&enterprise_wallet_name, None, None, None).unwrap();
     }
