@@ -646,8 +646,8 @@ pub mod tests {
         fn backup_wallet_succeeds_real() {
             let _setup = SetupConsumer::init();
 
-            let len = 400000;
-            let buf = vec![0x41u8; len];
+            let five_mb = 5000000;
+            let buf = vec![0x41u8; five_mb];
             let buf_str = ::std::str::from_utf8(&buf).unwrap();
             add_record("whatever", "bigbyte", buf_str, None).unwrap();
             let wallet_backup = create_wallet_backup(SOURCE_ID, &backup_key_gen()).unwrap();
@@ -847,6 +847,11 @@ pub mod tests {
             // 2. Insert test data into non secret portion of the wallet (config data)
             original_config = settings::tests::config_json();
             wallet::add_record(config_wallet_key, config_wallet_key, &original_config, None).unwrap();
+            
+            let five_mb = 5000000;
+            let buf = vec![0x41u8; five_mb];
+            let buf_str = ::std::str::from_utf8(&buf).unwrap();
+            add_record("whatever", "bigbyte2", buf_str, None).unwrap();
 
             // 3. Backup Wallet
             wb = init_backup();
