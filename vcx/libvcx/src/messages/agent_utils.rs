@@ -65,7 +65,7 @@ pub struct CreateAgent {
 }
 
 impl CreateAgent {
-    pub fn build() -> CreateAgent {
+    fn build() -> CreateAgent {
         CreateAgent {
             msg_type: MessageTypes::build(A2AMessageKinds::CreateAgent),
         }
@@ -77,9 +77,9 @@ pub struct CreateAgentResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     #[serde(rename = "withPairwiseDID")]
-    pub from_did: String,
+    from_did: String,
     #[serde(rename = "withPairwiseDIDVerKey")]
-    pub from_vk: String,
+    from_vk: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

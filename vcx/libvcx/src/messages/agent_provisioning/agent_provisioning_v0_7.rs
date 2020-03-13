@@ -78,12 +78,10 @@ pub fn provision(config: &str, token: &str) -> VcxResult<String> {
 
 pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: ProvisionToken) -> VcxResult<(String, String)> {
     debug!("Connecting with Evernym's Agency");
-    println!("Connecting with Evernym's Agency");
     let (agency_pw_did, _) = connect_v2(my_did, my_vk, agency_did)?;
 
     /* STEP 2 - CREATE AGENT */
     debug!("Creating an agent");
-    println!("Creating an agent");
 
     let keys = RequesterKeys {my_did: my_did.to_string(), my_vk: my_vk.to_string()};
     let message = A2AMessage::Version2(
@@ -100,7 +98,6 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of AgentCreated"))
         };
 
-    println!("response: {:?}", response);
     Ok((response.self_did, response.agent_vk))
 }
 
