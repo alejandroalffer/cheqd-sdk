@@ -17,10 +17,10 @@ variables:
   rustVersion: "1.40.0"
   libsovtokenVersion: "1.0.5"
   libsovtokenVersionExtra: "15"
-  indyBranch: 'stable'
-  libindyVersion: "1.14.1"
-  nullBranch: 'stable'
-  libnullVersion: "1.14.1"
+  indyBranch: 'rc'
+  indySimpleVersion: "1.14.4"
+  indyFullVersion: "1.14.4-137"
+  indyFullDebVersion: "1.14.4~137"
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
 
@@ -92,7 +92,7 @@ variables:
 .dockerbuild-vcx-libindy:
   extends: .kaniko_large
   variables:
-    KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${libindyVersion} --build-arg LIBNULL_VER=${libnullVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
+    KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
   only:
     refs:
       - master
@@ -126,7 +126,7 @@ dockerbuild-vcx-libindy-centos:
   variables:
     DOCKERFILE_PATH: vcx/ci/libindy-centos.dockerfile
     DOCKER_IMAGE_NAME: vcx-libindy-centos
-    KANIKO_ARGS: "--build-arg LIBINDY_VER=${libindyVersion}"
+    KANIKO_ARGS: "--build-arg LIBINDY_VER=${indyFullVersion} --build-arg LIBINDY_SIMPLE_VER=${indySimpleVersion} --build-arg LIBINDY_BRANCH=${indyBranch}"
   only:
     refs:
       - master
@@ -232,8 +232,8 @@ build-ios:
     - export vcxVersion=$(./vcx/ci/scripts/toml_utils.py ${PWD}/vcx/libvcx/Cargo.toml)
     - export full_vcx_version="${vcxVersion}-${vcxRevision}"
     - chmod +x vcx/ci/scripts/iosBuild.sh
-    - vcx/ci/scripts/iosBuild.sh ${indyBranch} ${libindyVersion} ${nullBranch} \
-      ${libnullVersion} ${libsovtokenVersion}~${libsovtokenVersionExtra} ${iosSovtokenArtifact} ${rustVersion} ${full_vcx_version}
+    - vcx/ci/scripts/iosBuild.sh ${indyBranch} ${indyFullVersion} ${indyBranch} \
+      ${indyFullVersion} ${libsovtokenVersion}~${libsovtokenVersionExtra} ${iosSovtokenArtifact} ${rustVersion} ${full_vcx_version}
     - mv ~/IOSBuilds ./
 
 .build_android:
@@ -244,7 +244,7 @@ build-ios:
       - runtime_android_build/libvcx_${ARCH}/*.so
   script:
     - vcx/ci/scripts/androidBuild.sh ${ARCH} ${indyBranch} \
-      ${libindyVersion} ${nullBranch} ${libnullVersion} ${libsovtokenVersion}-${libsovtokenVersionExtra} ${androidSovtokenArtifact}
+      ${indyFullVersion} ${indyBranch} ${indyFullVersion} ${libsovtokenVersion}-${libsovtokenVersionExtra} ${androidSovtokenArtifact}
 build-android-x86-from-branch:
   extends: .build_android
   stage: build
@@ -352,7 +352,6 @@ build-android-armv7-from-latest:
     - export VCXREVISION=$(git rev-parse --short HEAD)
     - export VCXVERSION=$(${CI_PROJECT_DIR}/vcx/ci/scripts/toml_utils.py ${CI_PROJECT_DIR}/vcx/libvcx/Cargo.toml)
     - cd ${CI_PROJECT_DIR}
-    - apt-get update && apt-get install -y libindy=${libindyVersion} libsovtoken=${libsovtokenVersion}
     - vcx/ci/scripts/package.sh ${RUSTTESTFLAG} ${VCXVERSION} ${VCXREVISION} ${PACKAGE_TYPE}
 build-libvcx-ubuntu18-from-branch:
   extends: .build-libvcx
