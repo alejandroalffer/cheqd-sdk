@@ -398,7 +398,7 @@ pub fn setup_indy_env(use_zero_fees: bool) {
 }
 
 pub fn cleanup_indy_env() {
-    delete_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+    delete_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).ok();
     delete_test_pool();
 }
 

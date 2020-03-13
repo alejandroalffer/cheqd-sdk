@@ -108,17 +108,15 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
 mod tests {
     use super::*;
     use settings;
-//    use std::time::{Duration, SystemTime};
-//    use chrono::prelude::*;
     use utils::constants;
-    use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_consumer_env};
+    use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_indy_env};
     use utils::plugins::init_plugin;
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_agent_provisioning_0_7() {
-        cleanup_consumer_env();
+        cleanup_indy_env();
         init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
 
         let id = "id";

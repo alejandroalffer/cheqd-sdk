@@ -946,9 +946,7 @@ pub mod tests {
 
         let connection_handle = ::connection::tests::build_test_connection();
 
-        let issuer_str = issuer_credential::tests::create_standard_issuer_credential(Some(connection_handle)).to_string().unwrap();
-        let handle = issuer_credential::from_string(&issuer_str).unwrap();
-        assert_eq!(issuer_credential::get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
+        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_issuer_send_credential_offer(cb.command_handle,
@@ -970,12 +968,8 @@ pub mod tests {
     #[test]
     fn test_vcx_issuer_get_credential_offer_msg() {
         let _setup = SetupMocks::init();
-        let connection_handle = ::connection::tests::build_test_connection();
-        connection::connect(connection_handle, None).unwrap();
 
-        let issuer_str = issuer_credential::tests::create_standard_issuer_credential(Some(connection_handle)).to_string().unwrap();
-        let handle = issuer_credential::from_string(&issuer_str).unwrap();
-        assert_eq!(issuer_credential::get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
+        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_issuer_get_credential_offer_msg(cb.command_handle,
@@ -1055,7 +1049,8 @@ pub mod tests {
     #[test]
     fn test_vcx_issuer_credential_get_state() {
         let _setup = SetupMocks::init();
-        let handle = issuer_credential::from_string(&issuer_credential_state_accepted()).unwrap();
+
+        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_credential_get_state(cb.command_handle,
@@ -1069,10 +1064,8 @@ pub mod tests {
     #[test]
     fn test_get_payment_txn() {
         let _setup = SetupMocks::init();
-        let credential = issuer_credential::tests::create_standard_issuer_credential(None);
-
-        let s = credential.to_string().unwrap();
-        let handle = issuer_credential::from_string(&s).unwrap();
+        let credential = issuer_credential::tests::create_standard_issuer_credential_json(None);
+        let handle = issuer_credential::from_string(&credential).unwrap();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         vcx_issuer_credential_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));

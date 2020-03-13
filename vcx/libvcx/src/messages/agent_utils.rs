@@ -3,8 +3,8 @@ use messages::{A2AMessage, A2AMessageV1, A2AMessageV2, A2AMessageKinds, prepare_
 use messages::message_type::MessageTypes;
 use utils::{error, httpclient, constants};
 use utils::libindy::{wallet, anoncreds};
-use utils::option_util::get_or_default;
 use utils::libindy::signus::create_and_store_my_did;
+use utils::option_util::get_or_default;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
 
@@ -140,7 +140,6 @@ pub struct Config {
 }
 
 pub fn set_config_values(my_config: &Config) {
-
     let wallet_name = get_or_default(&my_config.wallet_name, settings::DEFAULT_WALLET_NAME);
 
     settings::set_config_value(settings::CONFIG_PROTOCOL_TYPE, &my_config.protocol_type.to_string());
@@ -159,7 +158,6 @@ pub fn set_config_values(my_config: &Config) {
     settings::set_opt_config_value(settings::CONFIG_DID_METHOD, &my_config.did_method);
     settings::set_opt_config_value(settings::COMMUNICATION_METHOD, &my_config.communication_method);
     settings::set_opt_config_value(settings::CONFIG_WEBHOOK_URL, &my_config.webhook_url);
-
 }
 
 fn _create_issuer_keys(my_did: &str, my_vk: &str, my_config: &Config) -> VcxResult<(String, String)> {
@@ -168,20 +166,19 @@ fn _create_issuer_keys(my_did: &str, my_vk: &str, my_config: &Config) -> VcxResu
     } else {
         create_and_store_my_did(
             my_config.enterprise_seed.as_ref().map(String::as_str),
-            my_config.did_method.as_ref().map(String::as_str)
+            my_config.did_method.as_ref().map(String::as_str),
         )
     }
 }
 
 pub fn configure_wallet(my_config: &Config) -> VcxResult<(String, String, String)> {
-
     let wallet_name = get_or_default(&my_config.wallet_name, settings::DEFAULT_WALLET_NAME);
 
     wallet::init_wallet(
         &wallet_name,
         my_config.wallet_type.as_ref().map(String::as_str),
         my_config.storage_config.as_ref().map(String::as_str),
-        my_config.storage_credentials.as_ref().map(String::as_str)
+        my_config.storage_credentials.as_ref().map(String::as_str),
     )?;
     trace!("initialized wallet");
 
@@ -190,7 +187,7 @@ pub fn configure_wallet(my_config: &Config) -> VcxResult<(String, String, String
 
     let (my_did, my_vk) = create_and_store_my_did(
         my_config.agent_seed.as_ref().map(String::as_str),
-        my_config.did_method.as_ref().map(String::as_str)
+        my_config.did_method.as_ref().map(String::as_str),
     )?;
 
     settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
@@ -258,7 +255,7 @@ pub fn parse_config(config: &str) -> VcxResult<Config> {
         .map_err(|err|
             VcxError::from_msg(
                 VcxErrorKind::InvalidConfiguration,
-                format!("Cannot parse config: {}", err)
+                format!("Cannot parse config: {}", err),
             )
         )?;
     Ok(my_config)
@@ -277,12 +274,15 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     trace!("Connecting to Agency");
     let (agent_did, agent_vk) = match my_config.protocol_type {
         settings::ProtocolTypes::V1 => onboarding_v1(&my_did, &my_vk, &my_config.agency_did)?,
-        settings::ProtocolTypes::V2 => onboarding_v2(&my_did, &my_vk, &my_config.agency_did)?,
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3=> onboarding_v2(&my_did, &my_vk, &my_config.agency_did)?,
     };
+
+    let config = get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)?;
 
     wallet::close_wallet()?;
 
-    get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)
+    Ok(config)
 }
 
 fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
@@ -407,7 +407,8 @@ pub fn update_agent_info(id: &str, value: &str) -> VcxResult<()> {
         settings::ProtocolTypes::V1 => {
             update_agent_info_v1(&to_did, com_method)
         }
-        settings::ProtocolTypes::V2 => {
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 => {
             update_agent_info_v2(&to_did, com_method)
         }
     }

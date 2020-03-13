@@ -5,7 +5,6 @@ use utils::httpclient;
 use utils::constants::*;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
-use settings::ProtocolTypes;
 
 #[derive(Debug)]
 pub struct UpdateProfileDataBuilder {
@@ -114,7 +113,8 @@ impl UpdateProfileDataBuilder {
                         }
                     )
                 ),
-            settings::ProtocolTypes::V2 =>
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::UpdateConfigs(
                         UpdateConfigs {

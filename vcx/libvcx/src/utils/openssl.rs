@@ -21,7 +21,6 @@ pub fn encode(s: &str) -> VcxResult<String> {
 
 pub fn sha256_hex(b: &[u8]) -> String { hex::encode(sha256(b)) }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
