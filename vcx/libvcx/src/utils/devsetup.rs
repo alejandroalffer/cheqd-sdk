@@ -585,8 +585,8 @@ pub fn setup_consumer_env(protocol_type: &str) {
 }
 
 pub fn cleanup_consumer_env() {
-    set_consumer();
-    delete_wallet(&settings::get_wallet_name().unwrap_or_default(), None, None, None).ok();
+//    set_consumer();
+    delete_wallet(&settings::get_wallet_name().unwrap(), None, None, None).ok();
     delete_test_pool();
 }
 
