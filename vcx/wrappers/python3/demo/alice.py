@@ -25,7 +25,7 @@ provisionConfig = {
     'enterprise_seed': '000000000000000000000000Trustee1',
     'protocol_type': '2.0',
     'communication_method': 'aries',
-    'use_latest_protocols': True,
+    'use_latest_protocols': 'true',
 }
 
 
