@@ -684,7 +684,7 @@ pub mod tests {
             let rc = backup_wallet(wallet_backup, FILE_PATH);
             assert_eq!(
                 rc.unwrap_err().to_string(),
-                "Error: Cloud Backup exceeds max size limit\n  Caused by: Unknown Error\n"
+                "Error: Cloud Backup exceeds max size limit\n  Caused by: Cloud Backup exceeds max size limit\n"
             );
         }
 
