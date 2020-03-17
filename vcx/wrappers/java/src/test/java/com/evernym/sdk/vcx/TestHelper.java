@@ -5,7 +5,7 @@ import com.evernym.sdk.vcx.connection.ConnectionApi;
 import com.evernym.sdk.vcx.credential.CredentialApi;
 import com.evernym.sdk.vcx.credentialDef.CredentialDefApi;
 import com.jayway.jsonpath.JsonPath;
-import java.util.concurrent.CompletableFuture;
+import java9.util.concurrent.CompletableFuture;
 import org.awaitility.Awaitility;
 
 import java.util.concurrent.ExecutionException;
@@ -96,7 +96,14 @@ class TestHelper {
                 0
                 ));
     }
-
+    static int _createCredentialDefWithId() throws VcxException, ExecutionException, InterruptedException {
+        return  getResultFromFuture(CredentialDefApi.credentialDefCreateWithId(
+                "testCredentialDefSourceId",
+                "testCredentialDefId",
+                null,
+                null
+        ));
+    }
     static  <T> T getResultFromFuture(CompletableFuture<T> future) throws ExecutionException, InterruptedException {
         Awaitility.await().until(future::isDone);
         return future.get();

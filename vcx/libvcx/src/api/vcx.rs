@@ -661,7 +661,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_fails_with_open_wallet() {
-        let _setup = SetupLibraryWalletPoolZeroFees::init();
+        let _setup = SetupLibraryWalletPool::init();
 
         let config = TempFile::create_with_data("test_init.json", &config());
 
@@ -1010,7 +1010,7 @@ mod tests {
         let init_res = _vcx_init_minimal_c_closure(&config);
         assert_eq!(init_res, error::SUCCESS.code_num);
 
-        let cred_handle = ::issuer_credential::from_string(&::api::issuer_credential::tests::issuer_credential_state_accepted()).unwrap();
+        let cred_handle = ::issuer_credential::from_string(::utils::constants::DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
         let connection_handle = ::connection::from_string(::utils::constants::DEFAULT_CONNECTION).unwrap();
         let my_pw_did = ::connection::get_pw_did(connection_handle).unwrap();
         let their_pw_did = ::connection::get_their_pw_did(connection_handle).unwrap();

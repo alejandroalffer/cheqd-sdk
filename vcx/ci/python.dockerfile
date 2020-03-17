@@ -1,4 +1,4 @@
-FROM libindy
+FROM libindy-ubuntu16
 ARG uid=1000
 RUN useradd -ms /bin/bash -u $uid python
 RUN echo "python ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers

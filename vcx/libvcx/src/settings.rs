@@ -72,12 +72,13 @@ pub static DEFAULT_WALLET_KEY: &str = "8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2
 pub static DEFAULT_THREADPOOL_SIZE: usize = 8;
 pub static MASK_VALUE: &str = "********";
 pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "RAW";
-pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
-pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
+pub static DEFAULT_PAYMENT_PLUGIN: &str = "libsovtoken.so";
+pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "sovtoken_init";
 pub static DEFAULT_USE_LATEST_PROTOCOLS: &str = "false";
-pub static DEFAULT_PAYMENT_METHOD: &str = "null";
+pub static DEFAULT_PAYMENT_METHOD: &str = "sov";
 pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
+pub static DEFAULT_COMMUNICATION_METHOD: &str = "evernym";
 
 lazy_static! {
     static ref SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::new());
@@ -126,6 +127,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
     settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
     settings.insert(CONFIG_USE_LATEST_PROTOCOLS.to_string(), DEFAULT_USE_LATEST_PROTOCOLS.to_string());
+    settings.insert(COMMUNICATION_METHOD.to_string(), DEFAULT_COMMUNICATION_METHOD.to_string());
 
     error::SUCCESS.code_num
 }
@@ -472,7 +474,7 @@ pub mod tests {
         })
     }
 
-    fn config_json() -> String {
+    pub fn config_json() -> String {
         base_config().to_string()
     }
 

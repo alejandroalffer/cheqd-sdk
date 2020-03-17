@@ -9,7 +9,7 @@ import com.sun.jna.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
+import java9.util.concurrent.CompletableFuture;
 
 public class DisclosedProofApi extends VcxJava.API {
 
@@ -391,20 +391,20 @@ public class DisclosedProofApi extends VcxJava.API {
 		}
 	};
 
-	public static CompletableFuture<Void> proofDeclineRequest(
-			int proofHandle,
-			int connectionHandle,
-			String reason,
-			String proposal
-	) throws VcxException {
-		logger.debug("declinePresentationRequest() called with: proofHandle = [" + proofHandle + "], connectionHandle = [" + connectionHandle + "], " +
-				"reason = [" + reason + "], proposal = [" + proposal + "]");
-		CompletableFuture<Void> future = new CompletableFuture<Void>();
-		int commandHandle = addFuture(future);
+    public static CompletableFuture<Void> proofDeclineRequest(
+            int proofHandle,
+            int connectionHandle,
+            String reason,
+            String proposal
+    ) throws VcxException {
+        logger.debug("declinePresentationRequest() called with: proofHandle = [" + proofHandle + "], connectionHandle = [" + connectionHandle + "], " +
+                "reason = [" + reason + "], proposal = [" + proposal + "]");
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
+        int commandHandle = addFuture(future);
 
 		int result = LibVcx.api.vcx_disclosed_proof_decline_presentation_request(commandHandle, proofHandle, connectionHandle, reason, proposal, vcxDeclinePresentationRequestCB);
 		checkResult(result);
 
-		return future;
-	}
+        return future;
+    }
 }
