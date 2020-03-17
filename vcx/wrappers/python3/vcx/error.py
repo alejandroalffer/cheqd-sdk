@@ -114,7 +114,9 @@ class ErrorCode(IntEnum):
     UnknownMimeType = 1102,
     ActionNotSupported = 1103,
     InvalidRedirectDetails = 1104,
+    MaxBackupSize = 1105,
     NoAgentInfo = 1106
+    InvalidProvisionToken = 1107
 
 
 class VcxError(Exception):
