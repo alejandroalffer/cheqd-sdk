@@ -1833,7 +1833,6 @@ pub mod tests {
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
-    #[ignore]
     fn test_connection_redirection_real() {
         let _setup = SetupLibraryAgencyV1::init();
 
