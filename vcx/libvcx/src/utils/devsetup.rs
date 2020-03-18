@@ -343,13 +343,13 @@ pub const C_AGENCY_DID: &'static str = "Nv9oqGX57gy15kPSJzo2i4";
 pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";*/
 
 /* dummy */
-pub const AGENCY_ENDPOINT: &'static str = "https://eas.pqa.evernym.com";
-pub const AGENCY_DID: &'static str = "QreyffsPPLCUqetQbahYNu";
-pub const AGENCY_VERKEY: &'static str = "E194CfHi5GGRiy1nThMorPf3jBEm4tvcAgcb65JFfxc7";
+pub const AGENCY_ENDPOINT: &'static str = "https://eas-team1.pdev.evernym.com";
+pub const AGENCY_DID: &'static str = "CV65RFpeCtPu82hNF9i61G";
+pub const AGENCY_VERKEY: &'static str = "7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2";
 
-pub const C_AGENCY_ENDPOINT: &'static str = "https://agency.pqa.evernym.com";
-pub const C_AGENCY_DID: &'static str = "LhiSANFohRXBWaKSZDvTH5";
-pub const C_AGENCY_VERKEY: &'static str = "BjpTLofEbVYJ8xxXQxScbmubHsgpHY5uvScfXqW9B1vB";
+pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team1.pdev.evernym.com";
+pub const C_AGENCY_DID: &'static str = "TGLBMTcW9fHdkSqown9jD8";
+pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR";
 
 
 lazy_static! {
