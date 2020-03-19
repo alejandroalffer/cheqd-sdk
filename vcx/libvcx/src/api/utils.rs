@@ -11,6 +11,7 @@ use error::prelude::*;
 use indy_sys::CommandHandle;
 use utils::httpclient::AgencyMock;
 use utils::constants::*;
+use messages::agent_utils::ComMethod;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateAgentInfo {
@@ -144,6 +145,82 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
                 cb(command_handle, 0, msg.as_ptr());
             }
         }
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Update information on the agent (ie, comm method and type)
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// config: configuration
+///
+/// source_id: customer id -> how sponsor identifies customer
+///
+/// com_method: communication method to send the token to
+///         {
+///             type: u32 // 1 means push notifcation, its the only one registered
+///             id: String,
+///             value: String,
+///         }
+/// # Example json -> "{"type": 1,"id":"123","value":"FCM:Value"}"
+///
+/// cb: Callback that provides configuration or error status
+///
+///
+/// #Returns
+/// Error code as a u32
+/// {
+/// vcx_config: {
+///
+///             }
+/// source_id: String
+/// com_method {
+///             "type": 1,
+///             "value": "FCM::ID", BUT this directs pn to CMe for that interaction?
+///             "id":   ????? *****
+///             }
+/// }
+#[no_mangle]
+pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
+                                      config: *const c_char,
+                                      source_id: *const c_char, // inside config
+                                      com_method: *const c_char, // inside config
+                                      cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
+    info!("vcx_get_provision_token >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(config, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(com_method, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_get_provision_token(command_handle: {}, config: *, source_id: {}, json: {})",
+           command_handle, source_id, com_method);
+
+    let com_method: ComMethod = match serde_json::from_str(&com_method) {
+        Ok(x) => x,
+        Err(e) => {
+            return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ComMethod: {}", e)).into();
+        }
+    };
+
+    spawn(move || {
+        match messages::token_provisioning::token_provisioning::provision(&config, &source_id, com_method) {
+            Ok(()) => {
+                trace!("vcx_get_provision_token(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                trace!("vcx_get_provision_token(command_handle: {}, rc: {})",
+                       command_handle, e);
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
     });
 
     error::SUCCESS.code_num

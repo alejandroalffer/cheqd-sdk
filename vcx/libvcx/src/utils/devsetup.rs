@@ -2,6 +2,7 @@ use utils::{threadpool, get_temp_dir_path};
 use ::{settings, utils};
 use std::fs;
 use utils::libindy::wallet::{reset_wallet_handle, delete_wallet, create_wallet};
+use ::messages::agent_provisioning::agent_provisioning_v0_7::provision;
 use utils::libindy::pool::reset_pool_handle;
 use settings::set_defaults;
 use futures::Future;
@@ -36,6 +37,9 @@ pub struct SetupLibraryAgencyV1ZeroFees; // init indy wallet, init pool, provisi
 pub struct SetupLibraryAgencyV2; // init indy wallet, init pool, provision 2 agents. use protocol type 2.0
 
 pub struct SetupLibraryAgencyV2ZeroFees; // init indy wallet, init pool, provision 2 agents. use protocol type 2.0, set zero fees
+
+//TODO: This will be removed once libvcx only supports provisioning 0.7
+pub struct SetupLibraryAgencyV2ZeroFeesNewProvisioning; // init indy wallet, init pool, provision 2 agents. use protocol type 2.0, set zero fees
 
 pub struct SetupConsumer; // init indy wallet, init pool, provision 1 consumer agent, use protocol type 1.0
 
@@ -243,6 +247,21 @@ impl SetupLibraryAgencyV1ZeroFees {
 }
 
 impl Drop for SetupLibraryAgencyV1ZeroFees {
+    fn drop(&mut self) {
+        cleanup_agency_env();
+        tear_down()
+    }
+}
+
+impl SetupLibraryAgencyV2ZeroFeesNewProvisioning {
+    pub fn init() -> SetupLibraryAgencyV2ZeroFeesNewProvisioning {
+        setup();
+        setup_agency_env_new_protocol("2.0", true);
+        SetupLibraryAgencyV2ZeroFeesNewProvisioning
+    }
+}
+
+impl Drop for SetupLibraryAgencyV2ZeroFeesNewProvisioning {
     fn drop(&mut self) {
         cleanup_agency_env();
         tear_down()
@@ -528,6 +547,118 @@ pub fn setup_agency_env(protocol_type: &str, use_zero_fees: bool) {
 
     set_institution();
     ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
+}
+
+//TODO: This will be removed once libvcx only supports provisioning 0.7
+pub fn setup_agency_env_new_protocol(protocol_type: &str, use_zero_fees: bool) {
+    settings::clear_config();
+
+    init_plugin(settings::DEFAULT_PAYMENT_PLUGIN, settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+    let id = "id";
+    let sponsor = "evernym-test-sponsor";
+    let nonce = "nonce";
+    let time = chrono::offset::Utc::now().to_rfc3339();
+    let enterprise_wallet_name = format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
+    wallet::init_wallet(&enterprise_wallet_name, None, None, None).unwrap();
+    let keys = ::utils::libindy::crypto::create_key(Some("000000000000000000000000Trustee1")).unwrap();
+    let sig = ::utils::libindy::crypto::sign(&keys, &(format!("{}{}{}", nonce, time, id)).as_bytes()).unwrap();
+    let encoded_val = base64::encode(&sig);
+    let seed1 = ::utils::devsetup::create_new_seed();
+    wallet::close_wallet().err();
+    wallet::delete_wallet(&enterprise_wallet_name, None, None, None).err();
+    let test_token = json!( {
+            "id": id.to_string(),
+            "sponsor": sponsor.to_string(),
+            "nonce": nonce.to_string(),
+            "timestamp": time.to_string(),
+            "sig": encoded_val,
+            "sponsorVerKey": keys.to_string()
+        }).to_string();
+
+    let enterprise_wallet_name = format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
+
+    let seed1 = create_new_seed();
+    let mut config = json!({
+            "agency_url": AGENCY_ENDPOINT.to_string(),
+            "agency_did": AGENCY_DID.to_string(),
+            "agency_verkey": AGENCY_VERKEY.to_string(),
+            "wallet_name": enterprise_wallet_name,
+            "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION,
+            "enterprise_seed": seed1,
+            "agent_seed": seed1,
+            "name": "institution".to_string(),
+            "logo": "http://www.logo.com".to_string(),
+            "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type
+        });
+
+    if protocol_type == "2.0" {
+        config["use_latest_protocols"] = json!("true");
+    }
+
+    let enterprise_config = provision(&config.to_string(), &test_token).unwrap();
+
+    ::api::vcx::vcx_shutdown(false);
+
+    let consumer_wallet_name = format!("{}_{}", constants::CONSUMER_PREFIX, settings::DEFAULT_WALLET_NAME);
+    let seed2 = create_new_seed();
+    let mut config = json!({
+            "agency_url": C_AGENCY_ENDPOINT.to_string(),
+            "agency_did": C_AGENCY_DID.to_string(),
+            "agency_verkey": C_AGENCY_VERKEY.to_string(),
+            "wallet_name": consumer_wallet_name,
+            "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION.to_string(),
+            "enterprise_seed": seed2,
+            "agent_seed": seed2,
+            "name": "consumer".to_string(),
+            "logo": "http://www.logo.com".to_string(),
+            "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type
+        });
+
+    if protocol_type == "2.0" {
+        config["use_latest_protocols"] = json!("true");
+    }
+
+    let consumer_config = provision(&config.to_string(), &test_token).unwrap();
+
+    unsafe {
+        INSTITUTION_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config)).unwrap();
+    }
+    unsafe {
+        CONSUMER_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&consumer_wallet_name, &consumer_config.to_string())).unwrap();
+    }
+    settings::set_config_value(settings::CONFIG_GENESIS_PATH, utils::get_temp_dir_path(settings::DEFAULT_GENESIS_PATH).to_str().unwrap());
+    open_test_pool();
+
+
+    // grab the generated did and vk from the consumer and enterprise
+    set_consumer();
+    let did2 = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    let vk2 = settings::get_config_value(settings::CONFIG_INSTITUTION_VERKEY).unwrap();
+    set_institution();
+    let did1 = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    let vk1 = settings::get_config_value(settings::CONFIG_INSTITUTION_VERKEY).unwrap();
+    settings::clear_config();
+
+    // make enterprise and consumer trustees on the ledger
+    wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+    let (trustee_did, _) = ::utils::libindy::signus::create_and_store_my_did(Some(constants::TRUSTEE_SEED), None).unwrap();
+    let req_nym = ::indy::ledger::build_nym_request(&trustee_did, &did1, Some(&vk1), None, Some("TRUSTEE")).wait().unwrap();
+    ::utils::libindy::ledger::libindy_sign_and_submit_request(&trustee_did, &req_nym).unwrap();
+    let req_nym = ::indy::ledger::build_nym_request(&trustee_did, &did2, Some(&vk2), None, Some("TRUSTEE")).wait().unwrap();
+    ::utils::libindy::ledger::libindy_sign_and_submit_request(&trustee_did, &req_nym).unwrap();
+    wallet::delete_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+
+    // as trustees, mint tokens into each wallet
+    set_consumer();
+    ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
+
+    set_institution();
+    ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
+
 }
 
 pub fn config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
