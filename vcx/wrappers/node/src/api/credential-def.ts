@@ -27,6 +27,19 @@ export interface ICredentialDefCreateData {
 }
 
 /**
+ * @interface
+ * @description
+ * sourceId: String for SDK User's reference.
+ * credDefId: id of credentialdef.
+ * revocationConfig: Information given during the initial create of the cred def if revocation was enabled
+ */
+export interface ICredentialDefCreateDataWithId {
+  sourceId: string,
+  credDefId: string,
+  revocationConfig?: IRevocationConfig,
+}
+
+/**
  * @interface Interface that represents the parameters for `CredentialDef.prepareForEndorser` function.
  * @description
  * SourceId: Enterprise's personal identification for the user.
@@ -72,6 +85,13 @@ export interface IRevocationDetails {
   maxCreds?: number,
   supportRevocation?: boolean,
   tailsFile?: string,
+}
+
+export interface IRevocationConfig {
+  tailsFile?: string,
+  revRegId?: string,
+  revRegDef?: string,
+  revRegEntry?: string,
 }
 
 export enum CredentialDefState {
@@ -138,6 +158,52 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
       throw new VCXInternalError(err)
     }
   }
+  /**
+   * Creates a new CredentialDef object that is written to the ledger
+   *
+   * Example:
+   * ```
+   * data = {
+   *   credDefId: 'testCredentialDefId',
+   *   sourceId: 'testCredentialDefSourceId'
+   * }
+   * credentialDef = await CredentialDef.create_with_id(data)
+   * ```
+   */
+  public static async createWithId ({
+    sourceId,
+    credDefId,
+    revocationConfig
+  }: ICredentialDefCreateDataWithId): Promise<CredentialDef> {
+    // Todo: need to add params for tag and config
+    const credentialDef = new CredentialDef(
+      sourceId,
+      { credDefId, tailsFile: revocationConfig && revocationConfig.tailsFile }
+    )
+    const commandHandle = 0
+    const issuerDid = null
+    const revocation = revocationConfig !== undefined ? {
+      rev_reg_def: revocationConfig.revRegDef,
+      rev_reg_entry: revocationConfig.revRegEntry,
+      rev_reg_id: revocationConfig.revRegId,
+      tails_file: revocationConfig.tailsFile
+    } : null
+
+    try {
+      await credentialDef._create((cb) => rustAPI().vcx_credentialdef_create_with_id(
+        commandHandle,
+        sourceId,
+        credDefId,
+        issuerDid,
+        revocation && JSON.stringify(revocation),
+      cb
+      ))
+
+      return credentialDef
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
 
   /**
    * Create a new CredentialDef object that will be published by Endorser later.
@@ -175,7 +241,7 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
       }
 
       const credDefForEndorser = await
-      createFFICallbackPromise<{ credDefTxn: string, revocRegDefTxn: string, revocRegEntryTxn: string, handle: number }>(
+      createFFICallbackPromise<{credDefTxn: string, revocRegDefTxn: string, revocRegEntryTxn: string, handle: number}>(
           (resolve, reject, cb) => {
             const rc = rustAPI().vcx_credentialdef_prepare_for_endorser(0,
                                                                         sourceId,
@@ -323,10 +389,10 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     try {
       await createFFICallbackPromise<number>(
         (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credentialdef_update_state(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
+          const rc = rustAPI().vcx_credentialdef_update_state(0, this.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
         },
         (resolve, reject) => ffi.Callback(
           'void',
@@ -356,10 +422,10 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     try {
       const stateRes = await createFFICallbackPromise<CredentialDefState>(
         (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credentialdef_get_state(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
+          const rc = rustAPI().vcx_credentialdef_get_state(0, this.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
         },
         (resolve, reject) => ffi.Callback(
           'void',

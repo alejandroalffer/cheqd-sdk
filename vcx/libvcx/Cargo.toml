@@ -13,10 +13,15 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
-default = []
+#default = []
+default = ["pool_tests", "agency", "wallet_backup"]
+too_long_request = [] # These tests are waiting for the agency fixes regarding the length of request
+#default = ["pool_tests","agency"]
+#default = ["pool_tests","agency_v2"]
 pool_tests = []
 agency = []
 agency_v2 = []
+wallet_backup = []
 aries = []
 # Causes the build to fail on all warnings
 fatal_warnings = []
@@ -42,6 +47,7 @@ rust-base58 = "0.0.4"
 rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
+hex = "0.3.2"
 num-traits = "0.2.0"
 indy = { version = "1.14.4", path = "../../wrappers/rust/" }
 indy-sys = { version = "1.14.4", path = "../../wrappers/rust/indy-sys/" }
@@ -64,7 +70,9 @@ serde_json = "1.0"
 serde_derive = "1.0"
 
 [package.metadata.deb]
-depends = "libindy (= 1.14.4)"
+maintainer = "Evernym, Inc."
+copyright = "2018, Evernym Inc."
+depends = "$auto, libindy (=1.14.4~137)"
 extended-description = """\
 This is the official SDK for Hyperledger Indy, which provides a\
   distributed-ledger-based foundation for self-sovereign identity.\
@@ -74,14 +82,16 @@ This is the official SDK for Hyperledger Indy, which provides a\
   Hyperledger's Jira in project IS (note that regular Indy tickets are\
   in the INDY project instead...). Also, join us on Jira's Rocket.Chat\
   at #indy-sdk to discuss."""
-section = "devel"
+section = "admin"
+revision = "a26ad4f"
 priority = "optional"
 assets = [
-    ["target/release/libvcx.so", "usr/lib/", "644"],
-    ["include/vcx.h", "usr/share/libvcx/", "644"]
+    ["target/debug/libvcx.so.*", "usr/lib/", "644"],
+    ["include/vcx.h", "usr/share/libvcx/", "644"],
+    ["scripts/provision_agent_keys.py", "usr/share/libvcx/", "655"]
+
 ]
-maintainer-scripts = "./debian"
-changelog = "./debian/changelog"
+maintainer-scripts = "./scripts"
 
 [package.metadata.deb.variants.libvcx-xenial]
 name = "libvcx"

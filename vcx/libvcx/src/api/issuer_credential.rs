@@ -943,6 +943,7 @@ pub mod tests {
     #[test]
     fn test_vcx_issuer_send_credential_offer() {
         let _setup = SetupMocks::init();
+
         let connection_handle = ::connection::tests::build_test_connection();
 
         let handle = _vcx_issuer_create_credential_c_closure().unwrap();

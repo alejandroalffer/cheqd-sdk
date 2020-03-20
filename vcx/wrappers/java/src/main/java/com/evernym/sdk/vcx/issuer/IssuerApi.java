@@ -8,8 +8,8 @@ import com.sun.jna.Callback;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.concurrent.CompletableFuture;
-
+import java.util.*;
+import java9.util.concurrent.CompletableFuture;
 
 public class IssuerApi extends VcxJava.API {
 
@@ -32,7 +32,7 @@ public class IssuerApi extends VcxJava.API {
                                                                     String issuerId,
                                                                     String credentialData,
                                                                     String credentialName,
-                                                                    long price) throws VcxException {
+                                                                    String price) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
         ParamGuard.notNullOrWhiteSpace(credentialData, "credentialData");
         ParamGuard.notNullOrWhiteSpace(credentialName, "credentialName");
@@ -49,7 +49,7 @@ public class IssuerApi extends VcxJava.API {
                 issuerId,
                 credentialData,
                 credentialName,
-                String.valueOf(price),
+                price,
                 issuerCreateCredentialCB);
         checkResult(result);
         return future;
@@ -119,7 +119,7 @@ public class IssuerApi extends VcxJava.API {
         logger.debug("issuerCredentialUpdateState() called with: credentialHandle = [" + credentialHandle + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
-        int result = LibVcx.api.vcx_issuer_credential_update_state(issue, credentialHandle, issuerCredentialUpdateStateCB);
+        int result = LibVcx.api.vcx_credential_update_state(issue, credentialHandle, issuerCredentialUpdateStateCB);
         checkResult(result);
         return future;
     }

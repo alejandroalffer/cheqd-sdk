@@ -61,17 +61,15 @@ RUN /tmp/installCert.sh
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 && \
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master" && \
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" && \
+    add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial rc" && \
     add-apt-repository 'deb https://repo.sovrin.org/deb xenial master' && \
     add-apt-repository 'deb https://repo.sovrin.org/deb xenial stable' && \
     add-apt-repository 'deb https://repo.corp.evernym.com/deb evernym-agency-dev-ubuntu main' && \
     curl https://repo.corp.evernym.com/repo.corp.evenym.com-sig.key | apt-key add -
 
-# these are default values if they are not passed into the environment with
-# the --build-arg flag from 'docker build' command.
 ARG LIBINDY_VER
-ARG LIBNULL_VER
 ARG LIBSOVTOKEN_VER
 
 RUN apt-get update && apt-get install -y \
-    libindy=${LIBINDY_VER} \
+    libindy=${LIBINDY_VER}-xenial \
     libsovtoken=${LIBSOVTOKEN_VER}
