@@ -84,7 +84,7 @@ pub struct CreateAgentResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProblemReport {
-    err: String
+    msg: String
 }
 
 #[derive(Serialize, Deserialize, Debug)]

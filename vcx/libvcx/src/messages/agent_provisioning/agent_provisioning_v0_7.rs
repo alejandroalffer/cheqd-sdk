@@ -46,6 +46,11 @@ pub struct AgentCreated {
     pub agent_vk: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ProblemReport {
+    pub err: String,
+}
+
 impl ProvisionAgent {
     pub fn build(token: Option<ProvisionToken>, keys: Option<RequesterKeys>) -> ProvisionAgent {
         ProvisionAgent {
@@ -95,6 +100,9 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
     let response: AgentCreated =
         match response.remove(0) {
             A2AMessage::Version2(A2AMessageV2::AgentCreated(resp)) => resp,
+            A2AMessage::Version2(A2AMessageV2::ProblemReport(resp)) => {
+                return Err(VcxError::from_msg(VcxErrorKind::InvalidProvisioningToken, format!("provisioning failed: {:?}", resp)))
+            },
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of AgentCreated"))
         };
 
@@ -109,21 +117,16 @@ mod tests {
     use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_indy_env};
     use utils::plugins::init_plugin;
 
-    #[cfg(feature = "agency")]
-    #[cfg(feature = "pool_tests")]
-    #[test]
-    fn test_agent_provisioning_0_7() {
-        cleanup_indy_env();
-        init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-
+    fn get_provisioning_inputs(time: Option<String>, seed: Option<String>) -> (String, String, String) {
         let id = "id";
         let sponsor = "evernym-test-sponsor";
         let nonce = "nonce";
-        let time = chrono::offset::Utc::now().to_rfc3339();
+        let time = time.unwrap_or(chrono::offset::Utc::now().to_rfc3339());
+        let seed = seed.unwrap_or("000000000000000000000000Trustee1".to_string());
         println!("Time: {:?}", time);
         let enterprise_wallet_name = format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
         wallet::init_wallet(&enterprise_wallet_name, None, None, None).unwrap();
-        let keys = ::utils::libindy::crypto::create_key(Some("000000000000000000000000Trustee1")).unwrap();
+        let keys = ::utils::libindy::crypto::create_key(Some(&seed)).unwrap();
         let sig = ::utils::libindy::crypto::sign(&keys, &(format!("{}{}{}", nonce, time, id)).as_bytes()).unwrap();
         let encoded_val = base64::encode(&sig);
         let seed1 = ::utils::devsetup::create_new_seed();
@@ -154,10 +157,47 @@ mod tests {
             "sig": encoded_val,
             "sponsorVerKey": keys.to_string()
         }).to_string();
+        (enterprise_wallet_name, config, token)
+    }
 
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_agent_provisioning_0_7() {
+        cleanup_indy_env();
+        init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+
+        let (wallet_name, config, token) = get_provisioning_inputs(None, None);
         let _enterprise_config = provision(&config, &token).unwrap();
 
-        wallet::delete_wallet(&enterprise_wallet_name, None, None, None).unwrap();
+        wallet::delete_wallet(&wallet_name, None, None, None).unwrap();
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_agent_provisioning_0_7_fails_with_expired_time() {
+        cleanup_indy_env();
+        init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+
+        let new_time = "2020-03-20T13:00:00+00:00";
+        let (wallet_name, config, token) = get_provisioning_inputs(Some(new_time.to_string()), None);
+        assert!(provision(&config, &token).is_err());
+
+        wallet::delete_wallet(&wallet_name, None, None, None).unwrap();
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_agent_provisioning_0_7_fails_with_invalid_sig() {
+        cleanup_indy_env();
+        init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+
+        let (wallet_name, config, token) = get_provisioning_inputs(None, Some("000000000000000000000000Truste22".to_string()));
+        assert!(provision(&config, &token).is_err());
+
+        wallet::delete_wallet(&wallet_name, None, None, None).unwrap();
     }
 }
 
