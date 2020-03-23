@@ -925,6 +925,7 @@ pub mod tests {
 
         AgencyMock::set_next_response(PROOF_RESPONSE.to_vec());
         AgencyMock::set_next_response(UPDATE_PROOF_RESPONSE.to_vec());
+        //httpclient::set_next_u8_response(GET_PROOF_OR_CREDENTIAL_RESPONSE.to_vec());
 
         proof.update_state(None).unwrap();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);

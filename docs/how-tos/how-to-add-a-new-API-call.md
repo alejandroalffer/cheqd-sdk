@@ -3,7 +3,7 @@
 In this guide you will see how to add a new call to Libindy. As an example we will take `indy_create_and_store_my_did` call.
 
 Code will be splitted to the following layers:
-* API layer - enter point to the library 
+* API layer - enter point to the library
 * Commands layer - split complex operation into multiply atomic ones, call various services for atomic actions and join results from them
 * Service layer - isolated against each-other services, process atomic operations
 
@@ -26,7 +26,7 @@ pub extern fn indy_create_and_store_my_did(command_handle: CommandHandle,
     // this will be done later
 }
 ```
-What you can modify here is function name and params. 
+What you can modify here is function name and params.
 
 There is only one strict rule for the function name -- it should have prefix `indy_` to avoid collisions with other libraries in system.
 
@@ -83,7 +83,7 @@ let result = CommandExecutor::instance()
 
 #### Receiving the command
 
-In a module with commands you will find a struct named like `SomeCommandExecutor`. In our case it will be `DidCommandExecutor`. 
+In a module with commands you will find a struct named like `SomeCommandExecutor`. In our case it will be `DidCommandExecutor`.
 Here you should add a new function for your business logic and a new match clause to the function `execute`. In our case it will look like this:
 
 ```rust
@@ -145,7 +145,7 @@ pub extern fn indy_create_payment_address(command_handle: CommandHandle,
 ```
 
 2) Passing command to Command Thread:
-```    
+```
 let result = CommandExecutor::instance()
     .send(Command::Payments(PaymentsCommand::CreateAddress(
         wallet_handle,
@@ -180,7 +180,7 @@ let result = CommandExecutor::instance()
 
         trace!("create_address <<<");
     }
-    
+
     // some other functions
     fn _process_method_str(&self, cb: Box<dyn Fn(IndyResult<String>) + Send>,
                            method: &dyn Fn(CommandHandle) -> IndyResult<()>) {
@@ -196,10 +196,10 @@ let result = CommandExecutor::instance()
 
 The `_process_method_str` is a helper function which does preparation for the next asynchronous call:
 * Generates command handle callback matching.
-* Stores callback into a map. 
+* Stores callback into a map.
 * Calls passed function (`self.payments_service.create_address` calls payment plugin) which passed execution to an external library and frees `CommandExecutor` for the next commands.
 
-So, we postponed callback execution until get result back from plugin. 
+So, we postponed callback execution until get result back from plugin.
 
 4. Now we have to add a new Ack command:
 ```
@@ -216,7 +216,7 @@ CommandExecutor::instance().send(Command::Payments(
 ```
 
 These command is processed the same way as the original one before:
-```                
+```
     pub fn execute(&self, command: DidCommand) {
         match command {
             // some other clauses
@@ -226,7 +226,7 @@ These command is processed the same way as the original one before:
             }
         }
     }
-    
+
     fn create_address_ack(&self, handle: CommandHandle, wallet_handle: WalletHandle, result: IndyResult<String>) {
         trace!("create_address_ack >>> wallet_handle: {:?}, result: {:?}", wallet_handle, result);
         let total_result: IndyResult<String> = match result {
@@ -240,7 +240,7 @@ These command is processed the same way as the original one before:
         self._common_ack_str(handle, total_result, "CreateAddressAck");
         trace!("create_address_ack <<<");
     }
-    
+
     fn _common_ack_str(&self, cmd_handle: CommandHandle, result: IndyResult<String>, name: &str) {
         match self.pending_callbacks_str.borrow_mut().remove(&cmd_handle) {
             Some(cb) => {
@@ -250,7 +250,7 @@ These command is processed the same way as the original one before:
                            name, cmd_handle, result),
         }
     }
-``` 
+```
 
 The `__common_ack_str` is a helper function which:
 * does processing of the result.
@@ -265,27 +265,27 @@ One of the general principles of development within the core Indy team is to use
 
 ##### Unit test
 
-All functions within `services` and `utils` modules should be covered with Unit tests (as we mentioned above these functions must be atomic operations). 
+All functions within `services` and `utils` modules should be covered with Unit tests (as we mentioned above these functions must be atomic operations).
 So, if we consider function `create_and_store_my_did` the following service functions should be covered with Unit tests:
 * `self.crypto_service.create_my_did` - look at `libindy/src/services/crypto/mod.rs` file.
 * `self.wallet_service.record_exists` - look at `libindy/src/services/wallet/mod.rs` file.
 * `self.wallet_service.add_indy_object` - look at `libindy/src/services/wallet/mod.rs` file.
 
 We don't cover the functions within the `commands` module with Unit tests because:
-*  `CommandExecutor` is a complex structure which has multiple dependencies. 
+*  `CommandExecutor` is a complex structure which has multiple dependencies.
 *  These functions only join results from multiple atomic service-related functions.
 *  These functions totally correspond to an API level function which sends associated command to the `CommandExecutor`.
 
 ##### Integration test
 
 Each Libindy external API function (within `api` module) should be covered with Integration tests.
-* These tests live within the `tests` directory. 
+* These tests live within the `tests` directory.
 * There are two usage types:
     * use C function definition (like tests located at `demo` file).
     * use Rust wrapper to avoid boilerplate like `channel` preparation and casting to C types.
 * Integration tests based on Rust wrapper is divided on High level and Medium level.
     * High cases - typical positive scenarios or a strongly specific error related to a function.
-    * Medium cases - tricky positive scenarios or general errors like invalid input data or invalid handles. 
+    * Medium cases - tricky positive scenarios or general errors like invalid input data or invalid handles.
 * there are the set of integration tests devoted to one specific API function.
 * there are the set of integration tests which covers different complex scenarios like `interaction` or `anoncreds_demos`.
 

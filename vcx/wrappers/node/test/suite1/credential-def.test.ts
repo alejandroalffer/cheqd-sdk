@@ -2,7 +2,7 @@ import '../module-resolver-helper'
 
 import { assert } from 'chai'
 import { validatePaymentTxn } from 'helpers/asserts'
-import { credentialDefCreate, credentialDefPrepareForEndorser } from 'helpers/entities'
+import { credentialDefCreate, credentialDefCreateWithId, credentialDefPrepareForEndorser } from 'helpers/entities'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import { CredentialDef, CredentialDefPaymentManager, CredentialDefState, VCXCode } from 'src'
 
@@ -12,6 +12,12 @@ describe('CredentialDef:', () => {
   describe('create:', () => {
     it('success', async () => {
       await credentialDefCreate()
+    })
+  })
+
+  describe('createWithId:', () => {
+    it('success', async () => {
+      await credentialDefCreateWithId()
     })
   })
 

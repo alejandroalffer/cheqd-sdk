@@ -320,12 +320,7 @@ pub mod tests {
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
 
-        let xtype = "type1";
-        let id = "id1";
-        let value = "value1";
-        let options = "{}";
-
-        ::api::vcx::vcx_shutdown(true);
+        let (type_, id, value) = _record();
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: wallet_name.as_str(),
@@ -333,11 +328,12 @@ pub mod tests {
             settings::CONFIG_EXPORTED_WALLET_PATH: export_path.path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
+
         import(&import_config).unwrap();
         open_wallet(&wallet_name, None, None, None).unwrap();
 
         // If wallet was successfully imported, there will be an error trying to add this duplicate record
-        assert_eq!(add_record(xtype, id, value, None).unwrap_err().kind(), VcxErrorKind::DuplicationWalletRecord);
+        assert_eq!(add_record(type_, id, value, None).unwrap_err().kind(), VcxErrorKind::DuplicationWalletRecord);
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
     }

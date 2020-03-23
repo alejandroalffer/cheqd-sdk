@@ -46,7 +46,7 @@ It is recommended to install the Indy-CLI with APT:
 
 5. Add path to the directory to PATH environment variable.
 6. Run `indy-cli.exe` to start Indy-CLI.
- 
+
 #### MacOS
 1. Go to https://repo.sovrin.org/macos/indy-cli/{release-channel}.
 2. Download last version of indy-cli.
@@ -112,7 +112,7 @@ By default, this file creates in current folder and has the following name:
 
 
 ### Notes
-Indy-CLI depends on `term` rust library that has a system dependency on terminfo database. 
+Indy-CLI depends on `term` rust library that has a system dependency on terminfo database.
 That is why CLI Debian package additionally installs `libncursesw5-dev` library.
 More about it read [here](https://crates.io/crates/term) at `Packaging and Distributing` section.
 

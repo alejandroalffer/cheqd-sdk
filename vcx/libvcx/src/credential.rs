@@ -31,13 +31,13 @@ use utils::libindy::anoncreds::{
 use utils::libindy::payments::{pay_a_payee, PaymentTxn};
 use utils::{error, constants};
 
-use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
 
 use v3::{
     messages::issuance::credential_offer::CredentialOffer as CredentialOfferV3,
     handlers::issuance::Holder,
 };
+use utils::agent_info::{get_agent_info, get_agent_attr, MyAgentInfo};
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Credentials>  = Default::default();

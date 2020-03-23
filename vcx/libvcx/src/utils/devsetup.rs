@@ -37,6 +37,8 @@ pub struct SetupLibraryAgencyV2; // init indy wallet, init pool, provision 2 age
 
 pub struct SetupLibraryAgencyV2ZeroFees; // init indy wallet, init pool, provision 2 agents. use protocol type 2.0, set zero fees
 
+pub struct SetupConsumer; // init indy wallet, init pool, provision 1 consumer agent, use protocol type 1.0
+
 fn setup() {
     settings::clear_config();
     set_defaults();
@@ -262,17 +264,32 @@ impl Drop for SetupLibraryAgencyV2 {
     }
 }
 
-impl SetupLibraryAgencyV2ZeroFees  {
-    pub fn init() -> SetupLibraryAgencyV2ZeroFees  {
+impl SetupLibraryAgencyV2ZeroFees {
+    pub fn init() -> SetupLibraryAgencyV2ZeroFees {
         setup();
         setup_agency_env("2.0", true);
         SetupLibraryAgencyV2ZeroFees
     }
 }
 
-impl Drop for SetupLibraryAgencyV2ZeroFees  {
+impl Drop for SetupLibraryAgencyV2ZeroFees {
     fn drop(&mut self) {
         cleanup_agency_env();
+        tear_down()
+    }
+}
+
+impl SetupConsumer {
+    pub fn init() -> SetupConsumer {
+        setup();
+        setup_consumer_env("1.0");
+        SetupConsumer
+    }
+}
+
+impl Drop for SetupConsumer {
+    fn drop(&mut self) {
+        cleanup_consumer_env();
         tear_down()
     }
 }
@@ -326,20 +343,20 @@ pub const C_AGENCY_DID: &'static str = "Nv9oqGX57gy15kPSJzo2i4";
 pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";*/
 
 /* dummy */
-pub const AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
-pub const AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
-pub const AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
+pub const AGENCY_ENDPOINT: &'static str = "https://eas-team1.pdev.evernym.com";
+pub const AGENCY_DID: &'static str = "CV65RFpeCtPu82hNF9i61G";
+pub const AGENCY_VERKEY: &'static str = "7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2";
 
-pub const C_AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
-pub const C_AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
-pub const C_AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
+pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team1.pdev.evernym.com";
+pub const C_AGENCY_DID: &'static str = "TGLBMTcW9fHdkSqown9jD8";
+pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR";
 
 
 lazy_static! {
     static ref TEST_LOGGING_INIT: Once = Once::new();
 }
 
-fn init_test_logging(){
+fn init_test_logging() {
     TEST_LOGGING_INIT.call_once(|| {
         LibvcxDefaultLogger::init(Some(String::from("vcx=trace"))).ok();
     })
@@ -515,6 +532,50 @@ pub fn setup_wallet_env(test_name: &str) -> Result<WalletHandle, String> {
 
 pub fn cleanup_wallet_env(test_name: &str) -> Result<(), String> {
     delete_wallet(test_name, None, None, None).or(Err(format!("Unable to delete wallet: {}", test_name)))
+}
+
+pub fn setup_consumer_env(protocol_type: &str) {
+    settings::clear_config();
+
+    init_plugin(settings::DEFAULT_PAYMENT_PLUGIN, settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+
+    let consumer_wallet_name = format!("{}_{}", constants::CONSUMER_PREFIX, settings::DEFAULT_WALLET_NAME);
+    let seed2 = create_new_seed();
+    let mut config = json!({
+            "agency_url": C_AGENCY_ENDPOINT.to_string(),
+            "agency_did": C_AGENCY_DID.to_string(),
+            "agency_verkey": C_AGENCY_VERKEY.to_string(),
+            "wallet_name": consumer_wallet_name,
+            "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION.to_string(),
+            "enterprise_seed": seed2,
+            "agent_seed": seed2,
+            "name": "consumer".to_string(),
+            "logo": "http://www.logo.com".to_string(),
+            "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type
+        });
+
+    if protocol_type == "2.0" {
+        config["use_latest_protocols"] = json!("true");
+    }
+
+    let consumer_config = ::messages::agent_utils::connect_register_provision(&config.to_string()).unwrap();
+
+    unsafe {
+        CONSUMER_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&consumer_wallet_name, &consumer_config.to_string())).unwrap();
+    }
+    settings::set_config_value(settings::CONFIG_GENESIS_PATH, utils::get_temp_dir_path(settings::DEFAULT_GENESIS_PATH).to_str().unwrap());
+    open_test_pool();
+
+    // grab the generated did and vk from the consumer and enterprise
+    set_consumer();
+}
+
+pub fn cleanup_consumer_env() {
+//    set_consumer();
+    delete_wallet(&settings::get_wallet_name().unwrap(), None, None, None).ok();
+    delete_test_pool();
 }
 
 pub struct TempFile {

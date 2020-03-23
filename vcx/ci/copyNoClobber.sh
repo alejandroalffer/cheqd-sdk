@@ -9,7 +9,7 @@ fi
 
 INDY=$1
 
-ls -al
+ls -al 
 ls -alr vcx/*
 ls -alr vcx/libvcx/*
 
@@ -17,6 +17,6 @@ ls -alr vcx/libvcx/*
 cp -rn $INDY/vcx/* vcx
 mkdir -p wrappers/rust
 cp -rn $INDY/wrappers/rust/* wrappers/rust
-ls -al
+ls -al 
 ls -alr vcx/*
 ls -alr vcx/libvcx/*
