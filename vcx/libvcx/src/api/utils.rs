@@ -162,7 +162,7 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 ///         id: String,
 ///         value: String,
 ///     }
-/// # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
+/// Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
 ///
 /// cb: Callback that provides configuration or error status
 ///
@@ -172,8 +172,8 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 #[no_mangle]
 pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
                                       config: *const c_char,
-                                      source_id: *const c_char, // inside config
-                                      com_method: *const c_char, // inside config
+                                      source_id: *const c_char,
+                                      com_method: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_get_provision_token >>>");
 
