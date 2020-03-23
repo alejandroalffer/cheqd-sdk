@@ -1,8 +1,6 @@
 use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency};
-use utils::libindy::wallet;
 use error::prelude::*;
-use messages::agent_utils::{parse_config, set_config_values, configure_wallet, get_final_config, connect_v2, send_message_to_agency, ComMethod};
-use serde_json::from_str;
+use messages::agent_utils::{parse_config, set_config_values, configure_wallet, ComMethod};
 use messages::message_type::MessageTypes;
 use utils::httpclient;
 use settings::ProtocolTypes;
@@ -86,7 +84,7 @@ impl TokenRequestBuilder {
 pub fn provision(config: &str, source_id: &str, com_method: ComMethod) -> VcxResult<()> {
     let my_config = parse_config(config)?;
     set_config_values(&my_config);
-    let (my_did, my_vk, wallet_name) = configure_wallet(&my_config)?;
+    configure_wallet(&my_config)?;
 
     TokenRequestBuilder::build()
         .id(source_id)
@@ -105,6 +103,7 @@ mod tests {
     use utils::constants;
     use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_indy_env};
     use utils::plugins::init_plugin;
+    use utils::libindy::wallet::delete_wallet;
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
@@ -140,7 +139,7 @@ mod tests {
 
         provision(&config, "123", com_method).unwrap();
 
-        wallet::delete_wallet(&enterprise_wallet_name, None, None, None).unwrap();
+        delete_wallet(&enterprise_wallet_name, None, None, None).unwrap();
     }
 }
 

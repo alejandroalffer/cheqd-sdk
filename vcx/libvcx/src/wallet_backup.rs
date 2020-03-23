@@ -423,7 +423,6 @@ pub mod tests {
     use utils::libindy::wallet;
     use std::fs::File;
     use utils::devsetup::*;
-    use settings::process_config_string;
 
     pub const WALLET_PROVISION_AGENT_RESPONSE: &'static [u8; 2] = &[79, 75];
     static SOURCE_ID: &str = r#"12345"#;

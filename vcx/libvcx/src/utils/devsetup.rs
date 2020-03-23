@@ -362,8 +362,7 @@ pub const C_AGENCY_DID: &'static str = "Nv9oqGX57gy15kPSJzo2i4";
 pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";*/
 
 /* Team2 */
-///*
-/// FIXME: RYAN -> This should not be merged into master!!! Used for ci to work against team2
+/*
 pub const AGENCY_ENDPOINT: &'static str = "https://eas-team2.pdev.evernym.com";
 pub const AGENCY_DID: &'static str = "CV65RFpeCtPu82hNF9i61G";
 pub const AGENCY_VERKEY: &'static str = "7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2";
@@ -371,7 +370,7 @@ pub const AGENCY_VERKEY: &'static str = "7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1J
 pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team2.pdev.evernym.com";
 pub const C_AGENCY_DID: &'static str = "TGLBMTcW9fHdkSqown9jD8";
 pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR";
-//*/
+*/
 
 /* ci pipeline -- qa environment */
 //pub const AGENCY_ENDPOINT: &'static str = "https://eas.pqa.evernym.com";
@@ -382,6 +381,14 @@ pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd
 //pub const C_AGENCY_DID: &'static str = "LhiSANFohRXBWaKSZDvTH5";
 //pub const C_AGENCY_VERKEY: &'static str = "BjpTLofEbVYJ8xxXQxScbmubHsgpHY5uvScfXqW9B1vB";
 
+/* DEV RC */
+pub const AGENCY_ENDPOINT: &'static str = "https://eas.pdev.evernym.com";
+pub const AGENCY_DID: &'static str = "LTjTWsezEmV4wJYD5Ufxvk";
+pub const AGENCY_VERKEY: &'static str = "BcCSmgdfChLqmtBkkA26YotWVFBNnyY45WCnQziF4cqN";
+
+pub const C_AGENCY_ENDPOINT: &'static str = "https://agency.pdev.evernym.com";
+pub const C_AGENCY_DID: &'static str = "LiLBGgFarh954ZtTByLM1C";
+pub const C_AGENCY_VERKEY: &'static str = "Bk9wFrud3rz8v3nAFKGib6sQs8zHWzZxfst7Wh3Mbc9W";
 
 lazy_static! {
     static ref TEST_LOGGING_INIT: Once = Once::new();
@@ -563,7 +570,6 @@ pub fn setup_agency_env_new_protocol(protocol_type: &str, use_zero_fees: bool) {
     let keys = ::utils::libindy::crypto::create_key(Some("000000000000000000000000Trustee1")).unwrap();
     let sig = ::utils::libindy::crypto::sign(&keys, &(format!("{}{}{}", nonce, time, id)).as_bytes()).unwrap();
     let encoded_val = base64::encode(&sig);
-    let seed1 = ::utils::devsetup::create_new_seed();
     wallet::close_wallet().err();
     wallet::delete_wallet(&enterprise_wallet_name, None, None, None).err();
     let test_token = json!( {
