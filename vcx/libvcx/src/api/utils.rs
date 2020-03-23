@@ -156,13 +156,35 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 /// command_handle: command handle to map callback to user context.
 ///
 /// config: configuration // Same config passed to provision
+///  {
+///    protocol_type: String
+///    agency_url: String,
+///    pub agency_did: String,
+///    agency_verkey: String,
+///    wallet_name: Option<String>,
+///    wallet_key: String,
+///    wallet_type: Option<String>,
+///    agent_seed: Option<String>,
+///    enterprise_seed: Option<String>,
+///    wallet_key_derivation: Option<String>,
+///    name: Option<String>,
+///    logo: Option<String>,
+///    path: Option<String>,
+///    storage_config: Option<String>,
+///    storage_credentials: Option<String>,
+///    pool_config: Option<String>,
+///    did_method: Option<String>,
+///    communication_method: Option<String>,
+///    webhook_url: Option<String>,
+///    use_latest_protocols: Option<String>,
+/// }
 /// source_id: String // Customer Id
 /// com_method: {
 ///         type: u32 // 1 means push notifcation, its the only one registered
 ///         id: String,
 ///         value: String,
 ///     }
-/// Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
+/// # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
 ///
 /// cb: Callback that provides configuration or error status
 ///
