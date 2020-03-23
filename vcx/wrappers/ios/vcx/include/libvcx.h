@@ -62,6 +62,9 @@ vcx_error_t sovtoken_init();
  */
 
 vcx_error_t vcx_agent_provision_async(vcx_command_handle_t handle, const char *json, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *config));
+vcx_error_t vcx_agent_provision_with_token(vcx_command_handle_t handle, const char *json, const char *token, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *config));
+vcx_error_t vcx_get_provision_token(vcx_command_handle_t handle, const char *configvoid (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
+
 vcx_error_t vcx_agent_update_info(vcx_command_handle_t handle, const char *json, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 //pub extern fn vcx_agent_update_info(command_handle : u32, json: *const c_char, cb: Option<extern fn(xcommand_handle: u32, err: u32, config: *const c_char)>) -> u32
 

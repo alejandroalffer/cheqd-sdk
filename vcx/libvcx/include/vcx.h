@@ -1565,9 +1565,12 @@ char *vcx_provision_agent(const char *json);
 //
 // #Returns
 // Configuration (wallet also populated), on error returns NULL
-char *vcx_provision_agent_with_token(const char *config, const char *token);
+vcx_error_t vcx_provision_agent_with_token(vcx_command_handle_t command_handle,
+                                   const char *json,
+                                   const char *token,
+                                   void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-char *vcx_get_provision_token(const char *config;
+vcx_error_t *vcx_get_provision_token(vcx_command_handle_t command_handle, const char *config, void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 // Create a new Schema object that can create or look up schemas on the ledger
 //
