@@ -469,6 +469,10 @@ public abstract class LibVcx {
 
         public int vcx_agent_provision_async(int command_handle, String json,Callback cb);
 
+        public int vcx_provision_agent_with_token(int command_handle, String config, String token, Callback cb);
+
+        public int vcx_get_provision_token(int command_handle, String config, Callback cb);
+
         public int vcx_agent_update_info(int command_handle,String json,Callback cb);
 
         public int vcx_ledger_get_fees(int command_handle, Callback cb);

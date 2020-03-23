@@ -1,6 +1,6 @@
 use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency};
 use error::prelude::*;
-use messages::agent_utils::{parse_config, set_config_values, configure_wallet, ComMethod};
+use messages::agent_utils::{parse_config, set_config_values, configure_wallet, ComMethod, Config};
 use messages::message_type::MessageTypes;
 use utils::httpclient;
 use settings::ProtocolTypes;
@@ -81,8 +81,7 @@ impl TokenRequestBuilder {
     }
 }
 
-pub fn provision(config: &str, source_id: &str, com_method: ComMethod) -> VcxResult<()> {
-    let my_config = parse_config(config)?;
+pub fn provision(my_config: Config, source_id: &str, com_method: ComMethod) -> VcxResult<()> {
     set_config_values(&my_config);
     configure_wallet(&my_config)?;
 
@@ -137,7 +136,7 @@ mod tests {
             e_type: 1
         };
 
-        provision(&config, "123", com_method).unwrap();
+        provision(parse_config(&config).unwrap(), "123", com_method).unwrap();
 
         delete_wallet(&enterprise_wallet_name, None, None, None).unwrap();
     }

@@ -1557,6 +1557,18 @@ vcx_error_t vcx_proof_update_state(vcx_command_handle_t command_handle,
 // Configuration (wallet also populated), on error returns NULL
 char *vcx_provision_agent(const char *json);
 
+// Provision an agent in the agency, populate configuration and wallet for this agent.
+//
+// #Params
+// config: configuration
+// token: provided by app sponsor
+//
+// #Returns
+// Configuration (wallet also populated), on error returns NULL
+char *vcx_provision_agent_with_token(const char *config, const char *token);
+
+char *vcx_get_provision_token(const char *config;
+
 // Create a new Schema object that can create or look up schemas on the ledger
 //
 // #Params

@@ -51,6 +51,35 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
+    public static CompletableFuture<String> vcxAgentProvisionWithToken(String conf, String token) throws VcxException {
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        logger.debug("vcxAgentProvisionWithToken() called with: conf = [****], token = [***]");
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_provision_agent_with_token(
+                commandHandle,
+                conf,
+                token,
+                provAsyncCB);
+        checkResult(result);
+        return future;
+    }
+
+    public static CompletableFuture<Integer> vcxGetProvisionToken(String config) throws VcxException {
+        ParamGuard.notNullOrWhiteSpace(config, "config");
+        logger.debug("vcxGetProvisionToken() called with: config = [****]");
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_get_provision_token(
+                commandHandle,
+                config,
+                vcxUpdateAgentInfoCB
+        );
+        checkResult(result);
+        return future;
+    }
+
     private static Callback vcxUpdateAgentInfoCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {

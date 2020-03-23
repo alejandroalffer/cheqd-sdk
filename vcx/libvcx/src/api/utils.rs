@@ -11,7 +11,7 @@ use error::prelude::*;
 use indy_sys::CommandHandle;
 use utils::httpclient::AgencyMock;
 use utils::constants::*;
-use messages::agent_utils::ComMethod;
+use messages::agent_utils::{ComMethod, Config};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateAgentInfo {
@@ -23,6 +23,28 @@ pub struct UpdateAgentInfo {
 ///
 /// #Params
 /// config: configuration
+///  {
+///    protocol_type: String
+///    agency_url: String,
+///    pub agency_did: String,
+///    agency_verkey: String,
+///    wallet_name: Option<String>,
+///    wallet_key: String,
+///    wallet_type: Option<String>,
+///    agent_seed: Option<String>,
+///    enterprise_seed: Option<String>,
+///    wallet_key_derivation: Option<String>,
+///    name: Option<String>,
+///    logo: Option<String>,
+///    path: Option<String>,
+///    storage_config: Option<String>,
+///    storage_credentials: Option<String>,
+///    pool_config: Option<String>,
+///    did_method: Option<String>,
+///    communication_method: Option<String>,
+///    webhook_url: Option<String>,
+///    use_latest_protocols: Option<String>,
+/// }
 /// token: {
 ///          "id": String,
 ///          "sponsor": String, //Name of Enterprise sponsoring the provisioning
@@ -155,36 +177,39 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// config: configuration // Same config passed to provision
-///  {
-///    protocol_type: String
-///    agency_url: String,
-///    pub agency_did: String,
-///    agency_verkey: String,
-///    wallet_name: Option<String>,
-///    wallet_key: String,
-///    wallet_type: Option<String>,
-///    agent_seed: Option<String>,
-///    enterprise_seed: Option<String>,
-///    wallet_key_derivation: Option<String>,
-///    name: Option<String>,
-///    logo: Option<String>,
-///    path: Option<String>,
-///    storage_config: Option<String>,
-///    storage_credentials: Option<String>,
-///    pool_config: Option<String>,
-///    did_method: Option<String>,
-///    communication_method: Option<String>,
-///    webhook_url: Option<String>,
-///    use_latest_protocols: Option<String>,
-/// }
-/// source_id: String // Customer Id
-/// com_method: {
+/// config:
+/// {
+///     vcx_config: VcxConfig // Same config passed to agent provision
+///     {
+///           protocol_type: String
+///           agency_url: String,
+///           pub agency_did: String,
+///           agency_verkey: String,
+///           wallet_name: Option<String>,
+///           wallet_key: String,
+///           wallet_type: Option<String>,
+///           agent_seed: Option<String>,
+///           enterprise_seed: Option<String>,
+///           wallet_key_derivation: Option<String>,
+///           name: Option<String>,
+///           logo: Option<String>,
+///           path: Option<String>,
+///           storage_config: Option<String>,
+///           storage_credentials: Option<String>,
+///           pool_config: Option<String>,
+///           did_method: Option<String>,
+///           communication_method: Option<String>,
+///           webhook_url: Option<String>,
+///           use_latest_protocols: Option<String>,
+///     }
+///     source_id: String // Customer Id
+///     com_method: {
 ///         type: u32 // 1 means push notifcation, its the only one registered
 ///         id: String,
 ///         value: String,
 ///     }
-/// # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
+///     # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
+/// }
 ///
 /// cb: Callback that provides configuration or error status
 ///
@@ -194,28 +219,45 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 #[no_mangle]
 pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
                                       config: *const c_char,
-                                      source_id: *const c_char,
-                                      com_method: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_get_provision_token >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(config, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(com_method, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_get_provision_token(command_handle: {}, config: *, source_id: {}, json: {})",
-           command_handle, source_id, com_method);
+    trace!("vcx_get_provision_token(command_handle: {}, config: {})",
+           command_handle, config );
 
-    let com_method: ComMethod = match serde_json::from_str(&com_method) {
+    let configs: serde_json::Value = match serde_json::from_str(&config) {
+        Ok(x) => x,
+        Err(e) => {
+            return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Config: {}", e)).into();
+        }
+    };
+
+    let vcx_config: Config = match serde_json::from_value(configs["vcx_config"].clone()) {
+        Ok(x) => x,
+        Err(_) => {
+            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing vcx_config").into();
+        }
+    };
+
+    let com_method: ComMethod = match serde_json::from_value(configs["com_method"].clone()) {
         Ok(x) => x,
         Err(e) => {
             return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ComMethod: {}", e)).into();
         }
     };
 
+    let source_id: String = match serde_json::from_value(configs["source_id"].clone()) {
+        Ok(x) => x,
+        Err(_) => {
+            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing source_id").into();
+        }
+    };
+
     spawn(move || {
-        match messages::token_provisioning::token_provisioning::provision(&config, &source_id, com_method) {
+        match messages::token_provisioning::token_provisioning::provision(vcx_config, &source_id, com_method) {
             Ok(()) => {
                 trace!("vcx_get_provision_token(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
@@ -733,6 +775,41 @@ mod tests {
 
         let result = CStringUtils::c_str_to_string(result).unwrap().unwrap();
         let _config: serde_json::Value = serde_json::from_str(&result).unwrap();
+    }
+
+    #[test]
+    fn test_get_token_input_fails() {
+        let _setup = SetupMocks::init();
+        let vcx_config = serde_json::from_str::<serde_json::Value>(&CONFIG).unwrap();
+        let config = json!({
+            "vcx_config": vcx_config,
+            "source_id": "123",
+            "com_method": {"id":"123","value":"FCM:Value"}
+        });
+
+        let c_json = CString::new(config.to_string()).unwrap().into_raw();
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        let rc = vcx_get_provision_token(cb.command_handle, c_json, Some(cb.get_callback()));
+        assert_eq!(rc, error::INVALID_OPTION.code_num)
+    }
+
+    #[test]
+    fn test_get_token_success() {
+        let _setup = SetupMocks::init();
+        let vcx_config = serde_json::from_str::<serde_json::Value>(&CONFIG).unwrap();
+        let config = json!({
+            "vcx_config": vcx_config,
+            "source_id": "123",
+            "com_method": {"type": 1, "id":"123","value":"FCM:Value"}
+        });
+
+        let c_json = CString::new(config.to_string()).unwrap().into_raw();
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        let rc = vcx_get_provision_token(cb.command_handle, c_json, Some(cb.get_callback()));
+        assert_eq!(rc, error::SUCCESS.code_num);
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
