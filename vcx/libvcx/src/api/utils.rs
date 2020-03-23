@@ -19,7 +19,6 @@ pub struct UpdateAgentInfo {
     value: String,
 }
 /// Provision an agent in the agency, populate configuration and wallet for this agent.
-/// NOTE: for asynchronous call use vcx_agent_provision_async
 ///
 /// #Params
 /// config: configuration

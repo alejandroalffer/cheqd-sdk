@@ -50,8 +50,41 @@ public class UtilsApi extends VcxJava.API {
         checkResult(result);
         return future;
     }
+    /** #Params
+     config: configuration
 
-    public static CompletableFuture<String> vcxAgentProvisionWithToken(String conf, String token) throws VcxException {
+     config = {
+        protocol_type: String
+        agency_url: String,
+        pub agency_did: String,
+        agency_verkey: String,
+        wallet_name: Option<String>,
+        wallet_key: String,
+        wallet_type: Option<String>,
+        agent_seed: Option<String>,
+        enterprise_seed: Option<String>,
+        wallet_key_derivation: Option<String>,
+        name: Option<String>,
+        logo: Option<String>,
+        path: Option<String>,
+        storage_config: Option<String>,
+        storage_credentials: Option<String>,
+        pool_config: Option<String>,
+        did_method: Option<String>,
+        communication_method: Option<String>,
+        webhook_url: Option<String>,
+        use_latest_protocols: Option<String>,
+     },
+     token: {
+           "id": String,
+           "sponsor": String, //Name of Enterprise sponsoring the provisioning
+           "nonce": String,
+           "timestamp": String,
+           "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
+           "sponsor_vk": String,
+         }
+     **/
+      public static CompletableFuture<String> vcxAgentProvisionWithToken(String conf, String token) throws VcxException {
         CompletableFuture<String> future = new CompletableFuture<String>();
         logger.debug("vcxAgentProvisionWithToken() called with: conf = [****], token = [***]");
         int commandHandle = addFuture(future);
@@ -65,6 +98,39 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
+    /** config:
+     {
+      vcx_config: VcxConfig // Same config passed to agent provision
+      {
+            protocol_type: String
+            agency_url: String,
+            pub agency_did: String,
+            agency_verkey: String,
+            wallet_name: Option<String>,
+            wallet_key: String,
+            wallet_type: Option<String>,
+            agent_seed: Option<String>,
+            enterprise_seed: Option<String>,
+            wallet_key_derivation: Option<String>,
+            name: Option<String>,
+            logo: Option<String>,
+            path: Option<String>,
+            storage_config: Option<String>,
+            storage_credentials: Option<String>,
+            pool_config: Option<String>,
+            did_method: Option<String>,
+            communication_method: Option<String>,
+            webhook_url: Option<String>,
+            use_latest_protocols: Option<String>,
+      }
+      source_id: String // Customer Id
+      com_method: {
+          type: u32 // 1 means push notifcation, its the only one registered
+          id: String,
+          value: String,
+      }
+      # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
+     **/
     public static CompletableFuture<Integer> vcxGetProvisionToken(String config) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(config, "config");
         logger.debug("vcxGetProvisionToken() called with: config = [****]");
