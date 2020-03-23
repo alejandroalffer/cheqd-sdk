@@ -155,34 +155,20 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// config: configuration
-///
-/// source_id: customer id -> how sponsor identifies customer
-///
-/// com_method: communication method to send the token to
-///         {
-///             type: u32 // 1 means push notifcation, its the only one registered
-///             id: String,
-///             value: String,
-///         }
-/// # Example json -> "{"type": 1,"id":"123","value":"FCM:Value"}"
+/// config: configuration // Same config passed to provision
+/// source_id: String // Customer Id
+/// com_method: {
+///         type: u32 // 1 means push notifcation, its the only one registered
+///         id: String,
+///         value: String,
+///     }
+/// # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
 ///
 /// cb: Callback that provides configuration or error status
 ///
 ///
 /// #Returns
 /// Error code as a u32
-/// {
-/// vcx_config: {
-///
-///             }
-/// source_id: String
-/// com_method {
-///             "type": 1,
-///             "value": "FCM::ID", BUT this directs pn to CMe for that interaction?
-///             "id":   ????? *****
-///             }
-/// }
 #[no_mangle]
 pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
                                       config: *const c_char,
