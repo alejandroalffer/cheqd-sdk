@@ -248,24 +248,6 @@ pub fn process_config_file(path: &str) -> VcxResult<u32> {
     }
 }
 
-pub fn get_config_value(key: &str) -> VcxResult<String> {
-    trace!("get_config_value >>> key: {}", key);
-
-    SETTINGS
-        .read()
-        .or(Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot read settings")))?
-        .get(key)
-        .map(|v| v.to_string())
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot read \"{}\" from settings", key)))
-}
-
-pub fn set_config_value(key: &str, value: &str) {
-    trace!("set_config_value >>> key: {}, value: {}", key, value);
-    SETTINGS
-        .write().unwrap()
-        .insert(key.to_string(), value.to_string());
-}
-
 pub fn get_wallet_name() -> VcxResult<String> {
     get_config_value(CONFIG_WALLET_NAME)
         .map_err(|_|VcxError::from(VcxErrorKind::MissingWalletKey))
@@ -314,10 +296,27 @@ pub fn get_opt_config_value(key: &str) -> Option<String> {
         .map(|v| v.to_string())
 }
 
+pub fn get_config_value(key: &str) -> VcxResult<String> {
+    trace!("get_config_value >>> key: {}", key);
+
+    get_opt_config_value(key)
+        .ok_or(VcxError::from_msg(
+            VcxErrorKind::InvalidConfiguration,
+            format!("Cannot read \"{}\" from settings", key)
+        ))
+}
+
 pub fn set_opt_config_value(key: &str, value: &Option<String>) {
     if let Some(v) = value {
        set_config_value(key, v.as_str())
     }
+}
+
+pub fn set_config_value(key: &str, value: &str) {
+    trace!("set_config_value >>> key: {}, value: {}", key, value);
+    SETTINGS
+        .write().unwrap()
+        .insert(key.to_string(), value.to_string());
 }
 
 pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>) -> String { // TODO: _storage_config must be used

@@ -85,6 +85,13 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)agentProvisionAsync:(NSString *)config
                  completion:(void (^)(NSError *error, NSString *config))completion;
 
+- (void)agentProvisionWithToken:(NSString *)config
+                          token:(NSString *)token
+                 completion:(void (^)(NSError *error, NSString *config))completion;
+
+- (void)getProvisionToken:(NSString *)config
+                 completion:(void (^)(NSError *error))completion;
+
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                      inviteDetails:(NSString *)inviteDetails
                         completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;

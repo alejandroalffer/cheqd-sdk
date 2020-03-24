@@ -355,6 +355,44 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 }
 
+- (void)agentProvisionWithToken:(NSString *)config
+                          token:(NSString *)token
+               completion:(void (^)(NSError *error, NSString *config))completion
+{
+    const char *config_char = [config cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *token_char = [token cStringUsingEncoding:NSUTF8StringEncoding];
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
+    vcx_error_t ret = vcx_provision_agent_with_token(handle, config_char, token_char, VcxWrapperCommonStringCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSLog(@"ERROR: agentProvision: calling completion");
+            completion([NSError errorFromVcxError: ret], false);
+        });
+    }
+
+}
+
+- (void)getProvisionToken:(NSString *)config
+            completion:(void (^)(NSError *error))completion
+{
+    const char *config_char = [config cStringUsingEncoding:NSUTF8StringEncoding];
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
+    vcx_error_t ret = vcx_get_provision_token(handle, config_char, VcxWrapperCommonCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSLog(@"ERROR: getProvisionToken: calling completion");
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+
+}
+
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                 inviteDetails:(NSString *)inviteDetails
              completion:(void (^)(NSError *error, NSInteger connectionHandle)) completion

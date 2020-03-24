@@ -12,6 +12,8 @@ pub mod message_type;
 pub mod payload;
 pub mod wallet_backup;
 pub mod deaddrop;
+pub mod agent_provisioning;
+pub mod token_provisioning;
 #[macro_use]
 pub mod thread;
 
@@ -41,6 +43,9 @@ use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
 use settings::ProtocolTypes;
 use messages::deaddrop::retrieve::{RetrieveDeadDrop, RetrievedDeadDropResult, RetrieveDeadDropBuilder};
+use messages::agent_provisioning::agent_provisioning_v0_7::{AgentCreated, ProvisionAgent};
+use messages::token_provisioning::token_provisioning::{TokenRequest, TokenResponse};
+use messages::agent_utils::ProblemReport;
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -231,6 +236,11 @@ pub enum A2AMessageV2 {
     SignUpResponse(SignUpResponse),
     CreateAgent(CreateAgent),
     CreateAgentResponse(CreateAgentResponse),
+    ProvisionAgent(ProvisionAgent),
+    AgentCreated(AgentCreated),
+    ProblemReport(ProblemReport),
+    TokenRequest(TokenRequest),
+    TokenResponse(TokenResponse),
 
     /// PW Connection
     CreateKey(CreateKey),
@@ -305,6 +315,31 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "SIGNED_UP" => {
                 SignUpResponse::deserialize(value)
                     .map(A2AMessageV2::SignUpResponse)
+                    .map_err(de::Error::custom)
+            }
+            "get-token" => {
+                TokenRequest::deserialize(value)
+                    .map(A2AMessageV2::TokenRequest)
+                    .map_err(de::Error::custom)
+            }
+            "send-token" => {
+                TokenResponse::deserialize(value)
+                    .map(A2AMessageV2::TokenResponse)
+                    .map_err(de::Error::custom)
+            }
+            "CREATE_AGENT" if message_type.version == "0.7" => {
+                ProvisionAgent::deserialize(value)
+                    .map(A2AMessageV2::ProvisionAgent)
+                    .map_err(de::Error::custom)
+            }
+            "AGENT_CREATED" if message_type.version == "0.7" => {
+                AgentCreated::deserialize(value)
+                    .map(A2AMessageV2::AgentCreated)
+                    .map_err(de::Error::custom)
+            }
+            "problem-report" if message_type.version == "0.7" => {
+                ProblemReport::deserialize(value)
+                    .map(A2AMessageV2::ProblemReport)
                     .map_err(de::Error::custom)
             }
             "CREATE_AGENT" => {
@@ -779,7 +814,11 @@ pub enum A2AMessageKinds {
     SignUp,
     SignedUp,
     CreateAgent,
+    ProvisionAgent,
     AgentCreated,
+    ProblemReport,
+    TokenRequest,
+    TokenResponse,
     CreateKey,
     KeyCreated,
     CreateMessage,
@@ -818,7 +857,11 @@ impl A2AMessageKinds {
             A2AMessageKinds::Connect => MessageFamilies::AgentProvisioning,
             A2AMessageKinds::Connected => MessageFamilies::AgentProvisioning,
             A2AMessageKinds::CreateAgent => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::ProvisionAgent => MessageFamilies::AgentProvisioningV2,
             A2AMessageKinds::AgentCreated => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::ProblemReport => MessageFamilies::AgentProvisioningV2,
+            A2AMessageKinds::TokenRequest => MessageFamilies::Tokenizer,
+            A2AMessageKinds::TokenResponse => MessageFamilies::Tokenizer,
             A2AMessageKinds::SignUp => MessageFamilies::AgentProvisioning,
             A2AMessageKinds::SignedUp => MessageFamilies::AgentProvisioning,
             A2AMessageKinds::CreateKey => MessageFamilies::Connecting,
@@ -859,7 +902,11 @@ impl A2AMessageKinds {
             A2AMessageKinds::Connect => "CONNECT".to_string(),
             A2AMessageKinds::Connected => "CONNECTED".to_string(),
             A2AMessageKinds::CreateAgent => "CREATE_AGENT".to_string(),
+            A2AMessageKinds::ProvisionAgent => "CREATE_AGENT".to_string(),
             A2AMessageKinds::AgentCreated => "AGENT_CREATED".to_string(),
+            A2AMessageKinds::ProblemReport => "problem-report".to_string(),
+            A2AMessageKinds::TokenRequest => "get-token".to_string(),
+            A2AMessageKinds::TokenResponse => "send-token".to_string(),
             A2AMessageKinds::SignUp => "SIGNUP".to_string(),
             A2AMessageKinds::SignedUp => "SIGNED_UP".to_string(),
             A2AMessageKinds::CreateKey => "CREATE_KEY".to_string(),

@@ -76,7 +76,6 @@ pub fn unpack_message(msg: &[u8]) -> VcxResult<Vec<u8>> {
 
 pub fn create_key(seed: Option<&str>) -> VcxResult<String> {
     let key_json = json!({"seed": seed}).to_string();
-
     crypto::create_key(::utils::libindy::wallet::get_wallet_handle(), Some(&key_json))
         .wait()
         .map_err(VcxError::from)

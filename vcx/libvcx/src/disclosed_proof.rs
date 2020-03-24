@@ -899,9 +899,9 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
 
     trace!("get_proof_request_messages >>> connection_handle: {}, match_name: {:?}", connection_handle, match_name);
 
-    let agent_info = get_agent_info()?.pw_info(connection_handle)?;
-
     AgencyMock::set_next_response(NEW_PROOF_REQUEST_RESPONSE.to_vec());
+
+    let agent_info = get_agent_info()?.pw_info(connection_handle)?;
 
     let payload = messages::get_message::get_connection_messages(&agent_info.my_pw_did()?,
                                                                  &agent_info.my_pw_vk()?,
@@ -1683,7 +1683,7 @@ mod tests {
                 "tails_file": get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()
               },
            },
-           "predicates":{ 
+           "predicates":{
                "zip_3": {
                 "credential": all_creds["attrs"]["zip_3"][0],
                }

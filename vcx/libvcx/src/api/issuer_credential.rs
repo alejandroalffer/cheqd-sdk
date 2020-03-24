@@ -801,7 +801,7 @@ pub mod tests {
     use settings;
     use utils::{
         constants::CREDENTIAL_REQ_RESPONSE_STR,
-        get_temp_dir_path,
+        get_temp_dir_path
     };
     use api::{return_types_u32, VcxStateType};
     use utils::devsetup::*;

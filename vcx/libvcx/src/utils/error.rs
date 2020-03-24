@@ -116,9 +116,10 @@ pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1101, message:
 pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1102, message: "Unknown mime type"};
 pub static ACTION_NOT_SUPPORTED: Error = Error { code_num: 1103, message: "Action is not supported"};
 pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1104, message: "Invalid redirect details structure"};
+/* EC 1105-1107 is reserved for proprietary forks of libVCX */
 pub static MAX_BACKUP_SIZE: Error = Error{code_num: 1105, message: "Cloud Backup exceeds max size limit"};
-/* EC 1105 is reserved for proprietary forks of libVCX */
 pub static NO_AGENT_INFO: Error = Error{code_num: 1106, message: "Agent pairwise information not found"};
+pub static INVALID_PROVISION_TOKEN: Error = Error{code_num: 1107, message: "Token provided by sponsor is invalid"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -224,7 +225,9 @@ lazy_static! {
         insert_c_message(&mut m, &UNKNOWN_MIME_TYPE);
         insert_c_message(&mut m, &ACTION_NOT_SUPPORTED);
         insert_c_message(&mut m, &INVALID_REDIRECT_DETAILS);
+        insert_c_message(&mut m, &MAX_BACKUP_SIZE);
         insert_c_message(&mut m, &NO_AGENT_INFO);
+        insert_c_message(&mut m, &INVALID_PROVISION_TOKEN);
 
         m
     };
