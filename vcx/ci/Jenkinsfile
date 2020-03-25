@@ -66,7 +66,7 @@ def testing() {
 }
 
 def buildLibindyDocker() {
-    def libindyDockerfile = 'vcx/ci/libindy.dockerfile'
+    def libindyDockerfile = 'vcx/ci/libindy-ubuntu16.dockerfile'
     def indyTag = appendTag(Globals.libindyTag, "~")
 
     def nullTag= appendTag(Globals.nullpayTag, "~")

@@ -72,12 +72,13 @@ pub static DEFAULT_WALLET_KEY: &str = "8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2
 pub static DEFAULT_THREADPOOL_SIZE: usize = 8;
 pub static MASK_VALUE: &str = "********";
 pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "RAW";
-pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
-pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
+pub static DEFAULT_PAYMENT_PLUGIN: &str = "libsovtoken.so";
+pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "sovtoken_init";
 pub static DEFAULT_USE_LATEST_PROTOCOLS: &str = "false";
-pub static DEFAULT_PAYMENT_METHOD: &str = "null";
+pub static DEFAULT_PAYMENT_METHOD: &str = "sov";
 pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
+pub static DEFAULT_COMMUNICATION_METHOD: &str = "evernym";
 
 lazy_static! {
     static ref SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::new());
@@ -126,6 +127,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
     settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
     settings.insert(CONFIG_USE_LATEST_PROTOCOLS.to_string(), DEFAULT_USE_LATEST_PROTOCOLS.to_string());
+    settings.insert(COMMUNICATION_METHOD.to_string(), DEFAULT_COMMUNICATION_METHOD.to_string());
 
     error::SUCCESS.code_num
 }
@@ -246,24 +248,6 @@ pub fn process_config_file(path: &str) -> VcxResult<u32> {
     }
 }
 
-pub fn get_config_value(key: &str) -> VcxResult<String> {
-    trace!("get_config_value >>> key: {}", key);
-
-    SETTINGS
-        .read()
-        .or(Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot read settings")))?
-        .get(key)
-        .map(|v| v.to_string())
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot read \"{}\" from settings", key)))
-}
-
-pub fn set_config_value(key: &str, value: &str) {
-    trace!("set_config_value >>> key: {}, value: {}", key, value);
-    SETTINGS
-        .write().unwrap()
-        .insert(key.to_string(), value.to_string());
-}
-
 pub fn get_wallet_name() -> VcxResult<String> {
     get_config_value(CONFIG_WALLET_NAME)
         .map_err(|_|VcxError::from(VcxErrorKind::MissingWalletKey))
@@ -312,10 +296,27 @@ pub fn get_opt_config_value(key: &str) -> Option<String> {
         .map(|v| v.to_string())
 }
 
+pub fn get_config_value(key: &str) -> VcxResult<String> {
+    trace!("get_config_value >>> key: {}", key);
+
+    get_opt_config_value(key)
+        .ok_or(VcxError::from_msg(
+            VcxErrorKind::InvalidConfiguration,
+            format!("Cannot read \"{}\" from settings", key)
+        ))
+}
+
 pub fn set_opt_config_value(key: &str, value: &Option<String>) {
     if let Some(v) = value {
        set_config_value(key, v.as_str())
     }
+}
+
+pub fn set_config_value(key: &str, value: &str) {
+    trace!("set_config_value >>> key: {}, value: {}", key, value);
+    SETTINGS
+        .write().unwrap()
+        .insert(key.to_string(), value.to_string());
 }
 
 pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>) -> String { // TODO: _storage_config must be used
@@ -472,7 +473,7 @@ pub mod tests {
         })
     }
 
-    fn config_json() -> String {
+    pub fn config_json() -> String {
         base_config().to_string()
     }
 

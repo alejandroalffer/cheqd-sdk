@@ -317,8 +317,8 @@ impl Proof {
     fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
         let their_did = self.their_did.clone().unwrap_or_default();
         let version = if qualifier::is_fully_qualified(&their_did) {
-            Some(ProofRequestVersion::V2)
-        } else { None };
+            Some(ProofRequestVersion::V2) }
+        else { None };
 
         let data_version = "0.1";
         let mut proof_obj = messages::proof_request();
@@ -401,7 +401,7 @@ impl Proof {
 
                 let (payload, thread) = Payloads::decrypt(
                     &get_agent_attr(&self.my_vk)?,
-                    &message,
+                    &message
                 )?;
 
                 if let Some(_) = thread {
@@ -925,6 +925,7 @@ pub mod tests {
 
         AgencyMock::set_next_response(PROOF_RESPONSE.to_vec());
         AgencyMock::set_next_response(UPDATE_PROOF_RESPONSE.to_vec());
+        //httpclient::set_next_u8_response(GET_PROOF_OR_CREDENTIAL_RESPONSE.to_vec());
 
         proof.update_state(None).unwrap();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
@@ -1339,4 +1340,3 @@ pub mod tests {
         }
     }
 }
-

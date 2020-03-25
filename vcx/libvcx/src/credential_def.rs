@@ -1,4 +1,4 @@
-use serde_json;
+use ::{serde_json, messages};
 
 use api::PublicEntityStateType;
 use object_cache::ObjectCache;
@@ -8,6 +8,7 @@ use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::libindy::payments::PaymentTxn;
 use utils::libindy::anoncreds;
 use utils::libindy::ledger;
+use std::convert::AsRef;
 
 lazy_static! {
     static ref CREDENTIALDEF_MAP: ObjectCache<CredentialDef> = Default::default();
@@ -38,6 +39,31 @@ pub struct RevocationDetails {
     pub max_creds: Option<u32>,
 }
 
+#[derive(Clone, Deserialize, Serialize, Debug, Default)]
+pub struct RevocationConfig {
+    pub tails_file: Option<String>,
+    pub rev_reg_id: Option<String>,
+    pub rev_reg_def: Option<String>,
+    pub rev_reg_entry: Option<String>
+}
+
+impl AsRef<RevocationConfig> for RevocationConfig {
+    fn as_ref(&self) -> &RevocationConfig { &self }
+}
+
+impl RevocationConfig {
+    fn to_string(&self) -> VcxResult<String> {
+        messages::ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
+            .serialize()
+            .map_err(|err| err.extend("Cannot serialize RevocationConfig"))
+    }
+
+    fn from_str(data: &str) -> VcxResult<RevocationConfig> {
+        messages::ObjectWithVersion::deserialize(data)
+            .map(|obj: messages::ObjectWithVersion<RevocationConfig>| obj.data)
+            .map_err(|err| err.extend("Cannot deserialize RevocationConfig"))
+    }
+}
 impl CredentialDef {
     pub fn from_str(data: &str) -> VcxResult<CredentialDef> {
         ObjectWithVersion::deserialize(data)
@@ -91,6 +117,47 @@ impl CredentialDef {
     }
 
     fn get_state(&self) -> u32 { self.state as u32 }
+}
+
+pub fn create_credentialdef_from_id(_source_id: String,
+                                    cred_def_id: String,
+                                    issuer_did: String,
+                                    revocation_config: Option<String>) -> VcxResult<u32> {
+    trace!("create_credentialdef_from_id >>> source_id: {}, cred_def_id: {}, issuer_did: {}",
+           _source_id, cred_def_id, issuer_did);
+
+    let rev_config = RevocationConfig::from_str(
+        revocation_config
+            .unwrap_or(RevocationConfig::to_string(&RevocationConfig::default())?)
+            .as_str()
+    )?;
+
+    let _tag: String = cred_def_id
+        .split_terminator(':')
+        .collect::<Vec<&str>>()
+        .pop()
+        .unwrap_or_default()
+        .to_string();
+
+    let cred_def = CredentialDef {
+        source_id: _source_id,
+        tag: _tag,
+        id: cred_def_id,
+        issuer_did: Some(issuer_did),
+        name: String::new(),
+        cred_def_payment_txn: None,
+        rev_reg_def_payment_txn: None,
+        rev_reg_delta_payment_txn: None,
+        rev_reg_id: rev_config.as_ref().rev_reg_id.to_owned(),
+        rev_reg_def: rev_config.as_ref().rev_reg_id.to_owned(),
+        rev_reg_entry: rev_config.as_ref().rev_reg_entry.to_owned(),
+        tails_file: rev_config.as_ref().tails_file.to_owned(),
+        state: PublicEntityStateType::Built,
+    };
+
+    let handle = CREDENTIALDEF_MAP.add(cred_def).or(Err(VcxError::from(VcxErrorKind::CreateCredDef)))?;
+
+    Ok(handle)
 }
 
 fn _parse_revocation_details(revocation_details: &str) -> VcxResult<RevocationDetails> {

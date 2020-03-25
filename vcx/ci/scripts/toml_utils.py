@@ -12,6 +12,11 @@ def valid_line(line):
     return ('version =' in line or 'version=' in line) and ('uuid' not in line and 'rusqlite' not in line and 'indy-sys' not in line and 'rust' not in line)
 
 
+
+def valid_provide_line(line):
+    return 'provides =' in line or 'provides=' in line
+
+
 # update the so file with the major minor build
 def update_so(src_dir, version):
     dest  = SO_FILE + "." + version
@@ -141,6 +146,8 @@ def update_major_minor_build_to_toml(filename, version):
         for line in f.readlines():
             if valid_line(line):
                 o = o + 'version = \"%s\"\n' % (version)
+            elif valid_provide_line(line):
+                o = o + 'provides = \"libvcx (= %s)\"\n' % (version)
             else:
                 o = o + line
 

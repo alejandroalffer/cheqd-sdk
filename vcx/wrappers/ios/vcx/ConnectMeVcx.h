@@ -75,11 +75,22 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 
 @interface ConnectMeVcx : NSObject
 
+- (int)initSovToken;
+
+//- (int)initNullPay;
+
 - (void)initWithConfig:(NSString *)config
             completion:(void (^)(NSError *error))completion;
 
 - (void)agentProvisionAsync:(NSString *)config
                  completion:(void (^)(NSError *error, NSString *config))completion;
+
+- (void)agentProvisionWithToken:(NSString *)config
+                          token:(NSString *)token
+                 completion:(void (^)(NSError *error, NSString *config))completion;
+
+- (void)getProvisionToken:(NSString *)config
+                 completion:(void (^)(NSError *error))completion;
 
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                      inviteDetails:(NSString *)inviteDetails
@@ -111,6 +122,12 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                          withData:(NSData *)dataRaw
                 withSignatureData:(NSData *)signatureRaw
                    withCompletion:(void (^)(NSError *error, vcx_bool_t valid))completion;
+
+- (void)connectionUpdateState:(VcxHandle) connectionHandle
+               withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)connectionGetState:(VcxHandle) connectionHandle
+            withCompletion:(void (^)(NSError *error, NSInteger state))completion;
 
 - (void)agentUpdateInfo:(NSString *)config
              completion:(void (^)(NSError *error))completion;
@@ -251,6 +268,32 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                                   withHash:(NSString *)hash
                              withMechanism:(NSString *)mechanism
                              withTimestamp:(long)timestamp;
+- (void) createWalletBackup:(NSString *)sourceID
+                  backupKey:(NSString *)backupKey
+                 completion:(void (^)(NSError *error, NSInteger walletBackupHandle))completion;
+
+- (void) backupWalletBackup:(vcx_wallet_backup_handle_t) walletBackupHandle
+                       path:(NSString *)path
+                 completion:(void(^)(NSError *error))completion;
+
+- (void) updateWalletBackupState:(vcx_wallet_backup_handle_t) walletBackupHandle
+                      completion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void) updateWalletBackupStateWithMessage:(vcx_wallet_backup_handle_t) walletBackupHandle
+                                    message:(NSString *)message
+                                 completion:(void (^)(NSError *error, NSInteger state))completion;
+
+// should *walletBackupStr be just data here?
+- (void) serializeBackupWallet:(vcx_wallet_backup_handle_t) walletBackupHandle
+              completion:(void (^)(NSError *error, NSString *data))completion;
+
+- (void) deserializeBackupWallet:(NSString *) walletBackupStr
+                completion:(void (^)(NSError *error, NSInteger walletBackupHandle))completion;
+
+
+- (void)restoreWallet:(NSString *)config
+           completion:(void (^)(NSError *error))completion;
+
 @end
 
 #endif /* init_h */

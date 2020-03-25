@@ -26,19 +26,6 @@ pub struct GetMessages {
     pairwise_dids: Option<Vec<String>>,
 }
 
-impl GetMessages {
-    fn build(kind: A2AMessageKinds, exclude_payload: Option<String>, uids: Option<Vec<String>>,
-             status_codes: Option<Vec<MessageStatusCode>>, pairwise_dids: Option<Vec<String>>) -> GetMessages {
-        GetMessages {
-            msg_type: MessageTypes::build(kind),
-            exclude_payload,
-            uids,
-            status_codes,
-            pairwise_dids,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetMessagesResponse {
@@ -178,23 +165,28 @@ impl GetMessagesBuilder {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::GetMessagesByConnections)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::GetMessagesByConnections)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
-
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -240,21 +232,27 @@ impl GeneralMessage for GetMessagesBuilder {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessages,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::GetMessages)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessages,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::GetMessages)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
         };
 
@@ -494,19 +492,17 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "wallet_backup")]
     #[test]
-    #[ignore] // Dummy cloud agent has not implemented this functionality yet
     fn test_download_agent_messages() {
-        let _setup = SetupLibraryAgencyV1::init();
-
-        let (_faber, alice) = ::connection::tests::create_connected_connections();
+        let _setup = SetupConsumer::init();
 
         // AS CONSUMER GET MESSAGES
-        ::utils::devsetup::set_consumer();
         let all_messages = download_agent_messages(None, None).unwrap();
         assert_eq!(all_messages.len(), 0);
 
-        let _hello_uid = ::connection::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
+        let _wallet_backup = ::wallet_backup::create_wallet_backup("123", ::settings::DEFAULT_WALLET_KEY).unwrap();
+
         thread::sleep(Duration::from_millis(2000));
         let all_messages = download_agent_messages(None, None).unwrap();
         assert_eq!(all_messages.len(), 1);

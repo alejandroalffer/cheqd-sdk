@@ -150,7 +150,7 @@ pub mod tests {
 
     pub fn delete_test_pool() {
         close().ok();
-        delete(POOL).unwrap();
+        delete(POOL).ok();
     }
 
     pub fn open_test_pool() -> u32 {

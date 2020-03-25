@@ -586,7 +586,7 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     NSString * credDefId = [[AnoncredsUtils sharedInstance] getIssuer1GvtCredDefId];
-    
+
     ret = [[AnoncredsUtils sharedInstance] issuerRotateCredentialDefStartForId:credDefId
                                                                     configJSON:nil
                                                                   walletHandle:localWalletHandle

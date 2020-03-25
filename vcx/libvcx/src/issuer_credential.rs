@@ -74,7 +74,7 @@ pub struct IssuerCredential {
     their_vk: Option<String>,
     agent_did: Option<String>,
     agent_vk: Option<String>,
-    thread: Option<Thread>,
+    thread: Option<Thread>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -551,7 +551,6 @@ fn apply_agent_info(cred: &mut IssuerCredential, agent_info: &MyAgentInfo) {
     cred.agent_did = agent_info.pw_agent_did.clone();
     cred.agent_vk = agent_info.pw_agent_vk.clone();
 }
-
 /**
     Input: supporting two formats:
     eg:
@@ -560,8 +559,6 @@ fn apply_agent_info(cred: &mut IssuerCredential, agent_info: &MyAgentInfo) {
     or
     deprecated format: json, key/array (of one item)
     {"address2":["101 Wilson Lane"]}
-
-
     Output: json: dictionary with key, object of raw and encoded values
     eg:
     {

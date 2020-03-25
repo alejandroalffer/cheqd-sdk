@@ -31,13 +31,13 @@ use utils::libindy::anoncreds::{
 use utils::libindy::payments::{pay_a_payee, PaymentTxn};
 use utils::{error, constants};
 
-use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
 
 use v3::{
     messages::issuance::credential_offer::CredentialOffer as CredentialOfferV3,
     handlers::issuance::Holder,
 };
+use utils::agent_info::{get_agent_info, get_agent_attr, MyAgentInfo};
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Credentials>  = Default::default();
@@ -138,7 +138,6 @@ impl Credential {
                                                                                     &my_did,
                                                                                     &credential_offer.libindy_offer)?;
 
-        debug!("Credential::build_request <<< Success");
         Ok(CredentialRequest {
             libindy_cred_req: req,
             libindy_cred_req_meta: req_meta,
@@ -314,7 +313,7 @@ impl Credential {
 
         let credential_offer = self.credential_offer.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidState))?;
         let credential_offer_json = serde_json::to_value(credential_offer)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize CredentilOffer: {}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize CredentialOffer: {}", err)))?;
 
         Ok(self.to_cred_offer_string(credential_offer_json))
     }
@@ -439,7 +438,7 @@ fn create_credential_v3(source_id: &str, offer: &str) -> VcxResult<Option<Creden
         serde_json::Value::Array(mut offer) => { // legacy offer format
             offer.pop()
                 .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))?
-        },
+        }
         offer => offer //aries offer format
     };
 
@@ -551,7 +550,15 @@ pub fn get_credential_offer(handle: u32) -> VcxResult<String> {
                 debug!("getting credential offer {}", obj.source_id);
                 obj.get_credential_offer()
             }
-            Credentials::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidCredentialHandle)) // TODO: implement
+            Credentials::V3(ref obj) => {
+                let cred_offer = obj.get_credential_offer()?;
+                let cred_offer: CredentialOffer = cred_offer.try_into()?;
+
+                let cred_offer = json!({
+                    "credential_offer": cred_offer
+                });
+                return Ok(cred_offer.to_string());
+            }
         }
     })
 }
