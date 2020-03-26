@@ -5,17 +5,31 @@ import com.evernym.sdk.vcx.LibVcx;
 import com.evernym.sdk.vcx.ParamGuard;
 import com.evernym.sdk.vcx.VcxException;
 import com.evernym.sdk.vcx.VcxJava;
-import com.sun.jna.Callback;
+import com.sun.jna.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
+import java9.util.concurrent.CompletableFuture;
 
 public class VcxApi extends VcxJava.API {
     private static final Logger logger = LoggerFactory.getLogger("VcxApi");
     private VcxApi() {
     }
+
+    public static int initSovToken() throws VcxException {
+        logger.debug("initSovToken()");
+        int result = LibVcx.api.sovtoken_init();
+        checkResult(result);
+        return result;
+    }
+
+//     public static int initNullPay() throws VcxException {
+//         logger.debug("initNullPay()");
+//         int result = LibVcx.api.nullpay_init();
+//         checkResult(result);
+//         return result;
+//     }
 
     private static Callback vcxIniWithConfigCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
@@ -44,7 +58,7 @@ public class VcxApi extends VcxJava.API {
 
     public static CompletableFuture<Integer> vcxInitWithConfig(String configJson) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(configJson, "config");
-        logger.debug("vcxInitWithConfig() called with: configJson = [" + configJson + "]");
+        logger.debug("vcxInitWithConfig() called with: configJson = [****]");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
@@ -98,6 +112,24 @@ public class VcxApi extends VcxJava.API {
         logger.debug("vcxErrorCMessage() called with: errorCode = [" + errorCode + "]");
         return LibVcx.api.vcx_error_c_message(errorCode);
 
+    }
+
+    public static void logMessage(String loggerName, int level, String message) {
+        LibVcx.logMessage(loggerName, level, message);
+    }
+
+    public static int vcxSetLogger(Pointer context, Callback enabled, Callback log, Callback flush) throws VcxException {
+        logger.debug("vcxSetLogger()");
+        int result = LibVcx.api.vcx_set_logger(context, enabled, log, flush);
+        checkResult(result);
+        return result;
+    }
+
+    public static int vcxSetDefaultLogger(String logLevel) throws VcxException {
+        logger.debug("vcxSetDefaultLogger()");
+        int result = LibVcx.api.vcx_set_default_logger(logLevel);
+        checkResult(result);
+        return result;
     }
 
 }

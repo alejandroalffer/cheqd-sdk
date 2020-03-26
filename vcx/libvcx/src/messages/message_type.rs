@@ -36,7 +36,8 @@ impl MessageTypes {
     pub fn build(kind: A2AMessageKinds) -> MessageTypes {
         match settings::get_protocol_type() {
             settings::ProtocolTypes::V1 => MessageTypes::MessageTypeV1(MessageTypes::build_v1(kind)),
-            settings::ProtocolTypes::V2 => MessageTypes::MessageTypeV2(MessageTypes::build_v2(kind))
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 => MessageTypes::MessageTypeV2(MessageTypes::build_v2(kind))
         }
     }
 
@@ -64,22 +65,34 @@ pub struct MessageTypeV2 {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum MessageFamilies {
+    AgentProvisioning,
+    AgentProvisioningV2,
+    Tokenizer,
+    Connecting,
     Routing,
     Onboarding,
     Pairwise,
     Configs,
     CredentialExchange,
     Unknown(String),
+    WalletBackup,
+    DeadDrop,
 }
 
 impl MessageFamilies {
     pub fn version(&self) -> &'static str {
         match self {
+            MessageFamilies::AgentProvisioning => "0.5",
+            MessageFamilies::AgentProvisioningV2 => "0.7",
+            MessageFamilies::Tokenizer => "0.1",
+            MessageFamilies::Connecting => "0.6",
             MessageFamilies::Routing => "1.0",
             MessageFamilies::Onboarding => "1.0",
-            MessageFamilies::Pairwise => "1.0",
+            MessageFamilies::Pairwise => "0.6",
             MessageFamilies::Configs => "1.0",
             MessageFamilies::CredentialExchange => "1.0",
+            MessageFamilies::WalletBackup => "0.1.0",
+            MessageFamilies::DeadDrop => "0.1.0",
             _ => "1.0"
         }
     }
@@ -88,11 +101,15 @@ impl MessageFamilies {
 impl From<String> for MessageFamilies {
     fn from(family: String) -> Self {
         match family.as_str() {
+            "agent-provisioning" => MessageFamilies::AgentProvisioning,
+            "token-provisioning" => MessageFamilies::Tokenizer,
+            "connecting" => MessageFamilies::Connecting,
             "routing" => MessageFamilies::Routing,
             "onboarding" => MessageFamilies::Onboarding,
             "pairwise" => MessageFamilies::Pairwise,
             "configs" => MessageFamilies::Configs,
             "credential-exchange" => MessageFamilies::CredentialExchange,
+            "wallet-backup" => MessageFamilies::WalletBackup,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -101,11 +118,17 @@ impl From<String> for MessageFamilies {
 impl ::std::string::ToString for MessageFamilies {
     fn to_string(&self) -> String {
         match self {
+            MessageFamilies::AgentProvisioning => "agent-provisioning".to_string(),
+            MessageFamilies::AgentProvisioningV2 => "agent-provisioning".to_string(),
+            MessageFamilies::Tokenizer => "token-provisioning".to_string(),
+            MessageFamilies::Connecting => "connecting".to_string(),
             MessageFamilies::Routing => "routing".to_string(),
             MessageFamilies::Onboarding => "onboarding".to_string(),
             MessageFamilies::Pairwise => "pairwise".to_string(),
             MessageFamilies::CredentialExchange => "credential_exchange".to_string(),
             MessageFamilies::Configs => "configs".to_string(),
+            MessageFamilies::WalletBackup => "wallet-backup".to_string(),
+            MessageFamilies::DeadDrop => "dead-drop".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }

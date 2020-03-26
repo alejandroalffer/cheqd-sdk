@@ -26,19 +26,6 @@ pub struct GetMessages {
     pairwise_dids: Option<Vec<String>>,
 }
 
-impl GetMessages {
-    fn build(kind: A2AMessageKinds, exclude_payload: Option<String>, uids: Option<Vec<String>>,
-             status_codes: Option<Vec<MessageStatusCode>>, pairwise_dids: Option<Vec<String>>) -> GetMessages {
-        GetMessages {
-            msg_type: MessageTypes::build(kind),
-            exclude_payload,
-            uids,
-            status_codes,
-            pairwise_dids,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetMessagesResponse {
@@ -91,6 +78,13 @@ impl GetMessagesBuilder {
             pairwise_dids: None,
             version: settings::get_protocol_type(),
         }
+    }
+
+    #[cfg(test)]
+    pub fn create_v1() -> GetMessagesBuilder {
+        let mut builder = GetMessagesBuilder::create();
+        builder.version = settings::ProtocolTypes::V1;
+        builder
     }
 
     pub fn uid(&mut self, uids: Option<Vec<String>>) -> VcxResult<&mut Self> {
@@ -171,21 +165,28 @@ impl GetMessagesBuilder {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::GetMessagesByConnections)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
-            settings::ProtocolTypes::V2 =>
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
-                )
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::GetMessagesByConnections)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
+                ),
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -197,6 +198,7 @@ impl GetMessagesBuilder {
         trace!("parse_download_messages_response >>>");
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
+        trace!("parse_download_messages_response: parsed response {:?}", response);
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
             A2AMessage::Version2(A2AMessageV2::GetMessagesByConnectionsResponse(res)) => res.msgs,
@@ -230,21 +232,28 @@ impl GeneralMessage for GetMessagesBuilder {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessages,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::GetMessages)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
-            settings::ProtocolTypes::V2 =>
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessages,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
-                )
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::GetMessages)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
+                ),
         };
 
         prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
@@ -334,7 +343,7 @@ impl Message {
             A2AMessage::CredentialOffer(offer) => {
                 let cred_offer: CredentialOffer = offer.try_into()?;
 
-                (PayloadKinds::CredOffer, json!(&cred_offer).to_string())
+                (PayloadKinds::CredOffer, json!(vec![cred_offer]).to_string())
             }
             A2AMessage::Credential(credential) => {
                 let credential: CredentialMessage = credential.try_into()?;
@@ -427,6 +436,7 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
             .uid(uids)?
             .status_codes(status_codes)?
             .pairwise_dids(pairwise_dids)?
+            .version(&Some(::settings::get_protocol_type()))?
             .download_messages()?;
 
     trace!("message returned: {:?}", response);
@@ -468,7 +478,7 @@ mod tests {
     fn test_parse_get_messages_response() {
         let _setup = SetupMocks::init();
 
-        let result = GetMessagesBuilder::create().parse_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
+        let result = GetMessagesBuilder::create_v1().parse_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 3)
     }
 
@@ -482,19 +492,17 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "wallet_backup")]
     #[test]
-    #[ignore] // Dummy cloud agent has not implemented this functionality yet
     fn test_download_agent_messages() {
-        let _setup = SetupLibraryAgencyV1::init();
-
-        let (_faber, alice) = ::connection::tests::create_connected_connections();
+        let _setup = SetupConsumer::init();
 
         // AS CONSUMER GET MESSAGES
-        ::utils::devsetup::set_consumer();
         let all_messages = download_agent_messages(None, None).unwrap();
         assert_eq!(all_messages.len(), 0);
 
-        let _hello_uid = ::connection::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
+        let _wallet_backup = ::wallet_backup::create_wallet_backup("123", ::settings::DEFAULT_WALLET_KEY).unwrap();
+
         thread::sleep(Duration::from_millis(2000));
         let all_messages = download_agent_messages(None, None).unwrap();
         assert_eq!(all_messages.len(), 1);

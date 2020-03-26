@@ -147,6 +147,33 @@ class CredentialDef(VcxStateful):
         except KeyError:
             raise VcxError(ErrorCode.InvalidCredentialDef)
 
+    @staticmethod
+    async def create_with_id(source_id: str, cred_def_id: str):
+        """
+        Creates a new CredentialDef object that is written to the ledger
+
+        :param source_id: Institution's unique ID for the credential definition
+        :param cred_def_id: The schema ID given during the creation of the schema
+        Example:
+        source_id = 'foobar123'
+        cred_def_id = 'cred_def_id'
+        credential_def1 = await CredentialDef.create_with_id(source_id, cred_def_id)
+        :return: credential_def object
+        """
+        constructor_params = (source_id, "", "")
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+
+        # default institution_did in config is used as issuer_did
+        c_issuer_did = None
+        c_config = None
+
+        c_params = (c_source_id, c_cred_def_id, c_issuer_did, c_config)
+
+        return await CredentialDef._create("vcx_credentialdef_create_with_id",
+                                           constructor_params,
+                                           c_params)
 
     async def serialize(self) -> dict:
         """

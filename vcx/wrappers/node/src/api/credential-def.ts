@@ -27,6 +27,19 @@ export interface ICredentialDefCreateData {
 }
 
 /**
+ * @interface
+ * @description
+ * sourceId: String for SDK User's reference.
+ * credDefId: id of credentialdef.
+ * revocationConfig: Information given during the initial create of the cred def if revocation was enabled
+ */
+export interface ICredentialDefCreateDataWithId {
+  sourceId: string,
+  credDefId: string,
+  revocationConfig?: IRevocationConfig,
+}
+
+/**
  * @interface Interface that represents the parameters for `CredentialDef.prepareForEndorser` function.
  * @description
  * SourceId: Enterprise's personal identification for the user.
@@ -62,8 +75,9 @@ export interface ICredentialDefDataObj {
 }
 
 export interface ICredentialDefParams {
-  schemaId: string,
-  name: string,
+  schemaId?: string,
+  name?: string,
+  credDefId?: string,
   tailsFile?: string
 }
 
@@ -71,6 +85,13 @@ export interface IRevocationDetails {
   maxCreds?: number,
   supportRevocation?: boolean,
   tailsFile?: string,
+}
+
+export interface IRevocationConfig {
+  tailsFile?: string,
+  revRegId?: string,
+  revRegDef?: string,
+  revRegEntry?: string,
 }
 
 export enum CredentialDefState {
@@ -137,6 +158,52 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
       throw new VCXInternalError(err)
     }
   }
+  /**
+   * Creates a new CredentialDef object that is written to the ledger
+   *
+   * Example:
+   * ```
+   * data = {
+   *   credDefId: 'testCredentialDefId',
+   *   sourceId: 'testCredentialDefSourceId'
+   * }
+   * credentialDef = await CredentialDef.create_with_id(data)
+   * ```
+   */
+  public static async createWithId ({
+    sourceId,
+    credDefId,
+    revocationConfig
+  }: ICredentialDefCreateDataWithId): Promise<CredentialDef> {
+    // Todo: need to add params for tag and config
+    const credentialDef = new CredentialDef(
+      sourceId,
+      { credDefId, tailsFile: revocationConfig && revocationConfig.tailsFile }
+    )
+    const commandHandle = 0
+    const issuerDid = null
+    const revocation = revocationConfig !== undefined ? {
+      rev_reg_def: revocationConfig.revRegDef,
+      rev_reg_entry: revocationConfig.revRegEntry,
+      rev_reg_id: revocationConfig.revRegId,
+      tails_file: revocationConfig.tailsFile
+    } : null
+
+    try {
+      await credentialDef._create((cb) => rustAPI().vcx_credentialdef_create_with_id(
+        commandHandle,
+        sourceId,
+        credDefId,
+        issuerDid,
+        revocation && JSON.stringify(revocation),
+      cb
+      ))
+
+      return credentialDef
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
 
   /**
    * Create a new CredentialDef object that will be published by Endorser later.
@@ -174,7 +241,7 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
       }
 
       const credDefForEndorser = await
-      createFFICallbackPromise<{ credDefTxn: string, revocRegDefTxn: string, revocRegEntryTxn: string, handle: number }>(
+      createFFICallbackPromise<{credDefTxn: string, revocRegDefTxn: string, revocRegEntryTxn: string, handle: number}>(
           (resolve, reject, cb) => {
             const rc = rustAPI().vcx_credentialdef_prepare_for_endorser(0,
                                                                         sourceId,
@@ -192,7 +259,8 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
           (resolve, reject) => ffi.Callback(
             'void',
             ['uint32', 'uint32', 'uint32', 'string', 'string', 'string'],
-            (handle: number, err: number, _handle: number, _credDefTxn: string, _revocRegDefTxn: string, _revocRegEntryTxn: string) => {
+            (handle: number, err: number, _handle: number, _credDefTxn: string, _revocRegDefTxn: string,
+             _revocRegEntryTxn: string) => {
               if (err) {
                 reject(err)
                 return
@@ -201,7 +269,8 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
                 reject('no credential definition transaction')
                 return
               }
-              resolve({ credDefTxn: _credDefTxn, revocRegDefTxn: _revocRegDefTxn, revocRegEntryTxn: _revocRegEntryTxn, handle: _handle })
+              resolve({ credDefTxn: _credDefTxn, handle: _handle, revocRegDefTxn: _revocRegDefTxn,
+                revocRegEntryTxn: _revocRegEntryTxn })
             })
       )
       credentialDef._setHandle(credDefForEndorser.handle)
@@ -245,19 +314,19 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
   protected _releaseFn = rustAPI().vcx_credentialdef_release
   protected _serializeFn = rustAPI().vcx_credentialdef_serialize
   protected _deserializeFn = rustAPI().vcx_credentialdef_deserialize
-  private _name: string
-  private _schemaId: string
-  private _credDefId: string | null
+  private _name: string | undefined
+  private _schemaId: string | undefined
+  private _credDefId: string | undefined
   private _tailsFile: string | undefined
   private _credDefTransaction: string | null
   private _revocRegDefTransaction: string | null
   private _revocRegEntryTransaction: string | null
 
-  constructor (sourceId: string, { name, schemaId, tailsFile }: ICredentialDefParams) {
+  constructor (sourceId: string, { name, schemaId, credDefId, tailsFile }: ICredentialDefParams) {
     super(sourceId)
     this._name = name
     this._schemaId = schemaId
-    this._credDefId = null
+    this._credDefId = credDefId
     this._tailsFile = tailsFile
     this._credDefTransaction = null
     this._revocRegDefTransaction = null
@@ -320,10 +389,10 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     try {
       await createFFICallbackPromise<number>(
         (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credentialdef_update_state(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
+          const rc = rustAPI().vcx_credentialdef_update_state(0, this.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
         },
         (resolve, reject) => ffi.Callback(
           'void',
@@ -353,10 +422,10 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     try {
       const stateRes = await createFFICallbackPromise<CredentialDefState>(
         (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credentialdef_get_state(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
+          const rc = rustAPI().vcx_credentialdef_get_state(0, this.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
         },
         (resolve, reject) => ffi.Callback(
           'void',

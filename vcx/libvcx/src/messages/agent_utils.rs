@@ -83,6 +83,11 @@ pub struct CreateAgentResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct ProblemReport {
+    msg: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ComMethodUpdated {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
@@ -106,12 +111,12 @@ impl UpdateComMethod {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ComMethod {
-    id: String,
+    pub id: String,
     #[serde(rename = "type")]
-    e_type: i32,
-    value: String,
+    pub e_type: i32,
+    pub value: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -274,7 +279,8 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     trace!("Connecting to Agency");
     let (agent_did, agent_vk) = match my_config.protocol_type {
         settings::ProtocolTypes::V1 => onboarding_v1(&my_did, &my_vk, &my_config.agency_did)?,
-        settings::ProtocolTypes::V2 => onboarding_v2(&my_did, &my_vk, &my_config.agency_did)?,
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3=> onboarding_v2(&my_did, &my_vk, &my_config.agency_did)?,
     };
 
     let config = get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)?;
@@ -406,7 +412,8 @@ pub fn update_agent_info(id: &str, value: &str) -> VcxResult<()> {
         settings::ProtocolTypes::V1 => {
             update_agent_info_v1(&to_did, com_method)
         }
-        settings::ProtocolTypes::V2 => {
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 => {
             update_agent_info_v2(&to_did, com_method)
         }
     }

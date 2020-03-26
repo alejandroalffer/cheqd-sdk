@@ -209,6 +209,6 @@ describe('DisclosedProof', () => {
       const data = await dataDisclosedProofCreateWithRequest()
       await disclosedProofCreateWithRequest(data)
     })
-  })
+ })
 
 })

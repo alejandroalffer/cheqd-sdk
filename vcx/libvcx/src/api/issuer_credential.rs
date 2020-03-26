@@ -801,7 +801,7 @@ pub mod tests {
     use settings;
     use utils::{
         constants::CREDENTIAL_REQ_RESPONSE_STR,
-        get_temp_dir_path,
+        get_temp_dir_path
     };
     use api::{return_types_u32, VcxStateType};
     use utils::devsetup::*;
@@ -943,6 +943,7 @@ pub mod tests {
     #[test]
     fn test_vcx_issuer_send_credential_offer() {
         let _setup = SetupMocks::init();
+
         let connection_handle = ::connection::tests::build_test_connection();
 
         let handle = _vcx_issuer_create_credential_c_closure().unwrap();
@@ -1063,9 +1064,8 @@ pub mod tests {
     #[test]
     fn test_get_payment_txn() {
         let _setup = SetupMocks::init();
-        let credential = issuer_credential::tests::create_standard_issuer_credential(None);
-        let s = credential.to_string().unwrap();
-        let handle = issuer_credential::from_string(&s).unwrap();
+        let credential = issuer_credential::tests::create_standard_issuer_credential_json(None);
+        let handle = issuer_credential::from_string(&credential).unwrap();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         vcx_issuer_credential_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));

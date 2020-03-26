@@ -16,7 +16,7 @@ use connection;
 
 // Issuer
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Issuer {
     issuer_sm: IssuerSM
 }
@@ -76,7 +76,7 @@ impl Issuer {
 
 // Holder
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Holder {
     holder_sm: HolderSM
 }
@@ -116,6 +116,10 @@ impl Holder {
 
     pub fn get_source_id(&self) -> String {
         self.holder_sm.get_source_id()
+    }
+
+    pub fn get_credential_offer(&self) -> VcxResult<CredentialOffer> {
+        self.holder_sm.get_credential_offer()
     }
 
     pub fn get_credential(&self) -> VcxResult<(String, Credential)> {

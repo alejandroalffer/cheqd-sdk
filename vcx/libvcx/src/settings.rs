@@ -13,6 +13,7 @@ use std::borrow::Borrow;
 
 use error::prelude::*;
 use utils::file::read_file;
+use indy_sys::INVALID_WALLET_HANDLE;
 
 pub static CONFIG_POOL_NAME: &str = "pool_name";
 pub static CONFIG_PROTOCOL_TYPE: &str = "protocol_type";
@@ -36,18 +37,18 @@ pub static CONFIG_LINK_SECRET_ALIAS: &str = "link_secret_alias";
 pub static CONFIG_EXPORTED_WALLET_PATH: &str = "exported_wallet_path";
 pub static CONFIG_WALLET_BACKUP_KEY: &str = "backup_key";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
-pub static CONFIG_WALLET_NAME: &str = "wallet_name";
-pub static CONFIG_WALLET_TYPE: &str = "wallet_type";
-pub static CONFIG_WALLET_STORAGE_CONFIG: &str = "storage_config";
-pub static CONFIG_WALLET_STORAGE_CREDS: &str = "storage_credentials";
-pub static CONFIG_WALLET_HANDLE: &str = "wallet_handle";
-pub static CONFIG_THREADPOOL_SIZE: &str = "threadpool_size";
-pub static CONFIG_WALLET_KEY_DERIVATION: &str = "wallet_key_derivation";
-pub static CONFIG_PROTOCOL_VERSION: &str = "protocol_version";
-pub static CONFIG_PAYMENT_METHOD: &str = "payment_method";
-pub static CONFIG_TXN_AUTHOR_AGREEMENT: &str = "author_agreement";
+pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
+pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
+pub static CONFIG_WALLET_STORAGE_CONFIG: &'static str = "storage_config";
+pub static CONFIG_WALLET_STORAGE_CREDS: &'static str = "storage_credentials";
+pub static CONFIG_WALLET_HANDLE: &'static str = "wallet_handle";
+pub static CONFIG_THREADPOOL_SIZE: &'static str = "threadpool_size";
+pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
+pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
+pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
+pub static CONFIG_TXN_AUTHOR_AGREEMENT: &'static str = "author_agreement";
 pub static CONFIG_USE_LATEST_PROTOCOLS: &'static str = "use_latest_protocols";
-pub static CONFIG_POOL_CONFIG: &str = "pool_config";
+pub static CONFIG_POOL_CONFIG: &'static str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
 pub static COMMUNICATION_METHOD: &str = "communication_method";// proprietary or aries
 pub static CONFIG_ACTORS: &str = "actors"; // inviter, invitee, issuer, holder, prover, verifier, sender, receiver
@@ -71,12 +72,13 @@ pub static DEFAULT_WALLET_KEY: &str = "8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2
 pub static DEFAULT_THREADPOOL_SIZE: usize = 8;
 pub static MASK_VALUE: &str = "********";
 pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "RAW";
-pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
-pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
+pub static DEFAULT_PAYMENT_PLUGIN: &str = "libsovtoken.so";
+pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "sovtoken_init";
 pub static DEFAULT_USE_LATEST_PROTOCOLS: &str = "false";
-pub static DEFAULT_PAYMENT_METHOD: &str = "null";
+pub static DEFAULT_PAYMENT_METHOD: &str = "sov";
 pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
+pub static DEFAULT_COMMUNICATION_METHOD: &str = "evernym";
 
 lazy_static! {
     static ref SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::new());
@@ -124,6 +126,8 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), DEFAULT_WALLET_BACKUP_KEY.to_string());
     settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
     settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
+    settings.insert(CONFIG_USE_LATEST_PROTOCOLS.to_string(), DEFAULT_USE_LATEST_PROTOCOLS.to_string());
+    settings.insert(COMMUNICATION_METHOD.to_string(), DEFAULT_COMMUNICATION_METHOD.to_string());
 
     error::SUCCESS.code_num
 }
@@ -132,7 +136,7 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
     trace!("validate_config >>> config: {:?}", config);
 
     //Mandatory parameters
-    if config.get(CONFIG_WALLET_KEY).is_none() {
+    if ::utils::libindy::wallet::get_wallet_handle() == INVALID_WALLET_HANDLE && config.get(CONFIG_WALLET_KEY).is_none() {
         return Err(VcxError::from(VcxErrorKind::MissingWalletKey));
     }
 
@@ -244,24 +248,6 @@ pub fn process_config_file(path: &str) -> VcxResult<u32> {
     }
 }
 
-pub fn get_config_value(key: &str) -> VcxResult<String> {
-    trace!("get_config_value >>> key: {}", key);
-
-    SETTINGS
-        .read()
-        .or(Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot read settings")))?
-        .get(key)
-        .map(|v| v.to_string())
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot read \"{}\" from settings", key)))
-}
-
-pub fn set_config_value(key: &str, value: &str) {
-    trace!("set_config_value >>> key: {}, value: {}", key, value);
-    SETTINGS
-        .write().unwrap()
-        .insert(key.to_string(), value.to_string());
-}
-
 pub fn get_wallet_name() -> VcxResult<String> {
     get_config_value(CONFIG_WALLET_NAME)
         .map_err(|_|VcxError::from(VcxErrorKind::MissingWalletKey))
@@ -310,10 +296,27 @@ pub fn get_opt_config_value(key: &str) -> Option<String> {
         .map(|v| v.to_string())
 }
 
+pub fn get_config_value(key: &str) -> VcxResult<String> {
+    trace!("get_config_value >>> key: {}", key);
+
+    get_opt_config_value(key)
+        .ok_or(VcxError::from_msg(
+            VcxErrorKind::InvalidConfiguration,
+            format!("Cannot read \"{}\" from settings", key)
+        ))
+}
+
 pub fn set_opt_config_value(key: &str, value: &Option<String>) {
     if let Some(v) = value {
        set_config_value(key, v.as_str())
     }
+}
+
+pub fn set_config_value(key: &str, value: &str) {
+    trace!("set_config_value >>> key: {}, value: {}", key, value);
+    SETTINGS
+        .write().unwrap()
+        .insert(key.to_string(), value.to_string());
 }
 
 pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>) -> String { // TODO: _storage_config must be used
@@ -358,6 +361,11 @@ pub fn get_communication_method() -> VcxResult<String> {
     get_config_value(COMMUNICATION_METHOD)
 }
 
+pub fn is_aries_protocol_set() -> bool {
+    get_protocol_type() == ProtocolTypes::V2 && ARIES_COMMUNICATION_METHOD == get_communication_method().unwrap_or_default() ||
+        get_protocol_type() == ProtocolTypes::V3
+}
+
 pub fn get_actors() -> Vec<Actors> {
     get_config_value(CONFIG_ACTORS)
         .and_then(|actors|
@@ -388,6 +396,8 @@ pub enum ProtocolTypes {
     V1,
     #[serde(rename = "2.0")]
     V2,
+    #[serde(rename = "3.0")]
+    V3,
 }
 
 impl Default for ProtocolTypes {
@@ -401,6 +411,7 @@ impl From<String> for ProtocolTypes {
         match type_.as_str() {
             "1.0" => ProtocolTypes::V1,
             "2.0" => ProtocolTypes::V2,
+            "3.0" => ProtocolTypes::V3,
             type_ @ _ => {
                 error!("Unknown protocol type: {:?}. Use default", type_);
                 ProtocolTypes::default()
@@ -414,12 +425,14 @@ impl ::std::string::ToString for ProtocolTypes {
         match self {
             ProtocolTypes::V1 => "1.0".to_string(),
             ProtocolTypes::V2 => "2.0".to_string(),
+            ProtocolTypes::V3 => "3.0".to_string(),
         }
     }
 }
 
 pub fn get_protocol_type() -> ProtocolTypes {
-    ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE).unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()))
+    ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE)
+        .unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()))
 }
 
 pub fn clear_config() {
@@ -460,7 +473,7 @@ pub mod tests {
         })
     }
 
-    fn config_json() -> String {
+    pub fn config_json() -> String {
         base_config().to_string()
     }
 

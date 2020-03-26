@@ -39,6 +39,79 @@ async def vcx_agent_provision(config: str) -> None:
     logger.debug("vcx_agent_provision completed")
     return result.decode()
 
+async def vcx_provision_agent_with_token(config: str, token: str) -> None:
+    """
+    Provision an agent in the agency, populate configuration and wallet for this agent.
+    Example:
+    enterprise_config = {
+        'agency_url': 'http://localhost:8080',
+        'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
+        'agency_verkey': "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR",
+        'wallet_name': 'LIBVCX_SDK_WALLET',
+        'agent_seed': '00000000000000000000000001234561',
+        'enterprise_seed': '000000000000000000000000Trustee1',
+        'wallet_key': '1234'
+    }
+    token = {
+      "id": String,
+      "sponsor": String, //Name of Enterprise sponsoring the provisioning
+      "nonce": String,
+      "timestamp": String,
+      "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
+      "sponsor_vk": String,
+    }
+    vcx_config = await vcx_agent_provision(json.dumps(enterprise_config))
+    :param config: JSON configuration
+    :return: Configuration for vcx_init call.
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_agent_provision, "cb"):
+        logger.debug("vcx_agent_provision: Creating callback")
+        vcx_agent_provision.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+    c_config = c_char_p(config.encode('utf-8'))
+
+    result = await do_call('vcx_provision_agent_with_token',
+                           c_config,
+                           vcx_agent_provision.cb)
+
+    logger.debug("vcx_provision_agent_with_token completed")
+    return result.decode()
+
+async def vcx_get_provision_token(config: str) -> None:
+    """
+    Get token used in vcx_provision_agent_with_token
+    :param config:
+      {
+        'vcx_config': {
+          'agency_url': 'https://enym-eagency.pdev.evernym.com',
+          'agency_did': 'YRuVCckY6vfZfX9kcQZe3u',
+          'agency_verkey': "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
+          'wallet_name': 'LIBVCX_SDK_WALLET',
+          'agent_seed': '00000000000000000000000001234561',
+          'enterprise_seed': '000000000000000000000000Trustee1',
+          'wallet_key': '1234'
+        },
+        'source_id': "123",
+        'com_method': {'type': 1,'id':'123','value':'FCM:Value'}
+      }
+    :return:
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_agent_update_info, "cb"):
+        logger.debug("vcx_agent_update_info: Creating callback")
+        vcx_agent_update_info.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+    c_config = c_char_p(config.encode('utf-8'))
+
+    result = await do_call('vcx_get_provision_token',
+                           c_config,
+                           vcx_agent_update_info.cb)
+
+    logger.debug("vcx_get_provision_token completed")
+    return result
 
 async def vcx_agent_update_info(config: str) -> None:
     """
