@@ -2,7 +2,7 @@ use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
 use messages::MessageStatusCode;
-use messages::payload::Payloads;
+use messages::payload::{Payloads, PayloadTypes, PayloadKinds, PayloadV1};
 use utils::{httpclient, constants};
 use error::prelude::*;
 use settings::ProtocolTypes;
@@ -329,7 +329,6 @@ impl Message {
         use v3::messages::a2a::A2AMessage;
         use v3::utils::encryption_envelope::EncryptionEnvelope;
         use ::issuer_credential::{CredentialOffer, CredentialMessage};
-        use ::messages::payload::{PayloadTypes, PayloadV1, PayloadKinds};
         use std::convert::TryInto;
 
         let a2a_message = EncryptionEnvelope::open(self.payload()?)?;
@@ -508,7 +507,7 @@ mod tests {
         assert_eq!(all_messages.len(), 1);
 
         let invalid_status_code = "abc".to_string();
-        let bad_req = download_agent_messages(Some(vec![invalid_status_code]),  None);
+        let bad_req = download_agent_messages(Some(vec![invalid_status_code]), None);
         assert!(bad_req.is_err());
     }
 

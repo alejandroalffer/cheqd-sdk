@@ -1,6 +1,6 @@
 use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency};
 use error::prelude::*;
-use messages::agent_utils::{parse_config, set_config_values, configure_wallet, ComMethod, Config};
+use messages::agent_utils::{set_config_values, configure_wallet, ComMethod, Config};
 use messages::message_type::MessageTypes;
 use utils::httpclient;
 use settings::ProtocolTypes;
@@ -103,6 +103,7 @@ mod tests {
     use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_indy_env};
     use utils::plugins::init_plugin;
     use utils::libindy::wallet::delete_wallet;
+    use messages::agent_utils::parse_config;
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
