@@ -341,6 +341,7 @@ impl Message {
             if let Ok(decrypted_payload) = decrypted_payload {
                 new_message.decrypted_payload = ::serde_json::to_string(&decrypted_payload).ok();
             } else if let Ok(decrypted_payload) = self._decrypt_v3_message() {
+                new_message.msg_type = RemoteMessageType::Other(String::from("aries"));
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(decrypted_payload)).ok()
             } else {
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(null)).ok();
