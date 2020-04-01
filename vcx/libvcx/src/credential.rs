@@ -5,8 +5,9 @@ use std::convert::TryInto;
 use error::prelude::*;
 use object_cache::ObjectCache;
 use api::VcxStateType;
-use issuer_credential::{CredentialOffer, CredentialMessage, PaymentInfo};
-use credential_request::CredentialRequest;
+use issuer_credential::PaymentInfo;
+use messages::issuance::credential::CredentialMessage;
+use messages::issuance::credential_request::CredentialRequest;
 use messages::{
     self,
     GeneralMessage,
@@ -19,7 +20,6 @@ use messages::{
     get_message::{
         get_ref_msg,
         get_connection_messages,
-        MessagePayload,
     },
 };
 use connection;
@@ -38,6 +38,7 @@ use v3::{
     handlers::issuance::Holder,
 };
 use utils::agent_info::{get_agent_info, get_agent_attr, MyAgentInfo};
+use messages::issuance::credential_offer::{set_cred_offer_ref_message, parse_json_offer, CredentialOffer};
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Credentials>  = Default::default();
@@ -670,7 +671,8 @@ fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResult<S
         .and_then(|msg| msg.payload.as_ref())
         .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Payload not found"))?;
 
-    let payload = _set_cred_offer_ref_message(&payload, &my_agent.my_pw_vk()?, &message[0].uid)?;
+    let (offer, thread) = Payloads::decrypt(&my_agent.my_pw_vk()?, payload)?;
+    let payload = set_cred_offer_ref_message(&offer, thread, &message[0].uid)?;
 
     serde_json::to_string_pretty(&payload)
         .map_err(|err|
@@ -719,7 +721,8 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
             let payload = msg.payload
                 .ok_or(VcxError::from(VcxErrorKind::InvalidMessages))?;
 
-            let payload = _set_cred_offer_ref_message(&payload, &my_agent.my_pw_vk()?, &msg.uid)?;
+            let (offer, thread) = Payloads::decrypt(&my_agent.my_pw_vk()?, &payload)?;
+            let payload = set_cred_offer_ref_message(&offer, thread, &msg.uid)?;
 
             messages.push(payload);
         }
@@ -727,46 +730,6 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
 
     serde_json::to_string_pretty(&messages)
         .or(Err(VcxError::from(VcxErrorKind::InvalidMessages)))
-}
-
-fn _set_cred_offer_ref_message(payload: &MessagePayload, my_vk: &str, msg_id: &str) -> VcxResult<Vec<Value>> {
-    let (offer, thread) = Payloads::decrypt(my_vk, payload)?;
-
-    let (mut offer, payment_info) = parse_json_offer(&offer)?;
-
-    offer.msg_ref_id = Some(msg_id.to_owned());
-    if let Some(tr) = thread {
-        offer.thread_id = tr.thid.clone();
-    }
-
-    let mut payload = Vec::new();
-    payload.push(json!(offer));
-    if let Some(p) = payment_info { payload.push(json!(p)); }
-
-    Ok(payload)
-}
-
-pub fn parse_json_offer(offer: &str) -> VcxResult<(CredentialOffer, Option<PaymentInfo>)> {
-    let paid_offer: Value = serde_json::from_str(offer)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize offer: {}", err)))?;
-
-    let mut payment: Option<PaymentInfo> = None;
-    let mut offer: Option<CredentialOffer> = None;
-
-    if let Some(i) = paid_offer.as_array() {
-        for entry in i.iter() {
-            if entry.get("libindy_offer").is_some() {
-                offer = Some(serde_json::from_value(entry.clone())
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize offer: {}", err)))?);
-            }
-
-            if entry.get("payment_addr").is_some() {
-                payment = Some(serde_json::from_value(entry.clone())
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payment address: {}", err)))?);
-            }
-        }
-    }
-    Ok((offer.ok_or(VcxError::from(VcxErrorKind::InvalidJson))?, payment))
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
@@ -863,7 +826,7 @@ pub mod tests {
 
     pub fn create_credential(offer: &str) -> Credential {
         let mut credential = Credential::create("source_id");
-        let (offer, payment_info) = ::credential::parse_json_offer(offer).unwrap();
+        let (offer, payment_info) = parse_json_offer(offer).unwrap();
         credential.credential_offer = Some(offer);
         credential.payment_info = payment_info;
         credential.state = VcxStateType::VcxStateRequestReceived;

@@ -212,7 +212,7 @@ pub extern fn vcx_get_credential(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -321,11 +321,11 @@ pub extern fn vcx_credential_send_request(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     if !connection::is_valid_handle(connection_handle) {
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -381,7 +381,7 @@ pub extern fn vcx_credential_get_request_msg(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -431,7 +431,7 @@ pub extern fn vcx_credential_get_offers(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !connection::is_valid_handle(connection_handle) {
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     trace!("vcx_credential_get_offers(command_handle: {}, connection_handle: {})",
@@ -480,7 +480,7 @@ pub extern fn vcx_credential_update_state(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -540,7 +540,7 @@ pub extern fn vcx_credential_update_state_with_message(command_handle: CommandHa
     check_useful_c_str!(message, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -599,7 +599,7 @@ pub extern fn vcx_credential_get_state(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(handle).unwrap_or_default();
@@ -647,7 +647,7 @@ pub extern fn vcx_credential_serialize(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(handle).unwrap_or_default();
@@ -825,7 +825,7 @@ mod tests {
 
     use ::credential::tests::BAD_CREDENTIAL_OFFER;
     use utils::constants;
-    use credential_request::CredentialRequest;
+    use messages::issuance::credential_request::CredentialRequest;
 
     fn _vcx_credential_create_with_offer_c_closure(offer: &str) -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();

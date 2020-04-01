@@ -1,3 +1,4 @@
+use error::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct CredentialRequest {
@@ -26,6 +27,15 @@ impl CredentialRequest {
             msg_ref_id: None
         }
     }
+}
+
+pub fn set_cred_req_ref_message(cred_request: &str, msg_id: &str) -> VcxResult<CredentialRequest> {
+    let mut request: CredentialRequest = serde_json::from_str(&cred_request)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, format!("Cannot deserialize credential request: {}", err)))?;
+
+    request.msg_ref_id = Some(msg_id.to_owned());
+
+    Ok(request)
 }
 
 

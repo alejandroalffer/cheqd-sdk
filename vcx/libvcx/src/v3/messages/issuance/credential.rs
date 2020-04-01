@@ -3,9 +3,9 @@ use v3::messages::attachment::{Attachments, AttachmentId};
 use v3::messages::ack::PleaseAck;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
-use issuer_credential::CredentialMessage;
 use messages::payload::PayloadKinds;
 use std::convert::TryInto;
+use messages::issuance::credential::CredentialMessage;
 
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
