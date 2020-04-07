@@ -48,8 +48,8 @@ impl Payloads {
     // Possibly this function moves out of this file.
     // On second thought, this should stick as a ConnectionError.
     pub fn encrypt(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds, thread: Option<Thread>, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
-        match version {
-            ProtocolTypes::V1 => {
+        match (version, thread) {
+            (ProtocolTypes::V1, _) => {
                 let payload = PayloadV1 {
                     type_: PayloadTypes::build_v1(msg_type, "json"),
                     msg: data.to_string(),
@@ -64,10 +64,8 @@ impl Payloads {
                 trace!("Sending payload: {:?}", bytes);
                 crypto::prep_msg(&my_vk, &their_vk, &bytes)
             }
-            ProtocolTypes::V2 |
-            ProtocolTypes::V3 => {
-                let thread = thread.ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Thread info not found"))?;
-
+            (ProtocolTypes::V2, Some(thread)) |
+            (ProtocolTypes::V3, Some(thread)) => {
                 let payload = PayloadV2 {
                     type_: PayloadTypes::build_v2(msg_type),
                     id: String::new(),
@@ -87,6 +85,28 @@ impl Payloads {
                 trace!("Sending payload: {:?}", message.as_bytes());
                 crypto::pack_message(Some(my_vk), &receiver_keys, message.as_bytes())
             }
+            (ProtocolTypes::V2, None) => {
+                warn!("Sending V2 without thread id.");
+                let payload = PayloadV12 {
+                    type_: PayloadTypes::build_v2(msg_type),
+                    msg: json!({"message": data}),
+                };
+
+                let message = ::serde_json::to_string(&payload)
+                    .map_err(|err| {
+                        error!("could not serialize create_keys msg: {}", err);
+                        VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize payload: {}", err))
+                    })?;
+
+                let receiver_keys = ::serde_json::to_string(&vec![&their_vk])
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize receiver keys: {}", err)))?;
+
+                trace!("Sending payload: {:?}", message.as_bytes());
+                crypto::pack_message(Some(my_vk), &receiver_keys, message.as_bytes())
+            }
+            (ProtocolTypes::V3, None) => {
+                Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Thread info not found"))
+            }
         }
     }
 
@@ -94,6 +114,7 @@ impl Payloads {
         match payload {
             MessagePayload::V1(payload) => {
                 if let Ok(payload) = Payloads::decrypt_payload_v1(my_vk, payload) {
+                    trace!("Payloads::decrypt: decrypted V1 >> {:?}", payload);
                     Ok((payload.msg, None))
                 } else {
                     let vec = to_u8(payload);
@@ -104,12 +125,14 @@ impl Payloads {
                         serde_json::Value::String(_str) => _str,
                         value => value.to_string()
                     };
+                    trace!("Payloads::decrypt: decrypted V12 >> {:?}", payload);
 
                     Ok((payload, None))
                 }
             }
             MessagePayload::V2(payload) => {
                 let payload = Payloads::decrypt_payload_v2(my_vk, payload)?;
+                trace!("Payloads::decrypt: decrypted V2 >> {:?}", payload);
                 Ok((payload.msg, Some(payload.thread)))
             }
         }
