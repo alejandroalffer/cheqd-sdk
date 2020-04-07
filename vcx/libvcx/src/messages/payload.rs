@@ -86,7 +86,7 @@ impl Payloads {
                 crypto::pack_message(Some(my_vk), &receiver_keys, message.as_bytes())
             }
             (ProtocolTypes::V2, None) => {
-                warn!("Sending V2 without thread id!!!");
+                warn!("Sending V2 without thread id.");
                 let payload = PayloadV12 {
                     type_: PayloadTypes::build_v2(msg_type),
                     msg: json!({"message": data}),
