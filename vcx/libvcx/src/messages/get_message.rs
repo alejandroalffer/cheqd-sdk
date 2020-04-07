@@ -344,6 +344,7 @@ impl Message {
                 new_message.msg_type = RemoteMessageType::Other(String::from("aries"));
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(decrypted_payload)).ok()
             } else {
+                warn!("Message::decrypt <<< were not able to decrypt message, setting null");
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(null)).ok();
             }
         }

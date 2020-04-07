@@ -697,12 +697,16 @@ pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     // Initiate connection of new format -- redirect to v3 folder
     if settings::is_aries_protocol_set() {
         let connection = Connections::V3(ConnectionV3::create(source_id));
-        return store_connection(connection);
+        let handle = store_connection(connection);
+        debug!("create_connection >>> created connection V3, handle: {:?}", handle);
+        return handle;
     }
 
     let connection = create_connection_v1(source_id)?;
 
-    store_connection(Connections::V1(connection))
+    let handle = store_connection(Connections::V1(connection));
+    debug!("create_connection >>> created connection V1, handle: {:?}", handle);
+    handle
 }
 
 pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResult<u32> {
@@ -711,7 +715,9 @@ pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResul
     // Invitation of new format -- redirect to v3 folder
     if let Ok(invitation) = serde_json::from_str::<InvitationV3>(details) {
         let connection = Connections::V3(ConnectionV3::create_with_invite(source_id, invitation)?);
-        return store_connection(connection);
+        let handle = store_connection(connection);
+        debug!("create_connection_with_invite: created connection v3, handle: {:?}", handle);
+        return handle;
     }
 
     let details: Value = serde_json::from_str(&details)
