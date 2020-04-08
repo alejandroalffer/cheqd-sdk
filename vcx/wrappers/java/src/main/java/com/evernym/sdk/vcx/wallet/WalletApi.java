@@ -49,7 +49,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_export(commandHandle, exportPath, encryptionKey, vcxExportWalletCB);
+        int result = LibVcx.api().vcx_wallet_export(commandHandle, exportPath, encryptionKey, vcxExportWalletCB);
         checkResult(result);
 
         return future;
@@ -86,7 +86,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_import(commandHandle, config, vcxImportWalletCB);
+        int result = LibVcx.api().vcx_wallet_import(commandHandle, config, vcxImportWalletCB);
         checkResult(result);
 
         return future;
@@ -225,7 +225,7 @@ public class WalletApi extends VcxJava.API {
         int commandHandle = addFuture(future);
         String recordTag = "{}";
 
-        int result = LibVcx.api.vcx_wallet_add_record(commandHandle, recordType, recordId, recordValue, recordTag, vcxAddRecordWalletCB);
+        int result = LibVcx.api().vcx_wallet_add_record(commandHandle, recordType, recordId, recordValue, recordTag, vcxAddRecordWalletCB);
         checkResult(result);
 
         return future;
@@ -261,7 +261,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_delete_record(commandHandle, recordType, recordId, vcxDeleteRecordWalletCB);
+        int result = LibVcx.api().vcx_wallet_delete_record(commandHandle, recordType, recordId, vcxDeleteRecordWalletCB);
         checkResult(result);
 
         return future;
@@ -303,7 +303,7 @@ public class WalletApi extends VcxJava.API {
         int commandHandle = addFuture(future);
         if (optionsJson.isEmpty()) optionsJson = "{}";
 
-        int result = LibVcx.api.vcx_wallet_get_record(commandHandle, recordType, recordId, optionsJson, vcxGetRecordWalletCB);
+        int result = LibVcx.api().vcx_wallet_get_record(commandHandle, recordType, recordId, optionsJson, vcxGetRecordWalletCB);
         checkResult(result);
 
         return future;
@@ -341,14 +341,14 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_update_record_value(commandHandle, recordType, recordId, recordValue, vcxUpdateRecordWalletCB);
+        int result = LibVcx.api().vcx_wallet_update_record_value(commandHandle, recordType, recordId, recordValue, vcxUpdateRecordWalletCB);
         checkResult(result);
 
         return future;
     }
 
     public static void setWalletHandle(int handle) {
-        LibVcx.api.vcx_wallet_set_handle(handle);
+        LibVcx.api().vcx_wallet_set_handle(handle);
     }
 
     private static Callback vcxCreateWalletBackupCB = new Callback() {
@@ -382,7 +382,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_backup_create(commandHandle, sourceID, backupKey, vcxCreateWalletBackupCB);
+        int result = LibVcx.api().vcx_wallet_backup_create(commandHandle, sourceID, backupKey, vcxCreateWalletBackupCB);
         checkResult(result);
 
         return future;
@@ -418,7 +418,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_backup_backup(commandHandle, walletBackupHandle, path, vcxBackupWalletBackupBackupCB);
+        int result = LibVcx.api().vcx_wallet_backup_backup(commandHandle, walletBackupHandle, path, vcxBackupWalletBackupBackupCB);
         checkResult(result);
 
         return future;
@@ -451,7 +451,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_backup_update_state(commandHandle, walletBackupHandle, vcxUpdateWalletBackupStateCB);
+        int result = LibVcx.api().vcx_wallet_backup_update_state(commandHandle, walletBackupHandle, vcxUpdateWalletBackupStateCB);
         checkResult(result);
 
         return future;
@@ -488,7 +488,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_backup_update_state_with_message(commandHandle, walletBackupHandle, message, vcxUpdateWalletBackupStateWithMessageCB);
+        int result = LibVcx.api().vcx_wallet_backup_update_state_with_message(commandHandle, walletBackupHandle, message, vcxUpdateWalletBackupStateWithMessageCB);
         checkResult(result);
 
         return future;
@@ -522,7 +522,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_backup_serialize(commandHandle, walletBackupHandle, vcxWalletBackupSerializeCB);
+        int result = LibVcx.api().vcx_wallet_backup_serialize(commandHandle, walletBackupHandle, vcxWalletBackupSerializeCB);
         checkResult(result);
 
         return future;
@@ -556,7 +556,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_backup_deserialize(commandHandle, walletBackupStr, vcxWalletBackupDeserializeCB);
+        int result = LibVcx.api().vcx_wallet_backup_deserialize(commandHandle, walletBackupStr, vcxWalletBackupDeserializeCB);
         checkResult(result);
 
         return future;
@@ -596,7 +596,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_backup_restore(commandHandle, config, vcxBackupRestore);
+        int result = LibVcx.api().vcx_wallet_backup_restore(commandHandle, config, vcxBackupRestore);
         checkResult(result);
 
         return future;

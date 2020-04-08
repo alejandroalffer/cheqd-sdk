@@ -853,12 +853,27 @@ public abstract class LibVcx {
         int indy_crypto_anon_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
     }
 
+
+    private static ApiProvider provider = null;
+
+    public static void registerApiProvider(ApiProvider provider) {
+        ParamGuard.notNull(provider, "provider");
+        LibVcx.provider = provider;
+    }
+
+    public static API api() {
+        if (provider == null) {
+            return api;
+        }
+        else {
+            return provider.api();
+        }
+    }
+
+    public static API api = null;
     /*
      * Initialization
      */
-
-    public static API api = null;
-
     static {
 
         try {
@@ -918,7 +933,7 @@ public abstract class LibVcx {
      */
     public static boolean isInitialized() {
 
-        return api != null;
+        return api() != null;
     }
 
     public static void logMessage(String loggerName, int level, String message) {
@@ -986,6 +1001,6 @@ public abstract class LibVcx {
         } else { // Off
             logLevel = 0;
         }
-        api.vcx_set_logger_with_max_lvl(null, Logger.enabled, Logger.log, Logger.flush, logLevel);
+        api().vcx_set_logger_with_max_lvl(null, Logger.enabled, Logger.log, Logger.flush, logLevel);
     }
 }

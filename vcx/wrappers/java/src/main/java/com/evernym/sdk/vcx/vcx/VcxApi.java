@@ -19,14 +19,14 @@ public class VcxApi extends VcxJava.API {
 
     public static int initSovToken() throws VcxException {
         logger.debug("initSovToken()");
-        int result = LibVcx.api.sovtoken_init();
+        int result = LibVcx.api().sovtoken_init();
         checkResult(result);
         return result;
     }
 
 //     public static int initNullPay() throws VcxException {
 //         logger.debug("initNullPay()");
-//         int result = LibVcx.api.nullpay_init();
+//         int result = LibVcx.api().nullpay_init();
 //         checkResult(result);
 //         return result;
 //     }
@@ -73,7 +73,7 @@ public class VcxApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_init_with_config(
+        int result = LibVcx.api().vcx_init_with_config(
                 commandHandle,
                 configJson,
                 vcxIniWithConfigCB);
@@ -100,7 +100,7 @@ public class VcxApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_init(
+        int result = LibVcx.api().vcx_init(
                 commandHandle, configPath,
                 vcxInitCB);
         checkResult(result);
@@ -120,7 +120,7 @@ public class VcxApi extends VcxJava.API {
         ParamGuard.notNullOrWhiteSpace(configJson, "config");
         logger.debug("vcxInitMinimal() called with: configJson = [****]");
 
-        int result = LibVcx.api.vcx_init_minimal(
+        int result = LibVcx.api().vcx_init_minimal(
                 configJson);
         checkResult(result);
 
@@ -200,7 +200,7 @@ public class VcxApi extends VcxJava.API {
      */
     public static int vcxShutdown(Boolean deleteWallet) throws VcxException {
         logger.debug("vcxShutdown() called with: deleteWallet = [" + deleteWallet + "]");
-        int result = LibVcx.api.vcx_shutdown(deleteWallet);
+        int result = LibVcx.api().vcx_shutdown(deleteWallet);
         checkResult(result);
         return result;
     }
@@ -212,7 +212,7 @@ public class VcxApi extends VcxJava.API {
 
     public static String vcxErrorCMessage(int errorCode) {
         logger.debug("vcxErrorCMessage() called with: errorCode = [" + errorCode + "]");
-        return LibVcx.api.vcx_error_c_message(errorCode);
+        return LibVcx.api().vcx_error_c_message(errorCode);
 
     }
 
@@ -230,7 +230,7 @@ public class VcxApi extends VcxJava.API {
      */
     public static int vcxSetLogger(Pointer context, Callback enabled, Callback log, Callback flush) throws VcxException {
         logger.debug("vcxSetLogger()");
-        int result = LibVcx.api.vcx_set_logger(context, enabled, log, flush);
+        int result = LibVcx.api().vcx_set_logger(context, enabled, log, flush);
         checkResult(result);
         return result;
     }
@@ -248,7 +248,7 @@ public class VcxApi extends VcxJava.API {
      */
     public static int vcxSetDefaultLogger(String logLevel) throws VcxException {
         logger.debug("vcxSetDefaultLogger()");
-        int result = LibVcx.api.vcx_set_default_logger(logLevel);
+        int result = LibVcx.api().vcx_set_default_logger(logLevel);
         checkResult(result);
         return result;
     }

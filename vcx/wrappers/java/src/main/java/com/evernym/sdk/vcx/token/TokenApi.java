@@ -43,7 +43,7 @@ public class TokenApi extends VcxJava.API {
         logger.debug("getTokenInfo() called with: paymentHandle = [" + paymentHandle + "]");
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_wallet_get_token_info(commandHandle, paymentHandle, vcxTokenCB);
+        int result = LibVcx.api().vcx_wallet_get_token_info(commandHandle, paymentHandle, vcxTokenCB);
         checkResult(result);
 
         return future;
@@ -80,7 +80,7 @@ public class TokenApi extends VcxJava.API {
         logger.debug("sendTokens() called with: paymentHandle = [" + paymentHandle + "], tokens = [****], recipient = [****]");
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_wallet_send_tokens(commandHandle, paymentHandle, tokens, recipient, vcxSendTokensCB);
+        int result = LibVcx.api().vcx_wallet_send_tokens(commandHandle, paymentHandle, tokens, recipient, vcxSendTokensCB);
         checkResult(result);
         return future;
     }
@@ -113,7 +113,7 @@ public class TokenApi extends VcxJava.API {
         logger.debug("createPaymentAddress() called with: seed = [****]");
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_wallet_create_payment_address(commandHandle, seed, vcxCreatePaymentAddressCB);
+        int result = LibVcx.api().vcx_wallet_create_payment_address(commandHandle, seed, vcxCreatePaymentAddressCB);
         checkResult(result);
         return future;
     }

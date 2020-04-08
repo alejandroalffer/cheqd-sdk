@@ -52,7 +52,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<GetCredentialCreateMsgidResult> future = new CompletableFuture<GetCredentialCreateMsgidResult>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_create_with_msgid(
+        int result = LibVcx.api().vcx_credential_create_with_msgid(
                 commandHandle,
                 sourceId,
                 connectionHandle,
@@ -94,7 +94,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_send_request(
+        int result = LibVcx.api().vcx_credential_send_request(
                 commandHandle,
                 credentialHandle,
                 connectionHandle,
@@ -128,7 +128,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_get_request_msg(
+        int result = LibVcx.api().vcx_credential_get_request_msg(
                 commandHandle,
                 credentialHandle,
                 myPwDid,
@@ -167,7 +167,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_serialize(commandHandle,
+        int result = LibVcx.api().vcx_credential_serialize(commandHandle,
                 credentialHandle,
                 vcxCredentialStringCB);
         checkResult(result);
@@ -204,7 +204,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_deserialize(commandHandle,
+        int result = LibVcx.api().vcx_credential_deserialize(commandHandle,
                 serializedCredential,
                 vcxCredentialDeserializeCB);
         checkResult(result);
@@ -240,7 +240,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_get_credential(commandHandle, credentialHandle, vcxGetCredentialCB);
+        int result = LibVcx.api().vcx_get_credential(commandHandle, credentialHandle, vcxGetCredentialCB);
         checkResult(result);
 
         return future;
@@ -294,7 +294,7 @@ public class CredentialApi extends VcxJava.API {
      * Query the agency for the received messages.
      * Checks for any messages changing state in the Credential object and updates the state attribute.
      * If it detects a credential it will store the credential in the wallet.
-     * 
+     *
      * @param  credentialHandle     handle pointing to a Credential object.
      *
      * @return                      the most current state of the Credential object.
@@ -309,7 +309,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_update_state(commandHandle, credentialHandle, vcxCredentialUpdateStateCB);
+        int result = LibVcx.api().vcx_credential_update_state(commandHandle, credentialHandle, vcxCredentialUpdateStateCB);
         checkResult(result);
 
         return future;
@@ -336,7 +336,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_update_state_with_message(commandHandle, credentialHandle, message, vcxCredentialUpdateStateCB);
+        int result = LibVcx.api().vcx_credential_update_state_with_message(commandHandle, credentialHandle, message, vcxCredentialUpdateStateCB);
         checkResult(result);
 
         return future;
@@ -359,7 +359,7 @@ public class CredentialApi extends VcxJava.API {
      *     2 - Credential Request Sent
      *     3 - Credential Offer Received
      *     4 - Credential Accepted
-     * 
+     *
      * @param  credentialHandle     handle pointing to a Credential object.
      *
      * @return                      the most current state of the Credential object.
@@ -374,7 +374,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_get_state(commandHandle, credentialHandle, vcxCredentialGetStateCB);
+        int result = LibVcx.api().vcx_credential_get_state(commandHandle, credentialHandle, vcxCredentialGetStateCB);
         checkResult(result);
 
         return future;
@@ -393,7 +393,7 @@ public class CredentialApi extends VcxJava.API {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         logger.debug("credentialRelease() called with: credentialHandle = [" + credentialHandle + "]");
 
-        int result = LibVcx.api.vcx_credential_release(credentialHandle);
+        int result = LibVcx.api().vcx_credential_release(credentialHandle);
         checkResult(result);
 
         return result;
@@ -427,7 +427,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_get_offers(commandHandle, connectionHandle, vcxCredentialGetOffersCB);
+        int result = LibVcx.api().vcx_credential_get_offers(commandHandle, connectionHandle, vcxCredentialGetOffersCB);
         checkResult(result);
 
         return future;
@@ -473,7 +473,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_create_with_offer(commandHandle, sourceId, credentialOffer, vcxCredentialCreateWithOfferCB);
+        int result = LibVcx.api().vcx_credential_create_with_offer(commandHandle, sourceId, credentialOffer, vcxCredentialCreateWithOfferCB);
         checkResult(result);
 
         return future;

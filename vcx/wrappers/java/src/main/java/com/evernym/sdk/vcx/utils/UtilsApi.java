@@ -62,7 +62,7 @@ public class UtilsApi extends VcxJava.API {
     public static String vcxProvisionAgent(String config) {
         ParamGuard.notNullOrWhiteSpace(config, "config");
         logger.debug("vcxProvisionAgent() called with: config = [****]");
-        String result = LibVcx.api.vcx_provision_agent(config);
+        String result = LibVcx.api().vcx_provision_agent(config);
 
         return result;
 
@@ -104,7 +104,7 @@ public class UtilsApi extends VcxJava.API {
         logger.debug("vcxAgentProvisionAsync() called with: conf = [****]");
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_agent_provision_async(
+        int result = LibVcx.api().vcx_agent_provision_async(
                 commandHandle, conf,
                 provAsyncCB);
         checkResult(result);
@@ -260,7 +260,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_agent_update_info(
+        int result = LibVcx.api().vcx_agent_update_info(
                 commandHandle,
                 config,
                 vcxUpdateAgentInfoCB
@@ -308,7 +308,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_messages_download(
+        int result = LibVcx.api().vcx_messages_download(
                 commandHandle,
                 messageStatus,
                 uids,
@@ -370,7 +370,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_download_agent_messages(
+        int result = LibVcx.api().vcx_download_agent_messages(
                 commandHandle,
                 messageStatus,
                 uids,
@@ -416,7 +416,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_messages_update_status(
+        int result = LibVcx.api().vcx_messages_update_status(
                 commandHandle,
                 messageStatus,
                 msgJson,
@@ -449,7 +449,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_ledger_get_fees(
+        int result = LibVcx.api().vcx_ledger_get_fees(
                 commandHandle,
                 stringCB
         );
@@ -470,7 +470,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_get_ledger_author_agreement(
+        int result = LibVcx.api().vcx_get_ledger_author_agreement(
                 commandHandle,
                 stringCB
         );
@@ -496,17 +496,17 @@ public class UtilsApi extends VcxJava.API {
         ParamGuard.notNull(accMechType, "accMechType");
         logger.debug("vcxProvisionAgent() called with: text = [" + text + "], version = [" + version + "]," +
                 " hash = [" + hash + "], accMechType = [" + accMechType + "], timeOfAcceptance = [" + timeOfAcceptance + "]");
-        int result = LibVcx.api.vcx_set_active_txn_author_agreement_meta(text, version, hash, accMechType, timeOfAcceptance);
+        int result = LibVcx.api().vcx_set_active_txn_author_agreement_meta(text, version, hash, accMechType, timeOfAcceptance);
         checkResult(result);
     }
 
     public static void vcxMockSetAgencyResponse(int messageIndex) {
         logger.debug("vcxMockSetAgencyResponse() called");
-        LibVcx.api.vcx_set_next_agency_response(messageIndex);
+        LibVcx.api().vcx_set_next_agency_response(messageIndex);
     }
 
     public static void setPoolHandle(int handle) {
-        LibVcx.api.vcx_pool_set_handle(handle);
+        LibVcx.api().vcx_pool_set_handle(handle);
     }
 
     private static Callback getReqPriceAsyncCB = new Callback() {

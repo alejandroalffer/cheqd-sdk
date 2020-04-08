@@ -35,7 +35,7 @@ public class DisclosedProofApi extends VcxJava.API {
      * @param  sourceId             Institution's personal identification for the proof, should be unique.
      * @param  connectionHandle     handle pointing to a Connection object to query for Proof Request message.
      * @param  msgId                id of the message on Agency that contains the Proof Request.
-     *                              
+     *
      * @return                      handle that should be used to perform actions with the DisclosedProof object.
      *
      * @throws VcxException         If an exception occurred in Libvcx library.
@@ -51,7 +51,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<CreateProofMsgIdResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_create_with_msgid(commandHandle, sourceId, connectionHandle, msgId, vcxProofCreateWithMsgIdCB);
+        int result = LibVcx.api().vcx_disclosed_proof_create_with_msgid(commandHandle, sourceId, connectionHandle, msgId, vcxProofCreateWithMsgIdCB);
         checkResult(result);
 
         return future;
@@ -84,7 +84,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_update_state(commandHandle, proofHandle, vcxProofUpdateStateCB);
+        int result = LibVcx.api().vcx_disclosed_proof_update_state(commandHandle, proofHandle, vcxProofUpdateStateCB);
         checkResult(result);
 
         return future;
@@ -134,7 +134,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_get_requests(commandHandle, connectionHandle, proofGetRequestsCB);
+        int result = LibVcx.api().vcx_disclosed_proof_get_requests(commandHandle, connectionHandle, proofGetRequestsCB);
         checkResult(result);
 
         return future;
@@ -169,7 +169,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_get_state(commandHandle, proofHandle, vcxProofGetStateCB);
+        int result = LibVcx.api().vcx_disclosed_proof_get_state(commandHandle, proofHandle, vcxProofGetStateCB);
         checkResult(result);
 
         return future;
@@ -188,7 +188,7 @@ public class DisclosedProofApi extends VcxJava.API {
         ParamGuard.notNull(proofHandle, "proofHandle");
         logger.debug("proofRelease() called with: proofHandle = [" + proofHandle + "]");
 
-        int result = LibVcx.api.vcx_disclosed_proof_release(proofHandle);
+        int result = LibVcx.api().vcx_disclosed_proof_release(proofHandle);
         checkResult(result);
 
         return result;
@@ -222,7 +222,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_retrieve_credentials(commandHandle, proofHandle, vcxProofRetrieveCredentialsCB);
+        int result = LibVcx.api().vcx_disclosed_proof_retrieve_credentials(commandHandle, proofHandle, vcxProofRetrieveCredentialsCB);
         checkResult(result);
 
         return future;
@@ -259,7 +259,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_generate_proof(commandHandle, proofHandle, selectedCredentials, selfAttestedAttributes, vcxProofGenerateCB);
+        int result = LibVcx.api().vcx_disclosed_proof_generate_proof(commandHandle, proofHandle, selectedCredentials, selfAttestedAttributes, vcxProofGenerateCB);
         checkResult(result);
 
         return future;
@@ -294,7 +294,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_send_proof(commandHandle, proofHandle, connectionHandle, vcxProofSendCB);
+        int result = LibVcx.api().vcx_disclosed_proof_send_proof(commandHandle, proofHandle, connectionHandle, vcxProofSendCB);
         checkResult(result);
 
         return future;
@@ -362,7 +362,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_get_proof_msg(commandHandle, proofHandle, vcxProofGetMsgCB);
+        int result = LibVcx.api().vcx_disclosed_proof_get_proof_msg(commandHandle, proofHandle, vcxProofGetMsgCB);
         checkResult(result);
 
         return future;
@@ -439,7 +439,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_create_with_request(commandHandle, sourceId, proofRequest, vcxProofCreateWithRequestCB);
+        int result = LibVcx.api().vcx_disclosed_proof_create_with_request(commandHandle, sourceId, proofRequest, vcxProofCreateWithRequestCB);
         checkResult(result);
 
         return future;
@@ -472,7 +472,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_serialize(commandHandle, proofHandle, vcxProofSerializeCB);
+        int result = LibVcx.api().vcx_disclosed_proof_serialize(commandHandle, proofHandle, vcxProofSerializeCB);
         checkResult(result);
 
         return future;
@@ -505,7 +505,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_deserialize(commandHandle, serializedProof, vcxProofDeserializeCB);
+        int result = LibVcx.api().vcx_disclosed_proof_deserialize(commandHandle, serializedProof, vcxProofDeserializeCB);
         checkResult(result);
 
         return future;

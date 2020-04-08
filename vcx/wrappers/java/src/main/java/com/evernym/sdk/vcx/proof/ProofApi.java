@@ -84,7 +84,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
         if (requestedPredicates.isEmpty()) requestedPredicates = "[]";
-        int result = LibVcx.api.vcx_proof_create(commandHandle, sourceId, requestedAttrs, requestedPredicates, revocationInterval, name, vcxProofCreateCB);
+        int result = LibVcx.api().vcx_proof_create(commandHandle, sourceId, requestedAttrs, requestedPredicates, revocationInterval, name, vcxProofCreateCB);
         checkResult(result);
 
         return future;
@@ -174,7 +174,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_proof_send_request(commandHandle, proofHandle, connectionHandle, vcxProofSendRequestCB);
+        int result = LibVcx.api().vcx_proof_send_request(commandHandle, proofHandle, connectionHandle, vcxProofSendRequestCB);
         checkResult(result);
 
         return future;
@@ -207,7 +207,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_proof_get_request_msg(commandHandle, proofHandle, vcxProofGetRequestMsgCB);
+        int result = LibVcx.api().vcx_proof_get_request_msg(commandHandle, proofHandle, vcxProofGetRequestMsgCB);
         checkResult(result);
 
         return future;
@@ -243,7 +243,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<GetProofResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_get_proof(commandHandle, proofHandle, connectionHandle, vcxGetProofCB);
+        int result = LibVcx.api().vcx_get_proof(commandHandle, proofHandle, connectionHandle, vcxGetProofCB);
         checkResult(result);
 
         return future;
@@ -266,7 +266,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<GetProofResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_get_proof_msg(commandHandle, proofHandle, vcxGetProofCB);
+        int result = LibVcx.api().vcx_get_proof_msg(commandHandle, proofHandle, vcxGetProofCB);
         checkResult(result);
 
         return future;
@@ -283,7 +283,7 @@ public class ProofApi extends VcxJava.API {
         logger.debug("proofAccepted() called with: proofHandle = [" + proofHandle + "], responseData = [****]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
 
-        int result = LibVcx.api.vcx_proof_accepted(proofHandle, responseData);
+        int result = LibVcx.api().vcx_proof_accepted(proofHandle, responseData);
         checkResult(result);
 
         return future;
@@ -317,7 +317,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_proof_update_state(commandHandle, proofHandle, vcxProofUpdateStateCB);
+        int result = LibVcx.api().vcx_proof_update_state(commandHandle, proofHandle, vcxProofUpdateStateCB);
         checkResult(result);
 
         return future;
@@ -344,7 +344,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_proof_update_state_with_message(commandHandle, proofHandle, message, vcxProofUpdateStateCB);
+        int result = LibVcx.api().vcx_proof_update_state_with_message(commandHandle, proofHandle, message, vcxProofUpdateStateCB);
         checkResult(result);
 
         return future;
@@ -382,7 +382,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_proof_get_state(commandHandle, proofHandle, vcxProofGetStateCB);
+        int result = LibVcx.api().vcx_proof_get_state(commandHandle, proofHandle, vcxProofGetStateCB);
         checkResult(result);
 
         return future;
@@ -414,7 +414,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_proof_serialize(commandHandle, proofHandle, vcxProofSerializeCB);
+        int result = LibVcx.api().vcx_proof_serialize(commandHandle, proofHandle, vcxProofSerializeCB);
         checkResult(result);
 
         return future;
@@ -447,7 +447,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_proof_deserialize(commandHandle, serializedProof, vcxProofDeserializeCB);
+        int result = LibVcx.api().vcx_proof_deserialize(commandHandle, serializedProof, vcxProofDeserializeCB);
         checkResult(result);
 
         return future;
@@ -466,7 +466,7 @@ public class ProofApi extends VcxJava.API {
         ParamGuard.notNull(proofHandle, "proofHandle");
         logger.debug("proofRelease() called with: proofHandle = [" + proofHandle + "]");
 
-        int result = LibVcx.api.vcx_proof_release(proofHandle);
+        int result = LibVcx.api().vcx_proof_release(proofHandle);
         checkResult(result);
 
         return result;

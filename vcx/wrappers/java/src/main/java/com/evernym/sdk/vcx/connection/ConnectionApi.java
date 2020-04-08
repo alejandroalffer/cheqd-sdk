@@ -181,7 +181,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_create(
+		int result = LibVcx.api().vcx_connection_create(
 				commandHandle,
 				sourceId,
 				vcxConnectionCreateCB
@@ -260,7 +260,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_update_state(
+		int result = LibVcx.api().vcx_connection_update_state(
 				commandHandle,
 				connectionHandle,
 				vcxUpdateStateCB
@@ -287,7 +287,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_update_state_with_message(
+		int result = LibVcx.api().vcx_connection_update_state_with_message(
 				commandHandle,
 				connectionHandle,
 				message,
@@ -331,7 +331,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_create_with_invite(
+		int result = LibVcx.api().vcx_connection_create_with_invite(
 				commandHandle,
 				invitationId,
 				inviteDetails,
@@ -475,7 +475,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<String> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_connect(
+		int result = LibVcx.api().vcx_connection_connect(
 				commandHandle,
 				connectionHandle,
 				connectionType,
@@ -569,7 +569,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_redirect(
+		int result = LibVcx.api().vcx_connection_redirect(
 				commandHandle,
 				connectionHandle,
 				redirectConnectionHandle,
@@ -605,7 +605,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<String> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_get_redirect_details(
+		int result = LibVcx.api().vcx_connection_get_redirect_details(
 				commandHandle,
 				connectionHandle,
 				vcxConnectionGetRedirectDetailsCB
@@ -640,7 +640,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<String> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_serialize(
+		int result = LibVcx.api().vcx_connection_serialize(
 				commandHandle,
 				connectionHandle,
 				vcxConnectionSerializeCB
@@ -674,7 +674,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_deserialize(
+		int result = LibVcx.api().vcx_connection_deserialize(
 				commandHandle,
 				connectionData,
 				vcxConnectionDeserializeCB
@@ -710,7 +710,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_delete_connection(commandHandle, connectionHandle, vcxConnectionDeleteCB);
+		int result = LibVcx.api().vcx_connection_delete_connection(commandHandle, connectionHandle, vcxConnectionDeleteCB);
 		checkResult(result);
 		return future;
 	}
@@ -739,7 +739,7 @@ public class ConnectionApi extends VcxJava.API {
 		logger.debug("connectionInviteDetails() called with: connectionHandle = [" + connectionHandle + "], abbreviated = [****]");
 		CompletableFuture<String> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
-		int result = LibVcx.api.vcx_connection_invite_details(commandHandle, connectionHandle, abbreviated, vcxConnectionInviteDetailsCB);
+		int result = LibVcx.api().vcx_connection_invite_details(commandHandle, connectionHandle, abbreviated, vcxConnectionInviteDetailsCB);
 		checkResult(result);
 		return future;
 	}
@@ -756,7 +756,7 @@ public class ConnectionApi extends VcxJava.API {
 	public static int connectionRelease(int connectionHandle) throws VcxException {
 		logger.debug("connectionRelease() called with: handle = [" + connectionHandle + "]");
 		ParamGuard.notNull(connectionHandle, "connectionHandle");
-		int result = LibVcx.api.vcx_connection_release(connectionHandle);
+		int result = LibVcx.api().vcx_connection_release(connectionHandle);
 		checkResult(result);
 
 		return result;
@@ -790,7 +790,7 @@ public class ConnectionApi extends VcxJava.API {
 		logger.debug("connectionGetState() called with: connectionHandle = [" + connectionHandle + "]");
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
-		int result = LibVcx.api.vcx_connection_get_state(commandHandle, connectionHandle, vcxConnectionGetStateCB);
+		int result = LibVcx.api().vcx_connection_get_state(commandHandle, connectionHandle, vcxConnectionGetStateCB);
 		checkResult(result);
 		return future;
 	}
@@ -827,7 +827,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_send_ping(commandHandle, connectionHandle, comment, voidCb);
+		int result = LibVcx.api().vcx_connection_send_ping(commandHandle, connectionHandle, comment, voidCb);
 		checkResult(result);
 
 		return future;
@@ -856,7 +856,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_send_discovery_features(commandHandle, connectionHandle, query, comment, voidCb);
+		int result = LibVcx.api().vcx_connection_send_discovery_features(commandHandle, connectionHandle, query, comment, voidCb);
 		checkResult(result);
 
 		return future;
@@ -882,7 +882,7 @@ public class ConnectionApi extends VcxJava.API {
 	 *         msg_type: String,            // type of message to send. can be any string.
 	 *         msg_title: String,           // message title (user notification)
 	 *         ref_msg_id: Option(String),  // If responding to a message, id of the message
-	 *     }                             
+	 *     }
 	 *
 	 * @return                      id of sent message
 	 *
@@ -892,7 +892,7 @@ public class ConnectionApi extends VcxJava.API {
         logger.debug("connectionSendMessage() called with: connectionHandle = [" + connectionHandle + "], message = [****], sendMessageOptions = [****]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_connection_send_message(commandHandle, connectionHandle, message, sendMessageOptions, vcxConnectionSendMessageCB);
+        int result = LibVcx.api().vcx_connection_send_message(commandHandle, connectionHandle, message, sendMessageOptions, vcxConnectionSendMessageCB);
         checkResult(result);
         return future;
     }
@@ -919,7 +919,7 @@ public class ConnectionApi extends VcxJava.API {
 	 * @param  connectionHandle     handle pointing to a Connection object.
 	 * @param  data                 raw data buffer for signature
 	 * @param  dataLength           length of data buffer
-	 *                                 
+	 *
 	 * @return                      generated signature bytes
 	 *
 	 * @throws VcxException         If an exception occurred in Libvcx library.
@@ -930,7 +930,7 @@ public class ConnectionApi extends VcxJava.API {
 
         CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_connection_sign_data(commandHandle, connectionHandle, data, dataLength, vcxConnectionSignDataCB);
+        int result = LibVcx.api().vcx_connection_sign_data(commandHandle, connectionHandle, data, dataLength, vcxConnectionSignDataCB);
         checkResult(future, result);
 
         return future;
@@ -968,7 +968,7 @@ public class ConnectionApi extends VcxJava.API {
 
         CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_connection_verify_signature(commandHandle, connectionHandle, data, dataLength, signature, signatureLength, vcxConnectionVerifySignatureCB);
+        int result = LibVcx.api().vcx_connection_verify_signature(commandHandle, connectionHandle, data, dataLength, signature, signatureLength, vcxConnectionVerifySignatureCB);
         checkResult(future, result);
 
         return future;
@@ -999,7 +999,7 @@ public class ConnectionApi extends VcxJava.API {
 
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_connection_get_pw_did(commandHandle, connectionHandle, vcxConnectionGetPwDidCB);
+        int result = LibVcx.api().vcx_connection_get_pw_did(commandHandle, connectionHandle, vcxConnectionGetPwDidCB);
         checkResult(result);
 
         return future;
@@ -1030,7 +1030,7 @@ public class ConnectionApi extends VcxJava.API {
 
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_connection_get_their_pw_did(commandHandle, connectionHandle, vcxConnectionGetTheirPwDidCB);
+        int result = LibVcx.api().vcx_connection_get_their_pw_did(commandHandle, connectionHandle, vcxConnectionGetTheirPwDidCB);
         checkResult(result);
 
         return future;
@@ -1051,7 +1051,7 @@ public class ConnectionApi extends VcxJava.API {
 	 * <p>
 	 * Note: This method can be used for `aries` communication method only.
 	 * For other communication method it returns ActionNotSupported error.
-	 * 
+	 *
 	 * @param  connectionHandle     handle pointing to a Connection object.
 	 *
 	 * @return                      Connection Information as JSON string.
@@ -1078,7 +1078,7 @@ public class ConnectionApi extends VcxJava.API {
 		logger.debug("connectionInfo() called with: connectionHandle = [" + connectionHandle + "]");
 		CompletableFuture<String> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
-		int result = LibVcx.api.vcx_connection_info(commandHandle, connectionHandle, vcxConnectionInfoCB);
+		int result = LibVcx.api().vcx_connection_info(commandHandle, connectionHandle, vcxConnectionInfoCB);
 		checkResult(result);
 		return future;
 	}

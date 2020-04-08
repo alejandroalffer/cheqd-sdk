@@ -52,7 +52,7 @@ public class IndyApi extends VcxJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.indy_build_txn_author_agreement_request(
+		int result = LibVcx.api().indy_build_txn_author_agreement_request(
 				commandHandle,
 				submitterDid,
 				text,
@@ -90,7 +90,7 @@ public class IndyApi extends VcxJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.indy_build_get_txn_author_agreement_request(
+		int result = LibVcx.api().indy_build_get_txn_author_agreement_request(
 				commandHandle,
 				submitterDid,
 				data,
@@ -139,7 +139,7 @@ public class IndyApi extends VcxJava.API {
       CompletableFuture<String> future = new CompletableFuture<String>();
       int commandHandle = addFuture(future);
 
-      int result = LibVcx.api.indy_build_acceptance_mechanisms_request(
+      int result = LibVcx.api().indy_build_acceptance_mechanisms_request(
           commandHandle,
           submitterDid,
           aml,
@@ -176,7 +176,7 @@ public class IndyApi extends VcxJava.API {
       CompletableFuture<String> future = new CompletableFuture<String>();
       int commandHandle = addFuture(future);
 
-      int result = LibVcx.api.indy_build_get_acceptance_mechanisms_request(
+      int result = LibVcx.api().indy_build_get_acceptance_mechanisms_request(
           commandHandle,
           submitterDid,
           timestamp,
@@ -225,7 +225,7 @@ public class IndyApi extends VcxJava.API {
       CompletableFuture<String> future = new CompletableFuture<String>();
       int commandHandle = addFuture(future);
 
-      int result = LibVcx.api.indy_append_txn_author_agreement_acceptance_to_request(
+      int result = LibVcx.api().indy_append_txn_author_agreement_acceptance_to_request(
           commandHandle,
           requestJson,
           text,
@@ -284,7 +284,7 @@ public class IndyApi extends VcxJava.API {
         CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.indy_crypto_anon_crypt(
+        int result = LibVcx.api().indy_crypto_anon_crypt(
                 commandHandle,
                 recipientVk,
                 message,
@@ -345,7 +345,7 @@ public class IndyApi extends VcxJava.API {
 
         //int walletHandle = wallet.getWalletHandle();
 
-        int result = LibVcx.api.indy_crypto_anon_decrypt(
+        int result = LibVcx.api().indy_crypto_anon_decrypt(
                 commandHandle,
                 walletHandle,
                 recipientVk,

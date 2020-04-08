@@ -57,7 +57,7 @@ public class SchemaApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_schema_create(
+        int result = LibVcx.api().vcx_schema_create(
                 commandHandle,
                 sourceId,
                 schemaName,
@@ -96,7 +96,7 @@ public class SchemaApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_schema_serialize(
+        int result = LibVcx.api().vcx_schema_serialize(
                 commandHandle,
                 schemaHandle,
                 schemaSerializeHandle
@@ -131,7 +131,7 @@ public class SchemaApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_schema_deserialize(
+        int result = LibVcx.api().vcx_schema_deserialize(
                 commandHandle,
                 schemaData,
                 schemaDeserializeCB
@@ -165,7 +165,7 @@ public class SchemaApi extends VcxJava.API {
         logger.debug("schemaGetAttributes() called with: sourceId = [" + sourceId + "], schemaHandle = [****]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_schema_get_attributes(commandHandle, sourceId,schemaId, schemaGetAttributesCB);
+        int result = LibVcx.api().vcx_schema_get_attributes(commandHandle, sourceId,schemaId, schemaGetAttributesCB);
         checkResult(result);
         return future;
     }
@@ -194,7 +194,7 @@ public class SchemaApi extends VcxJava.API {
         logger.debug("schemaGetSchemaId() called with: schemaHandle = [" + schemaHandle + "]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_schema_get_schema_id(commandHandle,schemaHandle, schemaGetSchemaID);
+        int result = LibVcx.api().vcx_schema_get_schema_id(commandHandle,schemaHandle, schemaGetSchemaID);
         checkResult(result);
         return future;
     }
@@ -214,7 +214,7 @@ public class SchemaApi extends VcxJava.API {
         ParamGuard.notNull(schemaHandle, "schemaHandle");
         logger.debug("schemaRelease() called with: schemaHandle = [" + schemaHandle + "]");
 
-        int result = LibVcx.api.vcx_schema_release(schemaHandle);
+        int result = LibVcx.api().vcx_schema_release(schemaHandle);
         checkResult(result);
 
         return result;

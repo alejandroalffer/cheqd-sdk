@@ -63,7 +63,7 @@ public class CredentialDefApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credentialdef_create(
+        int result = LibVcx.api().vcx_credentialdef_create(
                 commandHandle,
                 sourceId,
                 credentialName,
@@ -120,7 +120,7 @@ public class CredentialDefApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credentialdef_create_with_id(
+        int result = LibVcx.api().vcx_credentialdef_create_with_id(
                 commandHandle,
                 sourceId,
                 credDefId,
@@ -158,7 +158,7 @@ public class CredentialDefApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credentialdef_serialize(
+        int result = LibVcx.api().vcx_credentialdef_serialize(
                 commandHandle,
                 credentialDefHandle,
                 credentialDefSerializeCB
@@ -193,7 +193,7 @@ public class CredentialDefApi extends VcxJava.API {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credentialdef_deserialize(
+        int result = LibVcx.api().vcx_credentialdef_deserialize(
                 commandHandle,
                 credentialDefData,
                 credentialDefDeserialize
@@ -227,7 +227,7 @@ public class CredentialDefApi extends VcxJava.API {
         logger.debug("credentialDefGetCredentialDefId() called with: credDefHandle = [" + credDefHandle + "]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_credentialdef_get_cred_def_id(commandHandle,credDefHandle, credentialDefGetCredentialDefIdCb);
+        int result = LibVcx.api().vcx_credentialdef_get_cred_def_id(commandHandle,credDefHandle, credentialDefGetCredentialDefIdCb);
         checkResult(result);
         return future;
     }
@@ -245,7 +245,7 @@ public class CredentialDefApi extends VcxJava.API {
         ParamGuard.notNull(handle, "handle");
         logger.debug("credentialDefRelease() called with: handle = [" + handle + "]");
 
-        int result = LibVcx.api.vcx_credentialdef_release(handle);
+        int result = LibVcx.api().vcx_credentialdef_release(handle);
         checkResult(result);
 
         return result;

@@ -47,7 +47,7 @@ public class VcxException extends Exception {
     private void setSdkErrorDetails(){
         PointerByReference errorDetailsJson = new PointerByReference();
 
-        LibVcx.api.vcx_get_current_error(errorDetailsJson);
+        LibVcx.api().vcx_get_current_error(errorDetailsJson);
 
         try {
             JSONObject errorDetails = new JSONObject(errorDetailsJson.getValue().getString(0));
