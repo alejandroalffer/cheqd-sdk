@@ -856,11 +856,23 @@ public abstract class LibVcx {
 
     private static ApiProvider provider = null;
 
+    /**
+     * Registers a provider of the JNA Library API
+     * @param provider
+     */
     public static void registerApiProvider(ApiProvider provider) {
         ParamGuard.notNull(provider, "provider");
         LibVcx.provider = provider;
     }
 
+    public static API api = null;
+
+    /**
+     * Gets API from provider if not null or uses the default
+     * loaded library API
+     *
+     * @return Jna Library API
+     */
     public static API api() {
         if (provider == null) {
             return api;
@@ -870,7 +882,7 @@ public abstract class LibVcx {
         }
     }
 
-    public static API api = null;
+
     /*
      * Initialization
      */
