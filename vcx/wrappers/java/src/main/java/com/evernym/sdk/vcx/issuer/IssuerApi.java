@@ -158,7 +158,7 @@ public class IssuerApi extends VcxJava.API {
         logger.debug("issuerCredentialUpdateState() called with: credentialHandle = [" + credentialHandle + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
-        int result = LibVcx.api().vcx_credential_update_state(issue, credentialHandle, issuerCredentialUpdateStateCB);
+        int result = LibVcx.api().vcx_issuer_credential_update_state(issue, credentialHandle, issuerCredentialUpdateStateCB);
         checkResult(result);
         return future;
     }
