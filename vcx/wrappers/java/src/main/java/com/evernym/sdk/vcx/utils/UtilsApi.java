@@ -50,6 +50,7 @@ public class UtilsApi extends VcxJava.API {
         checkResult(result);
         return future;
     }
+
     /** #Params
      config: configuration
 
@@ -84,18 +85,14 @@ public class UtilsApi extends VcxJava.API {
            "sponsor_vk": String,
          }
      **/
-      public static CompletableFuture<String> vcxAgentProvisionWithToken(String conf, String token) throws VcxException {
-        CompletableFuture<String> future = new CompletableFuture<String>();
-        logger.debug("vcxAgentProvisionWithToken() called with: conf = [****], token = [***]");
-        int commandHandle = addFuture(future);
+      public static String vcxAgentProvisionWithToken(String config, String token) throws VcxException {
+        ParamGuard.notNullOrWhiteSpace(config, "config");
+        ParamGuard.notNullOrWhiteSpace(token, "token");
+        logger.debug("vcxAgentProvisionWithToken() called with: config = [****], token = [***]");
 
-        int result = LibVcx.api.vcx_provision_agent_with_token(
-                commandHandle,
-                conf,
-                token,
-                provAsyncCB);
-        checkResult(result);
-        return future;
+        String result = LibVcx.api.vcx_provision_agent_with_token(config, token);
+
+        return result;
     }
 
     /** config:
