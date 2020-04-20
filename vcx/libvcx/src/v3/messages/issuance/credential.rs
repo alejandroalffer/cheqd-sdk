@@ -89,8 +89,8 @@ pub mod tests {
         })
     }
 
-    fn _comment() -> String {
-        String::from("comment")
+    fn _comment() -> Option<String> {
+        Some(String::from("comment"))
     }
 
     pub fn _credential() -> Credential {
