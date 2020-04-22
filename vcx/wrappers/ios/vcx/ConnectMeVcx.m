@@ -357,7 +357,6 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 - (const char *)agentProvisionWithToken:(NSString *)config
                           token:(NSString *)token
-               completion:(void (^)(NSError *error, NSString *config))completion
 {
     const char *config_char = [config cStringUsingEncoding:NSUTF8StringEncoding];
     const char *token_char = [token cStringUsingEncoding:NSUTF8StringEncoding];
