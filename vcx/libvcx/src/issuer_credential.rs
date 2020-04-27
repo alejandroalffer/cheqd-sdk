@@ -428,7 +428,7 @@ impl IssuerCredential {
 
         self.cred_rev_id = cred_revoc_id.clone();
 
-        let their_pw_did = get_agent_attr(&self.their_did)?;
+        let their_pw_did = get_agent_attr(&self.their_did).unwrap_or_default();
 
         let cred_def_id =
             if !qualifier::is_fully_qualified(&their_pw_did) {
