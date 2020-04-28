@@ -89,7 +89,7 @@ impl Payloads {
                 warn!("Sending V2 without thread id.");
                 let payload = PayloadV12 {
                     type_: PayloadTypes::build_v2(msg_type),
-                    msg: json!({"message": data}),
+                    msg: json!(data.to_string()),
                 };
 
                 let message = ::serde_json::to_string(&payload)
