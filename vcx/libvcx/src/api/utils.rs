@@ -809,7 +809,8 @@ mod tests {
         let vcx_config = serde_json::from_str::<serde_json::Value>(&CONFIG).unwrap();
         let config = json!({
             "vcx_config": vcx_config,
-            "source_id": "123",
+            "sponsee_id": "123",
+            "sponsor_id": "123",
             "com_method": {"type": 1, "id":"123","value":"FCM:Value"}
         });
 
