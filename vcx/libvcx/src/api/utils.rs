@@ -45,8 +45,10 @@ pub struct UpdateAgentInfo {
 ///    use_latest_protocols: Option<String>,
 /// }
 /// token: {
-///          "id": String,
-///          "sponsor": String, //Name of Enterprise sponsoring the provisioning
+///          // This can be a push notification endpoint to contact the sponsee or
+///          // an id that the sponsor uses to reference the sponsee in its backend system
+///          "sponsee_id": String,
+///          "sponsor_id": String, //Persistent Id of the Enterprise sponsoring the provisioning
 ///          "nonce": String,
 ///          "timestamp": String,
 ///          "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
@@ -201,7 +203,8 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 ///           webhook_url: Option<String>,
 ///           use_latest_protocols: Option<String>,
 ///     }
-///     source_id: String // Customer Id
+///     sponsee_id: String // Customer Id
+///     sponsor_id: String // Customer Id
 ///     com_method: {
 ///         type: u32 // 1 means push notifcation, its the only one registered
 ///         id: String,
@@ -248,15 +251,22 @@ pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
         }
     };
 
-    let source_id: String = match serde_json::from_value(configs["source_id"].clone()) {
+    let sponsee_id: String = match serde_json::from_value(configs["sponsee_id"].clone()) {
         Ok(x) => x,
         Err(_) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing source_id").into();
+            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing sponsee_id").into();
+        }
+    };
+
+    let sponsor_id: String = match serde_json::from_value(configs["sponsor_id"].clone()) {
+        Ok(x) => x,
+        Err(_) => {
+            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing sponsor_id").into();
         }
     };
 
     spawn(move || {
-        match messages::token_provisioning::token_provisioning::provision(vcx_config, &source_id, com_method) {
+        match messages::token_provisioning::token_provisioning::provision(vcx_config, &sponsee_id, &sponsor_id, com_method) {
             Ok(()) => {
                 trace!("vcx_get_provision_token(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);

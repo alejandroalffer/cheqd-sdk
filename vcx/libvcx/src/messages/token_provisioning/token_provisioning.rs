@@ -1,6 +1,6 @@
 use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency};
 use error::prelude::*;
-use messages::agent_utils::{parse_config, set_config_values, configure_wallet, ComMethod, Config};
+use messages::agent_utils::{set_config_values, configure_wallet, ComMethod, Config};
 use messages::message_type::MessageTypes;
 use utils::httpclient;
 use settings::ProtocolTypes;
@@ -11,7 +11,10 @@ use settings::ProtocolTypes::V2;
 pub struct TokenRequest {
     #[serde(rename = "@type")]
     pub msg_type: MessageTypes,
-    id: String,
+    #[serde(rename = "sponseeId")]
+    sponsee_id: String,
+    #[serde(rename = "sponsorId")]
+    sponsor_id: String,
     #[serde(rename = "pushId")]
     push_id: ComMethod,
 }
@@ -29,7 +32,8 @@ pub struct TokenResponse {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TokenRequestBuilder {
-    id: Option<String>,
+    sponsee_id: Option<String>,
+    sponsor_id: Option<String>,
     push_id: Option<ComMethod>,
     version: Option<ProtocolTypes>,
     agency_did: Option<String>,
@@ -37,14 +41,16 @@ pub struct TokenRequestBuilder {
 impl TokenRequestBuilder {
     pub fn build() -> TokenRequestBuilder {
         TokenRequestBuilder {
-            id: None,
+            sponsee_id: None,
+            sponsor_id: None,
             push_id: None,
             version: None,
             agency_did: None,
         }
     }
 
-    pub fn id(&mut self, id: &str) -> &mut Self { self.id = Some(id.to_string()); self}
+    pub fn sponsee_id(&mut self, id: &str) -> &mut Self { self.sponsee_id = Some(id.to_string()); self}
+    pub fn sponsor_id(&mut self, id: &str) -> &mut Self { self.sponsor_id = Some(id.to_string()); self}
     pub fn push_id(&mut self, push_id: ComMethod) -> &mut Self { self.push_id = Some(push_id); self}
     pub fn version(&mut self, version: ProtocolTypes) -> &mut Self { self.version = Some(version); self}
     pub fn agency_did(&mut self, did: &str) -> &mut Self { self.agency_did = Some(did.to_string()); self}
@@ -71,7 +77,8 @@ impl TokenRequestBuilder {
             A2AMessageV2::TokenRequest(
                 TokenRequest {
                     msg_type: MessageTypes::build(A2AMessageKinds::TokenRequest),
-                    id: self.id.clone().ok_or(init_err("id"))?,
+                    sponsee_id: self.sponsee_id.clone().ok_or(init_err("sponsee_id"))?,
+                    sponsor_id: self.sponsor_id.clone().ok_or(init_err("sponsor_id"))?,
                     push_id: self.push_id.clone().ok_or(init_err("push_id"))?,
                 }
             )
@@ -81,12 +88,13 @@ impl TokenRequestBuilder {
     }
 }
 
-pub fn provision(my_config: Config, source_id: &str, com_method: ComMethod) -> VcxResult<()> {
+pub fn provision(my_config: Config, sponsee_id: &str, sponsor_id: &str, com_method: ComMethod) -> VcxResult<()> {
     set_config_values(&my_config);
     configure_wallet(&my_config)?;
 
     TokenRequestBuilder::build()
-        .id(source_id)
+        .sponsee_id(sponsee_id)
+        .sponsor_id(sponsor_id)
         .push_id(com_method)
         .version(V2)
         .agency_did(&my_config.agency_did)
@@ -103,6 +111,7 @@ mod tests {
     use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_indy_env};
     use utils::plugins::init_plugin;
     use utils::libindy::wallet::delete_wallet;
+    use messages::agent_utils::parse_config;
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
@@ -136,7 +145,7 @@ mod tests {
             e_type: 1
         };
 
-        provision(parse_config(&config).unwrap(), "123", com_method).unwrap();
+        provision(parse_config(&config).unwrap(), "123", "456", com_method).unwrap();
 
         delete_wallet(&enterprise_wallet_name, None, None, None).unwrap();
     }

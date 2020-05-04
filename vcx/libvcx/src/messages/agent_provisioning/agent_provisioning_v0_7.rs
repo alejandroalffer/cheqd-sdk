@@ -8,8 +8,10 @@ use messages::message_type::MessageTypes;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProvisionToken {
-    id: String,
-    sponsor: String,
+    #[serde(rename = "sponseeId")]
+    sponsee_id: String,
+    #[serde(rename = "sponsorId")]
+    sponsor_id: String,
     nonce: String,
     timestamp: String,
     sig: String,
