@@ -410,7 +410,13 @@ impl Connection {
                 .to(&self.get_pw_did())?
                 .to_vk(&self.get_pw_verkey())?
                 .msg_type(&RemoteMessageType::Other(msg_options.msg_type.clone()))?
-                .edge_agent_payload(&self.get_pw_verkey(), &self.get_their_pw_verkey(), &message, PayloadKinds::Other(msg_options.msg_type.clone()), None)?
+                .version(self.version.clone())?
+                .edge_agent_payload(
+                    &self.get_pw_verkey(),
+                    &self.get_their_pw_verkey(),
+                    &message,
+                    PayloadKinds::Other(msg_options.msg_type.clone()),
+                    None)?
                 .agent_did(&self.get_agent_did())?
                 .agent_vk(&self.get_agent_verkey())?
                 .set_title(&msg_options.msg_title)?
@@ -691,12 +697,16 @@ pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     // Initiate connection of new format -- redirect to v3 folder
     if settings::is_aries_protocol_set() {
         let connection = Connections::V3(ConnectionV3::create(source_id));
-        return store_connection(connection);
+        let handle = store_connection(connection);
+        debug!("create_connection >>> created connection V3, handle: {:?}", handle);
+        return handle;
     }
 
     let connection = create_connection_v1(source_id)?;
 
-    store_connection(Connections::V1(connection))
+    let handle = store_connection(Connections::V1(connection));
+    debug!("create_connection >>> created connection V1, handle: {:?}", handle);
+    handle
 }
 
 pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResult<u32> {
@@ -705,7 +715,9 @@ pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResul
     // Invitation of new format -- redirect to v3 folder
     if let Ok(invitation) = serde_json::from_str::<InvitationV3>(details) {
         let connection = Connections::V3(ConnectionV3::create_with_invite(source_id, invitation)?);
-        return store_connection(connection);
+        let handle = store_connection(connection);
+        debug!("create_connection_with_invite: created connection v3, handle: {:?}", handle);
+        return handle;
     }
 
     let details: Value = serde_json::from_str(&details)
@@ -1295,19 +1307,19 @@ pub fn send_message_to_self_endpoint(message: A2AMessage, did_doc: &DidDoc) -> V
 }
 
 pub fn add_pending_messages(handle: u32, messages: HashMap<MessageId, String>) -> VcxResult<()> {
-    CONNECTION_MAP.get_mut(handle, |connection| {
+    CONNECTION_MAP.get(handle, |connection| {
         match connection {
             Connections::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)),
-            Connections::V3(ref mut connection) => connection.add_pending_messages(messages.clone())
+            Connections::V3(ref connection) => connection.add_pending_messages(messages.clone())
         }
     })
 }
 
 pub fn remove_pending_message(handle: u32, id: &MessageId) -> VcxResult<()> {
-    CONNECTION_MAP.get_mut(handle, |connection| {
+    CONNECTION_MAP.get(handle, |connection| {
         match connection {
             Connections::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)),
-            Connections::V3(ref mut connection) => connection.remove_pending_message(id.clone())
+            Connections::V3(ref connection) => connection.remove_pending_message(id.clone())
         }
     })
 }

@@ -30,6 +30,7 @@ RUN apt-get update -y && apt-get install -y \
     libzmq3-dev \
     zip \
     unzip \
+    rename \
     sudo
 
 # Install Nodejs

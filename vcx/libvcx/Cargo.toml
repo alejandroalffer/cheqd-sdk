@@ -1,7 +1,7 @@
 [package]
 
 name = "libvcx"
-version = "0.7.1"
+version = "0.8.0"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 publish = false
 description = "This is the official SDK for Evernym's VCX"
@@ -49,8 +49,8 @@ base64 = "0.8.0"
 openssl = "0.10"
 hex = "0.3.2"
 num-traits = "0.2.0"
-indy = { version = "1.14.4", path = "../../wrappers/rust/" }
-indy-sys = { version = "1.14.4", path = "../../wrappers/rust/indy-sys/" }
+indy = { version = "1.15.0", path = "../../wrappers/rust/" }
+indy-sys = { version = "1.15.0", path = "../../wrappers/rust/indy-sys/" }
 tokio-threadpool = "0.1.6"
 futures = "0.1.23"
 libloading = "0.5.0"
@@ -72,7 +72,7 @@ serde_derive = "1.0"
 [package.metadata.deb]
 maintainer = "Evernym, Inc."
 copyright = "2018, Evernym Inc."
-depends = "$auto, libindy (=1.14.4~137)"
+depends = "$auto, libindy (=1.15.0)"
 extended-description = """\
 This is the official SDK for Hyperledger Indy, which provides a\
   distributed-ledger-based foundation for self-sovereign identity.\
@@ -95,11 +95,11 @@ maintainer-scripts = "./scripts"
 
 [package.metadata.deb.variants.libvcx-xenial]
 name = "libvcx"
-provides = "libvcx (= 0.7.1)"
+provides = "libvcx (= 0.8.0)"
 
 [package.metadata.deb.variants.libvcx-bionic]
 name = "libvcx"
-provides = "libvcx (= 0.7.1)"
+provides = "libvcx (= 0.8.0)"
 
 [profile.release]
 debug = true

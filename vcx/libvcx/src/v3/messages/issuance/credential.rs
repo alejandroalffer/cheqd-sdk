@@ -1,5 +1,5 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
-use v3::messages::attachment::{Attachments, AttachmentEncoding};
+use v3::messages::attachment::{Attachments, AttachmentId};
 use v3::messages::ack::PleaseAck;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
@@ -12,7 +12,8 @@ use std::convert::TryInto;
 pub struct Credential {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    pub comment: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     #[serde(rename = "credentials~attach")]
     pub credentials_attach: Attachments,
     #[serde(rename = "~thread")]
@@ -27,13 +28,13 @@ impl Credential {
         Credential::default()
     }
 
-    pub fn set_comment(mut self, comment: String) -> Self {
+    pub fn set_comment(mut self, comment: Option<String>) -> Self {
         self.comment = comment;
         self
     }
 
     pub fn set_credential(mut self, credential: String) -> VcxResult<Credential> {
-        self.credentials_attach.add_json_attachment(::serde_json::Value::String(credential), AttachmentEncoding::Base64)?;
+        self.credentials_attach.add_base64_encoded_json_attachment(AttachmentId::Credential, ::serde_json::Value::String(credential))?;
         Ok(self)
     }
 }
@@ -88,13 +89,13 @@ pub mod tests {
         })
     }
 
-    fn _comment() -> String {
-        String::from("comment")
+    fn _comment() -> Option<String> {
+        Some(String::from("comment"))
     }
 
     pub fn _credential() -> Credential {
         let mut attachment = Attachments::new();
-        attachment.add_json_attachment(_attachment(), AttachmentEncoding::Base64).unwrap();
+        attachment.add_base64_encoded_json_attachment(AttachmentId::Credential, _attachment()).unwrap();
 
         Credential {
             id: MessageId::id(),

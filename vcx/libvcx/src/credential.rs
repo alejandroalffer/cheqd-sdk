@@ -185,6 +185,7 @@ impl Credential {
         trace!("Credential::send_request >>> connection_handle: {}", connection_handle);
 
         let my_agent = get_agent_info()?.pw_info(connection_handle)?;
+        apply_agent_info(self, &my_agent);
 
         debug!("sending credential request {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
 
@@ -203,6 +204,7 @@ impl Credential {
                 .msg_type(&RemoteMessageType::CredReq)?
                 .agent_did(&my_agent.pw_agent_did()?)?
                 .agent_vk(&my_agent.pw_agent_vk()?)?
+                .version(my_agent.version.clone())?
                 .edge_agent_payload(
                     &my_agent.my_pw_vk()?,
                     &my_agent.their_pw_vk()?,
@@ -214,7 +216,6 @@ impl Credential {
                 .send_secure()
                 .map_err(|err| err.extend(format!("{} could not send proof", self.source_id)))?;
 
-        apply_agent_info(self, &my_agent);
         self.msg_uid = Some(response.get_msg_uid()?);
         self.state = VcxStateType::VcxStateOfferSent;
 
