@@ -175,7 +175,6 @@ mod tests {
         wallet::delete_wallet(&wallet_name, None, None, None).unwrap();
     }
 
-    // #[ignore] // TODO: When agency enforces token, this test should be enabled
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -190,7 +189,6 @@ mod tests {
         wallet::delete_wallet(&wallet_name, None, None, None).unwrap();
     }
 
-    // #[ignore] // TODO: When agency enforces token, this test should be enabled
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
