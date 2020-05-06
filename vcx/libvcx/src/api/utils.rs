@@ -45,8 +45,8 @@ pub struct UpdateAgentInfo {
 ///    use_latest_protocols: Option<String>,
 /// }
 /// token: {
-///          // This can be a push notification endpoint to contact the sponsee or
-///          // an id that the sponsor uses to reference the sponsee in its backend system
+///          This can be a push notification endpoint to contact the sponsee or
+///          an id that the sponsor uses to reference the sponsee in its backend system
 ///          "sponsee_id": String,
 ///          "sponsor_id": String, //Persistent Id of the Enterprise sponsoring the provisioning
 ///          "nonce": String,
@@ -203,8 +203,8 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 ///           webhook_url: Option<String>,
 ///           use_latest_protocols: Option<String>,
 ///     }
-///     sponsee_id: String // Customer Id
-///     sponsor_id: String // Customer Id
+///     sponsee_id: String,
+///     sponsor_id: String,
 ///     com_method: {
 ///         type: u32 // 1 means push notifcation, its the only one registered
 ///         id: String,
