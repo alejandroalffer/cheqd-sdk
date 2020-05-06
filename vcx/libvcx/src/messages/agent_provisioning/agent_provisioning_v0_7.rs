@@ -116,7 +116,7 @@ mod tests {
     use super::*;
     use settings;
     use utils::constants;
-    use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_indy_env};
+    use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_indy_env, sign_provision_token};
     use utils::plugins::init_plugin;
 
     fn get_provisioning_inputs(time: Option<String>, seed: Option<String>) -> (String, String, String) {
@@ -129,8 +129,7 @@ mod tests {
         let enterprise_wallet_name = format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
         wallet::init_wallet(&enterprise_wallet_name, None, None, None).unwrap();
         let keys = ::utils::libindy::crypto::create_key(Some(&seed)).unwrap();
-        let sig = ::utils::libindy::crypto::sign(&keys, &(format!("{}{}{}{}", nonce, time, id, sponsor_id)).as_bytes()).unwrap();
-        let encoded_val = base64::encode(&sig);
+        let encoded_val = sign_provision_token(&keys, &nonce, &time, &id, &sponsor_id);
         let seed1 = ::utils::devsetup::create_new_seed();
         wallet::close_wallet().err();
         wallet::delete_wallet(&enterprise_wallet_name, None, None, None).err();
