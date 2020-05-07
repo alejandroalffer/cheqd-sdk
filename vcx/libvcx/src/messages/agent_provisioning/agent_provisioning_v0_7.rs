@@ -161,7 +161,6 @@ mod tests {
         (enterprise_wallet_name, config, token)
     }
 
-    #[ignore]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -190,6 +189,7 @@ mod tests {
         wallet::delete_wallet(&wallet_name, None, None, None).unwrap();
     }
 
+    #[ignore]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
