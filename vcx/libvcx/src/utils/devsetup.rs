@@ -7,6 +7,7 @@ use utils::libindy::pool::reset_pool_handle;
 use settings::set_defaults;
 use futures::Future;
 use std::sync::Once;
+use utils::libindy::crypto::sign;
 
 pub struct SetupEmpty; // empty
 
@@ -370,7 +371,7 @@ pub const AGENCY_VERKEY: &'static str = "7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1J
 pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-team2.pdev.evernym.com";
 pub const C_AGENCY_DID: &'static str = "TGLBMTcW9fHdkSqown9jD8";
 pub const C_AGENCY_VERKEY: &'static str = "FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR";
-*/
+ */
 
 /* ci pipeline -- qa environment */
 //pub const AGENCY_ENDPOINT: &'static str = "https://eas.pqa.evernym.com";
@@ -556,28 +557,32 @@ pub fn setup_agency_env(protocol_type: &str, use_zero_fees: bool) {
     ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
 }
 
+pub fn sign_provision_token(keys: &str, nonce: &str, time: &str, sponsee_id: &str, sponsor_id: &str) -> String {
+    let sig = sign(keys, &(format!("{}{}{}{}", nonce, time, sponsee_id, sponsor_id)).as_bytes()).unwrap();
+    base64::encode(&sig)
+}
+
 //TODO: This will be removed once libvcx only supports provisioning 0.7
 pub fn setup_agency_env_new_protocol(protocol_type: &str, use_zero_fees: bool) {
     settings::clear_config();
 
     init_plugin(settings::DEFAULT_PAYMENT_PLUGIN, settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-    let id = "id";
-    let sponsor = "evernym-test-sponsor";
+    let sponsee_id = "id";
+    let sponsor_id = "evernym-test-sponsorabc123";
     let nonce = "nonce";
     let time = chrono::offset::Utc::now().to_rfc3339();
     let enterprise_wallet_name = format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
     wallet::init_wallet(&enterprise_wallet_name, None, None, None).unwrap();
     let keys = ::utils::libindy::crypto::create_key(Some("000000000000000000000000Trustee1")).unwrap();
-    let sig = ::utils::libindy::crypto::sign(&keys, &(format!("{}{}{}", nonce, time, id)).as_bytes()).unwrap();
-    let encoded_val = base64::encode(&sig);
+    let sig = sign_provision_token(&keys, nonce, &time, sponsee_id, sponsor_id);
     wallet::close_wallet().err();
     wallet::delete_wallet(&enterprise_wallet_name, None, None, None).err();
     let test_token = json!( {
-            "id": id.to_string(),
-            "sponsor": sponsor.to_string(),
+            "sponseeId": sponsee_id.to_string(),
+            "sponsorId": sponsor_id.to_string(),
             "nonce": nonce.to_string(),
             "timestamp": time.to_string(),
-            "sig": encoded_val,
+            "sig": sig,
             "sponsorVerKey": keys.to_string()
         }).to_string();
 
