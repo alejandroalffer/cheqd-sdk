@@ -25,7 +25,7 @@ def mkdirs(path):
         return False
 
 def main():
-    cache_build_ts_path = os.environ['CI_PROJECT_DIR'] + '/cache/build_ts'
+    cache_build_ts_path = os.environ['CI_PROJECT_DIR'] + '/output/build_ts'
     try:
         if os.path.exists(cache_build_ts_path):
             with open(cache_build_ts_path, 'r') as f:

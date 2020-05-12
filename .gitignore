@@ -15,7 +15,7 @@ Podfile.lock
 /wrappers/python/venv/
 .vscode
 _build/
-cache/
+output/
 
 # Byte-compiled python
 __pycache__/
