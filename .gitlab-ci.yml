@@ -2,6 +2,7 @@
 stages:
   - dockerbuild-pre
   - dockerbuild
+  - build-pre
   - build
   - test
   - package
@@ -340,6 +341,18 @@ build-android-armv7-from-latest:
     refs:
       - /^docker-.*/
 
+build-consistent-vers-ts:
+  extends: .tags_micro
+  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
+  stage: build-pre
+  artifacts:
+    expire_in: 1 week
+    expose_as: 'build_ts'
+    paths:
+      - output/build_ts
+  script:
+    - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
+
 .build-libvcx:
   extends: .tags_large
   artifacts:
@@ -349,7 +362,7 @@ build-android-armv7-from-latest:
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
-    - export VCXREVISION=$(git rev-parse --short HEAD)
+    - export VCXREVISION=$(git rev-parse HEAD | cut -c 1-7)
     - export VCXVERSION=$(${CI_PROJECT_DIR}/vcx/ci/scripts/toml_utils.py ${CI_PROJECT_DIR}/vcx/libvcx/Cargo.toml)
     - cd ${CI_PROJECT_DIR}
     - vcx/ci/scripts/package.sh ${RUSTTESTFLAG} ${VCXVERSION} ${VCXREVISION} ${PACKAGE_TYPE}
