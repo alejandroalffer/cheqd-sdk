@@ -73,7 +73,7 @@ def _strip_version(s):
             sys.exit(1)
         print('major:\t\t' + major)
         print('minor:\t\t' + minor)
-		print('patch: ' + patch)
+        print('patch:\t\t' + patch)
         return (major, minor)
 
 def get_version_from_file(filename):
