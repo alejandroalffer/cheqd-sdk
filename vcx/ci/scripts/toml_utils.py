@@ -59,6 +59,7 @@ def _strip_version(s):
 
         ci2 = s.index('.') if '.' in s else len(s)
         minor = s[:ci2]
+        patch = s[ci2+1:]
         if not validate_version(major):
             print('Major Version Format in file incorrect %s' % major)
             sys.exit(1)
@@ -66,8 +67,13 @@ def _strip_version(s):
             print('Minor Version Format in file incorrect %s' % minor)
             print('minor: ' + minor)
             sys.exit(1)
+		if not validate_version(patch):
+            print('Patch Version Format in file incorrect %s' % patch)
+            print('patch: ' + patch)
+            sys.exit(1)
         print('major:\t\t' + major)
         print('minor:\t\t' + minor)
+		print('patch: ' + patch)
         return (major, minor)
 
 def get_version_from_file(filename):
