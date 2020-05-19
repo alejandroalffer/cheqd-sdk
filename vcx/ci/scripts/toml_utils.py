@@ -67,7 +67,7 @@ def _strip_version(s):
             print('Minor Version Format in file incorrect %s' % minor)
             print('minor: ' + minor)
             sys.exit(1)
-		if not validate_version(patch):
+        if not validate_version(patch):
             print('Patch Version Format in file incorrect %s' % patch)
             print('patch: ' + patch)
             sys.exit(1)
