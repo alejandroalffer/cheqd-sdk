@@ -40,7 +40,7 @@ def main(version=None, revision_number=None):
         revision_number = get_revision_number()
     update_revision(TOML_FILENAME, revision_number)
     full_version = "%s-%s" % (version, os.env[CI_PIPELINE_IID])
-	update_npm_package(NPM_PACKAGE_JSON, full_version)
+    update_npm_package(NPM_PACKAGE_JSON, full_version)
 
 
 def update_npm_package(package, version):
