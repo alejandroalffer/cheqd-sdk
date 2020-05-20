@@ -38,6 +38,8 @@ def main(version=None, revision_number=None):
     verify_cwd(LIBVCX_DIR, TOML_FILENAME)
     if not revision_number:
         revision_number = get_revision_number()
+        (major, minor, patch) = extract_version_from_file(TOML_FILENAME)
+        version = "%s.%s.%s" % (major, minor, patch)
     update_revision(TOML_FILENAME, revision_number)
     full_version = "%s-%s" % (version, os.environ["CI_PIPELINE_IID"])
     update_npm_package(NPM_PACKAGE_JSON, full_version)

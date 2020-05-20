@@ -74,7 +74,7 @@ def _strip_version(s):
         print('major:\t\t' + major)
         print('minor:\t\t' + minor)
         print('patch:\t\t' + patch)
-        return (major, minor)
+        return (major, minor, patch)
 
 def get_version_from_file(filename):
     version = "0"
