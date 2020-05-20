@@ -95,9 +95,9 @@ def extract_version_from_file(filename):
         f = open(filename, 'r')
         for line in f.readlines():
             if valid_line(line):
-                (major, minor) = _strip_version(line)
+                (major, minor, patch) = _strip_version(line)
         f.close()
-        return (major, minor)
+        return (major, minor, patch)
     except IOError:
         print('Error: Cannot find %s' % filename)
         sys.exit(1)
