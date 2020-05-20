@@ -49,7 +49,7 @@ group = 'com.evernym.sdk'
 
 def versionMajor() {
     String version = "0.8.0"
-    String suffix = System.getenv("PACKAGE_VERSION")
+    String suffix = System.getenv("CI_PIPELINE_IID")
     if (suffix != null) {
         version += "." + suffix
     }
