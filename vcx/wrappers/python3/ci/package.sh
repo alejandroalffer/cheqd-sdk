@@ -8,7 +8,7 @@ echo "DIST: ${DIST}"
 export PACKAGE_NAME='python3-vcx-wrapper'
 echo "PACKAGE_NAME: ${PACKAGE_NAME}"
 cd vcx/wrappers/python3
-PACKAGE_VERSION=${VCX_VERSION} python3 setup.py sdist
+python3 setup.py sdist
 PACKAGE=${PACKAGE_NAME}-${VCX_VERSION}.tar.gz
 FILELY_PACKAGE=${PACKAGE_NAME}_${VCX_VERSION}.tar.gz
 # Added test so that we can confirm the new package name and that it was created.
