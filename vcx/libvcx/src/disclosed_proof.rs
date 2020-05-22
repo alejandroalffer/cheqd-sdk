@@ -528,7 +528,7 @@ impl DisclosedProof {
             .to(&agent_info.my_pw_did()?)?
             .to_vk(&agent_info.my_pw_vk()?)?
             .msg_type(&RemoteMessageType::Proof)?
-            .agent_did(&agent_info.agency_did)?
+            .agent_did(&agent_info.pw_agent_did()?)?
             .agent_vk(&agent_info.pw_agent_vk()?)?
             .version(agent_info.version.clone())?
             .edge_agent_payload(&agent_info.my_pw_vk()?,

@@ -8,3 +8,7 @@
 /captures
 /vcx-debug/*.aar
 .externalNativeBuild
+
+.project
+.settings
+.classpath
