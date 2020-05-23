@@ -387,6 +387,8 @@ build-libvcx-ubuntu18-from-latest:
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
   stage: build
   variables:
+    MYSQL_DATABASE: "wallet"
+    MYSQL_ROOT_PASSWORD: "root"
     RUSTTESTFLAG: 'mysql'
     PACKAGE_TYPE: 'bionic'
   services:

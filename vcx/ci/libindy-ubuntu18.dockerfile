@@ -31,6 +31,7 @@ RUN apt-get update -y && apt-get install -y \
     zip \
     unzip \
     rename \
+    mysql-client-core-5.7 \
     sudo
 
 # Install Nodejs
