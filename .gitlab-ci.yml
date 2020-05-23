@@ -371,7 +371,7 @@ build-libvcx-ubuntu18-from-branch:
   stage: build
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:${CI_COMMIT_REF_SLUG}
   variables:
-    RUSTTESTFLAG: 'test'
+    RUSTTESTFLAG: 'mysql'
     PACKAGE_TYPE: 'bionic'
   services:
     - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
@@ -379,12 +379,15 @@ build-libvcx-ubuntu18-from-branch:
   only:
     refs:
       - /^docker-.*/
+  services:
+    - name: mysql:5
+    - alias: mysql
 build-libvcx-ubuntu18-from-latest:
   extends: .build-libvcx
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
   stage: build
   variables:
-    RUSTTESTFLAG: 'test'
+    RUSTTESTFLAG: 'mysql'
     PACKAGE_TYPE: 'bionic'
   services:
     - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
@@ -392,6 +395,9 @@ build-libvcx-ubuntu18-from-latest:
   except:
     refs:
       - /^docker-.*/
+  services:
+    - name: mysql:5
+    - alias: mysql
 build-libvcx-ubuntu16-from-branch:
   extends: .build-libvcx
   stage: build
