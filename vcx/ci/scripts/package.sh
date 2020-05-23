@@ -24,7 +24,7 @@ elif [ "${RUST_FLAG}" == "mysql" ]; then
     echo "Testing libvcx.so with mysql wallet"
     mysql -h mysql -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < ../ci/db/wallet_schema_creation.2018-05-07.sql
     echo "show tables;" | mysql -h mysql -u root -p${MYSQL_ROOT_PASSWORD} wallet
-    TEST_POOL_IP=$INDY_POOL_PORT_9701_TCP_ADDR cargo test --features="mysql" -- --test-threads=1
+    RUST_LOG=trace TEST_POOL_IP=$INDY_POOL_PORT_9701_TCP_ADDR cargo test --features="mysql" -- --test-threads=1
 else
     echo "Skip testing of libvcx.so"
 fi
