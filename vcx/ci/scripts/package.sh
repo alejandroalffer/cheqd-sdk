@@ -9,7 +9,6 @@ VERSION=$2
 REVISION=$3
 PACKAGE_TYPE=$4
 
-ls -l /usr/lib | grep libmysqlstorage
 echo "RUST_FLAG ${RUST_FLAG}"
 echo "Updating Version in Cargo.toml file"
 cargo update-version ${VERSION} ${REVISION}
