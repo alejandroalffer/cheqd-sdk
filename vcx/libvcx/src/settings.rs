@@ -199,8 +199,12 @@ fn get_read_host() -> String {
 }
 
 #[cfg(all(feature="mysql"))]
-fn get_port() -> String {
-    env::var("DB_PORT").unwrap_or("3306".to_string())
+fn get_port() -> i32 {
+    let port_var = env::var("DB_PORT").and_then(|s| s.parse::<i32>().map_err(|_| env::VarError::NotPresent));
+    if port_var.is_err() {
+        warn!("Port is absent or is not int, using default 3306");
+    }
+    port_var.unwrap_or(3306)
 }
 
 #[cfg(all(not(feature="mysql")))]
