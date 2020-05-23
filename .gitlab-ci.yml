@@ -381,7 +381,7 @@ build-libvcx-ubuntu18-from-branch:
       - /^docker-.*/
   services:
     - name: mysql:5
-    - alias: mysql
+      alias: mysql
 build-libvcx-ubuntu18-from-latest:
   extends: .build-libvcx
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
@@ -397,7 +397,7 @@ build-libvcx-ubuntu18-from-latest:
       - /^docker-.*/
   services:
     - name: mysql:5
-    - alias: mysql
+      alias: mysql
 build-libvcx-ubuntu16-from-branch:
   extends: .build-libvcx
   stage: build
