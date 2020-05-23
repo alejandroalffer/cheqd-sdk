@@ -376,12 +376,11 @@ build-libvcx-ubuntu18-from-branch:
   services:
     - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
       alias: indy_pool
+    - name: mysql:5
+      alias: mysql
   only:
     refs:
       - /^docker-.*/
-  services:
-    - name: mysql:5
-      alias: mysql
 build-libvcx-ubuntu18-from-latest:
   extends: .build-libvcx
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
@@ -394,12 +393,11 @@ build-libvcx-ubuntu18-from-latest:
   services:
     - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
       alias: indy_pool
+    - name: mysql:5
+      alias: mysql
   except:
     refs:
       - /^docker-.*/
-  services:
-    - name: mysql:5
-      alias: mysql
 build-libvcx-ubuntu16-from-branch:
   extends: .build-libvcx
   stage: build
