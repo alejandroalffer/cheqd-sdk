@@ -2,7 +2,7 @@ extern crate url;
 extern crate serde_json;
 
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{RwLock, Once};
 use utils::{get_temp_dir_path, error};
 use std::path::Path;
 use url::Url;
@@ -14,6 +14,8 @@ use std::borrow::Borrow;
 use error::prelude::*;
 use utils::file::read_file;
 use indy_sys::INVALID_WALLET_HANDLE;
+#[cfg(all(feature="mysql"))]
+use utils::libindy::mysql_wallet::{init_mysql_wallet as do_init_mysql_wallet};
 
 pub static CONFIG_POOL_NAME: &str = "pool_name";
 pub static CONFIG_PROTOCOL_TYPE: &str = "protocol_type";
@@ -59,6 +61,8 @@ pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 pub static DEFAULT_GENESIS_PATH: &str = "genesis.txn";
 pub static DEFAULT_EXPORTED_WALLET_PATH: &str = "wallet.txn";
 pub static DEFAULT_WALLET_NAME: &str = "LIBVCX_SDK_WALLET";
+pub static DEFAULT_WALLET_STORAGE_CONFIG: &str = "{}";
+pub static DEFAULT_WALLET_STORAGE_CREDENTIALS: &str = "{}";
 pub static DEFAULT_POOL_NAME: &str = "pool1";
 pub static DEFAULT_LINK_SECRET_ALIAS: &str = "main";
 pub static DEFAULT_DEFAULT: &str = "default";
@@ -96,15 +100,36 @@ impl ToString for HashMap<String, String> {
     }
 }
 
+static START: Once = Once::new();
+
+#[cfg(all(feature="mysql"))]
+pub fn init_mysql_wallet() {
+    START.call_once(|| {
+        let _ = do_init_mysql_wallet();
+    });
+}
+
+#[cfg(all(not(feature="mysql")))]
+pub fn init_mysql_wallet() {
+    //nothing is initiated without this feature
+}
+
+
 pub fn set_defaults() -> u32 {
     trace!("set_defaults >>>");
 
     // if this fails the program should exit
     let mut settings = SETTINGS.write().unwrap();
 
+    #[cfg(all(feature="mysql"))]
+    init_mysql_wallet();
+
+
     settings.insert(CONFIG_POOL_NAME.to_string(), DEFAULT_POOL_NAME.to_string());
     settings.insert(CONFIG_WALLET_NAME.to_string(), DEFAULT_WALLET_NAME.to_string());
-    settings.insert(CONFIG_WALLET_TYPE.to_string(), DEFAULT_DEFAULT.to_string());
+    settings.insert(CONFIG_WALLET_TYPE.to_string(), get_wallet_type());
+    settings.insert(CONFIG_WALLET_STORAGE_CONFIG.to_string(), get_wallet_storage_config());
+    settings.insert(CONFIG_WALLET_STORAGE_CREDS.to_string(), get_wallet_storage_credentials());
     settings.insert(CONFIG_AGENCY_ENDPOINT.to_string(), DEFAULT_URL.to_string());
     settings.insert(CONFIG_AGENCY_DID.to_string(), DEFAULT_DID.to_string());
     settings.insert(CONFIG_AGENCY_VERKEY.to_string(), DEFAULT_VERKEY.to_string());
@@ -130,6 +155,79 @@ pub fn set_defaults() -> u32 {
     settings.insert(COMMUNICATION_METHOD.to_string(), DEFAULT_COMMUNICATION_METHOD.to_string());
 
     error::SUCCESS.code_num
+}
+
+#[cfg(all(not(feature="mysql")))]
+pub fn get_wallet_type() -> String {
+    DEFAULT_DEFAULT.to_string()
+}
+
+#[cfg(all(feature="mysql"))]
+pub fn get_wallet_type() -> String {
+    "mysql".to_string()
+}
+
+#[cfg(all(not(feature="mysql")))]
+pub fn get_wallet_storage_config() -> String {
+    trace!("setting default conf");
+    DEFAULT_WALLET_STORAGE_CONFIG.to_string()
+}
+
+#[cfg(all(feature="mysql"))]
+pub fn get_wallet_storage_config() -> String {
+    trace!("setting mysql conf");
+    json!({
+        "db_name": "wallet",
+        "port": get_port(),
+        "write_host": get_write_host(),
+        "read_host": get_read_host()
+    }).to_string()
+}
+
+
+#[cfg(all(feature="mysql"))]
+use std::env;
+
+#[cfg(all(feature="mysql"))]
+fn get_write_host() -> String {
+    env::var("DB_WRITE_HOST").unwrap_or("mysql".to_string())
+}
+
+#[cfg(all(feature="mysql"))]
+fn get_read_host() -> String {
+    env::var("DB_WRITE_HOST").unwrap_or("mysql".to_string())
+}
+
+#[cfg(all(feature="mysql"))]
+fn get_port() -> i32 {
+    let port_var = env::var("DB_PORT").and_then(|s| s.parse::<i32>().map_err(|_| env::VarError::NotPresent));
+    if port_var.is_err() {
+        warn!("Port is absent or is not int, using default 3306");
+    }
+    port_var.unwrap_or(3306)
+}
+
+#[cfg(all(not(feature="mysql")))]
+pub fn get_wallet_storage_credentials() -> String {
+    DEFAULT_WALLET_STORAGE_CREDENTIALS.to_string()
+}
+
+#[cfg(all(feature="mysql"))]
+pub fn get_wallet_storage_credentials() -> String {
+    json!({
+        "pass": get_pass(),
+        "user": get_user(),
+    }).to_string()
+}
+
+#[cfg(all(feature="mysql"))]
+fn get_user() -> String {
+    env::var("DB_USER").unwrap_or("root".to_string())
+}
+
+#[cfg(all(feature="mysql"))]
+fn get_pass() -> String {
+    env::var("DB_ROOT").unwrap_or("root".to_string())
 }
 
 pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
@@ -319,11 +417,23 @@ pub fn set_config_value(key: &str, value: &str) {
         .insert(key.to_string(), value.to_string());
 }
 
+pub fn unset_config_value(key: &str) {
+    trace!("unset_config_value >>> key: {}", key);
+    SETTINGS
+        .write().unwrap()
+        .remove(key);
+}
+
 pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>) -> String { // TODO: _storage_config must be used
     let mut config = json!({
         "id": wallet_name,
-        "storage_type": wallet_type
     });
+
+    let config_type = get_config_value(CONFIG_WALLET_TYPE).ok();
+
+    if let Some(_type) = wallet_type.map(str::to_string).or(config_type) {
+        config["storage_type"] = serde_json::Value::String(_type);
+    }
 
     if let Ok(_config) = get_config_value(CONFIG_WALLET_STORAGE_CONFIG) {
         config["storage_config"] = serde_json::from_str(&_config).unwrap();
