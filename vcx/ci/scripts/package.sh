@@ -19,6 +19,9 @@ if [ "${RUST_FLAG}" == "basic-tests" ]; then
 elif [ "${RUST_FLAG}" == "test"  ]; then
     echo "Testing libvcx.so: run all tests"
     TEST_POOL_IP=$INDY_POOL_PORT_9701_TCP_ADDR cargo test -- --test-threads=1
+elif [ "${RUST_FLAG}" == "mysql" ]; then
+    echo "Testing libvcx.so with mysql wallet"
+    TEST_POOL_IP=$INDY_POOL_PORT_9701_TCP_ADDR cargo test --features="mysql" -- --test-threads=1
 else
     echo "Skip testing of libvcx.so"
 fi

@@ -63,6 +63,12 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 &&
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb bionic stable" && \
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb bionic master"
 
+# Add evernym repo to sources.lis
+RUN add-apt-repository "deb https://repo.corp.evernym.com/deb evernym-agency-dev-ubuntu main"
+
+# install mysql wallet storage
+RUN apt update && apt install -y mysql-wallet-storage=0.1.10
+
 ARG LIBINDY_VER
 ARG LIBSOVTOKEN_VER
 

@@ -176,7 +176,31 @@ pub fn get_wallet_storage_config() -> String {
 #[cfg(all(feature="mysql"))]
 pub fn get_wallet_storage_config() -> String {
     trace!("setting mysql conf");
-    "{\"db_name\":\"wallet\",\"port\":3306,\"write_host\":\"0.0.0.0\",\"read_host\":\"0.0.0.0\"}".to_string()
+    json!({
+        "db_name": "wallet",
+        "port": get_port(),
+        "write_host": get_write_host(),
+        "read_host": get_read_host()
+    }).to_string()
+}
+
+
+#[cfg(all(feature="mysql"))]
+use std::env;
+
+#[cfg(all(feature="mysql"))]
+fn get_write_host() -> String {
+    env::var("DB_WRITE_HOST").unwrap_or("mysql".to_string())
+}
+
+#[cfg(all(feature="mysql"))]
+fn get_read_host() -> String {
+    env::var("DB_WRITE_HOST").unwrap_or("mysql".to_string())
+}
+
+#[cfg(all(feature="mysql"))]
+fn get_port() -> String {
+    env::var("DB_PORT").unwrap_or("3306".to_string())
 }
 
 #[cfg(all(not(feature="mysql")))]
@@ -186,7 +210,20 @@ pub fn get_wallet_storage_credentials() -> String {
 
 #[cfg(all(feature="mysql"))]
 pub fn get_wallet_storage_credentials() -> String {
-    "{\"pass\":\"root\",\"user\":\"root\"}".to_string()
+    json!({
+        "pass": get_pass(),
+        "user": get_user(),
+    }).to_string()
+}
+
+#[cfg(all(feature="mysql"))]
+fn get_user() -> String {
+    env::var("DB_USER").unwrap_or("root".to_string())
+}
+
+#[cfg(all(feature="mysql"))]
+fn get_pass() -> String {
+    env::var("DB_ROOT").unwrap_or("root".to_string())
 }
 
 pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
