@@ -2,6 +2,10 @@ libvcx (0.8.0) unstable; urgency=medium
 
 [ Hyperledger ]
 
+## 0.9.0
+* Bugfixes
+* Tested and provided libvcx with libmysqlstorage
+
 ## 0.8.0
 * Bugfixes
 * Fixed compatibility between proprietary (`protocol_version`: `2.0`/`1.0`) and aries protocols (`protocol_version`: `3.0`).
