@@ -29,7 +29,7 @@ cp ./scripts/provision_agent_keys.py ./target/rpmroot/usr/share/libvcx/
 
 if [[ $CI_COMMIT_REF_SLUG == "stable" ]];
 then
-    sed -e "s/Release: .*//g" -i rpm/libvcx.spec
+    sed -e "s/%define _rpmfilename %%{NAME}_%%{VERSION}-%%{RELEASE}_%%{ARCH}.rpm/%define _rpmfilename %%{NAME}_%%{VERSION}_%%{ARCH}.rpm/g" -i rpm/libvcx.spec
 fi
 
 rpmbuild --buildroot=${PWD}/target/rpmroot -bb --target x86_64 rpm/libvcx.spec
