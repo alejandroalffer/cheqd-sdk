@@ -7,6 +7,10 @@ cd vcx/libvcx/
 export RUST_FLAG=$1
 VERSION=$2
 REVISION=$3
+if [[ $CI_COMMIT_REF_SLUG != "stable" ]];
+then
+    export VCXBUILDNUM=${CI_PIPELINE_IID}
+fi
 echo "Updating Version in Cargo.toml file"
 cargo update-version ${VERSION} ${REVISION}
 echo "Updating Cargo"
