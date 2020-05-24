@@ -48,7 +48,12 @@ allprojects {
 group = 'com.evernym.sdk'
 
 def versionMajor() {
-    return '1.0.0'
+    String version = "0.8.0"
+    String suffix = System.getenv("CI_PIPELINE_IID")
+    if (suffix != null) {
+        version += "." + suffix
+    }
+    return version
 }
 
 //TODO: consider removing buildtime from version number when the wrapper api is on par with vcx-rust api
