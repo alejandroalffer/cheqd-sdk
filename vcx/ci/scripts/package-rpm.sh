@@ -7,10 +7,6 @@ cd vcx/libvcx/
 export RUST_FLAG=$1
 VERSION=$2
 REVISION=$3
-if [[ $CI_COMMIT_REF_SLUG != "stable" ]];
-then
-    export VCXBUILDNUM=${CI_PIPELINE_IID}
-fi
 echo "Updating Version in Cargo.toml file"
 cargo update-version ${VERSION} ${REVISION}
 echo "Updating Cargo"
@@ -30,6 +26,11 @@ cp ./target/debug/libvcx.so.* ./target/rpmroot/usr/lib/
 mkdir -p ./target/rpmroot/usr/share/libvcx/
 cp ./include/vcx.h ./target/rpmroot/usr/share/libvcx/
 cp ./scripts/provision_agent_keys.py ./target/rpmroot/usr/share/libvcx/
+
+if [[ $CI_COMMIT_REF_SLUG == "stable" ]];
+then
+    sed -e "s/Release: .*//g" -i rpm/libvcx.spec
+fi
 
 rpmbuild --buildroot=${PWD}/target/rpmroot -bb --target x86_64 rpm/libvcx.spec
 

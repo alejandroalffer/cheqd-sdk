@@ -1,6 +1,6 @@
 Name: libvcx
 Version: %{getenv:VCXVERSION}
-Release: %{getenv:VCXBUILDNUM}
+Release: %{getenv:CI_PIPELINE_IID}
 Summary: This is the official SDK for Evernym's VCX
 License: Apache License 2.0
 Group: System Environment/Libraries
