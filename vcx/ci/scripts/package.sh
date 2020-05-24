@@ -33,7 +33,7 @@ cargo build --no-default-features --features "ci"
 echo "Updating libvcx.so File with Version"
 cargo update-so
 echo "Creating Libvcx Debian File"
-FINAL_VERSION = ${VERSION}-${PACKAGE_TYPE}
+FINAL_VERSION=${VERSION}-${PACKAGE_TYPE}
 if [[ $CI_COMMIT_REF_SLUG != "stable" ]];
 then
     FINAL_VERSION=${FINAL_VERSION}~${CI_PIPELINE_IID}
