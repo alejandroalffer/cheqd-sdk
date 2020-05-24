@@ -657,6 +657,7 @@ publish-android:
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - stable@dev/vcx/indy-sdk
       - vcx-aries-support
   script:
     - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
@@ -674,6 +675,7 @@ publish-ios:
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - stable@dev/vcx/indy-sdk
       - vcx-aries-support
   dependencies:
     - build-ios
@@ -692,6 +694,7 @@ publish-java-wrapper:
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - stable@dev/vcx/indy-sdk
       - vcx-aries-support
   script:
     - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
@@ -705,6 +708,7 @@ publish-packages:
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - stable@dev/vcx/indy-sdk
   script:
     - ls -al ${CI_PROJECT_DIR}/output
     #https://gitlab.com/gitlab-org/gitlab-ce/issues/27436
@@ -727,5 +731,6 @@ publish-mobile-sdk:
   only:
     refs:
       - master@dev/vcx/indy-sdk
+      - stable@dev/vcx/indy-sdk
   script:
     - vcx/ci/scripts/githubArtifacts.py vcx/wrappers/java/artifacts/aar/*.aar IOSBuilds/libvcx{partial,all}/vcx.libvcx*.zip

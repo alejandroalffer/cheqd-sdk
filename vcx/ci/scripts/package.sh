@@ -33,6 +33,11 @@ cargo build --no-default-features --features "ci"
 echo "Updating libvcx.so File with Version"
 cargo update-so
 echo "Creating Libvcx Debian File"
-cargo deb --no-build --deb-version ${VERSION}-${PACKAGE_TYPE}~${CI_PIPELINE_IID} --variant libvcx-${PACKAGE_TYPE}
+FINAL_VERSION=${VERSION}-${PACKAGE_TYPE}
+if [[ $CI_COMMIT_REF_SLUG != "stable" ]];
+then
+    FINAL_VERSION=${FINAL_VERSION}~${CI_PIPELINE_IID}
+fi
+cargo deb --no-build --deb-version ${FINAL_VERSION} --variant libvcx-${PACKAGE_TYPE}
 echo "Moving Libvcx Debian File to Output Directory"
 cp target/debian/*.deb $CURDIR/$OUTPUTDIR

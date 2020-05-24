@@ -1,7 +1,12 @@
 #!/bin/bash
 set -e
 export PATH=${PATH}:$(pwd)/vcx/ci/scripts
-export VCX_VERSION=$(toml_utils.py vcx/libvcx/Cargo.toml).${CI_PIPELINE_IID}
+VERSION=$(toml_utils.py vcx/libvcx/Cargo.toml)
+if [[ $CI_COMMIT_REF_SLUG != "stable" ]];
+then
+    VERSION=${VERSION}.${CI_PIPELINE_IID}
+fi
+export VCX_VERSION=${VERSION}
 echo "VCX_VERSION: ${VCX_VERSION}"
 export DIST=`pwd`/vcx/wrappers/python3/dist/
 echo "DIST: ${DIST}"
