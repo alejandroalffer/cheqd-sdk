@@ -24,7 +24,7 @@ req = {'libindy_cred_req': '', 'libindy_cred_req_meta': '', 'cred_def_id': '', '
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_create_issuer_credential():
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     assert issuer_credential.source_id == source_id
     assert issuer_credential.handle > 0
@@ -34,7 +34,7 @@ async def test_create_issuer_credential():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize():
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     data = await issuer_credential.serialize()
     assert data.get('data').get('source_id') == source_id
@@ -45,7 +45,7 @@ async def test_serialize():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize_with_bad_handle():
     with pytest.raises(VcxError) as e:
-        cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+        cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
         issuer_credential.handle = 0
         await issuer_credential.serialize()
@@ -56,7 +56,7 @@ async def test_serialize_with_bad_handle():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_deserialize():
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     data = await issuer_credential.serialize()
     data['data']['handle'] = 99999
@@ -78,7 +78,7 @@ async def test_deserialize_with_invalid_data():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize_deserialize_and_then_serialize():
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     data1 = await issuer_credential.serialize()
     print("data1: %s" % data1)
@@ -90,7 +90,7 @@ async def test_serialize_deserialize_and_then_serialize():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_update_state():
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     assert await issuer_credential.update_state() == State.Initialized
 
@@ -99,7 +99,7 @@ async def test_update_state():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_update_state_with_invalid_handle():
     with pytest.raises(VcxError) as e:
-        cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+        cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
         issuer_credential.handle = 0
         await issuer_credential.update_state()
@@ -110,7 +110,7 @@ async def test_update_state_with_invalid_handle():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_state():
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     assert await issuer_credential.get_state() == State.Initialized
 
@@ -119,7 +119,7 @@ async def test_get_state():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_issuer_credential_release():
     with pytest.raises(VcxError) as e:
-        cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+        cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
         assert issuer_credential.handle > 0
         issuer_credential.release()
@@ -133,7 +133,7 @@ async def test_issuer_credential_release():
 async def test_send_offer():
     connection = await Connection.create(source_id)
     await connection.connect(connection_options)
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     await issuer_credential.send_offer(connection)
     assert await issuer_credential.update_state() == State.OfferSent
@@ -148,7 +148,7 @@ async def test_get_msgs():
     await connection.connect(connection_options)
     my_pw_did = await connection.get_my_pw_did()
     their_pw_did = await connection.get_their_pw_did()
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     offer = await issuer_credential.get_offer_msg()
     assert (offer)
@@ -169,7 +169,7 @@ async def test_send_offer_with_invalid_state():
     with pytest.raises(VcxError) as e:
         connection = await Connection.create(source_id)
         await connection.connect(connection_options)
-        cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+        cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
         data = await issuer_credential.serialize()
         data['data']['state'] = State.Expired
@@ -184,7 +184,7 @@ async def test_send_offer_with_invalid_state():
 async def test_send_offer_with_bad_connection():
     with pytest.raises(VcxError) as e:
         connection = Connection(source_id)
-        cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+        cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
         await issuer_credential.send_offer(connection)
     assert ErrorCode.InvalidConnectionHandle == e.value.error_code
@@ -196,7 +196,7 @@ async def test_send_offer_with_bad_connection():
 async def test_send_credential():
     connection = await Connection.create(source_id)
     await connection.connect(connection_options)
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     await issuer_credential.send_offer(connection)
     assert await issuer_credential.update_state() == State.OfferSent
@@ -214,7 +214,7 @@ async def test_send_credential():
 async def test_get_credential_msg():
     connection = await Connection.create(source_id)
     await connection.connect(connection_options)
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     await issuer_credential.send_offer(connection)
     assert await issuer_credential.update_state() == State.OfferSent
@@ -232,7 +232,7 @@ async def test_get_credential_msg():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_credential_with_invalid_issuer_credential():
     with pytest.raises(VcxError) as e:
-        cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+        cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         issuer_credential = IssuerCredential(source_id, attrs, cred_def.handle, name, price)
         await issuer_credential.send_credential(Connection(source_id))
     assert ErrorCode.InvalidIssuerCredentialHandle == e.value.error_code
@@ -242,7 +242,7 @@ async def test_send_credential_with_invalid_issuer_credential():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_credential_with_invalid_connection():
     with pytest.raises(VcxError) as e:
-        cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+        cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
         await issuer_credential.send_credential(Connection(source_id))
     assert ErrorCode.InvalidConnectionHandle == e.value.error_code
@@ -254,7 +254,7 @@ async def test_send_credential_with_no_prior_offer():
     with pytest.raises(VcxError) as e:
         connection = await Connection.create(source_id)
         await connection.connect(connection_options)
-        cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+        cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
         await issuer_credential.send_credential(connection)
     assert ErrorCode.NotReady == e.value.error_code
@@ -263,7 +263,7 @@ async def test_send_credential_with_no_prior_offer():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_revoke_credential_fails_with_invalid_rev_details():
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
 
     with pytest.raises(VcxError) as e:
@@ -274,7 +274,7 @@ async def test_revoke_credential_fails_with_invalid_rev_details():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_revoke_credential_success():
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     serialized = await issuer_credential.serialize()
     issuer_credential2 = await IssuerCredential.deserialize(serialized)
