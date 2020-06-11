@@ -48,7 +48,7 @@ export async function provisionAgent (configAgent: string, options: IInitVCXOpti
   }
 }
 
-export async function provisionAgentWithToken (configAgent: string, token: String, options: IInitVCXOptions = {}): Promise<string> {
+export async function provisionAgentWithToken (configAgent: string, token: string, options: IInitVCXOptions = {}): Promise<string> {
   /**
    * Provision an agent in the agency, populate configuration and wallet for this agent.
    *

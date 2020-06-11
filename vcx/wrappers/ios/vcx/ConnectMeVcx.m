@@ -402,6 +402,28 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    }
 }
 
+- (void)acceptConnectionWithInvite:(NSString *)invitationId
+                inviteDetails:(NSString *)inviteDetails
+                connectionType:(NSString *)connectionType
+             completion:(void (^)(NSError *error, NSInteger connectionHandle, NSString *serializedConnection)) completion
+{
+   vcx_error_t ret;
+
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+   const char *invitationId_char = [invitationId cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *inviteDetails_char = [inviteDetails cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *connectionType_char = [connectionType cStringUsingEncoding:NSUTF8StringEncoding];
+   ret = vcx_connection_accept_connection_invite(handle, invitationId_char, inviteDetails_char,  connectionType_char, VcxWrapperCommonNumberStringCallback);
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0, nil);
+       });
+   }
+}
+
 - (void)connectionConnect: (NSInteger) connectionHandle
         connectionType: (NSString *) connectionType
             completion: (void (^)(NSError *error, NSString *inviteDetails)) completion

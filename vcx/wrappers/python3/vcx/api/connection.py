@@ -199,6 +199,60 @@ class Connection(VcxStateful):
                                         c_params)
 
     @staticmethod
+    async def accept_connection_invite(source_id: str, invite_details: str, connection_options: Optional[str] = None):
+        """
+        Accept connection for the given invitation.
+    
+        This function performs the following actions:
+        1. Creates Connection state object from the given invite_details
+            (equal to `vcx_connection_create_with_invite` function).
+        2. Replies to the inviting side (equal to `vcx_connection_connect` function).
+
+        :param source_id: Institution's unique ID for the connection
+        :param invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
+            Invite format depends on communication method:
+                proprietary:
+                    {"targetName": "", "statusMsg": "message created", "connReqId": "mugIkrWeMr", "statusCode": "MS-101", "threadId": null, "senderAgencyDetail": {"endpoint": "http://localhost:8080", "verKey": "key", "DID": "did"}, "senderDetail": {"agentKeyDlgProof": {"agentDID": "8f6gqnT13GGMNPWDa2TRQ7", "agentDelegatedKey": "5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1", "signature": "TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/7Cyteep7U3m9Gw6ilu8SOOW59YR1rft+D8ZDg=="}, "publicDID": "7YLxxEfHRiZkCMVNii1RCy", "name": "Faber", "logoUrl": "http://robohash.org/234", "verKey": "CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx", "DID": "Ney2FxHT4rdEyy6EDCCtxZ"}}
+                aries: https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+                 {
+                    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
+                    "label": "Alice",
+                    "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+                    "serviceEndpoint": "https://example.com/endpoint",
+                    "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
+                 }
+        :param connection_options: Provides details indicating if the connection will be established by text or QR Code.
+            {"connection_type":"SMS","phone":"123","use_public_did":true}
+            {"connection_type":"QR","phone":"","use_public_did":false}
+
+        :return
+            connection_handle: the handle associated with the create Connection object.
+            connection_serialized: the json string representing the created Connection object.
+
+        Example:
+        (connection_handle, ) = await Connection.create_with_details('MyBank', invite_details)
+        :return: connection object
+        """
+        if not hasattr(Connection.accept_connection_invite, "cb"):
+            Connection.accept_connection_invite.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32, c_char_p))
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_invite_details = c_char_p(invite_details.encode('utf-8'))
+        c_connection_options = c_char_p(connection_options.encode('utf-8')) if connection_options is not None else None
+
+        connection_handle, connection_serialized = await do_call('vcx_connection_accept_connection_invite',
+                                                                c_source_id,
+                                                                c_invite_details,
+                                                                c_connection_options,
+                                                                Connection.accept_connection_invite.cb)
+
+        connection = Connection(source_id)
+        connection.handle = connection_handle
+        connection.serialized = connection_serialized
+
+        return connection
+
+    @staticmethod
     async def deserialize(data: dict):
         """
         Takes a json string representing a connection object and recreates an object matching the json.

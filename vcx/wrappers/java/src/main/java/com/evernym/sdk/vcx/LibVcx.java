@@ -111,6 +111,11 @@ public abstract class LibVcx {
         public int vcx_connection_connect(int command_handle, int connection_handle, String connection_type, Callback cb);
 
         /**
+         * Accept connection for the given invitation.
+         */
+        public int vcx_connection_accept_connection_invite(int command_handle, String source_id, String invite_details, String connection_type, Callback cb);
+
+        /**
          * Asynchronously request a connection to be redirected to old one.
          */
         public int vcx_connection_redirect(int command_handle, int connection_handle, int redirect_connection_handle, Callback cb);

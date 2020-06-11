@@ -137,6 +137,9 @@ vcx_error_t vcx_connection_create(vcx_command_handle_t command_handle, const cha
 /** Asynchronously request a connection be made. */
 vcx_error_t vcx_connection_connect(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, const char *connection_type, void (*cb)(vcx_command_handle_t, vcx_error_t err));
 
+/** Accept connection for the given invitation. */
+vcx_error_t vcx_connection_accept_connection_invite(vcx_command_handle_t command_handle, const char *source_id, const char *invite_details, const char *connection_type, void (*cb)(vcx_command_handle_t, vcx_error_t errer, vcx_connection_handle_t connection_handle, const char *connection_serialized));
+
 /** Returns the contents of the connection handle or null if the connection does not exist. */
 vcx_error_t vcx_connection_serialize(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *state));
 
