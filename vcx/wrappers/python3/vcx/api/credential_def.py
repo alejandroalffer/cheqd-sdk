@@ -109,7 +109,8 @@ class CredentialDef(VcxStateful):
         source_id = 'foobar123'
         schema_name = 'Schema Name'
         payment_handle = 0
-        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        tag = "tag"
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle, tag)
         :return: credential_def object, written to ledger
         """
         try:
@@ -184,7 +185,8 @@ class CredentialDef(VcxStateful):
         source_id = 'foobar123'
         schema_name = 'Schema Name'
         payment_handle = 0
-        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        tag = "tag"
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle, tag)
         data1 = await credential_def1.serialize()
         :return: A re-instantiated object
         """
@@ -200,7 +202,8 @@ class CredentialDef(VcxStateful):
         source_id = 'foobar123'
         schema_name = 'Schema Name'
         payment_handle = 0
-        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        tag = "tag"
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle, tag)
         data1 = await credential_def1.serialize()
         credential_def2 = await CredentialDef.deserialize(data1)
         :return: A re-instantiated object
@@ -224,7 +227,8 @@ class CredentialDef(VcxStateful):
         source_id = 'foobar123'
         schema_name = 'Schema Name'
         payment_handle = 0
-        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        tag = "tag"
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle, tag)
         assert await credential_def.get_cred_def_id() == '2hoqvcwupRTUNkXn6ArYzs:3:CL:2471'
         :return: ID string
         """
@@ -240,7 +244,8 @@ class CredentialDef(VcxStateful):
         source_id = 'foobar123'
         schema_name = 'Schema Name'
         payment_handle = 0
-        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        tag = "tag"
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle, tag)
         credential_def1.release()
         :return: None
         """
@@ -254,7 +259,8 @@ class CredentialDef(VcxStateful):
         source_id = 'foobar123'
         schema_name = 'Schema Name'
         payment_handle = 0
-        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        tag = "tag"
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle, tag)
         txn = await credential_def1.get_payment_txn()
         :return: JSON object with input address and output UTXOs
          {
@@ -290,7 +296,8 @@ class CredentialDef(VcxStateful):
         source_id = 'foobar123'
         schema_name = 'Schema Name'
         payment_handle = 0
-        credential_def = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        tag = "tag"
+        credential_def = await CredentialDef.create(source_id, name, schema_id, payment_handle, tag)
         assert await credential_def.update_state() == PublicEntityState.Published
         :return: Current state of the credential definition
         """
@@ -307,7 +314,8 @@ class CredentialDef(VcxStateful):
         source_id = 'foobar123'
         schema_name = 'Schema Name'
         payment_handle = 0
-        credential_def = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        tag = "tag"
+        credential_def = await CredentialDef.create(source_id, name, schema_id, payment_handle, tag)
         assert await credential_def.get_state() == PublicEntityState.Published
         :return:  Current state of the credential definition
         """
