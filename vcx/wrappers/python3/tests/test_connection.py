@@ -215,4 +215,5 @@ async def test_connection_info():
 async def test_accept_connection_invite():
     connection = await Connection.accept_connection_invite(source_id, details)
     assert connection.handle > 0
+    assert State.Accepted == await connection.get_state()
     assert connection.serialized == await connection.serialize()

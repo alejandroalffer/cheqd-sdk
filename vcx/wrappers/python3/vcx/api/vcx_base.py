@@ -13,7 +13,7 @@ class VcxBase:
         self._source_id = source_id
         self._logger = logging.getLogger(__name__)
         self._handle = 0
-        self._serialized = ''
+        self._serialized = {}
 
     @property
     def handle(self):

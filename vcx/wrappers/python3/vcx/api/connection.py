@@ -248,7 +248,7 @@ class Connection(VcxStateful):
 
         connection = Connection(source_id)
         connection.handle = connection_handle
-        connection.serialized = connection_serialized
+        connection.serialized = json.loads(connection_serialized.decode())
 
         return connection
 
