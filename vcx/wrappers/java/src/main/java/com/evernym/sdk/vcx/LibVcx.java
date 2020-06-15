@@ -640,6 +640,9 @@ public abstract class LibVcx {
         /** Creates a credential object from the connection and msg id. Populates a handle the new credential. */
         public int vcx_credential_create_with_msgid(int command_handle, String source_id, int connection, String msg_id,Callback cb);
 
+        /** Accept credential for the given offer. */
+        public int vcx_credential_accept_credential_offer(int command_handle, String source_id, String offer, int connection_handle, Callback cb);
+
         /** Asynchronously sends the credential request to the connection. */
         public int vcx_credential_send_request(int command_handle, int credential_handle, int connection_handle,int payment_handle, Callback cb);
 

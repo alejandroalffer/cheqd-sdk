@@ -285,14 +285,27 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
     }
   }
 
+  /**
+   * Accept connection for the given invitation.
+   *
+   * This function performs the following actions:
+   * 1. Creates Connection state object from the given invitation
+   *     (equal to `Connection.createWithInvite` function).
+   * 2. Replies to the inviting side
+   *     (equal to `Connection.connect` function).
+   * Example:
+   * id = 'foobar123'
+   * data = '{"connection_type":"SMS","phone":"5555555555"}'
+   * connection2 = await Connection.acceptConnectionInvite({id, invite, data})
+   */
   public static async acceptConnectionInvite ({ id, invite, data }: IAcceptInviteInfo): Promise<Connection> {
     try {
       return await createFFICallbackPromise<Connection>(
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_connection_accept_connection_invite(0, id, invite, data, cb)
-            if (rc) {
-              reject(rc)
-            }
+          if (rc) {
+            reject(rc)
+          }
         },
         (resolve, reject) => ffi.Callback(
           'void',
