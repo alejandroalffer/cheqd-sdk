@@ -630,9 +630,6 @@ mod tests {
 
         let (_faber, alice) = ::connection::tests::create_connected_connections();
 
-        // AS INSTITUTION GET MESSAGE
-        ::utils::devsetup::set_institution();
-
         let message = "hello";
         let message_options = json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string();
         let hello_uid = ::connection::send_generic_message(alice, message, &message_options).unwrap();
