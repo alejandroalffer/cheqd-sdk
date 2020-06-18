@@ -359,6 +359,7 @@ build-consistent-vers-ts:
     expire_in: 1 week
     paths:
       - output/*
+      - /tmp/libvcx-log.txt
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
@@ -375,10 +376,6 @@ build-libvcx-ubuntu18-from-branch:
     MYSQL_ROOT_PASSWORD: "root"
     RUSTTESTFLAG: 'mysql'
     PACKAGE_TYPE: 'bionic'
-  artifacts:
-    expire_in: 1 week
-    paths:
-      - /tmp/ubuntu18-log.txt
   services:
     - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
       alias: indy_pool
