@@ -359,7 +359,7 @@ build-consistent-vers-ts:
     expire_in: 1 week
     paths:
       - output/*
-      - /tmp/libvcx-log.txt
+      - vcx/libvcx/logs/libvcx-log.txt
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
