@@ -22,6 +22,7 @@ export interface ICredentialDefCreateData {
   sourceId: string,
   name: string,
   schemaId: string,
+  tag: string,
   revocationDetails: IRevocationDetails,
   paymentHandle: number
 }
@@ -127,6 +128,7 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     name,
     paymentHandle,
     revocationDetails,
+    tag,
     schemaId,
     sourceId
   }: ICredentialDefCreateData): Promise<CredentialDef> {
@@ -148,7 +150,7 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
         name,
         schemaId,
         issuerDid,
-        'tag1',
+        tag,
         JSON.stringify(revocation),
         paymentHandle,
       cb
