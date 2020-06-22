@@ -223,15 +223,13 @@ See section "Release channels" for more details.
     * `lib` - contains library binaries (static and dynamic).
         * `library.a`
         * `library.dylib`
-    
-5. Install dependent libraries: libsodium, zeromq, openssl. The dependent libraries should match the version with what you can find from ``otool -L libindy.dylib``.
 
-You need add the path to lib folder to LIBRARY_PATH environment variable. 
-    
+You need add the path to lib folder to LIBRARY_PATH environment variable.
+
 {library} must be replaced with libindy, libnullpay, libvcx or indy-cli to define corresponded library.
 
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
-    
+
 ## How to build Indy SDK from source
 
 * [Ubuntu based distributions (Ubuntu 16.04)](docs/build-guides/ubuntu-build.md)
@@ -319,7 +317,7 @@ Docker machine needs to be rebooted after these changes.
 
 ## Wrappers documentation
 
-The following [wrappers](docs/architecture/language-bindings.md) are tested and complete. 
+The following [wrappers](docs/architecture/language-bindings.md) are tested and complete.
 
 There is also active work on a wrapper for Go; visit
 [#indy-sdk on Rocket.Chat](https://chat.hyperledger.org/channel/indy-sdk) for
@@ -330,7 +328,7 @@ details.
 
 ## How to migrate
 The documents that provide necessary information for Libindy migrations.
- 
+
 * [v1.3.0 → v1.4.0](docs/migration-guides/migration-guide-1.3.0-1.4.0.md)
 * [v1.4.0 → v1.5.0](docs/migration-guides/migration-guide-1.4.0-1.5.0.md)
 * [v1.5.0 → v1.6.x](docs/migration-guides/migration-guide-1.5.0-1.6.0.md)

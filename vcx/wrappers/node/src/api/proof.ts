@@ -385,15 +385,15 @@ export class Proof extends VCXBaseWithState<IProofData> {
             resolve(StateType.None)
           }
         },
-      (resolve, reject) => ffi.Callback(
-        'void',
-        ['uint32', 'uint32', 'uint32'],
-        (handle: number, err: any, state: StateType) => {
-          if (err) {
-            reject(err)
-          }
-          resolve(state)
-        })
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'uint32'],
+          (handle: number, err: any, state: StateType) => {
+            if (err) {
+              reject(err)
+            }
+            resolve(state)
+          })
       )
     } catch (err) {
       throw new VCXInternalError(err)

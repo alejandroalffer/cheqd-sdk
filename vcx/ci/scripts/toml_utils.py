@@ -12,6 +12,11 @@ def valid_line(line):
     return ('version =' in line or 'version=' in line) and ('uuid' not in line and 'rusqlite' not in line and 'indy-sys' not in line and 'rust' not in line)
 
 
+
+def valid_provide_line(line):
+    return 'provides =' in line or 'provides=' in line
+
+
 # update the so file with the major minor build
 def update_so(src_dir, version):
     dest  = SO_FILE + "." + version
@@ -54,6 +59,7 @@ def _strip_version(s):
 
         ci2 = s.index('.') if '.' in s else len(s)
         minor = s[:ci2]
+        patch = s[ci2+1:]
         if not validate_version(major):
             print('Major Version Format in file incorrect %s' % major)
             sys.exit(1)
@@ -61,9 +67,14 @@ def _strip_version(s):
             print('Minor Version Format in file incorrect %s' % minor)
             print('minor: ' + minor)
             sys.exit(1)
+        if not validate_version(patch):
+            print('Patch Version Format in file incorrect %s' % patch)
+            print('patch: ' + patch)
+            sys.exit(1)
         print('major:\t\t' + major)
         print('minor:\t\t' + minor)
-        return (major, minor)
+        print('patch:\t\t' + patch)
+        return (major, minor, patch)
 
 def get_version_from_file(filename):
     version = "0"
@@ -84,9 +95,9 @@ def extract_version_from_file(filename):
         f = open(filename, 'r')
         for line in f.readlines():
             if valid_line(line):
-                (major, minor) = _strip_version(line)
+                (major, minor, patch) = _strip_version(line)
         f.close()
-        return (major, minor)
+        return (major, minor, patch)
     except IOError:
         print('Error: Cannot find %s' % filename)
         sys.exit(1)
@@ -141,6 +152,8 @@ def update_major_minor_build_to_toml(filename, version):
         for line in f.readlines():
             if valid_line(line):
                 o = o + 'version = \"%s\"\n' % (version)
+            elif valid_provide_line(line):
+                o = o + 'provides = \"libvcx (= %s)\"\n' % (version)
             else:
                 o = o + line
 

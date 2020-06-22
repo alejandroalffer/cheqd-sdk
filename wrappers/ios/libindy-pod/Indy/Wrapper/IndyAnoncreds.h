@@ -27,7 +27,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  It is IMPORTANT for current version POST Schema in Ledger and after that GET it from Ledger
  with correct seq_no to save compatibility with Ledger.
  After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
- 
+
  @param issuerDID DID of schema issuer
  @param name a name the schema
  @param version a version of the schema
@@ -50,9 +50,9 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  Credential definition entity contains private and public parts. Private part will be stored in the wallet. Public part
  will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
  to Indy distributed ledger.
- 
+
  It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
- 
+
  @param issuerDID DID of the issuer signing credential_def transaction to the Ledger
  @param schemaJSON Schema as a json
  @param tag: allows to distinct between credential definitions for the same issuer and schema
@@ -86,7 +86,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
        },
        ver: Version of the CredDef json
    }
-   
+
    Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
    They should not be parsed and are likely to change in future versions.
 */
@@ -150,7 +150,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
  revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
  This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
- 
+
  @param walletHandle: wallet handler (created by open_wallet).
  @param issuerDID: a DID of the issuer signing transaction to the Ledger
  @param type: (optional, default value depends on credential definition type). Supported types are:
@@ -169,13 +169,13 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      }
  @param tailsWriterHandle: handle of blob storage to store tails
  @param completion Callback that takes command result as parameter.
- 
+
  NOTE:
      Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
      in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
      In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
- 
- Returns 
+
+ Returns
     revocRegID: identifier of created revocation registry definition
     revocRegDefJSON: public part of revocation registry definition
        {
@@ -260,7 +260,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  @param revRegId: (Optional) id of stored revocation registry definition
  @param blobStorageReaderHandle: (Optional) Pre-configured blob storage reader instance handle that will allow to read revocation tails
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Callback that takes command result as parameter. 
+ @param completion Callback that takes command result as parameter.
  Returns:
      credJSON: Credential json containing signed credential values
         {
@@ -300,7 +300,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  @param blobStorageReaderHandle: pre-configured blob storage reader instance handle that will allow to read revocation tails
  @param credRevocId: local id for revocation info
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Callback that takes command result as parameter. 
+ @param completion Callback that takes command result as parameter.
  Returns Revocation registry delta json with a revoked credential
  */
 + (void)issuerRevokeCredentialByCredRevocId:(NSString *)credRevocId
@@ -321,7 +321,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 
  @param revRegDelta: revocation registry delta.
  @param otherRevRegDelta: revocation registry delta for which PrevAccum value  is equal to current accum value of revRegDelta.
- @param completion Callback that takes command result as parameter. 
+ @param completion Callback that takes command result as parameter.
  Returns merged revocation registry delta
  */
 + (void)issuerMergerRevocationRegistryDelta:(NSString *)revRegDelta
@@ -331,12 +331,12 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 /**
  Creates a master secret with a given name and stores it in the wallet.
  The name must be unique.
- 
+
  @param masterSecretID (optional, if not present random one will be generated) new master id
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Callback that takes command result as parameter. 
+ @param completion Callback that takes command result as parameter.
  Returns id of generated master secret.
- 
+
  */
 + (void)proverCreateMasterSecret:(NSString *)masterSecretID
                     walletHandle:(IndyHandle)walletHandle
@@ -351,11 +351,11 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 
  @param proverDID: a DID of the prover
  @param credOfferJSON: credential offer as a json containing information about the issuer and a credential
- @param credentialDefJSON: credential definition json related to <cred_def_id> in <credOfferJSON> 
+ @param credentialDefJSON: credential definition json related to <cred_def_id> in <credOfferJSON>
  @param masterSecretID: the id of the master secret stored in the wallet
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Callback that takes command result as parameter. 
- Returns 
+ @param completion Callback that takes command result as parameter.
+ Returns
      credReqJSON: Credential request json for creation of credential by Issuer
      {
       "prover_did" : string,
@@ -396,7 +396,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
          "attr::<attribute name>::marker": "1",
          "attr::<attribute name>::value": <attribute raw value>,
      }
- 
+
  @param credID: (optional, default is a random one) identifier by which credential will be stored in the wallet
  @param credReqMetadataJSON: a credential request metadata created by proverCreateCredentialReqForCredentialOffer
  @param credJson:  credential json received from issuer
@@ -441,7 +441,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  If filter is NULL, then all credentials are returned.
  Credentials can be filtered by tags created during saving of credential.
 
- NOTE: This method is deprecated because immediately returns all fetched credentials. 
+ NOTE: This method is deprecated because immediately returns all fetched credentials.
  Use <proverSearchCredentialsForQuery> to fetch records by small batches.
 
  @param filterJSON: filter for credentials
@@ -454,9 +454,9 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
         "cred_def_id": string, (Optional)
     }
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Callback that takes command result as parameter. 
- Returns credentials json. 
-     [{ 
+ @param completion Callback that takes command result as parameter.
+ Returns credentials json.
+     [{
         "referent": string, - id of credential in the wallet
         "attrs": {"key1":"raw_value1", "key2":"raw_value2"}, - credential attributes
         "schema_id": string, - identifier of schema
@@ -477,12 +477,12 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  Instead of immediately returning of fetched credentials
  this call returns search_handle that can be used later
  to fetch records by small batches (with proverFetchCredentialsWithSearchHandle).
-  
+
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param queryJSON Wql style filter for credentials searching based on tags.
         (indy-sdk/docs/design/011-wallet-query-language/README.md)
- @param completion Callback that takes command result as parameter. 
- Returns 
+ @param completion Callback that takes command result as parameter.
+ Returns
     searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsWithSearchHandle)
     totalCount: Total count of records
 
@@ -493,11 +493,11 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 
 /**
  Fetch next credentials for search.
-  
+
  @param searchHandle Search handle (created by proverSearchCredentialsForQuery).
  @param count Count of credentials to fetch
- @param completion Callback that takes command result as parameter. 
- Returns 
+ @param completion Callback that takes command result as parameter.
+ Returns
     credentialsJson: List of human readable credentials:
       [{
         "referent": string, - id of credential in the wallet
@@ -516,7 +516,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 
 /**
  Close credentials search (make search handle invalid)
-  
+
  @param searchHandle Search handle (created by proverSearchCredentialsForQuery).
  Returns no result
 
@@ -527,7 +527,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 /**
  Gets human readable credentials matching the given proof request.
 
- NOTE: This method is deprecated because immediately returns all fetched credentials. 
+ NOTE: This method is deprecated because immediately returns all fetched credentials.
  Use <proverSearchCredentialsForProofRequest> to fetch records by small batches.
 
  @param  proofReqJSON: proof request json
@@ -591,7 +591,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
         "issuer_did": string, (Optional)
         "cred_def_id": string, (Optional)
      }
-     
+
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
  @param completion Callback that takes command result as parameter. Returns json with credentials for the given proof request.
      {
@@ -653,7 +653,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
         "<attr_referent>": <wql query>,
         "<predicate_referent>": <wql query>,
     }
-    
+
  attr_info: Describes requested attribute
      {
          "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
@@ -697,7 +697,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
          "issuer_did": <credential issuer did>,
          "cred_def_id": <credential definition id>,
          "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
-     
+
  @param completion Callback that takes command result as parameter.
  Returns
     searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsForProofReqItemReferent)
@@ -714,7 +714,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  @param itemReferent Referent of attribute/predicate in the proof request.
  @param count Count records to fetch.
  @param completion Callback that takes command result as parameter.
- Returns 
+ Returns
     credentialsJson: List of credentials for the given proof request.
          [{
              cred_info: <credential_info>,
@@ -763,7 +763,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  All required schemas, public keys and revocation registries must be provided.
  The proof request also contains nonce.
  The proof contains either proof or self-attested attribute value for each requested attribute.
- 
+
  @param  proofReqJSON: proof request json
      {
          "name": string,
@@ -871,10 +871,10 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
           "issuer_did": <credential issuer did>,
           "cred_def_id": <credential definition id>,
           "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
- 
+
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
- 
- @param completion Callback that takes command result as parameter. 
+
+ @param completion Callback that takes command result as parameter.
   Proof json
   For each requested attribute either a proof (with optionally revealed attribute value) or
   self-attested attribute value is provided.
@@ -1020,7 +1020,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
              "timestamp4": <rev_reg4>
          },
      } - Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
-     
+
  where
  attr_referent: Proof-request local identifier of requested attribute
  attr_info: Describes requested attribute
@@ -1088,7 +1088,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  @param  revRegDefJSON: revocation registry definition json
  @param  revRegDeltaJSON: revocation registry definition delta which covers the whole registry existence time
  @param  blobStorageReaderHandle: configuration of blob storage reader handle that will allow to read revocation tails
- @param completion Callback that takes command result as parameter. 
+ @param completion Callback that takes command result as parameter.
  Returns result revocation state json:
  {
      "rev_reg": <revocation registry>,

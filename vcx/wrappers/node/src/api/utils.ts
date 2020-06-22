@@ -48,6 +48,102 @@ export async function provisionAgent (configAgent: string, options: IInitVCXOpti
   }
 }
 
+export async function provisionAgentWithToken (configAgent: string, token: String, options: IInitVCXOptions = {}): Promise<string> {
+  /**
+   * Provision an agent in the agency, populate configuration and wallet for this agent.
+   *
+   * Example:
+   * ```
+   * enterpriseConfig = {
+   *     'agency_url': 'https://enym-eagency.pdev.evernym.com',
+   *     'agency_did': 'YRuVCckY6vfZfX9kcQZe3u',
+   *     'agency_verkey': "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
+   *     'wallet_name': 'LIBVCX_SDK_WALLET',
+   *     'agent_seed': '00000000000000000000000001234561',
+   *     'enterprise_seed': '000000000000000000000000Trustee1',
+   *     'wallet_key': '1234'
+   *  }
+   * vcxConfig = await provisionAgent(JSON.stringify(enterprise_config))
+   */
+
+    /**   Token Example:
+    *    {
+    *       "id": string,
+    *       "sponsor": string, //name of enterprise sponsoring the provisioning
+    *       "nonce": string,
+    *       "timestamp": string,
+    *       "sig": string, // base64encoded(sig(nonce + timestamp + id))
+    *       "sponsor_vk": string,
+    *     }
+    **/
+  try {
+    initRustAPI(options.libVCXPath)
+    return await createFFICallbackPromise<string>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_provision_agent_with_token(0, configAgent, token, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32','string'],
+        (xhandle: number, err: number, config: string) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(config)
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}
+
+export async function getProvisionToken (config: string, options: IInitVCXOptions = {}): Promise<void> {
+  /**
+   * Get Provisioning Token
+   * Config Example:
+   * {
+   *   'vcx_config': {
+   *      'agency_url': 'https://enym-eagency.pdev.evernym.com',
+   *       'agency_did': 'YRuVCckY6vfZfX9kcQZe3u',
+   *       'agency_verkey': "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
+   *       'wallet_name': 'LIBVCX_SDK_WALLET',
+   *       'agent_seed': '00000000000000000000000001234561',
+   *       'enterprise_seed': '000000000000000000000000Trustee1',
+   *       'wallet_key': '1234'
+   *     },
+   *    'source_id': "123",
+   *    'com_method': {'type': 1,'id':'123','value':'FCM:Value'}
+   * }
+   */
+  try {
+    initRustAPI(options.libVCXPath)
+    return await createFFICallbackPromise<void>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_get_provision_token(0, config, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32'],
+        (xhandle: number, err: number) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve()
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}
+
 export async function updateAgentInfo (options: string): Promise<void> {
   /**
    * Update information on the agent (ie, comm method and type)
