@@ -65,7 +65,9 @@ impl DidExchangeState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NullState {}
+pub struct NullState {
+    error: Option<ProblemReport>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InvitedState {
@@ -99,9 +101,9 @@ impl From<(NullState, Invitation)> for InvitedState {
 }
 
 impl From<(InvitedState, ProblemReport)> for NullState {
-    fn from((_state, _error): (InvitedState, ProblemReport)) -> NullState {
+    fn from((_state, error): (InvitedState, ProblemReport)) -> NullState {
         trace!("DidExchangeStateSM: transit state from InvitedState to NullState");
-        NullState {}
+        NullState { error: Some(error) }
     }
 }
 
@@ -120,9 +122,9 @@ impl From<(InvitedState, Request, SignedResponse, AgentInfo)> for RespondedState
 }
 
 impl From<(RequestedState, ProblemReport)> for NullState {
-    fn from((_state, _error): (RequestedState, ProblemReport)) -> NullState {
+    fn from((_state, error): (RequestedState, ProblemReport)) -> NullState {
         trace!("DidExchangeStateSM: transit state from RequestedState to NullState");
-        NullState {}
+        NullState { error: Some(error) }
     }
 }
 
@@ -134,9 +136,9 @@ impl From<(RequestedState, Response)> for CompleteState {
 }
 
 impl From<(RespondedState, ProblemReport)> for NullState {
-    fn from((_state, _error): (RespondedState, ProblemReport)) -> NullState {
+    fn from((_state, error): (RespondedState, ProblemReport)) -> NullState {
         trace!("DidExchangeStateSM: transit state from RespondedState to NullState");
-        NullState {}
+        NullState { error: Some(error) }
     }
 }
 
@@ -311,14 +313,14 @@ impl DidExchangeSM {
             Actor::Inviter => {
                 DidExchangeSM {
                     source_id: source_id.to_string(),
-                    state: ActorDidExchangeState::Inviter(DidExchangeState::Null(NullState {})),
+                    state: ActorDidExchangeState::Inviter(DidExchangeState::Null(NullState { error: None })),
                     agent_info: AgentInfo::default(),
                 }
             }
             Actor::Invitee => {
                 DidExchangeSM {
                     source_id: source_id.to_string(),
-                    state: ActorDidExchangeState::Invitee(DidExchangeState::Null(NullState {})),
+                    state: ActorDidExchangeState::Invitee(DidExchangeState::Null(NullState { error: None })),
                     agent_info: AgentInfo::default(),
                 }
             }
@@ -796,14 +798,20 @@ pub mod test {
             }
 
             #[test]
-            fn test_did_exchange_handle_problem_report_message_from_invited_state() {
+            fn test_did_exchange_handle_problem_report_message_from_invited_state() -> Result<(), String> {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
 
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Null(_)), did_exchange_sm.state);
+                match did_exchange_sm.state {
+                    ActorDidExchangeState::Inviter(DidExchangeState::Null(state)) => {
+                        assert!(state.error.is_some(), "Expected `error` value to be set");
+                        Ok(())
+                    }
+                    _ => Err(String::from("Unexpected Inviter state"))
+                }
             }
 
             #[test]
@@ -843,14 +851,20 @@ pub mod test {
             }
 
             #[test]
-            fn test_did_exchange_handle_problem_report_message_from_responded_state() {
+            fn test_did_exchange_handle_problem_report_message_from_responded_state() -> Result<(), String> {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = inviter_sm().to_inviter_responded_state();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
 
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Null(_)), did_exchange_sm.state);
+                match did_exchange_sm.state {
+                    ActorDidExchangeState::Inviter(DidExchangeState::Null(state)) => {
+                        assert!(state.error.is_some(), "Expected `error` value to be set");
+                        Ok(())
+                    }
+                    _ => Err(String::from("Unexpected Inviter state"))
+                }
             }
 
             #[test]
@@ -1212,14 +1226,20 @@ pub mod test {
             }
 
             #[test]
-            fn test_did_exchange_handle_problem_report_message_from_invited_state() {
+            fn test_did_exchange_handle_problem_report_message_from_invited_state() -> Result<(), String> {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = invitee_sm().to_invitee_invited_state();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
 
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Null(_)), did_exchange_sm.state);
+                match did_exchange_sm.state {
+                    ActorDidExchangeState::Invitee(DidExchangeState::Null(state)) => {
+                        assert!(state.error.is_some(), "Expected `error` value to be set");
+                        Ok(())
+                    }
+                    _ => Err(String::from("Unexpected Invitee state"))
+                }
             }
 
             #[test]
@@ -1263,14 +1283,20 @@ pub mod test {
             }
 
             #[test]
-            fn test_did_exchange_handle_problem_report_message_from_requested_state() {
+            fn test_did_exchange_handle_problem_report_message_from_requested_state() -> Result<(), String> {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = invitee_sm().to_invitee_requested_state();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
 
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Null(_)), did_exchange_sm.state);
+                match did_exchange_sm.state {
+                    ActorDidExchangeState::Invitee(DidExchangeState::Null(state)) => {
+                        assert!(state.error.is_some(), "Expected `error` value to be set");
+                        Ok(())
+                    }
+                    _ => Err(String::from("Unexpected Invitee state"))
+                }
             }
 
             #[test]
