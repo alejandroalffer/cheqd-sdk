@@ -12,6 +12,9 @@ pub mod logger;
 
 pub mod error_codes;
 
+#[cfg(all(feature="mysql", not(feature="sqlite")))]
+pub mod mysql_wallet;
+
 use std::sync::Mutex;
 use settings;
 

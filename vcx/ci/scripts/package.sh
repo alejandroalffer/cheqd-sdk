@@ -19,6 +19,11 @@ if [ "${RUST_FLAG}" == "basic-tests" ]; then
 elif [ "${RUST_FLAG}" == "test"  ]; then
     echo "Testing libvcx.so: run all tests"
     TEST_POOL_IP=$INDY_POOL_PORT_9701_TCP_ADDR cargo test -- --test-threads=1
+elif [ "${RUST_FLAG}" == "mysql" ]; then
+    echo "Testing libvcx.so with mysql wallet"
+    mysql -h mysql -u root -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < ../ci/db/wallet_schema_creation.2018-05-07.sql
+    echo "show tables;" | mysql -h mysql -u root -p${MYSQL_ROOT_PASSWORD} wallet
+    RUST_LOG=trace TEST_POOL_IP=$INDY_POOL_PORT_9701_TCP_ADDR cargo test --features="mysql" -- --test-threads=1
 else
     echo "Skip testing of libvcx.so"
 fi
@@ -28,6 +33,11 @@ cargo build --no-default-features --features "ci"
 echo "Updating libvcx.so File with Version"
 cargo update-so
 echo "Creating Libvcx Debian File"
-cargo deb --no-build --deb-version ${VERSION}-${REVISION}-${PACKAGE_TYPE} --variant libvcx-${PACKAGE_TYPE}
+FINAL_VERSION=${VERSION}-${PACKAGE_TYPE}
+if [[ $CI_COMMIT_REF_SLUG != "stable" ]];
+then
+    FINAL_VERSION=${FINAL_VERSION}~${CI_PIPELINE_IID}
+fi
+cargo deb --no-build --deb-version ${FINAL_VERSION} --variant libvcx-${PACKAGE_TYPE}
 echo "Moving Libvcx Debian File to Output Directory"
 cp target/debian/*.deb $CURDIR/$OUTPUTDIR

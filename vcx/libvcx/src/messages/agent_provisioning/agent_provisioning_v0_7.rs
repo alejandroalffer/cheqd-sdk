@@ -8,8 +8,10 @@ use messages::message_type::MessageTypes;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProvisionToken {
-    id: String,
-    sponsor: String,
+    #[serde(rename = "sponseeId")]
+    sponsee_id: String,
+    #[serde(rename = "sponsorId")]
+    sponsor_id: String,
     nonce: String,
     timestamp: String,
     sig: String,
@@ -114,12 +116,12 @@ mod tests {
     use super::*;
     use settings;
     use utils::constants;
-    use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_indy_env};
+    use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_indy_env, sign_provision_token};
     use utils::plugins::init_plugin;
 
     fn get_provisioning_inputs(time: Option<String>, seed: Option<String>) -> (String, String, String) {
         let id = "id";
-        let sponsor = "evernym-test-sponsor";
+        let sponsor_id = "evernym-test-sponsorabc123";
         let nonce = "nonce";
         let time = time.unwrap_or(chrono::offset::Utc::now().to_rfc3339());
         let seed = seed.unwrap_or("000000000000000000000000Trustee1".to_string());
@@ -127,8 +129,7 @@ mod tests {
         let enterprise_wallet_name = format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
         wallet::init_wallet(&enterprise_wallet_name, None, None, None).unwrap();
         let keys = ::utils::libindy::crypto::create_key(Some(&seed)).unwrap();
-        let sig = ::utils::libindy::crypto::sign(&keys, &(format!("{}{}{}", nonce, time, id)).as_bytes()).unwrap();
-        let encoded_val = base64::encode(&sig);
+        let encoded_val = sign_provision_token(&keys, &nonce, &time, &id, &sponsor_id);
         let seed1 = ::utils::devsetup::create_new_seed();
         wallet::close_wallet().err();
         wallet::delete_wallet(&enterprise_wallet_name, None, None, None).err();
@@ -150,8 +151,8 @@ mod tests {
         }).to_string();
 
         let token = json!( {
-            "id": id.to_string(),
-            "sponsor": sponsor.to_string(),
+            "sponseeId": id.to_string(),
+            "sponsorId": sponsor_id.to_string(),
             "nonce": nonce.to_string(),
             "timestamp": time.to_string(),
             "sig": encoded_val,
@@ -173,7 +174,7 @@ mod tests {
         wallet::delete_wallet(&wallet_name, None, None, None).unwrap();
     }
 
-    #[ignore] // TODO: When agency enforces token, this test should be enabled
+    #[ignore]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -188,7 +189,7 @@ mod tests {
         wallet::delete_wallet(&wallet_name, None, None, None).unwrap();
     }
 
-    #[ignore] // TODO: When agency enforces token, this test should be enabled
+    #[ignore]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]

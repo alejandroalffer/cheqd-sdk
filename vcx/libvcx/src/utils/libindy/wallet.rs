@@ -292,25 +292,24 @@ pub mod tests {
         settings::set_defaults();
         create_wallet(wallet_n, None, None, None).unwrap();
 
-        settings::clear_config();
-
         // Open fails without Wallet Key Derivation set
+        settings::unset_config_value(settings::CONFIG_WALLET_KEY_DERIVATION);
+        settings::unset_config_value(settings::CONFIG_WALLET_KEY);
         assert_eq!(open_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::WalletAccessFailed);
-
-        ::settings::clear_config();
 
         // Open works when set
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         assert!(open_wallet(wallet_n, None, None, None).is_ok());
 
-        ::settings::clear_config();
-
         // Delete fails
+        settings::unset_config_value(settings::CONFIG_WALLET_KEY_DERIVATION);
+        settings::unset_config_value(settings::CONFIG_WALLET_KEY);
         assert_eq!(delete_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::WalletAccessFailed);
 
         // Delete works
-        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
+        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         delete_wallet(wallet_n, None, None, None).unwrap()
     }
 

@@ -276,7 +276,8 @@ impl WalletCommandExecutor {
              cb: Box<dyn Fn(IndyResult<WalletHandle>) + Send>) {
         trace!("_open >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        let (wallet_handle, key_derivation_data, rekey_data) = try_cb!(self.wallet_service.open_wallet_prepare(config, credentials), cb);
+        let (wallet_handle, key_derivation_data, rekey_data) =
+            try_cb!(self.wallet_service.open_wallet_prepare(config, credentials), cb);
 
         self.open_callbacks.borrow_mut().insert(wallet_handle, cb);
 
