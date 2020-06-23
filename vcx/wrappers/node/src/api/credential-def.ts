@@ -97,7 +97,7 @@ export interface IRevocationConfig {
 
 export enum CredentialDefState {
   Built = 0,
-  Published = 1,
+  Published = 1
 }
 
 // tslint:disable max-classes-per-file
