@@ -82,7 +82,7 @@ export interface ICredentialCreateWithOffer {
   sourceId: string,
   // Credential offer received via "getOffers"
   offer: string,
-  // We're going to need it in the future
+  // Pairwise connection object with the issuer.
   connection: Connection
 }
 
@@ -224,6 +224,52 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
       throw new VCXInternalError(err)
     }
   }
+
+  /**
+   * Accept credential for the given offer.
+   *
+   * This function performs the following actions:
+   * 1. Creates Credential state object that requests and receives a credential for an institution.
+   *    (equal to `Credential.create` function).
+   * 2. Prepares Credential Request and replies to the issuer.
+   *    (equal to `credential.sendRequest` function)
+   *
+   * ```
+   * credential = Credential.acceptOffer({
+   *   connection,
+   *   msgId: 'testCredentialMsgId',
+   *   sourceId: 'testCredentialSourceId'
+   * })
+   * ```
+   */
+  public static async acceptOffer ({ sourceId, offer, connection }: ICredentialCreateWithOffer): Promise<Credential> {
+    try {
+      return await createFFICallbackPromise<Credential>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credential_accept_credential_offer(0, sourceId, offer, connection.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, credentialHandle: number, credentialSerialized: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              const credential = new Credential(sourceId)
+              credential._setHandle(credentialHandle)
+              credential._serialized = credentialSerialized
+              resolve(credential)
+            })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
   /**
    * Create an object from a JSON Structured data produced from the objects serialize method
    *
@@ -279,6 +325,7 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
   protected _serializeFn = rustAPI().vcx_credential_serialize
   protected _deserializeFn = rustAPI().vcx_credential_deserialize
   protected _credOffer: string = ''
+  protected _serialized: string = ''
 
   /**
    * Approves the credential offer and submits a credential request.

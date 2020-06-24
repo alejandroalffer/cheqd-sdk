@@ -225,4 +225,11 @@ describe('Credential:', () => {
     })
   })
 
+  describe('acceptOffer:', () => {
+    it('success: accept credential offer', async () => {
+      const data = await dataCredentialCreateWithOffer()
+      const credential = await Credential.acceptOffer(data)
+      assert.equal(await credential.getState(), StateType.OfferSent)
+    })
+  })
 })
