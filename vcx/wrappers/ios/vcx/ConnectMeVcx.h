@@ -95,6 +95,11 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                      inviteDetails:(NSString *)inviteDetails
                         completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
 
+- (void)acceptConnectionWithInvite:(NSString *)invitationId
+                     inviteDetails:(NSString *)inviteDetails
+                    connectionType:(NSString *)connectionType
+                        completion:(void (^)(NSError *error, NSInteger connectionHandle, NSString *serializedConnection))completion;
+
 - (void)connectionConnect:(VcxHandle)connectionHandle
            connectionType:(NSString *)connectionType
                completion:(void (^)(NSError *error, NSString *inviteDetails))completion;
@@ -150,6 +155,11 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                  connectionHandle:(VcxHandle)connectionHandle
                             msgId:(NSString *)msgId
                        completion:(void (^)(NSError *error, NSInteger credentialHandle, NSString *credentialOffer))completion;
+
+- (void)credentialAcceptCredentialOffer:(NSString *)sourceId
+                                  offer:(NSString *)credentialOffer
+                       connectionHandle:(VcxHandle)connectionHandle
+                             completion:(void (^)(NSError *error, NSInteger credentialHandle, NSString *credentialSerialized))completion;
 
 - (void)credentialSendRequest:(NSInteger)credentialHandle
              connectionHandle:(VcxHandle)connectionHandle
@@ -270,6 +280,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                     uid_s:(NSString *)uid_s
                   pwdids:(NSString *)pwdids
               completion:(void (^)(NSError *error, NSString* messages))completion;
+
+- (void)downloadMessage:(NSString *)uid
+             completion:(void (^)(NSError *error, NSString* message))completion;
 
 - (void)updateMessages:(NSString *)messageStatus
             pwdidsJson:(NSString *)pwdidsJson

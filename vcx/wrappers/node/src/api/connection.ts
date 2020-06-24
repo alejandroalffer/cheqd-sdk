@@ -173,6 +173,13 @@ export interface IConnectOptions {
 }
 
 /**
+ * @description Interface that represents the parameters for `Connection.acceptConnectionInvite` function.
+ * @interface
+ */
+export interface IAcceptInviteInfo extends IRecipientInviteInfo, IConnectOptions {
+}
+
+/**
  * @description Interface that represents the parameters for `Connection.sendMessage` function.
  * @interface
  */
@@ -279,6 +286,47 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   }
 
   /**
+   * Accept connection for the given invitation.
+   *
+   * This function performs the following actions:
+   * 1. Creates Connection state object from the given invitation
+   *     (equal to `Connection.createWithInvite` function).
+   * 2. Replies to the inviting side
+   *     (equal to `Connection.connect` function).
+   * Example:
+   * id = 'foobar123'
+   * data = '{"connection_type":"SMS","phone":"5555555555"}'
+   * connection2 = await Connection.acceptConnectionInvite({id, invite, data})
+   */
+  public static async acceptConnectionInvite ({ id, invite, data }: IAcceptInviteInfo): Promise<Connection> {
+    try {
+      return await createFFICallbackPromise<Connection>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_accept_connection_invite(0, id, invite, data, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'uint32', 'string'],
+          (handle: number, err: any, connectionHandle: number, connectionSerialized: string) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            const connection = new Connection(id)
+            connection._setHandle(connectionHandle)
+            connection._serialized = connectionSerialized
+            resolve(connection)
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
    * Create the object from a previously serialized object.
    * Example:
    * data = await connection1.serialize()
@@ -297,6 +345,11 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   protected _deserializeFn = rustAPI().vcx_connection_deserialize
   protected _inviteDetailFn = rustAPI().vcx_connection_invite_details
   protected _infoFn = rustAPI().vcx_connection_info
+  protected _serialized: string = ''
+
+  get serialized (): string {
+    return this._serialized
+  }
 
   /**
    *

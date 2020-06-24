@@ -137,6 +137,9 @@ vcx_error_t vcx_connection_create(vcx_command_handle_t command_handle, const cha
 /** Asynchronously request a connection be made. */
 vcx_error_t vcx_connection_connect(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, const char *connection_type, void (*cb)(vcx_command_handle_t, vcx_error_t err));
 
+/** Accept connection for the given invitation. */
+vcx_error_t vcx_connection_accept_connection_invite(vcx_command_handle_t command_handle, const char *source_id, const char *invite_details, const char *connection_type, void (*cb)(vcx_command_handle_t, vcx_error_t errer, vcx_connection_handle_t connection_handle, const char *connection_serialized));
+
 /** Returns the contents of the connection handle or null if the connection does not exist. */
 vcx_error_t vcx_connection_serialize(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *state));
 
@@ -337,6 +340,9 @@ vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle
 /** Creates a credential object from the connection and msg id. Populates a handle the new credential. */
 vcx_error_t vcx_credential_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connection, const char *msg_id, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle, const char* credential_offer));
 
+/** Accept credential for the given offer. */
+vcx_error_t vcx_credential_accept_credential_offer(vcx_command_handle_t command_handle, const char *source_id, const char *credential_offer, vcx_connection_handle_t connection, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle, const char* credential_serialized));
+
 /** Asynchronously sends the credential request to the connection. */
 vcx_error_t vcx_credential_send_request(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, vcx_connection_handle_t connection_handle, vcx_payment_handle_t payment_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
@@ -400,6 +406,9 @@ vcx_error_t vcx_shutdown(vcx_bool_t deleteWallet);
 
 /** Get Messages (Connections) of given status */
 vcx_error_t vcx_messages_download( vcx_command_handle_t command_handle, const char *message_status, const char *uids, const char *pw_dids, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *messages));
+
+/** Retrieves single message from the agency by the given uid */
+vcx_error_t vcx_download_message( vcx_command_handle_t command_handle, const char *uid, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *message));
 
 /** Get Messages (Cloud Agent) of given status */
 vcx_error_t vcx_download_agent_messages( vcx_command_handle_t command_handle, const char *message_status, const char *uids, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *messages));

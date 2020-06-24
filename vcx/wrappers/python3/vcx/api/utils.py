@@ -351,3 +351,35 @@ async def vcx_endorse_transaction(transaction: str) -> None:
     logger.debug("vcx_endorse_transaction completed")
     return result
 
+
+async def vcx_download_message(uid: str) -> str:
+    """
+    Retrieves single message from the agency by the given uid.
+
+    :param uid: id of the message to query.
+    :return: message
+        {
+            "statusCode": string,
+            "payload":optional(string),
+            "senderDID":string,
+            "uid":string,
+            "type":string,
+            "refMsgId":optional(string),
+            "deliveryDetails":[],
+            "decryptedPayload":"{"@msg":string,"@type":{"fmt":string,"name":string"ver":string}}"
+        }
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_download_message, "cb"):
+        logger.debug("vcx_download_message: Creating callback")
+        vcx_download_message.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+    c_uid = c_char_p(uid.encode('utf-8'))
+
+    result = await do_call('vcx_download_message',
+                           c_uid,
+                           vcx_download_message.cb)
+
+    logger.debug("vcx_download_message completed")
+    return result.decode()

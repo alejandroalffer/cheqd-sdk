@@ -111,6 +111,11 @@ public abstract class LibVcx {
         public int vcx_connection_connect(int command_handle, int connection_handle, String connection_type, Callback cb);
 
         /**
+         * Accept connection for the given invitation.
+         */
+        public int vcx_connection_accept_connection_invite(int command_handle, String source_id, String invite_details, String connection_type, Callback cb);
+
+        /**
          * Asynchronously request a connection to be redirected to old one.
          */
         public int vcx_connection_redirect(int command_handle, int connection_handle, int redirect_connection_handle, Callback cb);
@@ -635,6 +640,9 @@ public abstract class LibVcx {
         /** Creates a credential object from the connection and msg id. Populates a handle the new credential. */
         public int vcx_credential_create_with_msgid(int command_handle, String source_id, int connection, String msg_id,Callback cb);
 
+        /** Accept credential for the given offer. */
+        public int vcx_credential_accept_credential_offer(int command_handle, String source_id, String offer, int connection_handle, Callback cb);
+
         /** Asynchronously sends the credential request to the connection. */
         public int vcx_credential_send_request(int command_handle, int credential_handle, int connection_handle,int payment_handle, Callback cb);
 
@@ -743,6 +751,9 @@ public abstract class LibVcx {
 
         /** Get messages for given uids or pairwise did from agency endpoint */
         public int vcx_messages_download(int command_handle, String messageStatus, String uids, String pwdids, Callback cb);
+
+        /** Retrieve single message from the agency by the given uid. */
+        public int vcx_download_message(int command_handle, String uid, Callback cb);
 
         /** Get messages for given uids from Cloud Agent */
         public int vcx_download_agent_messages(int command_handle, String messageStatus, String uids, Callback cb);

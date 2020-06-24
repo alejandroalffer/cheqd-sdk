@@ -227,4 +227,14 @@ describe('Connection:', () => {
     })
   })
 
+  describe('acceptConnectionInvite:', () => {
+    it('success', async () => {
+      const connection = await Connection.acceptConnectionInvite({
+        data: '{"connection_type":"QR"}',
+        id: 'new',
+        invite: INVITE_DETAILS
+      })
+      assert.equal(await connection.getState(), StateType.Accepted)
+    })
+  })
 })

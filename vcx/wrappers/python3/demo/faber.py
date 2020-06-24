@@ -70,7 +70,7 @@ async def main():
     schema_id = await schema.get_schema_id()
 
     print("#4 Create a new credential definition on the ledger")
-    cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0)
+    cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0, "tag")
     cred_def_handle = cred_def.handle
 
     print("#5 Create a connection to alice and print out the invite details")

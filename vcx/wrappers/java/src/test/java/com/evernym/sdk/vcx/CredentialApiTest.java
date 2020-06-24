@@ -1,6 +1,7 @@
 package com.evernym.sdk.vcx;
 
 import com.evernym.sdk.vcx.connection.ConnectionApi;
+import com.evernym.sdk.vcx.credential.CredentialAcceptOfferResult;
 import com.evernym.sdk.vcx.credential.CredentialApi;
 import com.evernym.sdk.vcx.credential.GetCredentialCreateMsgidResult;
 import com.evernym.sdk.vcx.credential.InvalidCredentialHandleException;
@@ -15,12 +16,15 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static com.evernym.sdk.vcx.TestHelper.offer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 
 class CredentialApiTest {
+    String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
+
     @BeforeEach
     void setup() throws Exception {
         System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
@@ -158,7 +162,6 @@ class CredentialApiTest {
     @DisplayName("get credential offers for a connection")
     void getOffers() throws VcxException, ExecutionException, InterruptedException {
         int connection = TestHelper._createConnection();
-	String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
         TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connection,TestHelper.convertToValidJson(payload)));
         String offers = TestHelper.getResultFromFuture(CredentialApi.credentialGetOffers(connection));
         assert (offers != null);
@@ -168,5 +171,19 @@ class CredentialApiTest {
         assertNotSame(0, credential);
     }
 
+    @Test
+    @DisplayName("accept credential offer")
+    void acceptCredentialOffer() throws VcxException, ExecutionException, InterruptedException {
+        int connection = TestHelper._createConnection();
+        TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connection,TestHelper.convertToValidJson(payload)));
 
+        CredentialAcceptOfferResult credential =
+                TestHelper.getResultFromFuture(
+                        CredentialApi.acceptCredentialOffer("1",JsonPath.read(offer,"$").toString(), connection));
+        assertNotSame(null, credential.getCredentialSerialized());
+        assertNotSame(0, credential.getCredentialHandle());
+
+        int state = TestHelper.getResultFromFuture(CredentialApi.credentialGetState(credential.getCredentialHandle()));
+        assertEquals(2, state);
+    }
 }
