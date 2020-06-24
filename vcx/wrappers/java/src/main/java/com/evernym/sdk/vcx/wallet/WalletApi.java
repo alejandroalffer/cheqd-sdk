@@ -29,6 +29,16 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Exports opened wallet
+     *
+     * @param  exportPath       Path to export wallet to User's File System.
+     * @param  encryptionKey    String representing the User's Key for securing (encrypting) the exported Wallet.
+     *
+     * @return                  void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<Integer> exportWallet(
             String exportPath,
             String encryptionKey
@@ -56,6 +66,18 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Creates a new secure wallet and then imports its content
+     * according to fields provided in import_config
+     * Cannot be used if wallet is already opened (Especially if vcx_init has already been used).
+     *
+     * @param  config           Configuration JSON for importing wallet
+     *                          "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":"","key_derivation":""}"
+     *
+     * @return                  void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<Integer> importWallet(
             String config
     ) throws VcxException {
@@ -180,6 +202,17 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Adds a record to the wallet
+     *
+     * @param recordType        type of record. (e.g. 'data', 'string', 'foobar', 'image')
+     * @param recordId          the id ("key") of the record.
+     * @param recordValue       value of the record with the associated id.
+     *
+     * @return                  void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<Integer> addRecordWallet(
             String recordType,
             String recordId,
@@ -210,6 +243,16 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Deletes an existing record.
+     *
+     * @param recordType        type of record. (e.g. 'data', 'string', 'foobar', 'image')
+     * @param recordId          the id ("key") of the record.
+     *
+     * @return                  void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<Integer> deleteRecordWallet(
             String recordType,
             String recordId
@@ -239,6 +282,16 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Gets a record from Wallet.
+     *
+     * @param recordType        type of record. (e.g. 'data', 'string', 'foobar', 'image')
+     * @param recordId          the id ("key") of the record.
+     *
+     * @return                  received record as JSON
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<String> getRecordWallet(
             String recordType,
             String recordId,
@@ -268,6 +321,17 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Updates the value of a record already in the wallet.
+     *
+     * @param recordType        type of record. (e.g. 'data', 'string', 'foobar', 'image')
+     * @param recordId          the id ("key") of the record.
+     * @param recordValue       new value of the record with the associated id.
+     *
+     * @return                  void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<Integer> updateRecordWallet(
             String recordType,
             String recordId,
@@ -302,6 +366,17 @@ public class WalletApi extends VcxJava.API {
             future.complete(result);
         }
     };
+
+    /**
+     * Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent
+     *
+     * @param sourceID        institution's personal identification for the user
+     * @param backupKey       String representing the User's Key for securing (encrypting) the exported Wallet.
+     *
+     * @return                handle that should be used to perform actions with the WalletBackup object.
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<Integer> createWalletBackup(
         String sourceID,
         String backupKey
@@ -331,6 +406,17 @@ public class WalletApi extends VcxJava.API {
             future.complete(result);
         }
     };
+
+    /**
+     * Wallet Backup to the Cloud
+     *
+     * @param  walletBackupHandle  handle pointing to WalletBackup object.
+     * @param path                 path to export wallet to User's File System. (This instance of the export
+     *
+     * @return                     void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<Integer> backupWalletBackup(
             int walletBackupHandle,
             String path
@@ -358,6 +444,16 @@ public class WalletApi extends VcxJava.API {
             future.complete(state);
         }
     };
+
+    /**
+     * Checks for any state change and updates the the state attribute
+     *
+     * @param  walletBackupHandle  handle pointing to WalletBackup object.
+     *
+     * @return                     the most current state of the WalletBackup object
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<Integer> updateWalletBackupState(
         int walletBackupHandle  // is this a int?
     )  throws VcxException {
@@ -383,6 +479,17 @@ public class WalletApi extends VcxJava.API {
             future.complete(state);
         }
     };
+
+    /**
+     * Update the state of the WalletBackup object based on the given message.
+     *
+     * @param  walletBackupHandle  handle pointing to WalletBackup object.
+     * @param  message              message to process for any WalletBackup state transitions.
+     *
+     * @return                      the most current state of the WalletBackup object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> updateWalletBackupStateWithMessage(
         int walletBackupHandle, // is this a int?
         String message
@@ -412,6 +519,17 @@ public class WalletApi extends VcxJava.API {
             future.complete(data);
         }
     };
+
+
+    /**
+     * Get JSON string representation of WalletBackup object.
+     *
+     * @param  walletBackupHandle  handle pointing to WalletBackup object.
+     *
+     * @return                      WalletBackup object as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> serializeBackupWallet(
         int walletBackupHandle // is this a int?
     )  throws VcxException {
@@ -440,6 +558,15 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Takes a json string representing a WalletBackup object and recreates an object matching the JSON.
+     *
+     * @param  walletBackupStr JSON string representing a WalletBackup object.
+     *
+     * @return                 handle that should be used to perform actions with the WalletBackup object.
+     *
+     * @throws VcxException    If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> deserializeBackupWallet(
         String walletBackupStr
     )  throws VcxException {
@@ -465,6 +592,16 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Requests a recovery of a backup previously stored with a cloud agent
+     *
+     * @param  config          config to use for wallet backup restoring
+     *                         "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":"","key_derivation":""}"
+     *
+     * @return                 void
+     *
+     * @throws VcxException    If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> restoreWalletBackup(
             String config
     ) throws VcxException {

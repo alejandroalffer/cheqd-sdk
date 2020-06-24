@@ -15,6 +15,7 @@ public class ProofApi extends VcxJava.API {
     private ProofApi(){}
 
     private static final Logger logger = LoggerFactory.getLogger("ProofApi");
+    
     private static Callback vcxProofCreateCB = new Callback() {
         public void callback(int commandHandle, int err, int proofHandle){
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], proofHandle = [" + proofHandle + "]");
@@ -25,6 +26,44 @@ public class ProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Create a new Proof object that requests a proof for an enterprise
+     *
+     * @param  sourceId             Enterprise's personal identification for the user.
+     * @param  requestedAttrs       Describes the list of requested attribute
+     *     [{
+     *         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+     *         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+     *                                              // NOTE: should either be "name" or "names", not both and not none of them.
+     *                                              // Use "names" to specify several attributes that have to match a single credential.
+     *         "restrictions":  Optional<wql query> - set of restrictions applying to requested credentials. (see below)
+     *         "non_revoked": {
+     *             "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *             "to": Optional<(u64)>
+     *                 //Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *         }
+     *     }]                               
+     * @param  requestedPredicates  predicate specifications prover must provide claim for.
+     *     [
+     *        { // set of requested predicates
+     *           "name": attribute name, (case insensitive and ignore spaces)
+     *           "p_type": predicate type (Currently ">=" only)
+     *           "p_value": int predicate value
+     *           "restrictions":  Optional<wql query> -  set of restrictions applying to requested credentials. (see below)
+     *           "non_revoked": Optional<{
+     *               "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *               "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *           }
+     *       }
+     *    ]
+     *                                            
+     * @param  revocationInterval  Optional timestamps to request revocation proof
+     * @param  name                label for proof request.
+     *
+     * @return                      handle that should be used to perform actions with the Proof object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofCreate(
             String sourceId,
             String requestedAttrs,
@@ -57,6 +96,16 @@ public class ProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Sends a Proof Request message to pairwise connection.
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     * @param  connectionHandle     handle pointing to a Connection object to use for sending message.
+     *
+     * @return                          void
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofSendRequest(
             int proofHandle,
             int connectionHandle
@@ -83,6 +132,15 @@ public class ProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get Proof Request message that can be sent to the pairwise connection.
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     *
+     * @return                      Proof Request message as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> proofGetRequestMsg(
             int proofHandle
     ) throws VcxException {
@@ -107,6 +165,15 @@ public class ProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get Proof message that can be sent to the specified connection.
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     *
+     * @return                      Proof message as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<GetProofResult> getProof(
             int proofHandle,
             int connectionHandle
@@ -123,6 +190,15 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Get Proof message that can be sent to the specified connection.
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     *
+     * @return                      Proof message as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<GetProofResult> getProofMsg(
             int proofHandle
     ) throws VcxException {
@@ -164,6 +240,16 @@ public class ProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Query the agency for the received messages.
+     * Checks for any messages changing state in the Proof object and updates the state attribute.
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     *
+     * @return                      the most current state of the Proof object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofUpdateState(
             int proofHandle
     ) throws VcxException {
@@ -178,6 +264,16 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Update the state of the Proof object based on the given message.
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     * @param  message              message to process for any Proof state transitions.
+     *
+     * @return                      the most current state of the Proof object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofUpdateStateWithMessage(
             int proofHandle,
             String message
@@ -203,6 +299,20 @@ public class ProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get the current state of the Proof object
+     * Proof states:
+     *     1 - Initialized
+     *     2 - Proof Request Sent
+     *     3 - Proof Received
+     *     4 - Proof Accepted
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     *
+     * @return                      the most current state of the Proof object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofGetState(
             int proofHandle
     ) throws VcxException {
@@ -226,6 +336,15 @@ public class ProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get JSON string representation of Proof object.
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     *
+     * @return                      Proof object as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> proofSerialize(
             int proofHandle
     ) throws VcxException {
@@ -250,6 +369,15 @@ public class ProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Takes a json string representing a Proof object and recreates an object matching the JSON.
+     *
+     * @param  serializedProof      JSON string representing a Proof object.
+     *
+     * @return                      handle that should be used to perform actions with the Proof object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofDeserialize(
             String serializedProof
     ) throws VcxException {
@@ -264,6 +392,15 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Releases the Proof object by de-allocating memory
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     *
+     * @return                      void
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static int proofRelease(int proofHandle) throws VcxException {
         ParamGuard.notNull(proofHandle, "proofHandle");
         logger.debug("proofRelease() called with: proofHandle = [" + proofHandle + "]");
