@@ -18,6 +18,7 @@ typedef unsigned int vcx_proof_handle_t;
 typedef unsigned int vcx_command_handle_t;
 typedef unsigned int vcx_payment_handle_t;
 typedef unsigned int vcx_wallet_search_handle_t;
+typedef unsigned int vcx_wallet_backup_handle_t;
 typedef unsigned bool vcx_bool_t;
 typedef unsigned int count_t;
 typedef unsigned long vcx_price_t;
@@ -43,6 +44,23 @@ typedef enum
   invalid = 2,
 } vcx_proof_state_t;
 
+// Initialize sovtoken plugin
+//
+// #Returns
+// Success
+vcx_error_t sovtoken_init();
+//vcx_error_t nullpay_init();
+
+// Reset libvcx to a pre-configured state, releasing/deleting any handles and freeing memory
+//
+// libvcx will be inoperable and must be initialized again with vcx_init_with_config
+//
+// #Params
+// delete: specify whether wallet/pool should be deleted
+//
+// #Returns
+// Successt();
+//vcx_error_t nullpay_init();
 
 // Provision an agent in the agency, populate configuration and wallet for this agent.
 // NOTE: for synchronous call use vcx_provision_agent
@@ -127,6 +145,77 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
                                            const char *source_id,
                                            const char *invite_details,
                                            void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_connection_handle_t));
+
+/// Accept connection for the given invitation.
+///
+/// This function performs the following actions:
+/// 1. Creates Connection state object from the given invite_details
+///     (equal to `vcx_connection_create_with_invite` function).
+/// 2. Replies to the inviting side (equal to `vcx_connection_connect` function).
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the connection.
+///
+/// invite_details: A string representing a json object which is provided by an entity
+/// that wishes to make a connection.
+///
+/// connection_options: Provides details indicating if the connection will be established
+/// by text or QR Code.
+///
+/// cb: Callback that provides connection handle and error status of request.
+///
+/// # Examples
+/// invite_details -> two formats are allowed depending on communication protocol:
+///     proprietary:
+///         {
+///             "targetName":"",
+///             "statusMsg":"message created",
+///             "connReqId":"mugIkrWeMr",
+///             "statusCode":"MS-101",
+///             "threadId":null,
+///             "senderAgencyDetail":{
+///                 "endpoint":"http://localhost:8080",
+///                 "verKey":"key",
+///                 "DID":"did"
+///             },
+///             "senderDetail":{
+///                 "agentKeyDlgProof":{
+///                     "agentDID":"8f6gqnT13GGMNPWDa2TRQ7",
+///                     "agentDelegatedKey":"5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1",
+///                     "signature":"TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/+D8ZDg=="
+///                  },
+///                 "publicDID":"7YLxxEfHRiZkCMVNii1RCy",
+///                 "name":"Faber",
+///                 "logoUrl":"http://robohash.org/234",
+///                 "verKey":"CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx",
+///                 "DID":"Ney2FxHT4rdEyy6EDCCtxZ"
+///                 }
+///             }
+///     aries: https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+///      {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
+///         "label": "Alice",
+///         "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+///         "serviceEndpoint": "https://example.com/endpoint",
+///         "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
+///      }
+///
+/// connection_options ->
+/// "{"connection_type":"SMS","phone":"123","use_public_did":true}"
+///     OR:
+/// "{"connection_type":"QR","phone":"","use_public_did":false}"
+///
+/// # Returns
+///     err: Result code as a u32
+///     connection_handle: the handle associated with the create Connection object.
+///     connection_serialized: the json string representing the created Connection object.
+vcx_error_t vcx_connection_accept_connection_invite(vcx_command_handle_t command_handle,
+                                                    const char *source_id,
+                                                    const char *invite_details,
+                                                    const char *connection_options,
+                                                    void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_connection_handle_t, const char*));
 
 // Delete a Connection object and release its handle
 //
@@ -376,6 +465,76 @@ vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle
                                           const char *offer,
                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t));
 
+/// Accept credential for the given offer.
+///
+/// This function performs the following actions:
+/// 1. Creates Credential state object that requests and receives a credential for an institution.
+///     (equal to `vcx_credential_create_with_offer` function).
+/// 2. Prepares Credential Request and replies to the issuer.
+///     (equal to `vcx_credential_send_request` function).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the credential, should be unique.
+///
+/// offer: credential offer received from the issuer.
+///
+/// connection_handle: handle that identifies pairwise connection object with the issuer.
+///
+/// # Example
+/// offer -> depends on communication method:
+///     proprietary:
+///         [
+///             {
+///                 "msg_type":"CREDENTIAL_OFFER",
+///                 "version":"0.1",
+///                 "to_did":"...",
+///                 "from_did":"...",
+///                 "credential":{
+///                     "account_num":[
+///                         "...."
+///                     ],
+///                     "name_on_account":[
+///                         "Alice"
+///                      ]
+///                 },
+///                 "schema_seq_no":48,
+///                 "issuer_did":"...",
+///                 "credential_name":"Account Certificate",
+///                 "credential_id":"3675417066",
+///                 "msg_ref_id":"ymy5nth"
+///             }
+///         ]
+///     aries:
+///         {
+///             "@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential",
+///             "@id":"<uuid-of-offer-message>",
+///             "comment":"somecomment",
+///             "credential_preview":"<json-ldobject>",
+///             "offers~attach":[
+///                 {
+///                     "@id":"libindy-cred-offer-0",
+///                     "mime-type":"application/json",
+///                     "data":{
+///                         "base64":"<bytesforbase64>"
+///                     }
+///                 }
+///             ]
+///         }
+///
+/// cb: Callback that provides credential handle or error status
+///
+/// # Returns
+/// err: the result code as a u32
+/// credential_handle: the handle associated with the created Credential state object.
+/// credential_serialized: the json string representing the created Credential state object.
+vcx_error_t vcx_credential_accept_credential_offer(vcx_command_handle_t command_handle,
+                                                   const char *source_id,
+                                                   const char *offer,
+                                                   vcx_connection_handle_t connection_handle,
+                                                   void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t, const char*));
+
 // Takes a json string representing an credential object and recreates an object matching the json
 //
 // #Params
@@ -610,6 +769,30 @@ vcx_error_t vcx_credentialdef_prepare_for_endorser(vcx_command_handle_t command_
                                                   const char *config,
                                                   const char *endorser,
                                                   void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t, const char*, const char*, const char*));
+
+/// Create a new CredentialDef object from a cred_def_id
+/// cred_def_id: reference to already created cred def
+///
+/// issuer_did: did corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
+///
+/// revocation_config: Information given during the initial create of the cred def if revocation was enabled
+///  {
+///     tails_file: Option<String>,  // Path to tails file
+///     rev_reg_id: Option<String>,
+///     rev_reg_def: Option<String>,
+///     rev_reg_entry: Option<String>,
+///  }
+///
+/// cb: Callback that provides CredentialDef handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_credentialdef_create_with_id(vcx_command_handle_t command_handle,
+                                             const char *source_id,
+                                             const char *cred_def_id,
+                                             const char *issuer_did,
+                                             const char *revocation_config,
+                                             void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t));
 
 // Takes a json string representing a credentialdef object and recreates an object matching the json
 //
@@ -1027,8 +1210,8 @@ vcx_error_t vcx_connection_get_redirect_details(vcx_command_handle_t command_han
 // #Returns
 // Error code as a u32
 vcx_error_t vcx_disclosed_proof_serialize(vcx_command_handle_t command_handle,
-                                       vcx_disclosed_proof_handle_t proof_handle,
-                                       void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+                                          vcx_disclosed_proof_handle_t proof_handle,
+                                          void (*cb)(vcx_command_handle_t, vcx_error_t, const char *));
 
 // Checks for any state change in the disclosed proof and updates the state attribute
 //
@@ -1336,6 +1519,33 @@ vcx_error_t vcx_messages_download(vcx_command_handle_t command_handle,
                                const char *pw_dids,
                                void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+/// Retrieves single message from the agency by the given uid.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// uid: id of the message to query.
+///
+/// cb: Callback that provides retrieved message
+///
+/// # Example message ->
+///          {
+///            "statusCode": string,
+///            "payload":optional(string),
+///            "senderDID":string,
+///            "uid":string,
+///            "type":string,
+///            "refMsgId":optional(string),
+///            "deliveryDetails":[],
+///            "decryptedPayload":"{"@msg":string,"@type":{"fmt":string,"name":string"ver":string}}"
+///         }
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_download_message(vcx_command_handle_t command_handle,
+                                 const char *uid,
+                                 void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 // Retrieve messages from the cloud agent
 //
 // #params
@@ -1514,6 +1724,21 @@ vcx_error_t vcx_proof_update_state(vcx_command_handle_t command_handle,
 // #Returns
 // Configuration (wallet also populated), on error returns NULL
 char *vcx_provision_agent(const char *json);
+
+// Provision an agent in the agency, populate configuration and wallet for this agent.
+//
+// #Params
+// config: configuration
+// token: provided by app sponsor
+//
+// #Returns
+// Configuration (wallet also populated), on error returns NULL
+vcx_error_t vcx_provision_agent_with_token(vcx_command_handle_t command_handle,
+                                   const char *json,
+                                   const char *token,
+                                   void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+vcx_error_t vcx_get_provision_token(vcx_command_handle_t command_handle, const char *config, void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 // Create a new Schema object that can create or look up schemas on the ledger
 //
@@ -2168,6 +2393,132 @@ vcx_error_t vcx_get_ledger_author_agreement(vcx_u32_t command_handle,
 /// #Returns
 /// Error code as a u32
 vcx_error_t vcx_set_active_txn_author_agreement_meta(const char *text, const char *version, const char *hash, const char *acc_mech_type, vcx_u64_t type_);
+
+
+/// -> Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the user
+///
+/// backup_key: String representing the User's Key for securing (encrypting) the exported Wallet.
+///
+/// cb: Callback that provides wallet_backup handle and error status of request
+///
+/// #Returns
+/// Error code as a u32
+///
+vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id, const char *backup_key,
+                                      void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
+
+/// Wallet Backup to the Cloud
+///
+/// #Params:
+/// command_handle: Handle for User's Reference only.
+/// wallet_backup_handle: Wallet Backup handle that was provided during creation. Used to access object
+/*
+    Todo: path is needed because the only exposed libindy functionality for exporting
+    an encrypted wallet, writes it to the file system. A possible better way is for libindy's export_wallet
+    to optionally return an encrypted stream of bytes instead of writing it to the fs. This could also
+    be done in a separate libindy api call if necessary.
+ */
+/// Todo: path will not be necessary when libindy functionality for wallet export functionality is expanded
+/// Todo: path must be different than other exported wallets because this instance is deleted after its uploaded to the cloud
+/// path: Path to export wallet to User's File System. (This instance of the export
+/// cb: Callback that provides the success/failure of the api call.
+/// #Returns
+/// Error code - success indicates that the api call was successfully created and execution
+/// is scheduled to begin in a separate thread.
+///
+vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path,
+                                      void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Checks for any state change and updates the the state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// wallet_backup_handle: was provided during creation. Used to identify connection object
+///
+/// cb: Callback that provides most current state of the wallet_backup and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_wallet_backup_update_state(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+                                            void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+// pub extern fn vcx_wallet_backup_update_state(command_handle: u32,
+//                                              wallet_backup_handle: u32,
+//                                              cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32
+
+/// Checks the message any state change and updates the the state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// wallet_backup_handle: was provided during creation. Used to identify connection object
+///
+/// message: message to process
+///
+/// cb: Callback that provides most current state of the wallet_backup and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_wallet_backup_update_state_with_message(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *message,
+                                                        void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+// pub extern fn vcx_wallet_backup_update_state_with_message(command_handle: u32,
+//                                                           wallet_backup_handle: u32,
+//                                                           message: *const c_char,
+//                                                           cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+
+
+
+/// Takes the wallet backup object and returns a json string of all its attributes
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// handle: Wallet Backup handle that was provided during creation. Used to identify the wallet backup object
+///
+/// cb: Callback that provides json string of the wallet backup's attributes and provides error status
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_wallet_backup_serialize(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
+                                        void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+// pub extern fn vcx_wallet_backup_serialize(command_handle: u32,
+//                                           wallet_backup_handle: u32,
+//                                           cb: Option<extern fn(xcommand_handle: u32, err: u32, data: *const c_char)>) -> u32 {
+
+/// Takes a json string representing an wallet backup object and recreates an object matching the json
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// data: json string representing a wallet backup object
+///
+///
+/// cb: Callback that provides handle and provides error status
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, const char *wallet_backup_str,
+                                          void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
+// pub extern fn vcx_wallet_backup_deserialize(command_handle: u32,
+//                                             wallet_backup_str: *const c_char,
+//                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, handle: u32)>) -> u32 {
+
+// Retrieves Cloud Backup and imports its content
+// according to fields provided in import_config
+//
+// config: "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}"
+// exported_wallet_path: Path of the file that contains exported wallet content
+// backup_key: Key used when creating the backup of the wallet (For encryption/decrption)
+// cb: Callback that provides the success/failure of the api call.
+// #Returns
+// Error code - success indicates that the api call was successfully created and execution
+// is scheduled to begin in a separate thread.
+vcx_error_t vcx_wallet_backup_restore(vcx_command_handle_t command_handle, const char *config, void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 /// Endorse transaction to the ledger preserving an original author
 ///

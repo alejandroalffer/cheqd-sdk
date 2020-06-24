@@ -15,7 +15,7 @@ import com.sun.jna.Pointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
+import java9.util.concurrent.CompletableFuture;
 
 /**
  * Created by abdussami on 03/06/18.
@@ -163,6 +163,39 @@ public class ConnectionApi extends VcxJava.API {
 				connectionHandle,
 				connectionType,
 				vcxConnectionConnectCB
+		);
+		checkResult(result);
+		return future;
+	}
+
+	private static Callback vcxConnectionAcceptConnectionInviteCB = new Callback() {
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int commandHandle, int err, int connectionHandle, String connectionSerialized) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], " +
+					"connectionHandle = [" + connectionHandle + "], connectionSerialized = [****]");
+			CompletableFuture<AcceptConnectionResult> future = (CompletableFuture<AcceptConnectionResult>) removeFuture(commandHandle);
+			if (!checkCallback(future, err)) return;
+			AcceptConnectionResult result = new AcceptConnectionResult(connectionHandle, connectionSerialized);
+			future.complete(result);
+		}
+	};
+
+	public static CompletableFuture<AcceptConnectionResult> vcxConnectionAcceptConnectionInvite(String invitationId,
+	                                                                                            String inviteDetails,
+	                                                                                            String connectionType) throws VcxException {
+		ParamGuard.notNull(invitationId, "invitationId");
+		ParamGuard.notNull(inviteDetails, "inviteDetails");
+		logger.debug("vcxConnectionAcceptConnectionInvite() called with: invitationId = [" + invitationId + "], " +
+				"inviteDetails = [" + inviteDetails + "], connectionType = [" + connectionType + "]");
+		CompletableFuture<AcceptConnectionResult> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_accept_connection_invite(
+				commandHandle,
+				invitationId,
+				inviteDetails,
+				connectionType,
+				vcxConnectionAcceptConnectionInviteCB
 		);
 		checkResult(result);
 		return future;

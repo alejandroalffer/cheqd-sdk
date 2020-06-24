@@ -9,7 +9,7 @@ import com.sun.jna.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
+import java9.util.concurrent.CompletableFuture;
 
 public class CredentialApi extends VcxJava.API {
 
@@ -305,6 +305,43 @@ public class CredentialApi extends VcxJava.API {
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_credential_create_with_offer(commandHandle, sourceId, credentialOffer, vcxCredentialCreateWithOfferCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    private static Callback vcxAcceptCredentialOfferCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int command_handle, int err, int credentialHandle, String credentialSerialized) {
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], " +
+                    "credentialHandle = [" + credentialHandle + "], offer = [****]");
+            CompletableFuture<CredentialAcceptOfferResult> future = (CompletableFuture<CredentialAcceptOfferResult>) removeFuture(command_handle);
+            if (!checkCallback(future, err)) return;
+            CredentialAcceptOfferResult result = new CredentialAcceptOfferResult(credentialHandle, credentialSerialized);
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<CredentialAcceptOfferResult> acceptCredentialOffer(
+            String sourceId,
+            String credentialOffer,
+            int connectionHandle
+    ) throws VcxException {
+        ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
+        ParamGuard.notNull(credentialOffer, "credentialOffer");
+        ParamGuard.notNull(connectionHandle, "connectionHandle");
+
+        logger.debug("acceptCredentialOffer() called with: sourceId = [" + sourceId + "], credentialOffer = [" + credentialOffer + "], " +
+                "connectionHandle = [" + connectionHandle + "]");
+        CompletableFuture<CredentialAcceptOfferResult> future = new CompletableFuture<CredentialAcceptOfferResult>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_credential_accept_credential_offer(
+                commandHandle,
+                sourceId,
+                credentialOffer,
+                connectionHandle,
+                vcxAcceptCredentialOfferCB);
         checkResult(result);
 
         return future;

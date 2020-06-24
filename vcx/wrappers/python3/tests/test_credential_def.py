@@ -11,7 +11,7 @@ schema_no = 44
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_create_credential_def():
-    credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    credential_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     assert credential_def.source_id == source_id
     assert credential_def.handle > 0
 
@@ -19,7 +19,7 @@ async def test_create_credential_def():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize():
-    credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    credential_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     data = await credential_def.serialize()
     assert data['data']['source_id'] == source_id
     assert data['data']['name'] == name
@@ -29,7 +29,7 @@ async def test_serialize():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize_with_bad_handle():
     with pytest.raises(VcxError) as e:
-        credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
+        credential_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         credential_def.handle = 0
         await credential_def.serialize()
     assert ErrorCode.InvalidCredentialDefHandle == e.value.error_code
@@ -38,7 +38,7 @@ async def test_serialize_with_bad_handle():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_deserialize():
-    credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    credential_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     data = await credential_def.serialize()
     credential_def2 = await CredentialDef.deserialize(data)
     assert credential_def2.source_id == data.get('data').get('source_id')
@@ -56,7 +56,7 @@ async def test_deserialize_with_invalid_data():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize_deserialize_and_then_serialize():
-    credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    credential_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     data1 = await credential_def.serialize()
     credential_def2 = await CredentialDef.deserialize(data1)
     data2 = await credential_def2.serialize()
@@ -67,7 +67,7 @@ async def test_serialize_deserialize_and_then_serialize():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_release():
     with pytest.raises(VcxError) as e:
-        credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
+        credential_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         assert credential_def.handle > 0
         credential_def.release()
         await credential_def.serialize()
@@ -78,7 +78,7 @@ async def test_release():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_cred_def_id_and_payment_txn():
-    credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    credential_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     assert await credential_def.get_cred_def_id() == '2hoqvcwupRTUNkXn6ArYzs:3:CL:2471'
     txn = await credential_def.get_payment_txn()
     assert txn
@@ -105,6 +105,6 @@ async def test_schema_update_state():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_schema_get_state():
-    credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    credential_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
     assert 1 == await credential_def.get_state()
 

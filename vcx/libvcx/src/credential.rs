@@ -31,13 +31,13 @@ use utils::libindy::anoncreds::{
 use utils::libindy::payments::{pay_a_payee, PaymentTxn};
 use utils::{error, constants};
 
-use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
 
 use v3::{
     messages::issuance::credential_offer::CredentialOffer as CredentialOfferV3,
     handlers::issuance::Holder,
 };
+use utils::agent_info::{get_agent_info, get_agent_attr, MyAgentInfo};
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Credentials>  = Default::default();
@@ -138,7 +138,6 @@ impl Credential {
                                                                                     &my_did,
                                                                                     &credential_offer.libindy_offer)?;
 
-        debug!("Credential::build_request <<< Success");
         Ok(CredentialRequest {
             libindy_cred_req: req,
             libindy_cred_req_meta: req_meta,
@@ -186,6 +185,7 @@ impl Credential {
         trace!("Credential::send_request >>> connection_handle: {}", connection_handle);
 
         let my_agent = get_agent_info()?.pw_info(connection_handle)?;
+        apply_agent_info(self, &my_agent);
 
         debug!("sending credential request {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
 
@@ -204,6 +204,7 @@ impl Credential {
                 .msg_type(&RemoteMessageType::CredReq)?
                 .agent_did(&my_agent.pw_agent_did()?)?
                 .agent_vk(&my_agent.pw_agent_vk()?)?
+                .version(my_agent.version.clone())?
                 .edge_agent_payload(
                     &my_agent.my_pw_vk()?,
                     &my_agent.their_pw_vk()?,
@@ -215,7 +216,6 @@ impl Credential {
                 .send_secure()
                 .map_err(|err| err.extend(format!("{} could not send proof", self.source_id)))?;
 
-        apply_agent_info(self, &my_agent);
         self.msg_uid = Some(response.get_msg_uid()?);
         self.state = VcxStateType::VcxStateOfferSent;
 
@@ -314,7 +314,7 @@ impl Credential {
 
         let credential_offer = self.credential_offer.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidState))?;
         let credential_offer_json = serde_json::to_value(credential_offer)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize CredentilOffer: {}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize CredentialOffer: {}", err)))?;
 
         Ok(self.to_cred_offer_string(credential_offer_json))
     }
@@ -479,6 +479,13 @@ pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u
     Ok(handle)
 }
 
+pub fn accept_credential_offer(source_id: &str, offer: &str, connection_handle: u32) -> VcxResult<(u32, String)> {
+    let credential_handle = credential_create_with_offer(source_id, offer)?;
+    send_credential_request(credential_handle, connection_handle)?;
+    let credential_serialized = to_string(credential_handle)?;
+    Ok((credential_handle, credential_serialized))
+}
+
 pub fn credential_create_with_msgid(source_id: &str, connection_handle: u32, msg_id: &str) -> VcxResult<(u32, String)> {
     trace!("credential_create_with_msgid >>> source_id: {}, connection_handle: {}, msg_id: {}", source_id, connection_handle, secret!(&msg_id));
 
@@ -567,7 +574,15 @@ pub fn get_credential_offer(handle: u32) -> VcxResult<String> {
                 debug!("getting credential offer {}", obj.source_id);
                 obj.get_credential_offer()
             }
-            Credentials::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidCredentialHandle)) // TODO: implement
+            Credentials::V3(ref obj) => {
+                let cred_offer = obj.get_credential_offer()?;
+                let cred_offer: CredentialOffer = cred_offer.try_into()?;
+
+                let cred_offer = json!({
+                    "credential_offer": cred_offer
+                });
+                return Ok(cred_offer.to_string());
+            }
         }
     })
 }
@@ -1083,5 +1098,19 @@ pub mod tests {
         let offer_value: serde_json::Value = serde_json::from_str(&offer_string).unwrap();
 
         let _offer_struct: CredentialOffer = serde_json::from_value(offer_value["credential_offer"].clone()).unwrap();
+    }
+
+    #[test]
+    fn test_accept_credential_offer() {
+        let _setup = SetupMocks::init();
+
+        let connection_handle = connection::tests::build_test_connection();
+        let offer = _get_offer(connection_handle);
+
+        let (credential_handle, credential_serialized) =
+            accept_credential_offer("test", &offer, connection_handle).unwrap();
+
+        assert_eq!(VcxStateType::VcxStateOfferSent as u32, get_state(credential_handle).unwrap());
+        assert_eq!(credential_serialized, to_string(credential_handle).unwrap());
     }
 }

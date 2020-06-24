@@ -27,17 +27,23 @@ public abstract class LibVcx {
         public int vcx_shutdown(boolean delete);
         public int vcx_reset();
 
-    /**
-     * Helper API for testing purposes.
-     */
+        /**
+         * Sovtoken & nullpay
+         */
+        public int sovtoken_init();
+//        public int nullpay_init();
+
+        /**
+         * Helper API for testing purposes.
+         */
         public void vcx_set_next_agency_response(int msg);
         public void vcx_get_current_error(PointerByReference error);
 
-    /**
-     * Schema object
-     *
-     * For creating, validating and committing a schema to the sovrin ledger.
-     */
+        /**
+         * Schema object
+         *
+         * For creating, validating and committing a schema to the sovrin ledger.
+         */
 
         /**
          * Creates a schema from a json string. Populates a handle to the new schema.
@@ -87,12 +93,12 @@ public abstract class LibVcx {
 
 
 
-    /**
-     * connection object
-     *
-     * For creating a connection with an identity owner for interactions such as exchanging
-     * claims and proofs.
-     */
+        /**
+         * connection object
+         *
+         * For creating a connection with an identity owner for interactions such as exchanging
+         * claims and proofs.
+         */
 
         /**
          * Creates a connection object to a specific identity owner. Populates a handle to the new connection.
@@ -103,6 +109,11 @@ public abstract class LibVcx {
          * Asynchronously request a connection be made.
          */
         public int vcx_connection_connect(int command_handle, int connection_handle, String connection_type, Callback cb);
+
+        /**
+         * Accept connection for the given invitation.
+         */
+        public int vcx_connection_accept_connection_invite(int command_handle, String source_id, String invite_details, String connection_type, Callback cb);
 
         /**
          * Asynchronously request a connection to be redirected to old one.
@@ -300,11 +311,11 @@ public abstract class LibVcx {
         public int vcx_issuer_accept_credential(int credential_handle);
 
 
-    /**
-     * proof object
-     *
-     * Used for requesting and managing a proof request with an identity owner.
-     */
+        /**
+         * proof object
+         *
+         * Used for requesting and managing a proof request with an identity owner.
+         */
 
         /**
          * Creates a proof object.  Populates a handle to the new proof.
@@ -367,11 +378,11 @@ public abstract class LibVcx {
          */
         public int vcx_proof_release(int proof_handle);
 
-    /**
-     * disclosed_proof object
-     *
-     * Used for sending a disclosed_proof to an identity owner.
-     */
+        /**
+         * disclosed_proof object
+         *
+         * Used for sending a disclosed_proof to an identity owner.
+         */
 
         /**
          * Creates a disclosed_proof object.  Populates a handle to the new disclosed_proof.
@@ -463,6 +474,10 @@ public abstract class LibVcx {
 
         public int vcx_agent_provision_async(int command_handle, String json,Callback cb);
 
+        public String vcx_provision_agent_with_token(String config, String token);
+
+        public int vcx_get_provision_token(int command_handle, String config, Callback cb);
+
         public int vcx_agent_update_info(int command_handle,String json,Callback cb);
 
         public int vcx_ledger_get_fees(int command_handle, Callback cb);
@@ -470,6 +485,141 @@ public abstract class LibVcx {
         public int vcx_get_ledger_author_agreement(int command_handle, Callback cb);
 
         public int vcx_set_active_txn_author_agreement_meta(String text, String version, String hash, String accMechType, long timeOfAcceptance);
+
+        /// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// submitter_did: DID of the request sender.
+        /// text: a content of the TTA.
+        /// version: a version of the TTA (unique UTF-8 string).
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// #Returns
+        /// Request result as json.
+        ///
+        /// #Errors
+        /// Common*
+        // void           (*cb)(indy_handle_t command_handle_,
+        //                        indy_error_t  err,
+        //                        const char*   request_json)
+        public int indy_build_txn_author_agreement_request(int command_handle, String submitter_did, String text, String version, Callback cb);
+
+
+
+        /// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// submitter_did: (Optional) DID of the request sender.
+        /// data: (Optional) specifies a condition for getting specific TAA.
+        /// Contains 3 mutually exclusive optional fields:
+        /// {
+        ///     hash: Optional<str> - hash of requested TAA,
+        ///     version: Optional<str> - version of requested TAA.
+        ///     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
+        /// }
+        /// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+        ///
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// #Returns
+        /// Request result as json.
+        ///
+        /// #Errors
+        /// Common*
+        // void           (*cb)(indy_handle_t command_handle_,
+        // indy_error_t  err,
+        // const char*   request_json)
+        public int indy_build_get_txn_author_agreement_request(int command_handle, String submitter_did, String data, Callback cb);
+
+
+        /// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
+        /// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// submitter_did: DID of the request sender.
+        /// aml: a set of new acceptance mechanisms:
+        /// {
+        ///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+        ///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+        ///     ...
+        /// }
+        /// version: a version of new acceptance mechanisms. (Note: unique on the Ledger)
+        /// aml_context: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// #Returns
+        /// Request result as json.
+        ///
+        /// #Errors
+        /// Common*
+        // void           (*cb)(indy_handle_t command_handle_,
+        // indy_error_t  err,
+        // const char*   request_json)
+        public int indy_build_acceptance_mechanisms_request(int command_handle, String submitter_did, String aml, String version, String aml_context, Callback cb);
+
+        /// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
+        /// valid for specified time or the latest one.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// submitter_did: (Optional) DID of the request sender.
+        /// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
+        /// version: (Optional) version of acceptance mechanisms.
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// NOTE: timestamp and version cannot be specified together.
+        ///
+        /// #Returns
+        /// Request result as json.
+        ///
+        /// #Errors
+        /// Common*
+        // void           (*cb)(indy_handle_t command_handle_,
+        // indy_error_t  err,
+        // const char*   request_json)
+        public int indy_build_get_acceptance_mechanisms_request(int command_handle, String submitter_did, Long  timestamp, String version, Callback cb);
+
+        /// Append transaction author agreement acceptance data to a request.
+        /// This function should be called before signing and sending a request
+        /// if there is any transaction author agreement set on the Ledger.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// This function may calculate hash by itself or consume it as a parameter.
+        /// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// request_json: original request data json.
+        /// text and version - (optional) raw data about TAA from ledger.
+        ///     These parameters should be passed together.
+        ///     These parameters are required if taa_digest parameter is omitted.
+        /// taa_digest - (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+        /// mechanism - mechanism how user has accepted the TAA
+        /// time - UTC timestamp when user has accepted the TAA
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// #Returns
+        /// Updated request result as json.
+        ///
+        /// #Errors
+        /// Common*
+        // void           (*cb)(indy_handle_t command_handle_,
+        // indy_error_t  err,
+        // const char*   request_with_meta_json)
+        public int  indy_append_txn_author_agreement_acceptance_to_request(int command_handle, String request_json, String text, String version, String taa_digest, String mechanism, Long time, Callback cb);
+
 
         public int vcx_pool_set_handle(int handle);
 
@@ -489,6 +639,9 @@ public abstract class LibVcx {
 
         /** Creates a credential object from the connection and msg id. Populates a handle the new credential. */
         public int vcx_credential_create_with_msgid(int command_handle, String source_id, int connection, String msg_id,Callback cb);
+
+        /** Accept credential for the given offer. */
+        public int vcx_credential_accept_credential_offer(int command_handle, String source_id, String offer, int connection_handle, Callback cb);
 
         /** Asynchronously sends the credential request to the connection. */
         public int vcx_credential_send_request(int command_handle, int credential_handle, int connection_handle,int payment_handle, Callback cb);
@@ -547,6 +700,28 @@ public abstract class LibVcx {
         /** Set wallet handle manually */
         public int vcx_wallet_set_handle(int handle);
 
+        /** Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent */
+        public int vcx_wallet_backup_create(int command_handle, String sourceID, String backupKey, Callback cb);
+
+        /** Wallet Backup to the Cloud */
+        public int vcx_wallet_backup_backup(int command_handle, int walletBackupHandle, String path, Callback cb);
+
+        /** Checks for any state change and updates the the state attribute */
+        public int vcx_wallet_backup_update_state(int commandHandle, int walletBackupHandle, Callback cb);
+
+        /* Checks the message any state change and updates the the state attribute */
+        public int vcx_wallet_backup_update_state_with_message(int commandHandle, int walletBackupHandle,  String message, Callback cb);
+
+        /** Takes the wallet backup object and returns a json string of all its attributes */
+        public int vcx_wallet_backup_serialize(int commandHandle, int walletBackupHandle, Callback cb);
+
+        /* Takes a json string representing an wallet backup object and recreates an object matching the json */
+        public int vcx_wallet_backup_deserialize(int commandHandle, String walletBackupStr, Callback cb);
+
+        /** Retrieve Backup from the cloud and Import the encrypted file back into the wallet */
+        public int vcx_wallet_backup_restore(int command_handle, String config, Callback cb);
+
+
         /** Sign with payment address **/
         public int vcx_wallet_sign_with_address(int command_handle, String address, byte[] message_raw, int message_len, Callback cb);
 
@@ -577,6 +752,9 @@ public abstract class LibVcx {
         /** Get messages for given uids or pairwise did from agency endpoint */
         public int vcx_messages_download(int command_handle, String messageStatus, String uids, String pwdids, Callback cb);
 
+        /** Retrieve single message from the agency by the given uid. */
+        public int vcx_download_message(int command_handle, String uid, Callback cb);
+
         /** Get messages for given uids from Cloud Agent */
         public int vcx_download_agent_messages(int command_handle, String messageStatus, String uids, Callback cb);
 
@@ -594,6 +772,9 @@ public abstract class LibVcx {
 
         /** Create a credential definition from the given schema that will be published by Endorser later. */
         int vcx_credentialdef_prepare_for_endorser(int command_handle, String source_id, String credentialdef_name, String schema_id, String issuer_did, String tag,  String config, String endorser, Callback cb);
+
+        /** Creates a credential definition from the given credential definition id. */
+        int vcx_credentialdef_create_with_id(int command_handle, String source_id, String credentialdef_id, String issuer_did, String revocation_config, Callback cb);
 
         /** Populates status with the current state of this credential. */
         int vcx_credentialdef_serialize(int command_handle, int credentialdef_handle, Callback cb);
@@ -620,9 +801,16 @@ public abstract class LibVcx {
 
         /** Set custom logger implementation. */
         int vcx_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
+
         /** Set stdout logger implementation. */
         int vcx_set_default_logger(String log_level);
 
+        /**
+         * Evernym extensions
+         */
+
+        int indy_crypto_anon_crypt(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
+        int indy_crypto_anon_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
     }
 
     /*

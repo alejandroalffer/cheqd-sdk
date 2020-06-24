@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 public class VcxUtilsTest {
     @BeforeEach
     void setup() throws Exception {
@@ -56,5 +58,13 @@ public class VcxUtilsTest {
     void vcxEndorseTransaction() throws VcxException, ExecutionException, InterruptedException {
         String transactionJson = "{\"req_id\":1, \"identifier\": \"EbP4aYNeTHL6q385GuVpRV\", \"signature\": \"gkVDhwe2\", \"endorser\": \"NcYxiDXkpYi6ov5FcYDi1e\"}";
         TestHelper.getResultFromFuture(UtilsApi.vcxEndorseTransaction(transactionJson));
+    }
+
+    @Test
+    @DisplayName("get message")
+    void vcxGetMessage() throws VcxException, ExecutionException, InterruptedException {
+        String message = TestHelper.getResultFromFuture(UtilsApi.vcxGetMessage("abc"));
+        assertNotNull(message);
+
     }
 }

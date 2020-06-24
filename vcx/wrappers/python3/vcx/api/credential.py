@@ -165,7 +165,7 @@ class Credential(VcxStateful):
         credential = Credential(source_id,)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
-        c_msg_id = c_char_p(json.dumps(msg_id).encode('utf-8'))
+        c_msg_id = c_char_p(msg_id.encode('utf-8'))
         c_connection_handle = c_uint32(connection.handle)
 
         if not hasattr(Credential.create_with_msgid, "cb"):
@@ -178,6 +178,91 @@ class Credential(VcxStateful):
                                                       Credential.create_with_msgid.cb)
 
         credential.cred_offer = json.loads(cred_offer.decode())
+
+        return credential
+
+    @staticmethod
+    async def accept_offer(source_id: str, credential_offer: str, connection: Connection):
+        """
+        Accept credential for the given offer.
+
+        This function performs the following actions:
+        1. Creates Credential state object that requests and receives a credential for an institution.
+            (equal to `vcx_credential_create_with_offer` function).
+        2. Prepares Credential Request and replies to the issuer.
+            (equal to `vcx_credential_send_request` function).
+
+        :param source_id: institution's personal identification for the credential, should be unique.
+        :param credential_offer: JSON string representing the offer used as the basis of creation.
+        :param connection: A pairwise connection with the issuer.
+        :return: credential object
+
+        Example:
+        offer depends on communication method:
+         proprietary:
+            [{
+               "msg_type": "CLAIM_OFFER",
+               "version": "0.1",
+               "to_did": "8XFh8yBzrpJQmNyZzgoTqB",
+               "from_did": "8XFh8yBzrpJQmNyZzgoTqB",
+               "libindy_offer": '{}',
+               "credential_attrs": {
+                  "address1": [
+                     "101 Tela Lane"
+                  ],
+                  "address2": [
+                     "101 Wilson Lane"
+                  ],
+                  "city": [
+                     "SLC"
+                  ],
+                  "state": [
+                     "UT"
+                  ],
+                  "zip": [
+                     "87121"
+                  ]
+               },
+               "schema_seq_no": 1487,
+               "cred_def_id": "id1",
+               "claim_name": "Credential",
+               "claim_id": "defaultCredentialId",
+               "msg_ref_id": None,
+            }]
+          aries:
+            {
+                "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential",
+                "@id": "<uuid-of-offer-message>",
+                "comment": "some comment",
+                "credential_preview": <json-ld object>,
+                "offers~attach": [
+                    {
+                        "@id": "libindy-cred-offer-0",
+                        "mime-type": "application/json",
+                        "data": {
+                            "base64": "<bytes for base64>"
+                        }
+                    }
+                ]
+            }
+        credential = await Credential.accept_offer(source_id, offer, connection)
+        """
+        if not hasattr(Credential.accept_offer, "cb"):
+            Credential.accept_offer.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32, c_char_p))
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_credential_offer = c_char_p(json.dumps(credential_offer).encode('utf-8'))
+        c_connection_handle = c_uint32(connection.handle)
+
+        credential_handle, credential_serialized = await do_call('vcx_credential_accept_credential_offer',
+                                                                c_source_id,
+                                                                c_credential_offer,
+                                                                c_connection_handle,
+                                                                Credential.accept_offer.cb)
+
+        credential = Credential(source_id)
+        credential.handle = credential_handle
+        credential.serialized = json.loads(credential_serialized.decode())
 
         return credential
 

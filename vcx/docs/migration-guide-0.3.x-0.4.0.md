@@ -19,7 +19,7 @@ to simplify their transition to LibVCX 0.4 from LibVCX 0.3.x.
 ### API
 
 Added a set of new APIs around credentials and proofs that work with messages that should be exchanged without handling the transport of those messages.
-This removes the dependency on an agency/cloud-agent and allows the user of the SDK to transport those messages themselves. 
+This removes the dependency on an agency/cloud-agent and allows the user of the SDK to transport those messages themselves.
 
 
 #### Vcx API
@@ -61,7 +61,7 @@ This removes the dependency on an agency/cloud-agent and allows the user of the 
 
 ## Libvcx 0.4.0 to 0.4.1 migration Guide
 
-#### Endorse a transaction 
+#### Endorse a transaction
 
 * In the current state, Libvcx provides functionality for the publishing of 2 types of entities that can be endorsed:
 * Schema
@@ -86,7 +86,7 @@ vcx_schema_get_state(schema_hsndle) == Published
 Supported sign/verify with payment address functionality:
     * `vcx_wallet_sign_with_address` - to sign a message with a payment address.
     * `vcx_wallet_verify_with_address` - to verify a signature with a payment address.
-    
+
 #### Vcx init
 
 Extended Libvcx initialization config to accept pool configuration.
@@ -107,6 +107,6 @@ Extended Libvcx initialization config to accept pool configuration.
 
 ## Libvcx 0.4.1 to 0.4.2 migration Guide
 
-Extended VCX provisioning config to accept optional `did_method` filed. 
+Extended VCX provisioning config to accept optional `did_method` filed.
 This field should be used to create fully qualified DIDs.
 The format of identifiers that are used on CredentialIssuance and ProofPresentation will be determined based on the type of remote DID.

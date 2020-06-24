@@ -226,6 +226,8 @@ pub fn export(wallet_handle: WalletHandle, path: &str, backup_key: &str) -> VcxR
 pub fn import(config: &str) -> VcxResult<()> {
     trace!("import >>> config {}", config);
 
+    ::settings::process_config_string(config, false)?;
+
     let restore_config = RestoreWalletConfigs::from_str(config)?;
 
     let config = settings::get_wallet_config(&restore_config.wallet_name, None, None);
@@ -290,25 +292,24 @@ pub mod tests {
         settings::set_defaults();
         create_wallet(wallet_n, None, None, None).unwrap();
 
-        settings::clear_config();
-
         // Open fails without Wallet Key Derivation set
+        settings::unset_config_value(settings::CONFIG_WALLET_KEY_DERIVATION);
+        settings::unset_config_value(settings::CONFIG_WALLET_KEY);
         assert_eq!(open_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::WalletAccessFailed);
-
-        ::settings::clear_config();
 
         // Open works when set
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         assert!(open_wallet(wallet_n, None, None, None).is_ok());
 
-        ::settings::clear_config();
-
         // Delete fails
+        settings::unset_config_value(settings::CONFIG_WALLET_KEY_DERIVATION);
+        settings::unset_config_value(settings::CONFIG_WALLET_KEY);
         assert_eq!(delete_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::WalletAccessFailed);
 
         // Delete works
-        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
+        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         delete_wallet(wallet_n, None, None, None).unwrap()
     }
 
@@ -320,23 +321,20 @@ pub mod tests {
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
 
-        let xtype = "type1";
-        let id = "id1";
-        let value = "value1";
-
-        ::api::vcx::vcx_shutdown(true);
+        let (type_, id, value) = _record();
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: wallet_name.as_str(),
-            settings::CONFIG_WALLET_KEY: "new key",
+            settings::CONFIG_WALLET_KEY: "7dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZZ",
             settings::CONFIG_EXPORTED_WALLET_PATH: export_path.path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
+
         import(&import_config).unwrap();
         open_wallet(&wallet_name, None, None, None).unwrap();
 
         // If wallet was successfully imported, there will be an error trying to add this duplicate record
-        assert_eq!(add_record(xtype, id, value, None).unwrap_err().kind(), VcxErrorKind::DuplicationWalletRecord);
+        assert_eq!(add_record(type_, id, value, None).unwrap_err().kind(), VcxErrorKind::DuplicationWalletRecord);
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
     }
@@ -349,6 +347,8 @@ pub mod tests {
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
 
+        ::settings::clear_config();
+
         let (type_, id, value) = _record();
 
         let import_config = json!({
@@ -359,6 +359,9 @@ pub mod tests {
         }).to_string();
 
         import(&import_config).unwrap();
+
+        settings::process_config_string(&import_config, false).unwrap();
+
         open_wallet(&wallet_name, None, None, None).unwrap();
 
         // If wallet was successfully imported, there will be an error trying to add this duplicate record

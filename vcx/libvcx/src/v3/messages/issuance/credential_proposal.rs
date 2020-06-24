@@ -8,7 +8,8 @@ use messages::thread::Thread;
 pub struct CredentialProposal {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    pub comment: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     pub credential_proposal: CredentialPreviewData,
     pub schema_id: String,
     pub cred_def_id: String,
@@ -22,7 +23,7 @@ impl CredentialProposal {
         CredentialProposal::default()
     }
 
-    pub fn set_comment(mut self, comment: String) -> Self {
+    pub fn set_comment(mut self, comment: Option<String>) -> Self {
         self.comment = comment;
         self
     }
@@ -59,8 +60,8 @@ pub mod tests {
         json!({"credential offer": {}})
     }
 
-    fn _comment() -> String {
-        String::from("comment")
+    fn _comment() -> Option<String> {
+        Some(String::from("comment"))
     }
 
     fn _schema_id() -> String { String::from("schema:id") }

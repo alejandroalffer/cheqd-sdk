@@ -2,7 +2,7 @@ use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
 use messages::MessageStatusCode;
-use messages::payload::Payloads;
+use messages::payload::{Payloads, PayloadTypes, PayloadKinds, PayloadV1, PayloadV2};
 use utils::{httpclient, constants};
 use error::prelude::*;
 use settings::ProtocolTypes;
@@ -24,19 +24,6 @@ pub struct GetMessages {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "pairwiseDIDs")]
     pairwise_dids: Option<Vec<String>>,
-}
-
-impl GetMessages {
-    fn build(kind: A2AMessageKinds, exclude_payload: Option<String>, uids: Option<Vec<String>>,
-             status_codes: Option<Vec<MessageStatusCode>>, pairwise_dids: Option<Vec<String>>) -> GetMessages {
-        GetMessages {
-            msg_type: MessageTypes::build(kind),
-            exclude_payload,
-            uids,
-            status_codes,
-            pairwise_dids,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -178,22 +165,28 @@ impl GetMessagesBuilder {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::GetMessagesByConnections)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 |
             settings::ProtocolTypes::V4 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::GetMessagesByConnections)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
         };
 
@@ -240,22 +233,28 @@ impl GeneralMessage for GetMessagesBuilder {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessages,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::GetMessages)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 |
             settings::ProtocolTypes::V4 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessages,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::GetMessages)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
         };
 
@@ -322,8 +321,33 @@ impl Message {
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
             let decrypted_payload = match payload {
-                MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
-                    .map(Payloads::PayloadV1),
+                MessagePayload::V1(payload) => {
+                    if let Ok(payload) = Payloads::decrypt_payload_v1(&vk, &payload) {
+                        Ok(Payloads::PayloadV1(payload))
+                    } else {
+                        warn!("fallback to Payloads::decrypt_payload_v12 in Message:decrypt for MessagePayload::V1");
+                        serde_json::from_slice::<serde_json::Value>(&to_u8(payload)[..])
+                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize MessagePayload: {}", err)))
+                            .and_then(|json| Payloads::decrypt_payload_v12(&vk, &json))
+                            .map(|json| {
+                                (
+                                    json.type_,
+                                    match json.msg {
+                                        serde_json::Value::String(_str) => _str,
+                                        value => value.to_string()
+                                    }
+                                )
+                            })
+                            .map(|(type_, payload)|
+                                Payloads::PayloadV2(PayloadV2 {
+                                    type_,
+                                    id: ::utils::uuid::uuid(),
+                                    msg: payload,
+                                    thread: Default::default(),
+                                })
+                            )
+                    }
+                }
                 MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
                     .map(Payloads::PayloadV2)
             };
@@ -331,8 +355,10 @@ impl Message {
             if let Ok(decrypted_payload) = decrypted_payload {
                 new_message.decrypted_payload = ::serde_json::to_string(&decrypted_payload).ok();
             } else if let Ok(decrypted_payload) = self._decrypt_v3_message() {
+                new_message.msg_type = RemoteMessageType::Other(String::from("aries"));
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(decrypted_payload)).ok()
             } else {
+                warn!("Message::decrypt <<< were not able to decrypt message, setting null");
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(null)).ok();
             }
         }
@@ -345,7 +371,6 @@ impl Message {
         use v3::utils::encryption_envelope::EncryptionEnvelope;
         use ::issuer_credential::{CredentialOffer, CredentialMessage};
         use ::messages::proofs::proof_message::ProofMessage;
-        use ::messages::payload::{PayloadTypes, PayloadV1, PayloadKinds};
         use std::convert::TryInto;
 
         let a2a_message = EncryptionEnvelope::open(self.payload()?)?;
@@ -482,6 +507,37 @@ pub fn download_agent_messages(status_codes: Option<Vec<String>>, uids: Option<V
     Ok(response)
 }
 
+pub fn download_message(uid: String) -> VcxResult<Message> {
+    trace!("download_message >>> uid: {:?}", uid);
+
+    AgencyMock::set_next_response(constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
+
+    let mut messages: Vec<Message> =
+        get_messages()
+            .uid(Some(vec![uid.clone()]))?
+            .version(&Some(::settings::get_protocol_type()))?
+            .download_messages()?
+            .into_iter()
+            .flat_map(|msgs_by_connection| msgs_by_connection.msgs)
+            .collect();
+
+    if messages.is_empty() {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages,
+                                      format!("Message for the given uid:\"{}\" not found.", uid)));
+    }
+
+    if messages.len() > 1 {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages,
+                                      format!("More than one message was retrieved for the given uid:\"{}\". \
+                                      Please, use `vcx_messages_download` function to retrieve several messages.", uid)));
+    }
+
+    let message = messages.remove(0);
+
+    trace!("download_message <<< message: {:?}", message);
+    Ok(message)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -510,19 +566,17 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "wallet_backup")]
     #[test]
-    #[ignore] // Dummy cloud agent has not implemented this functionality yet
     fn test_download_agent_messages() {
-        let _setup = SetupLibraryAgencyV1::init();
-
-        let (_faber, alice) = ::connection::tests::create_connected_connections();
+        let _setup = SetupConsumer::init();
 
         // AS CONSUMER GET MESSAGES
-        ::utils::devsetup::set_consumer();
         let all_messages = download_agent_messages(None, None).unwrap();
         assert_eq!(all_messages.len(), 0);
 
-        let _hello_uid = ::connection::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
+        let _wallet_backup = ::wallet_backup::create_wallet_backup("123", ::settings::DEFAULT_WALLET_KEY).unwrap();
+
         thread::sleep(Duration::from_millis(2000));
         let all_messages = download_agent_messages(None, None).unwrap();
         assert_eq!(all_messages.len(), 1);
@@ -583,5 +637,33 @@ mod tests {
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);
         assert_eq!(bad_req.unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_download_message() {
+        let _setup = SetupLibraryAgencyV1::init();
+
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
+
+        let message = "hello";
+        let message_options = json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string();
+        let hello_uid = ::connection::send_generic_message(alice, message, &message_options).unwrap();
+
+        // AS CONSUMER GET MESSAGE
+        ::utils::devsetup::set_consumer();
+
+        // download hello message
+        let retrieved_message = download_message(hello_uid).unwrap();
+
+        let expected_payload = json!({"@type":{"name":"hello","ver":"1.0","fmt":"json"},"@msg":"hello"});
+        let retrieved_payload: serde_json::Value = serde_json::from_str(&retrieved_message.decrypted_payload.unwrap()).unwrap();
+        assert_eq!(retrieved_payload, expected_payload);
+
+        // download unknown message
+        let unknown_uid = "unknown";
+        let res = download_message(unknown_uid.to_string()).unwrap_err();
+        assert_eq!(VcxErrorKind::InvalidMessages, res.kind())
     }
 }

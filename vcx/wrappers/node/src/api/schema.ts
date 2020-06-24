@@ -331,8 +331,8 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_schema_update_state(0, this.handle, cb)
           if (rc) {
-              reject(rc)
-            }
+            reject(rc)
+          }
         },
         (resolve, reject) => ffi.Callback(
           'void',
@@ -364,8 +364,8 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_schema_get_state(0, this.handle, cb)
           if (rc) {
-              reject(rc)
-            }
+            reject(rc)
+          }
         },
         (resolve, reject) => ffi.Callback(
           'void',

@@ -34,7 +34,7 @@
     RNIndy *indy = [[RNIndy alloc] init];
     VcxLogger *vcxLogger = [[VcxLogger alloc] init];
     IndyCallbacks *indyCallbacks = [[IndyCallbacks alloc] init];
-
+    
     [RNIndyTests startFreshAndGeneratePassphrase:indy completion:^(BOOL success) {
         NSLog(@"TEST startFreshAndGeneratePassphrase %@!", success ? @"succeeded" : @"failed");
         XCTAssertTrue(success);

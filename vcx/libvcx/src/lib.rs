@@ -7,6 +7,7 @@ extern crate rand;
 extern crate reqwest;
 extern crate url;
 extern crate openssl;
+extern crate hex;
 extern crate indyrs as indy;
 extern crate futures;
 
@@ -60,6 +61,7 @@ pub mod error;
 pub mod credential;
 pub mod object_cache;
 pub mod disclosed_proof;
+pub mod wallet_backup;
 
 pub mod v3;
 
@@ -329,7 +331,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_real_proof() {
-        let _setup = SetupLibraryAgencyV1ZeroFees::init();
+        let _setup = SetupLibraryAgencyV2ZeroFeesNewProvisioning::init();
 
         _real_proof_demo();
     }

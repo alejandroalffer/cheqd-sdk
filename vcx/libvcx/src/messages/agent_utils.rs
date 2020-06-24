@@ -83,6 +83,11 @@ pub struct CreateAgentResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct ProblemReport {
+    msg: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ComMethodUpdated {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
@@ -106,12 +111,12 @@ impl UpdateComMethod {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ComMethod {
-    id: String,
+    pub id: String,
     #[serde(rename = "type")]
-    e_type: i32,
-    value: String,
+    pub e_type: i32,
+    pub value: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -483,7 +488,7 @@ mod tests {
         //Opens already created wallet at custom location
         configure_wallet(&my_config).unwrap();
     }
-
+    
     #[test]
     fn test_connect_register_provision() {
         let _setup = SetupMocks::init();

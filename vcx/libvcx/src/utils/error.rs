@@ -107,14 +107,19 @@ pub static INVALID_REV_ENTRY: Error = Error{ code_num: 1092, message: "Unable to
 pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1093, message: "Invalid Credential Revocation timestamp"};
 pub static UNKNOWN_SCHEMA_REJECTION: Error = Error{ code_num: 1094, message: "Unknown Rejection of Schema Creation, refer to libindy documentation"};
 pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1095, message: "Failed to create Revocation Registration Definition"};
-/* EC 1096 - 1099 are reserved for proprietary forks of libVCX */
+pub static CREATE_WALLET_BACKUP: Error = Error{ code_num: 1096, message: "Failed to create Wallet Backup"};
+pub static RETRIEVE_EXPORTED_WALLET: Error = Error{ code_num: 1097, message: "Failed to retrieve exported wallet"};
+pub static INVALID_MSG_VERSION: Error = Error{ code_num: 1098, message: "Invalid A2A Message version"};
+pub static RETRIEVE_DEAD_DROP: Error = Error{ code_num: 1099, message: "Failed to retrieve Dead Drop payload"};
 pub static INVALID_ATTACHMENT_ENCODING: Error = Error { code_num: 1100, message: "Failed to decode attachment"};
 pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1101, message: "This type of attachment can not be used"};
 pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1102, message: "Unknown mime type"};
 pub static ACTION_NOT_SUPPORTED: Error = Error { code_num: 1103, message: "Action is not supported"};
 pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1104, message: "Invalid redirect details structure"};
-/* EC 1105 is reserved for proprietary forks of libVCX */
+/* EC 1105-1107 is reserved for proprietary forks of libVCX */
+pub static MAX_BACKUP_SIZE: Error = Error{code_num: 1105, message: "Cloud Backup exceeds max size limit"};
 pub static NO_AGENT_INFO: Error = Error{code_num: 1106, message: "Agent pairwise information not found"};
+pub static INVALID_PROVISION_TOKEN: Error = Error{code_num: 1107, message: "Token provided by sponsor is invalid"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -220,7 +225,9 @@ lazy_static! {
         insert_c_message(&mut m, &UNKNOWN_MIME_TYPE);
         insert_c_message(&mut m, &ACTION_NOT_SUPPORTED);
         insert_c_message(&mut m, &INVALID_REDIRECT_DETAILS);
+        insert_c_message(&mut m, &MAX_BACKUP_SIZE);
         insert_c_message(&mut m, &NO_AGENT_INFO);
+        insert_c_message(&mut m, &INVALID_PROVISION_TOKEN);
 
         m
     };

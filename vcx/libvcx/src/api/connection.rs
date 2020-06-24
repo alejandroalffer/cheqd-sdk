@@ -274,6 +274,118 @@ pub extern fn vcx_connection_create_with_invite(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Accept connection for the given invitation.
+///
+/// This function performs the following actions:
+/// 1. Creates Connection state object from the given invitation
+///     (equal to `vcx_connection_create_with_invite` function).
+/// 2. Replies to the inviting side
+///     (equal to `vcx_connection_connect` function).
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the connection.
+///
+/// invite_details: a string representing a json object which is provided by an entity
+///     that wishes to make a connection.
+///
+/// connection_options: provides details indicating if the connection will be established
+///     by text or QR Code.
+///
+/// cb: Callback that provides connection handle and error status of request.
+///
+/// # Examples
+/// invite_details -> two formats are allowed depending on communication protocol:
+///     proprietary:
+///         {
+///             "targetName":"",
+///             "statusMsg":"message created",
+///             "connReqId":"mugIkrWeMr",
+///             "statusCode":"MS-101",
+///             "threadId":null,
+///             "senderAgencyDetail":{
+///                 "endpoint":"http://localhost:8080",
+///                 "verKey":"key",
+///                 "DID":"did"
+///             },
+///             "senderDetail":{
+///                 "agentKeyDlgProof":{
+///                     "agentDID":"8f6gqnT13GGMNPWDa2TRQ7",
+///                     "agentDelegatedKey":"5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1",
+///                     "signature":"TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/+D8ZDg=="
+///                  },
+///                 "publicDID":"7YLxxEfHRiZkCMVNii1RCy",
+///                 "name":"Faber",
+///                 "logoUrl":"http://robohash.org/234",
+///                 "verKey":"CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx",
+///                 "DID":"Ney2FxHT4rdEyy6EDCCtxZ"
+///                 }
+///             }
+///     aries: https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+///      {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
+///         "label": "Alice",
+///         "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+///         "serviceEndpoint": "https://example.com/endpoint",
+///         "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
+///      }
+///
+/// connection_options ->
+/// "{"connection_type":"SMS","phone":"123","use_public_did":true}"
+///     OR:
+/// "{"connection_type":"QR","phone":"","use_public_did":false}"
+///
+/// # Returns
+/// err: the result code as a u32
+/// connection_handle: the handle associated with the created Connection object.
+/// connection_serialized: the json string representing the created Connection object.
+#[no_mangle]
+pub extern fn vcx_connection_accept_connection_invite(command_handle: CommandHandle,
+                                                      source_id: *const c_char,
+                                                      invite_details: *const c_char,
+                                                      connection_options: *const c_char,
+                                                      cb: Option<extern fn(
+                                                          xcommand_handle: CommandHandle,
+                                                          err: u32,
+                                                          connection_handle: u32,
+                                                          connection_serialized: *const c_char)>) -> u32 {
+    info!("vcx_connection_accept_connection_invite >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(invite_details, VcxErrorKind::InvalidOption);
+
+    let connection_options_ = if !connection_options.is_null() {
+        check_useful_opt_c_str!(connection_options, VcxErrorKind::InvalidOption);
+        connection_options.to_owned()
+    } else {
+        None
+    };
+
+    trace!("vcx_connection_accept_connection_invite(command_handle: {}, source_id: {}, invite_details: {}, connection_options: {:?})",
+           command_handle, source_id, invite_details, connection_options_);
+    spawn(move || {
+        match accept_connection_invite(&source_id, &invite_details, connection_options_) {
+            Ok((connection_handle, connection_serialized)) => {
+                trace!("vcx_connection_accept_connection_invite(command_handle: {}, rc: {}, connection_handle: {}, connection_serialized: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, connection_handle, connection_serialized, source_id);
+                let connection_serialized_ = CStringUtils::string_to_cstring(connection_serialized);
+                cb(command_handle, error::SUCCESS.code_num, connection_handle, connection_serialized_.as_ptr());
+            }
+            Err(x) => {
+                warn!("vcx_connection_accept_connection_invite(command_handle: {}, rc: {}) source_id: {}",
+                      command_handle, x, source_id);
+                cb(command_handle, x.into(), 0, ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Establishes connection between institution and its user
 ///
 /// # Params
@@ -803,13 +915,13 @@ pub extern fn vcx_connection_send_message(command_handle: CommandHandle,
                                           msg: *const c_char,
                                           send_msg_options: *const c_char,
                                           cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg_id: *const c_char)>) -> u32 {
-    info!("vcx_message_send >>>");
+    info!("vcx_connection_send_message >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(msg, VcxErrorKind::InvalidOption);
     check_useful_c_str!(send_msg_options, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_message_send(command_handle: {}, connection_handle: {}, msg: {}, send_msg_options: {})",
+    trace!("vcx_connection_send_message(command_handle: {}, connection_handle: {}, msg: {}, send_msg_options: {})",
            command_handle, connection_handle, msg, send_msg_options);
 
     spawn(move || {
@@ -1316,8 +1428,8 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let _rc = vcx_connection_create(cb.command_handle,
-                                       CString::new("test_create").unwrap().into_raw(),
-                                       Some(cb.get_callback()));
+                                        CString::new("test_create").unwrap().into_raw(),
+                                        Some(cb.get_callback()));
 
         assert!(cb.receive(TimeoutUtils::some_medium()).unwrap() > 0);
     }

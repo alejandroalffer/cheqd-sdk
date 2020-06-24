@@ -8,7 +8,7 @@ use api::VcxStateType;
 use error::prelude::*;
 use messages;
 use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, SerializableObjectWithState};
-use messages::invite::{InviteDetail, RedirectDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectionDetails};
+use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectDetail, RedirectionDetails};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
 use messages::send_message::SendMessageOptions;
@@ -334,7 +334,7 @@ impl Connection {
                 .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL)?)?
                 .webhook_url(&webhook_url)?
                 .use_public_did(&self.public_did)?
-                .version(&self.version)?
+                .version(&Some(ProtocolTypes::V1))?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot update agent profile"))?;
         }
@@ -410,7 +410,13 @@ impl Connection {
                 .to(&self.get_pw_did())?
                 .to_vk(&self.get_pw_verkey())?
                 .msg_type(&RemoteMessageType::Other(msg_options.msg_type.clone()))?
-                .edge_agent_payload(&self.get_pw_verkey(), &self.get_their_pw_verkey(), &message, PayloadKinds::Other(msg_options.msg_type.clone()), None)?
+                .version(self.version.clone())?
+                .edge_agent_payload(
+                    &self.get_pw_verkey(),
+                    &self.get_their_pw_verkey(),
+                    &message,
+                    PayloadKinds::Other(msg_options.msg_type.clone()),
+                    None)?
                 .agent_did(&self.get_agent_did())?
                 .agent_vk(&self.get_agent_verkey())?
                 .set_title(&msg_options.msg_title)?
@@ -691,12 +697,16 @@ pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     // Initiate connection of new format -- redirect to v3 folder
     if settings::is_aries_protocol_set() {
         let connection = Connections::V3(ConnectionV3::create(source_id));
-        return store_connection(connection);
+        let handle = store_connection(connection);
+        debug!("create_connection >>> created connection V3, handle: {:?}", handle);
+        return handle;
     }
 
     let connection = create_connection_v1(source_id)?;
 
-    store_connection(Connections::V1(connection))
+    let handle = store_connection(Connections::V1(connection));
+    debug!("create_connection >>> created connection V1, handle: {:?}", handle);
+    handle
 }
 
 pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResult<u32> {
@@ -705,7 +715,9 @@ pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResul
     // Invitation of new format -- redirect to v3 folder
     if let Ok(invitation) = serde_json::from_str::<InvitationV3>(details) {
         let connection = Connections::V3(ConnectionV3::create_with_invite(source_id, invitation)?);
-        return store_connection(connection);
+        let handle = store_connection(connection);
+        debug!("create_connection_with_invite: created connection v3, handle: {:?}", handle);
+        return handle;
     }
 
     let details: Value = serde_json::from_str(&details)
@@ -734,6 +746,15 @@ pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResul
     connection.set_state(VcxStateType::VcxStateRequestReceived);
 
     store_connection(Connections::V1(connection))
+}
+
+pub fn accept_connection_invite(source_id: &str,
+                                details: &str,
+                                options: Option<String>) -> VcxResult<(u32, String)> {
+    let connection_handle = create_connection_with_invite(source_id, details)?;
+    connect(connection_handle, options)?;
+    let connection_serialized = to_string(connection_handle)?;
+    Ok((connection_handle, connection_serialized))
 }
 
 pub fn parse_acceptance_details(message: &Message) -> VcxResult<SenderDetail> {
@@ -1392,7 +1413,7 @@ pub mod tests {
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
         ::utils::devsetup::set_institution();
 
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_secs(1));
 
         update_state(alice, None).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(alice));
@@ -1882,5 +1903,17 @@ pub mod tests {
         assert_eq!(rd.their_did, to_alice_old.their_pw_did);
         assert_eq!(rd.their_verkey, to_alice_old.their_pw_verkey);
         assert_eq!(rd.their_public_did, to_alice_old.their_public_did);
+    }
+
+    #[test]
+    fn test_accept_connection_invite() {
+        let _setup = SetupMocks::init();
+
+        let (connection_handle, connection_serialized) =
+            accept_connection_invite("test", INVITE_DETAIL_STRING, None).unwrap();
+
+        assert!(connection_handle > 0 );
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(connection_handle));
+        assert_eq!(connection_serialized, to_string(connection_handle).unwrap());
     }
 }
