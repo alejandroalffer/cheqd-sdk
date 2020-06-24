@@ -465,6 +465,76 @@ vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle
                                           const char *offer,
                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t));
 
+/// Accept credential for the given offer.
+///
+/// This function performs the following actions:
+/// 1. Creates Credential state object that requests and receives a credential for an institution.
+///     (equal to `vcx_credential_create_with_offer` function).
+/// 2. Prepares Credential Request and replies to the issuer.
+///     (equal to `vcx_credential_send_request` function).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the credential, should be unique.
+///
+/// offer: credential offer received from the issuer.
+///
+/// connection_handle: handle that identifies pairwise connection object with the issuer.
+///
+/// # Example
+/// offer -> depends on communication method:
+///     proprietary:
+///         [
+///             {
+///                 "msg_type":"CREDENTIAL_OFFER",
+///                 "version":"0.1",
+///                 "to_did":"...",
+///                 "from_did":"...",
+///                 "credential":{
+///                     "account_num":[
+///                         "...."
+///                     ],
+///                     "name_on_account":[
+///                         "Alice"
+///                      ]
+///                 },
+///                 "schema_seq_no":48,
+///                 "issuer_did":"...",
+///                 "credential_name":"Account Certificate",
+///                 "credential_id":"3675417066",
+///                 "msg_ref_id":"ymy5nth"
+///             }
+///         ]
+///     aries:
+///         {
+///             "@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential",
+///             "@id":"<uuid-of-offer-message>",
+///             "comment":"somecomment",
+///             "credential_preview":"<json-ldobject>",
+///             "offers~attach":[
+///                 {
+///                     "@id":"libindy-cred-offer-0",
+///                     "mime-type":"application/json",
+///                     "data":{
+///                         "base64":"<bytesforbase64>"
+///                     }
+///                 }
+///             ]
+///         }
+///
+/// cb: Callback that provides credential handle or error status
+///
+/// # Returns
+/// err: the result code as a u32
+/// credential_handle: the handle associated with the created Credential state object.
+/// credential_serialized: the json string representing the created Credential state object.
+vcx_error_t vcx_credential_accept_credential_offer(vcx_command_handle_t command_handle,
+                                                   const char *source_id,
+                                                   const char *offer,
+                                                   vcx_connection_handle_t connection_handle,
+                                                   void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t, const char*));
+
 // Takes a json string representing an credential object and recreates an object matching the json
 //
 // #Params

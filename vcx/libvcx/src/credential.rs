@@ -469,6 +469,13 @@ pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u
     Ok(handle)
 }
 
+pub fn accept_credential_offer(source_id: &str, offer: &str, connection_handle: u32) -> VcxResult<(u32, String)> {
+    let credential_handle = credential_create_with_offer(source_id, offer)?;
+    send_credential_request(credential_handle, connection_handle)?;
+    let credential_serialized = to_string(credential_handle)?;
+    Ok((credential_handle, credential_serialized))
+}
+
 pub fn credential_create_with_msgid(source_id: &str, connection_handle: u32, msg_id: &str) -> VcxResult<(u32, String)> {
     trace!("credential_create_with_msgid >>> source_id: {}, connection_handle: {}, msg_id: {}", source_id, connection_handle, secret!(&msg_id));
 
@@ -1068,5 +1075,19 @@ pub mod tests {
         let offer_value: serde_json::Value = serde_json::from_str(&offer_string).unwrap();
 
         let _offer_struct: CredentialOffer = serde_json::from_value(offer_value["credential_offer"].clone()).unwrap();
+    }
+
+    #[test]
+    fn test_accept_credential_offer() {
+        let _setup = SetupMocks::init();
+
+        let connection_handle = connection::tests::build_test_connection();
+        let offer = _get_offer(connection_handle);
+
+        let (credential_handle, credential_serialized) =
+            accept_credential_offer("test", &offer, connection_handle).unwrap();
+
+        assert_eq!(VcxStateType::VcxStateOfferSent as u32, get_state(credential_handle).unwrap());
+        assert_eq!(credential_serialized, to_string(credential_handle).unwrap());
     }
 }

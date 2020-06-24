@@ -1911,7 +1911,9 @@ pub mod tests {
 
         let (connection_handle, connection_serialized) =
             accept_connection_invite("test", INVITE_DETAIL_STRING, None).unwrap();
+
         assert!(connection_handle > 0 );
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(connection_handle));
         assert_eq!(connection_serialized, to_string(connection_handle).unwrap());
     }
 }

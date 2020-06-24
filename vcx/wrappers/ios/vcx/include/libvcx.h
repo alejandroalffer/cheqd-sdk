@@ -340,6 +340,9 @@ vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle
 /** Creates a credential object from the connection and msg id. Populates a handle the new credential. */
 vcx_error_t vcx_credential_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connection, const char *msg_id, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle, const char* credential_offer));
 
+/** Accept credential for the given offer. */
+vcx_error_t vcx_credential_accept_credential_offer(vcx_command_handle_t command_handle, const char *source_id, const char *credential_offer, vcx_connection_handle_t connection, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle, const char* credential_serialized));
+
 /** Asynchronously sends the credential request to the connection. */
 vcx_error_t vcx_credential_send_request(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, vcx_connection_handle_t connection_handle, vcx_payment_handle_t payment_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
