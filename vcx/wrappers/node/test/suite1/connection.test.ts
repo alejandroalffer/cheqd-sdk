@@ -227,4 +227,13 @@ describe('Connection:', () => {
     })
   })
 
+  describe('acceptConnectionInvite:', () => {
+    it('success', async () => {
+      await Connection.acceptConnectionInvite({
+        id: 'new',
+        invite: INVITE_DETAILS,
+        data: '{"connection_type":"QR"}'
+      })
+    })
+  })
 })

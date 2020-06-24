@@ -95,6 +95,11 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                      inviteDetails:(NSString *)inviteDetails
                         completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
 
+- (void)acceptConnectionWithInvite:(NSString *)invitationId
+                     inviteDetails:(NSString *)inviteDetails
+                    connectionType:(NSString *)connectionType
+                        completion:(void (^)(NSError *error, NSInteger connectionHandle, NSString *serializedConnection))completion;
+
 - (void)connectionConnect:(VcxHandle)connectionHandle
            connectionType:(NSString *)connectionType
                completion:(void (^)(NSError *error, NSString *inviteDetails))completion;

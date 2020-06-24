@@ -208,3 +208,12 @@ async def test_connection_info():
     with pytest.raises(VcxError) as e:
         await connection.info()
     assert ErrorCode.ActionNotSupported == e.value.error_code
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_accept_connection_invite():
+    connection = await Connection.accept_connection_invite(source_id, details)
+    assert connection.handle > 0
+    assert State.Accepted == await connection.get_state()
+    assert connection.serialized == await connection.serialize()

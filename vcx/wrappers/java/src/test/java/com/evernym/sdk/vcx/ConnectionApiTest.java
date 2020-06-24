@@ -1,6 +1,7 @@
 package com.evernym.sdk.vcx;
 
 
+import com.evernym.sdk.vcx.connection.AcceptConnectionResult;
 import com.evernym.sdk.vcx.connection.ConnectionApi;
 import com.evernym.sdk.vcx.connection.InvalidConnectionHandleException;
 import com.evernym.sdk.vcx.vcx.VcxApi;
@@ -19,6 +20,8 @@ import static com.evernym.sdk.vcx.TestHelper._createConnectionWithInvite;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 class ConnectionApiTest {
+
+	String inviteDetails = "{'statusCode':'MS-101','connReqId':'NjcwOWU','senderDetail':{'name':'ent-name','agentKeyDlgProof':{'agentDID':'U5LXs4U7P9msh647kToezy','agentDelegatedKey':'FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq','signature':'gkVDhwe2/FEtFqJYBm2wbEvqGlBwAGGaC19Oebj/3ZtZ/KpZs7K2JFMgTqTb29xTTAad04AjfNa76931eRa6BA=='},'DID':'WRUzXXuFVTYkT8CjSZpFvT','logoUrl':'ent-logo-url','verKey':'ESE6MnqAyjRigduPG454vfLvKhMbmaZjy9vqxCnSKQnp'},'senderAgencyDetail':{'DID':'BDSmVkzxRYGE4HKyMKxd1H','verKey':'HsaWDKnJtgoBsyqG2zKa5xRvKZzZHhkiCDH7eU3iqRsv','endpoint':'localhost:9001/agency/msg'},'targetName':'there','statusMsg':'message created'}";
 
 	@BeforeEach
 	void setup() throws Exception {
@@ -235,7 +238,6 @@ class ConnectionApiTest {
     @DisplayName("test redirect")
     void redirectConnection() throws VcxException, ExecutionException, InterruptedException {
         int redirectConnectionHandle = _createConnection();
-        String inviteDetails = "{'statusCode':'MS-101','connReqId':'NjcwOWU','senderDetail':{'name':'ent-name','agentKeyDlgProof':{'agentDID':'U5LXs4U7P9msh647kToezy','agentDelegatedKey':'FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq','signature':'gkVDhwe2/FEtFqJYBm2wbEvqGlBwAGGaC19Oebj/3ZtZ/KpZs7K2JFMgTqTb29xTTAad04AjfNa76931eRa6BA=='},'DID':'WRUzXXuFVTYkT8CjSZpFvT','logoUrl':'ent-logo-url','verKey':'ESE6MnqAyjRigduPG454vfLvKhMbmaZjy9vqxCnSKQnp'},'senderAgencyDetail':{'DID':'BDSmVkzxRYGE4HKyMKxd1H','verKey':'HsaWDKnJtgoBsyqG2zKa5xRvKZzZHhkiCDH7eU3iqRsv','endpoint':'localhost:9001/agency/msg'},'targetName':'there','statusMsg':'message created'}";
         int connectionHandle = _createConnectionWithInvite(TestHelper.convertToValidJson(inviteDetails));
         CompletableFuture<Integer> redirectInvitation = ConnectionApi.vcxConnectionRedirect(connectionHandle, redirectConnectionHandle);
         Awaitility.await().until(redirectInvitation::isDone);
@@ -270,5 +272,22 @@ class ConnectionApiTest {
 			Integer connectionHandle = _createConnection();
 			TestHelper.getResultFromFuture(ConnectionApi.connectionInfo(connectionHandle));
 		});
+	}
+
+	@Test
+	@DisplayName("accept connection invitation")
+	void acceptConnectionInvitation() throws VcxException, ExecutionException, InterruptedException {
+		String connectionId = "testConnectionId";
+		String payload = "{ 'connection_type': 'QR' }";
+
+		AcceptConnectionResult result =
+				TestHelper.getResultFromFuture(
+						ConnectionApi.vcxConnectionAcceptConnectionInvite(connectionId,
+								TestHelper.convertToValidJson(inviteDetails),
+								TestHelper.convertToValidJson(payload)));
+		assertNotSame(null, result.getConnectionHandle());
+		assertNotSame(0, result.getConnectionSerialized());
+
+
 	}
 }
