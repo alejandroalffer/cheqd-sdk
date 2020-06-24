@@ -1519,6 +1519,33 @@ vcx_error_t vcx_messages_download(vcx_command_handle_t command_handle,
                                const char *pw_dids,
                                void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+/// Retrieves single message from the agency by the given uid.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// uid: id of the message to query.
+///
+/// cb: Callback that provides retrieved message
+///
+/// # Example message ->
+///          {
+///            "statusCode": string,
+///            "payload":optional(string),
+///            "senderDID":string,
+///            "uid":string,
+///            "type":string,
+///            "refMsgId":optional(string),
+///            "deliveryDetails":[],
+///            "decryptedPayload":"{"@msg":string,"@type":{"fmt":string,"name":string"ver":string}}"
+///         }
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_download_message(vcx_command_handle_t command_handle,
+                                 const char *uid,
+                                 void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 // Retrieve messages from the cloud agent
 //
 // #params

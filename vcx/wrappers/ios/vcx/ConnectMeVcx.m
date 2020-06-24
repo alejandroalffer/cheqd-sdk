@@ -1327,6 +1327,23 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (void)downloadMessage:(NSString *)uid
+             completion:(void (^)(NSError *error, NSString* messages))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * uid_ = [uid cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_download_message(handle, uid_, VcxWrapperCommonStringCallback);
+
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
 - (void)downloadAgentMessages:(NSString *)messageStatus
                         uid_s:(NSString *)uid_s
                         completion:(void (^)(NSError *error, NSString* messages))completion{

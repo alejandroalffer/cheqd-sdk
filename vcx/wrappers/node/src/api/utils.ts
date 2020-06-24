@@ -372,3 +372,35 @@ export async function endorseTransaction (transaction: string): Promise<void> {
     throw new VCXInternalError(err)
   }
 }
+
+export interface IDownloadMessage {
+  uid: string, // id of the message to query.
+}
+
+export async function downloadMessage ({ uid }: IDownloadMessage): Promise<string> {
+  /**
+   *  Retrieves single message from the agency by the given uid.
+   */
+  try {
+    return await createFFICallbackPromise<string>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_download_message(0, uid, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32','string'],
+        (xhandle: number, err: number, message: string) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(message)
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}

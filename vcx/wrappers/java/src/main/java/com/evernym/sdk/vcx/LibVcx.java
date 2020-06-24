@@ -752,6 +752,9 @@ public abstract class LibVcx {
         /** Get messages for given uids or pairwise did from agency endpoint */
         public int vcx_messages_download(int command_handle, String messageStatus, String uids, String pwdids, Callback cb);
 
+        /** Retrieve single message from the agency by the given uid. */
+        public int vcx_download_message(int command_handle, String uid, Callback cb);
+
         /** Get messages for given uids from Cloud Agent */
         public int vcx_download_agent_messages(int command_handle, String messageStatus, String uids, Callback cb);
 

@@ -407,6 +407,9 @@ vcx_error_t vcx_shutdown(vcx_bool_t deleteWallet);
 /** Get Messages (Connections) of given status */
 vcx_error_t vcx_messages_download( vcx_command_handle_t command_handle, const char *message_status, const char *uids, const char *pw_dids, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *messages));
 
+/** Retrieves single message from the agency by the given uid */
+vcx_error_t vcx_download_message( vcx_command_handle_t command_handle, const char *uid, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *message));
+
 /** Get Messages (Cloud Agent) of given status */
 vcx_error_t vcx_download_agent_messages( vcx_command_handle_t command_handle, const char *message_status, const char *uids, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *messages));
 
