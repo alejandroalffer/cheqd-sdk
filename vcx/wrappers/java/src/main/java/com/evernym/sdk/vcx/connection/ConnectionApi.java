@@ -247,6 +247,30 @@ public class ConnectionApi extends VcxJava.API {
 		}
 	};
 
+	/**
+	 * Accept connection for the given invitation.
+	 *
+	 * This function performs the following actions:
+	 *  1. Creates Connection state object from the given invitation (vcxCreateConnectionWithInvite)
+	 *  2. Replies to the inviting side (vcxConnectionConnect)
+	 *
+	 * @param  invitationId  institution's personal identification for the connection.
+	 *                       It'll be used as a connection response label.
+	 * @param  inviteDetails A string representing a json object which is provided by an entity that wishes to make a connection.
+	 *                       The format depends on used communication protocol:
+	 *                          proprietary:
+	 *                              "{"targetName": "", "statusMsg": "message created", "connReqId": "mugIkrWeMr", "statusCode": "MS-101", "threadId": null, "senderAgencyDetail": {"endpoint": "http://localhost:8080", "verKey": "key", "DID": "did"}, "senderDetail": {"agentKeyDlgProof": {"agentDID": "8f6gqnT13GGMNPWDa2TRQ7", "agentDelegatedKey": "5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1", "signature": "TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/7Cyteep7U3m9Gw6ilu8SOOW59YR1rft+D8ZDg=="}, "publicDID": "7YLxxEfHRiZkCMVNii1RCy", "name": "Faber", "logoUrl": "http://robohash.org/234", "verKey": "CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx", "DID": "Ney2FxHT4rdEyy6EDCCtxZ"}}"
+	 *                          aries:
+	 *                              "{"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation","label":"Alice","recipientKeys":["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],"serviceEndpoint":"https://example.com/endpoint","routingKeys":["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]}"
+	 * @param  connectionType    details indicating if the connection will be established by text or QR Code.
+	 *                           "{"connection_type":"SMS","phone":"123","use_public_did":true}"
+	 *
+	 * @return               AcceptConnectionResult object containing:
+	 *                          - handle that should be used to perform actions with the Connection object.
+	 *                          - Connection object as JSON string
+	 *
+	 * @throws VcxException  If an exception occurred in Libvcx library.
+	 */
 	public static CompletableFuture<AcceptConnectionResult> vcxConnectionAcceptConnectionInvite(String invitationId,
 	                                                                                            String inviteDetails,
 	                                                                                            String connectionType) throws VcxException {

@@ -291,6 +291,16 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Retrieves single message from the agency by the given uid.
+     *
+     * @param  uid  id of the message to query.
+     *
+     * @return                Received message:
+     *                        "{"pairwiseDID":"did","msgs":[{"statusCode":"MS-106","payload":null,"senderDID":"","uid":"6BDkgc3z0E","type":"aries","refMsgId":null,"deliveryDetails":[],"decryptedPayload":"{"@msg":".....","@type":{"fmt":"json","name":"aries","ver":"1.0"}}"}]}"
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> vcxGetMessage(String uid) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(uid, "uid");
         logger.debug("vcxGetMessage() called with: uid = [" + uid + "]");
