@@ -115,7 +115,12 @@ public abstract class LibVcx {
         public int vcx_connection_connect(int command_handle, int connection_handle, String connection_type, Callback cb);
 
         /**
-         * Request a connection to be redirected to old one.
+         * Accept connection for the given invitation.
+         */
+        public int vcx_connection_accept_connection_invite(int command_handle, String source_id, String invite_details, String connection_type, Callback cb);
+
+        /**
+         * Asynchronously request a connection to be redirected to old one.
          */
         public int vcx_connection_redirect(int command_handle, int connection_handle, int redirect_connection_handle, Callback cb);
 
@@ -618,7 +623,10 @@ public abstract class LibVcx {
         /** Create a Credential object based off of a known message id for a given connection. */
         public int vcx_credential_create_with_msgid(int command_handle, String source_id, int connection, String msg_id,Callback cb);
 
-        /** Approves the credential offer and submits a credential request. The result will be a credential stored in the prover's wallet. */
+        /** Accept credential for the given offer. */
+        public int vcx_credential_accept_credential_offer(int command_handle, String source_id, String offer, int connection_handle, Callback cb);
+
+        /** Asynchronously sends the credential request to the connection. */
         public int vcx_credential_send_request(int command_handle, int credential_handle, int connection_handle,int payment_handle, Callback cb);
 
         /** Approves the credential offer and gets the credential request message that can be sent to the specified connection */
@@ -729,6 +737,9 @@ public abstract class LibVcx {
 
         /** Retrieve messages from the agent. */
         public int vcx_messages_download(int command_handle, String messageStatus, String uids, String pwdids, Callback cb);
+
+        /** Retrieve single message from the agency by the given uid. */
+        public int vcx_download_message(int command_handle, String uid, Callback cb);
 
         /** Get messages for given uids from Cloud Agent */
         public int vcx_download_agent_messages(int command_handle, String messageStatus, String uids, Callback cb);
