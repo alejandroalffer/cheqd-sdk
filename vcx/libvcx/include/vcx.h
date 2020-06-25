@@ -146,6 +146,77 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
                                            const char *invite_details,
                                            void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_connection_handle_t));
 
+/// Accept connection for the given invitation.
+///
+/// This function performs the following actions:
+/// 1. Creates Connection state object from the given invite_details
+///     (equal to `vcx_connection_create_with_invite` function).
+/// 2. Replies to the inviting side (equal to `vcx_connection_connect` function).
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the connection.
+///
+/// invite_details: A string representing a json object which is provided by an entity
+/// that wishes to make a connection.
+///
+/// connection_options: Provides details indicating if the connection will be established
+/// by text or QR Code.
+///
+/// cb: Callback that provides connection handle and error status of request.
+///
+/// # Examples
+/// invite_details -> two formats are allowed depending on communication protocol:
+///     proprietary:
+///         {
+///             "targetName":"",
+///             "statusMsg":"message created",
+///             "connReqId":"mugIkrWeMr",
+///             "statusCode":"MS-101",
+///             "threadId":null,
+///             "senderAgencyDetail":{
+///                 "endpoint":"http://localhost:8080",
+///                 "verKey":"key",
+///                 "DID":"did"
+///             },
+///             "senderDetail":{
+///                 "agentKeyDlgProof":{
+///                     "agentDID":"8f6gqnT13GGMNPWDa2TRQ7",
+///                     "agentDelegatedKey":"5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1",
+///                     "signature":"TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/+D8ZDg=="
+///                  },
+///                 "publicDID":"7YLxxEfHRiZkCMVNii1RCy",
+///                 "name":"Faber",
+///                 "logoUrl":"http://robohash.org/234",
+///                 "verKey":"CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx",
+///                 "DID":"Ney2FxHT4rdEyy6EDCCtxZ"
+///                 }
+///             }
+///     aries: https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+///      {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
+///         "label": "Alice",
+///         "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+///         "serviceEndpoint": "https://example.com/endpoint",
+///         "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
+///      }
+///
+/// connection_options ->
+/// "{"connection_type":"SMS","phone":"123","use_public_did":true}"
+///     OR:
+/// "{"connection_type":"QR","phone":"","use_public_did":false}"
+///
+/// # Returns
+///     err: Result code as a u32
+///     connection_handle: the handle associated with the create Connection object.
+///     connection_serialized: the json string representing the created Connection object.
+vcx_error_t vcx_connection_accept_connection_invite(vcx_command_handle_t command_handle,
+                                                    const char *source_id,
+                                                    const char *invite_details,
+                                                    const char *connection_options,
+                                                    void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_connection_handle_t, const char*));
+
 // Delete a Connection object and release its handle
 //
 // #Params
@@ -393,6 +464,76 @@ vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle
                                           const char *source_id,
                                           const char *offer,
                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t));
+
+/// Accept credential for the given offer.
+///
+/// This function performs the following actions:
+/// 1. Creates Credential state object that requests and receives a credential for an institution.
+///     (equal to `vcx_credential_create_with_offer` function).
+/// 2. Prepares Credential Request and replies to the issuer.
+///     (equal to `vcx_credential_send_request` function).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the credential, should be unique.
+///
+/// offer: credential offer received from the issuer.
+///
+/// connection_handle: handle that identifies pairwise connection object with the issuer.
+///
+/// # Example
+/// offer -> depends on communication method:
+///     proprietary:
+///         [
+///             {
+///                 "msg_type":"CREDENTIAL_OFFER",
+///                 "version":"0.1",
+///                 "to_did":"...",
+///                 "from_did":"...",
+///                 "credential":{
+///                     "account_num":[
+///                         "...."
+///                     ],
+///                     "name_on_account":[
+///                         "Alice"
+///                      ]
+///                 },
+///                 "schema_seq_no":48,
+///                 "issuer_did":"...",
+///                 "credential_name":"Account Certificate",
+///                 "credential_id":"3675417066",
+///                 "msg_ref_id":"ymy5nth"
+///             }
+///         ]
+///     aries:
+///         {
+///             "@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential",
+///             "@id":"<uuid-of-offer-message>",
+///             "comment":"somecomment",
+///             "credential_preview":"<json-ldobject>",
+///             "offers~attach":[
+///                 {
+///                     "@id":"libindy-cred-offer-0",
+///                     "mime-type":"application/json",
+///                     "data":{
+///                         "base64":"<bytesforbase64>"
+///                     }
+///                 }
+///             ]
+///         }
+///
+/// cb: Callback that provides credential handle or error status
+///
+/// # Returns
+/// err: the result code as a u32
+/// credential_handle: the handle associated with the created Credential state object.
+/// credential_serialized: the json string representing the created Credential state object.
+vcx_error_t vcx_credential_accept_credential_offer(vcx_command_handle_t command_handle,
+                                                   const char *source_id,
+                                                   const char *offer,
+                                                   vcx_connection_handle_t connection_handle,
+                                                   void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t, const char*));
 
 // Takes a json string representing an credential object and recreates an object matching the json
 //
@@ -1377,6 +1518,33 @@ vcx_error_t vcx_messages_download(vcx_command_handle_t command_handle,
                                const char *uids,
                                const char *pw_dids,
                                void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+/// Retrieves single message from the agency by the given uid.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// uid: id of the message to query.
+///
+/// cb: Callback that provides retrieved message
+///
+/// # Example message ->
+///          {
+///            "statusCode": string,
+///            "payload":optional(string),
+///            "senderDID":string,
+///            "uid":string,
+///            "type":string,
+///            "refMsgId":optional(string),
+///            "deliveryDetails":[],
+///            "decryptedPayload":"{"@msg":string,"@type":{"fmt":string,"name":string"ver":string}}"
+///         }
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_download_message(vcx_command_handle_t command_handle,
+                                 const char *uid,
+                                 void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 // Retrieve messages from the cloud agent
 //

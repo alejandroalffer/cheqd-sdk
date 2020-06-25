@@ -3,6 +3,7 @@ import '../module-resolver-helper'
 import { assert } from 'chai'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import {
+  downloadMessage,
   downloadMessages,
   endorseTransaction,
   getLedgerAuthorAgreement,
@@ -133,6 +134,13 @@ describe('utils:', () => {
     it('success', async () => {
       const transaction = '{"req_id":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "signature": "gkVDhwe2", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}'
       await endorseTransaction(transaction)
+    })
+  })
+
+  describe('downloadMessage:', () => {
+    it('success', async () => {
+      const message = await downloadMessage({ uid: 'asdf' })
+      assert.ok(message)
     })
   })
 

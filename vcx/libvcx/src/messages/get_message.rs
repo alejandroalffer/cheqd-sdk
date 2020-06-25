@@ -549,6 +549,37 @@ pub fn download_agent_messages(status_codes: Option<Vec<String>>, uids: Option<V
     Ok(response)
 }
 
+pub fn download_message(uid: String) -> VcxResult<Message> {
+    trace!("download_message >>> uid: {:?}", uid);
+
+    AgencyMock::set_next_response(constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
+
+    let mut messages: Vec<Message> =
+        get_messages()
+            .uid(Some(vec![uid.clone()]))?
+            .version(&Some(::settings::get_protocol_type()))?
+            .download_messages()?
+            .into_iter()
+            .flat_map(|msgs_by_connection| msgs_by_connection.msgs)
+            .collect();
+
+    if messages.is_empty() {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages,
+                                      format!("Message for the given uid:\"{}\" not found.", uid)));
+    }
+
+    if messages.len() > 1 {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages,
+                                      format!("More than one message was retrieved for the given uid:\"{}\". \
+                                      Please, use `vcx_messages_download` function to retrieve several messages.", uid)));
+    }
+
+    let message = messages.remove(0);
+
+    trace!("download_message <<< message: {:?}", message);
+    Ok(message)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -648,5 +679,33 @@ mod tests {
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);
         assert_eq!(bad_req.unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_download_message() {
+        let _setup = SetupLibraryAgencyV1::init();
+
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
+
+        let message = "hello";
+        let message_options = json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string();
+        let hello_uid = ::connection::send_generic_message(alice, message, &message_options).unwrap();
+
+        // AS CONSUMER GET MESSAGE
+        ::utils::devsetup::set_consumer();
+
+        // download hello message
+        let retrieved_message = download_message(hello_uid).unwrap();
+
+        let expected_payload = json!({"@type":{"name":"hello","ver":"1.0","fmt":"json"},"@msg":"hello"});
+        let retrieved_payload: serde_json::Value = serde_json::from_str(&retrieved_message.decrypted_payload.unwrap()).unwrap();
+        assert_eq!(retrieved_payload, expected_payload);
+
+        // download unknown message
+        let unknown_uid = "unknown";
+        let res = download_message(unknown_uid.to_string()).unwrap_err();
+        assert_eq!(VcxErrorKind::InvalidMessages, res.kind())
     }
 }

@@ -748,6 +748,15 @@ pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResul
     store_connection(Connections::V1(connection))
 }
 
+pub fn accept_connection_invite(source_id: &str,
+                                details: &str,
+                                options: Option<String>) -> VcxResult<(u32, String)> {
+    let connection_handle = create_connection_with_invite(source_id, details)?;
+    connect(connection_handle, options)?;
+    let connection_serialized = to_string(connection_handle)?;
+    Ok((connection_handle, connection_serialized))
+}
+
 pub fn parse_acceptance_details(message: &Message) -> VcxResult<SenderDetail> {
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
@@ -1894,5 +1903,17 @@ pub mod tests {
         assert_eq!(rd.their_did, to_alice_old.their_pw_did);
         assert_eq!(rd.their_verkey, to_alice_old.their_pw_verkey);
         assert_eq!(rd.their_public_did, to_alice_old.their_public_did);
+    }
+
+    #[test]
+    fn test_accept_connection_invite() {
+        let _setup = SetupMocks::init();
+
+        let (connection_handle, connection_serialized) =
+            accept_connection_invite("test", INVITE_DETAIL_STRING, None).unwrap();
+
+        assert!(connection_handle > 0 );
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(connection_handle));
+        assert_eq!(connection_serialized, to_string(connection_handle).unwrap());
     }
 }
