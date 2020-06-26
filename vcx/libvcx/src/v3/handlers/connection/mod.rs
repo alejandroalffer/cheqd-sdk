@@ -174,7 +174,7 @@ pub mod tests {
                 let message: Message = messages[0].msgs[0].clone();
                 assert_eq!(::messages::RemoteMessageType::Other("aries".to_string()), message.msg_type);
                 let payload: ::messages::payload::PayloadV1 = ::serde_json::from_str(&message.decrypted_payload.unwrap()).unwrap();
-                let _payload: ::issuer_credential::CredentialOffer = ::serde_json::from_str(&payload.msg).unwrap();
+                let _payload: ::messages::issuance::credential_offer::CredentialOffer = ::serde_json::from_str(&payload.msg).unwrap();
 
                 ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
 

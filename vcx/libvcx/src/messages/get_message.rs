@@ -1,12 +1,19 @@
 use settings;
+use messages::message_type::{MessageTypes, MessageTypeV2};
 use messages::*;
-use messages::message_type::MessageTypes;
-use messages::MessageStatusCode;
 use messages::payload::{Payloads, PayloadTypes, PayloadKinds, PayloadV1, PayloadV2};
 use utils::{httpclient, constants};
 use error::prelude::*;
 use settings::ProtocolTypes;
 use utils::httpclient::AgencyMock;
+use messages::issuance::credential_offer::set_cred_offer_ref_message;
+use messages::proofs::proof_request::set_proof_req_ref_message;
+use messages::issuance::credential_request::set_cred_req_ref_message;
+use v3::messages::a2a::A2AMessage as AriesA2AMessage;
+use v3::utils::encryption_envelope::EncryptionEnvelope;
+use messages::issuance::credential_offer::CredentialOffer;
+use messages::issuance::credential::CredentialMessage;
+use std::convert::TryInto;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -338,7 +345,9 @@ impl Message {
                     .map(Payloads::PayloadV2)
             };
 
-            if let Ok(decrypted_payload) = decrypted_payload {
+            if let Ok(mut decrypted_payload) = decrypted_payload {
+                Self::_set_ref_msg_id(&mut decrypted_payload, &self.uid)
+                    .map_err(|err| error!("Could not set ref_msg_id: {:?}", err)).ok();
                 new_message.decrypted_payload = ::serde_json::to_string(&decrypted_payload).ok();
             } else if let Ok(decrypted_payload) = self._decrypt_v3_message() {
                 new_message.msg_type = RemoteMessageType::Other(String::from("aries"));
@@ -352,28 +361,74 @@ impl Message {
         new_message
     }
 
+    fn _set_ref_msg_id(decrypted_payload: &mut Payloads, msg_id: &str) -> VcxResult<()> {
+        trace!("_set_ref_msg_id >>>");
+        match decrypted_payload {
+            Payloads::PayloadV1(ref mut payload) => {
+                let type_ = payload.type_.name.as_str();
+                trace!("_set_ref_msg_id >>> message type: {:?}", type_);
+
+                match type_ {
+                    "CRED_OFFER" => {
+                        let offer = set_cred_offer_ref_message(&payload.msg, None, &msg_id)?;
+                        payload.msg = json!(offer).to_string();
+                    }
+                    "CRED_REQ" => {
+                        let cred_req = set_cred_req_ref_message(&payload.msg, &msg_id)?;
+                        payload.msg = json!(cred_req).to_string();
+                    }
+                    "PROOF_REQUEST" => {
+                        let proof_request = set_proof_req_ref_message(&payload.msg, None, &msg_id)?;
+                        payload.msg = json!(proof_request).to_string();
+                    }
+                    _ => {}
+                }
+            }
+            Payloads::PayloadV2(ref mut payload) => {
+                let message_type: MessageTypeV2 = serde_json::from_value(json!(payload.type_))
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse message type: {:?}", err)))?;
+                let type_ = message_type.type_.as_str();
+                trace!("_set_ref_msg_id >>> message type: {:?}", type_);
+
+                match type_ {
+                    "credential-offer" => {
+                        let offer = set_cred_offer_ref_message(&payload.msg, Some(payload.thread.clone()), &msg_id)?;
+                        payload.msg = json!(offer).to_string();
+                    }
+                    "credential-request" => {
+                        let cred_req = set_cred_req_ref_message(&payload.msg, &msg_id).unwrap();
+                        payload.msg = json!(cred_req).to_string();
+                    }
+                    "presentation-request" => {
+                        let proof_request = set_proof_req_ref_message(&payload.msg, Some(payload.thread.clone()), &msg_id)?;
+                        payload.msg = json!(proof_request).to_string();
+                    }
+                    _ => {}
+                }
+            }
+        };
+        trace!("_set_ref_msg_id <<<");
+        Ok(())
+    }
+
     fn _decrypt_v3_message(&self) -> VcxResult<::messages::payload::PayloadV1> {
-        use v3::messages::a2a::A2AMessage;
-        use v3::utils::encryption_envelope::EncryptionEnvelope;
-        use ::issuer_credential::{CredentialOffer, CredentialMessage};
-        use std::convert::TryInto;
+        trace!("_decrypt_v3_message >>>");
 
         let a2a_message = EncryptionEnvelope::open(self.payload()?)?;
 
         let (kind, msg) = match a2a_message {
-            A2AMessage::PresentationRequest(presentation_request) => {
-                let proof_req: ProofRequestMessage = presentation_request.try_into()?;
-
+            AriesA2AMessage::PresentationRequest(presentation_request) => {
+                let mut proof_req: ProofRequestMessage = presentation_request.try_into()?;
+                proof_req.msg_ref_id = Some(self.uid.clone());
                 (PayloadKinds::ProofRequest, json!(&proof_req).to_string())
             }
-            A2AMessage::CredentialOffer(offer) => {
-                let cred_offer: CredentialOffer = offer.try_into()?;
-
+            AriesA2AMessage::CredentialOffer(offer) => {
+                let mut cred_offer: CredentialOffer = offer.try_into()?;
+                cred_offer.msg_ref_id = Some(self.uid.clone());
                 (PayloadKinds::CredOffer, json!(vec![cred_offer]).to_string())
             }
-            A2AMessage::Credential(credential) => {
+            AriesA2AMessage::Credential(credential) => {
                 let credential: CredentialMessage = credential.try_into()?;
-
                 (PayloadKinds::Cred, json!(&credential).to_string())
             }
             msg => {
@@ -382,10 +437,14 @@ impl Message {
             }
         };
 
-        Ok(PayloadV1 {
+        trace!("_decrypt_v3_message <<< kind: {:?}, msg: {:?}", kind, msg);
+
+        let payload = PayloadV1 {
             type_: PayloadTypes::build_v1(kind, "json"),
             msg,
-        })
+        };
+
+        Ok(payload)
     }
 }
 
