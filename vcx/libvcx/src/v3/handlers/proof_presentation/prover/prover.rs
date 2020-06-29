@@ -9,6 +9,7 @@ use v3::handlers::proof_presentation::prover::messages::ProverMessages;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::proof_presentation::presentation_proposal::PresentationPreview;
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
+use v3::handlers::connection::connection::Connection;
 use connection;
 
 use messages::proofs::proof_message::ProofMessage;
@@ -79,12 +80,12 @@ impl Prover {
             return self.update_state_with_message(message_);
         }
 
-        let connection_handle = self.prover_sm.connection_handle()?;
-        let messages = connection::get_messages(connection_handle)?;
+        let agent_info = self.prover_sm.get_agent_info()?.clone();
 
+        let messages = agent_info.get_messages()?;
         if let Some((uid, message)) = self.prover_sm.find_message_to_handle(messages) {
             self.handle_message(message.into())?;
-            connection::update_message_status(connection_handle, uid)?;
+            agent_info.update_message_status(uid)?;
         };
 
         Ok(())
@@ -96,13 +97,13 @@ impl Prover {
         let message: Message = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot updated state with message: Message deserialization failed: {:?}", err)))?;
 
-        let connection_handle = self.prover_sm.connection_handle()?;
+        let agent_info = self.prover_sm.get_agent_info()?.clone();
 
         let uid = message.uid.clone();
-        let a2a_message = connection::decode_message(connection_handle, message)?;
+        let a2a_message = Connection::decode_message(&message)?;
 
         self.handle_message(a2a_message.into())?;
-        connection::update_message_status(connection_handle, uid)?;
+        agent_info.update_message_status(uid)?;
 
         Ok(())
     }

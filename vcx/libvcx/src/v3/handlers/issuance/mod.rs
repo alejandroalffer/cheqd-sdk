@@ -12,6 +12,7 @@ use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::holder::HolderSM;
 use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
+use v3::handlers::connection::connection::Connection;
 use connection;
 
 // Issuer
@@ -54,7 +55,7 @@ impl Issuer {
                 let message: Message = ::serde_json::from_str(&msg)
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
 
-                let message = connection::decode_message(self.issuer_sm.get_connection_handle(), message)?;
+                let message = Connection::decode_message(&message)?;
                 self.step(message.into())
             }
             None => {
@@ -100,7 +101,7 @@ impl Holder {
                 let message: Message = ::serde_json::from_str(&msg)
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state: Message deserialization failed: {:?}", err)))?;
 
-                let message = connection::decode_message(self.holder_sm.get_connection_handle(), message)?;
+                let message = Connection::decode_message(&message)?;
                 self.step(message.into())
             }
             None => {

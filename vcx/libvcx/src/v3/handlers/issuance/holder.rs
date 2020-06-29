@@ -1,6 +1,6 @@
 use api::VcxStateType;
 
-use v3::handlers::issuance::states::{HolderState, OfferReceivedState};
+use v3::handlers::issuance::states::{HolderState, OfferReceivedState, RequestSentState};
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
@@ -9,7 +9,7 @@ use v3::messages::issuance::credential_ack::CredentialAck;
 use v3::messages::error::ProblemReport;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::status::Status;
-use connection;
+use v3::handlers::connection::types::CompletedConnectionInfo;
 
 use utils::libindy::anoncreds::{self, libindy_prover_store_credential};
 use error::prelude::*;
@@ -55,12 +55,12 @@ impl HolderSM {
 
         if self.is_terminal_state() { return Ok(self); }
 
-        let conn_handle = self.state.get_connection_handle();
-        let messages = connection::get_messages(conn_handle)?;
+        let agent = self.state.get_agent_info()?;
+        let messages = agent.get_messages()?;
 
         match self.find_message_to_handle(messages) {
             Some((uid, msg)) => {
-                connection::update_message_status(conn_handle, uid)?;
+                agent.update_message_status(uid)?;
                 self.handle_message(msg.into())
             }
             None => Ok(self)
@@ -99,10 +99,6 @@ impl HolderSM {
         None
     }
 
-    pub fn get_connection_handle(&self) -> u32 {
-        self.state.get_connection_handle()
-    }
-
     pub fn step(state: HolderState, source_id: String, thread_id: String) -> Self {
         HolderSM { state, source_id, thread_id }
     }
@@ -114,21 +110,29 @@ impl HolderSM {
         let state = match state {
             HolderState::OfferReceived(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequestSend(connection_handle) => {
-                    let request = _make_credential_request(connection_handle, &state_data.offer);
-                    match request {
+                    let connection = ::connection::get_completed_connection_state_info(connection_handle)?;
+
+                    match state_data.make_credential_request(&connection) {
                         Ok((cred_request, req_meta, cred_def_json)) => {
+                            let thread = state_data.thread.clone()
+                                .update_received_order(&connection.remote_did_doc.id);
+
                             let cred_request = cred_request
-                                .set_thread_id(&thread_id);
-                            connection::remove_pending_message(connection_handle, &state_data.offer.id)?;
-                            connection::send_message(connection_handle, cred_request.to_a2a_message())?;
-                            HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle).into())
+                                .set_thread(thread.clone());
+
+                            connection.agent.send_message(&cred_request.to_a2a_message(), &connection.remote_did_doc)?;
+                            HolderState::RequestSent((state_data, req_meta, cred_def_json, connection, thread).into())
                         }
                         Err(err) => {
+                            let thread = state_data.thread.clone()
+                                .update_received_order(&connection.remote_did_doc.id);
+
                             let problem_report = ProblemReport::create()
                                 .set_comment(err.to_string())
-                                .set_thread_id(&thread_id);
-                            connection::send_message(connection_handle, problem_report.to_a2a_message())?;
-                            HolderState::Finished((state_data, problem_report).into())
+                                .set_thread(thread.clone());
+
+                            connection.agent.send_message(&problem_report.to_a2a_message(), &connection.remote_did_doc)?;
+                            HolderState::Finished((state_data, problem_report, thread).into())
                         }
                     }
                 }
@@ -139,28 +143,38 @@ impl HolderSM {
             },
             HolderState::RequestSent(state_data) => match cim {
                 CredentialIssuanceMessage::Credential(credential) => {
-                    let result = _store_credential(&credential, &state_data.req_meta, &state_data.cred_def_json);
-                    match result {
+                    match state_data.store_credential(&credential) {
                         Ok(cred_id) => {
+                            let thread = state_data.thread.clone()
+                                .increment_sender_order()
+                                .update_received_order(&state_data.connection.remote_did_doc.id);
+
                             if credential.please_ack.is_some() {
-                                let ack = CredentialAck::create().set_thread_id(&thread_id);
-                                connection::send_message(state_data.connection_handle, A2AMessage::CredentialAck(ack))?;
+                                let ack = CredentialAck::create().set_thread(thread.clone());
+                                state_data.connection.agent.send_message(&A2AMessage::CredentialAck(ack), &state_data.connection.remote_did_doc)?;
                             }
 
-                            HolderState::Finished((state_data, cred_id, credential).into())
+                            HolderState::Finished((state_data, cred_id, credential, thread).into())
                         }
                         Err(err) => {
+                            let thread = state_data.thread.clone()
+                                .increment_sender_order()
+                                .update_received_order(&state_data.connection.remote_did_doc.id);
+
                             let problem_report = ProblemReport::create()
                                 .set_comment(err.to_string())
-                                .set_thread_id(&thread_id);
+                                .set_thread(thread.clone());
 
-                            connection::send_message(state_data.connection_handle, problem_report.to_a2a_message())?;
-                            HolderState::Finished((state_data, problem_report).into())
+                            state_data.connection.agent.send_message(&problem_report.to_a2a_message(), &state_data.connection.remote_did_doc)?;
+                            HolderState::Finished((state_data, problem_report, thread).into())
                         }
                     }
                 }
                 CredentialIssuanceMessage::ProblemReport(problem_report) => {
-                    HolderState::Finished((state_data, problem_report).into())
+                    let thread = state_data.thread.clone()
+                        .update_received_order(&state_data.connection.remote_did_doc.id);
+
+                    HolderState::Finished((state_data, problem_report, thread).into())
                 }
                 _ => {
                     warn!("In this state Credential Issuance can accept only Credential and Problem Report");
@@ -231,35 +245,37 @@ fn _parse_rev_reg_id_from_credential(credential: &str) -> VcxResult<Option<Strin
     Ok(rev_reg_id)
 }
 
-fn _store_credential(credential: &Credential,
-                     req_meta: &str, cred_def_json: &str) -> VcxResult<String> {
-    trace!("Holder::_store_credential >>>");
+impl RequestSentState {
+    fn store_credential(&self, credential: &Credential) -> VcxResult<String> {
+        trace!("Holder::_store_credential >>>");
 
-    let credential_json = credential.credentials_attach.content()?;
-    let rev_reg_id = _parse_rev_reg_id_from_credential(&credential_json)?;
-    let rev_reg_def_json = if let Some(rev_reg_id) = rev_reg_id {
-        let (_, json) = anoncreds::get_rev_reg_def_json(&rev_reg_id)?;
-        Some(json)
-    } else {
-        None
-    };
+        let credential_json = credential.credentials_attach.content()?;
+        let rev_reg_id = _parse_rev_reg_id_from_credential(&credential_json)?;
+        let rev_reg_def_json = if let Some(rev_reg_id) = rev_reg_id {
+            let (_, json) = anoncreds::get_rev_reg_def_json(&rev_reg_id)?;
+            Some(json)
+        } else {
+            None
+        };
 
-    libindy_prover_store_credential(None,
-                                    req_meta,
-                                    &credential_json,
-                                    cred_def_json,
-                                    rev_reg_def_json.as_ref().map(String::as_str))
+        libindy_prover_store_credential(None,
+                                        &self.req_meta,
+                                        &credential_json,
+                                        &self.cred_def_json,
+                                        rev_reg_def_json.as_ref().map(String::as_str))
+    }
 }
 
-fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxResult<(CredentialRequest, String, String)> {
-    trace!("Holder::_make_credential_request >>> conn_handle: {:?}, offer: {:?}", conn_handle, offer);
+impl OfferReceivedState {
+    fn make_credential_request(&self, connection: &CompletedConnectionInfo) -> VcxResult<(CredentialRequest, String, String)> {
+        trace!("Holder::OfferReceivedState::make_credential_request >>> offer: {:?}", self.offer);
 
-    let my_did = connection::get_pw_did(conn_handle)?;
-    let cred_offer = offer.offers_attach.content()?;
-    let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
-    let (req, req_meta, _cred_def_id, cred_def_json) =
-        credential::Credential::create_credential_request(&cred_def_id, &my_did, &cred_offer)?;
-    Ok((CredentialRequest::create().set_requests_attach(req)?, req_meta, cred_def_json))
+        let cred_offer = self.offer.offers_attach.content()?;
+        let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
+        let (req, req_meta, _cred_def_id, cred_def_json) =
+            credential::Credential::create_credential_request(&cred_def_id, &connection.agent.pw_did, &cred_offer)?;
+        Ok((CredentialRequest::create().set_requests_attach(req)?, req_meta, cred_def_json))
+    }
 }
 
 #[cfg(test)]
@@ -318,13 +334,19 @@ mod test {
         }
 
         #[test]
-        fn test_issuer_handle_credential_request_sent_message_from_offer_received_state() {
+        fn test_issuer_handle_credential_request_sent_message_from_offer_received_state() -> Result<(), String> {
             let _setup = SetupAriesMocks::init();
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
 
-            assert_match!(HolderState::RequestSent(_), holder_sm.state);
+            match holder_sm.state {
+                HolderState::RequestSent(state) => {
+                    assert_eq!(0, state.thread.sender_order);
+                    Ok(())
+                }
+                other => Err(format!("State expected to be RequestSent, but: {:?}", other))
+            }
         }
 
         #[test]

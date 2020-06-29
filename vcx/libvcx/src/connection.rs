@@ -25,6 +25,10 @@ use v3::handlers::connection::connection::Connection as ConnectionV3;
 use v3::handlers::connection::states::ActorDidExchangeState;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation as InvitationV3;
+use v3::messages::a2a::{A2AMessage, MessageId};
+use v3::messages::connection::did_doc::DidDoc;
+use v3::handlers::connection::types::CompletedConnectionInfo;
+
 use settings::ProtocolTypes;
 
 lazy_static! {
@@ -1263,9 +1267,6 @@ impl From<(Connection, ActorDidExchangeState)> for ConnectionV3 {
     }
 }
 
-use v3::messages::a2a::{A2AMessage, MessageId};
-use v3::messages::connection::did_doc::DidDoc;
-
 pub fn get_messages(handle: u32) -> VcxResult<HashMap<String, A2AMessage>> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
@@ -1293,15 +1294,6 @@ pub fn get_message_by_id(handle: u32, msg_id: String) -> VcxResult<A2AMessage> {
     })
 }
 
-pub fn decode_message(handle: u32, message: Message) -> VcxResult<A2AMessage> {
-    CONNECTION_MAP.get_mut(handle, |connection| {
-        match connection {
-            Connections::V3(ref mut connection) => connection.decode_message(&message),
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
-        }
-    })
-}
-
 pub fn send_message(handle: u32, message: A2AMessage) -> VcxResult<()> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
@@ -1311,8 +1303,8 @@ pub fn send_message(handle: u32, message: A2AMessage) -> VcxResult<()> {
     })
 }
 
-pub fn send_message_to_self_endpoint(message: A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
-    ConnectionV3::send_message_to_self_endpoint(&message, did_doc)
+pub fn send_message_to_self_endpoint(message: &A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
+    ConnectionV3::send_message_to_self_endpoint(message, did_doc)
 }
 
 pub fn add_pending_messages(handle: u32, messages: HashMap<MessageId, String>) -> VcxResult<()> {
@@ -1365,6 +1357,15 @@ pub fn get_connection_info(handle: u32) -> VcxResult<String> {
         match cxn {
             Connections::V1(_) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
             Connections::V3(ref connection) => connection.get_connection_info()
+        }
+    })
+}
+
+pub fn get_completed_connection_state_info(handle: u32) -> VcxResult<CompletedConnectionInfo> {
+    CONNECTION_MAP.get(handle, |cxn| {
+        match cxn {
+            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
+            Connections::V3(ref connection) => connection.get_completed_connection_state_info()
         }
     })
 }
@@ -1912,7 +1913,7 @@ pub mod tests {
         let (connection_handle, connection_serialized) =
             accept_connection_invite("test", INVITE_DETAIL_STRING, None).unwrap();
 
-        assert!(connection_handle > 0 );
+        assert!(connection_handle > 0);
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(connection_handle));
         assert_eq!(connection_serialized, to_string(connection_handle).unwrap());
     }

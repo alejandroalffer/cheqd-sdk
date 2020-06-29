@@ -5,7 +5,7 @@ use messages::update_connection::send_delete_connection_message;
 
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::a2a::A2AMessage;
-
+use v3::handlers::connection::connection::Connection;
 use v3::utils::encryption_envelope::EncryptionEnvelope;
 
 use std::collections::HashMap;
@@ -17,7 +17,7 @@ use settings;
 use error::prelude::*;
 use settings::ProtocolTypes;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AgentInfo {
     pub pw_did: String,
     pub pw_vk: String,
@@ -92,7 +92,7 @@ impl AgentInfo {
         let mut a2a_messages: HashMap<String, A2AMessage> = HashMap::new();
 
         for message in messages {
-            a2a_messages.insert(message.uid.clone(), self.decode_message(&message)?);
+            a2a_messages.insert(message.uid.clone(), Connection::decode_message(&message)?);
         }
 
         Ok(a2a_messages)
@@ -114,14 +114,13 @@ impl AgentInfo {
                 .pop()
                 .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessages, format!("Message not found for id: {:?}", msg_id)))?;
 
-        let message = self.decode_message(&message)?;
+        let message = Connection::decode_message(&message)?;
 
         Ok(message)
     }
 
-    pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
+    pub fn decode_message(message: &Message) -> VcxResult<A2AMessage> {
         trace!("Agent::decode_message >>>");
-
         EncryptionEnvelope::open(message.payload()?)
     }
 

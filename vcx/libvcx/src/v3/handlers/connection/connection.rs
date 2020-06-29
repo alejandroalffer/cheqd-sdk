@@ -1,17 +1,16 @@
-use messages::get_message::Message;
 use error::prelude::*;
+use std::collections::HashMap;
 
 use v3::handlers::connection::states::{DidExchangeSM, Actor, ActorDidExchangeState};
 use v3::handlers::connection::messages::DidExchangeMessages;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::invite::Invitation;
-
-use std::collections::HashMap;
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::basic_message::message::BasicMessage;
-use v3::messages::discovery::disclose::ProtocolDescriptor;
+use v3::handlers::connection::types::{SideConnectionInfo, ConnectionStateInfo, CompletedConnectionInfo};
 
+use messages::get_message::Message;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
@@ -132,7 +131,7 @@ impl Connection {
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption,
                                               format!("Cannot updated state with messages: Message deserialization failed: {:?}", err)))?;
 
-        let a2a_message = self.decode_message(&message)?;
+        let a2a_message = Connection::decode_message(&message)?;
         self.handle_message(a2a_message.into())?;
 
         agent_info.update_message_status(message.uid)?;
@@ -155,7 +154,7 @@ impl Connection {
         self.step(message)
     }
 
-    pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
+    pub fn decode_message(message: &Message) -> VcxResult<A2AMessage> {
         match message.decrypted_payload {
             Some(ref payload) => {
                 let message: ::messages::payload::PayloadV1 = ::serde_json::from_str(&payload)
@@ -164,7 +163,7 @@ impl Connection {
                 ::serde_json::from_str::<A2AMessage>(&message.msg)
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))
             }
-            None => self.agent_info().decode_message(message)
+            None => AgentInfo::decode_message(message)
         }
     }
 
@@ -257,30 +256,14 @@ impl Connection {
             None => None
         };
 
-        let connection_info = ConnectionInfo { my: current, their: remote };
-
-        let connection_info_json = serde_json::to_string(&connection_info)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("Cannot serialize ConnectionInfo: {:?}", err)))?;
-
-        return Ok(connection_info_json);
+        let connection_info = ConnectionStateInfo { my: current, their: remote };
+        return Ok(json!(connection_info).to_string());
     }
-}
 
-#[derive(Debug, Serialize)]
-struct ConnectionInfo {
-    my: SideConnectionInfo,
-    their: Option<SideConnectionInfo>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct SideConnectionInfo {
-    did: String,
-    recipient_keys: Vec<String>,
-    routing_keys: Vec<String>,
-    service_endpoint: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    protocols: Option<Vec<ProtocolDescriptor>>,
+    pub fn get_completed_connection_state_info(&self) -> VcxResult<CompletedConnectionInfo> {
+        trace!("Connection::get_completed_connection_state_info >>>");
+        self.connection_sm.completed_connection_state_info()
+    }
 }
 
 #[cfg(test)]

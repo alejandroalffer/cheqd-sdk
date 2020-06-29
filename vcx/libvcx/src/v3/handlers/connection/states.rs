@@ -20,6 +20,8 @@ use std::collections::HashMap;
 
 use error::prelude::*;
 use v3::utils::pending_message::PendingMessage;
+use messages::thread::Thread;
+use v3::handlers::connection::types::CompletedConnectionInfo;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeSM {
@@ -67,17 +69,20 @@ impl DidExchangeState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NullState {}
+pub struct NullState {
+    thread: Thread,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InvitedState {
-    invitation: Invitation
+    invitation: Invitation,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RequestedState {
     request: Request,
     did_doc: DidDoc,
+    thread: Thread,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -85,12 +90,14 @@ pub struct RespondedState {
     response: SignedResponse,
     did_doc: DidDoc,
     prev_agent_info: AgentInfo,
+    thread: Thread,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteState {
     did_doc: DidDoc,
     protocols: Option<Vec<ProtocolDescriptor>>,
+    thread: Thread,
 }
 
 impl From<(NullState, Invitation)> for InvitedState {
@@ -100,79 +107,97 @@ impl From<(NullState, Invitation)> for InvitedState {
     }
 }
 
-impl From<(InvitedState, ProblemReport)> for NullState {
-    fn from((_state, _error): (InvitedState, ProblemReport)) -> NullState {
+impl From<(InvitedState, ProblemReport, Thread)> for NullState {
+    fn from((_state, _error, thread): (InvitedState, ProblemReport, Thread)) -> NullState {
         trace!("DidExchangeStateSM: transit state from InvitedState to NullState");
-        NullState {}
+        trace!("Thread: {:?}", thread);
+        NullState { thread }
     }
 }
 
-impl From<(InvitedState, Request)> for RequestedState {
-    fn from((state, request): (InvitedState, Request)) -> RequestedState {
+impl From<(InvitedState, Request, Thread)> for RequestedState {
+    fn from((state, request, thread): (InvitedState, Request, Thread)) -> RequestedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
-        RequestedState { request, did_doc: DidDoc::from(state.invitation) }
+        trace!("Thread: {:?}", thread);
+        RequestedState { request, did_doc: DidDoc::from(state.invitation), thread }
     }
 }
 
-impl From<(InvitedState, Request, SignedResponse, AgentInfo)> for RespondedState {
-    fn from((_state, request, response, prev_agent_info): (InvitedState, Request, SignedResponse, AgentInfo)) -> RespondedState {
+impl From<(InvitedState, Request, SignedResponse, AgentInfo, Thread)> for RespondedState {
+    fn from((_state, request, response, prev_agent_info, thread): (InvitedState, Request, SignedResponse, AgentInfo, Thread)) -> RespondedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
-        RespondedState { response, did_doc: request.connection.did_doc, prev_agent_info }
+        trace!("Thread: {:?}", thread);
+        RespondedState { response, did_doc: request.connection.did_doc, prev_agent_info, thread }
     }
 }
 
-impl From<(RequestedState, ProblemReport)> for NullState {
-    fn from((_state, _error): (RequestedState, ProblemReport)) -> NullState {
+impl From<(RespondedState, Ping, Thread)> for RespondedState {
+    fn from((state, _ping, thread): (RespondedState, Ping, Thread)) -> RespondedState {
+        trace!("DidExchangeStateSM: transit state from RespondedState to RespondedState");
+        trace!("Thread: {:?}", thread);
+        RespondedState { response: state.response, did_doc: state.did_doc, prev_agent_info: state.prev_agent_info, thread }
+    }
+}
+
+impl From<(RequestedState, ProblemReport, Thread)> for NullState {
+    fn from((_state, _error, thread): (RequestedState, ProblemReport, Thread)) -> NullState {
         trace!("DidExchangeStateSM: transit state from RequestedState to NullState");
-        NullState {}
+        trace!("Thread: {:?}", thread);
+        NullState { thread }
     }
 }
 
-impl From<(RequestedState, Response)> for CompleteState {
-    fn from((_state, response): (RequestedState, Response)) -> CompleteState {
+impl From<(RequestedState, Response, Thread)> for CompleteState {
+    fn from((_state, response, thread): (RequestedState, Response, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
-        CompleteState { did_doc: response.connection.did_doc, protocols: None }
+        trace!("Thread: {:?}", thread);
+        CompleteState { did_doc: response.connection.did_doc, protocols: None, thread }
     }
 }
 
-impl From<(RespondedState, ProblemReport)> for NullState {
-    fn from((_state, _error): (RespondedState, ProblemReport)) -> NullState {
+impl From<(RespondedState, ProblemReport, Thread)> for NullState {
+    fn from((_state, _error, thread): (RespondedState, ProblemReport, Thread)) -> NullState {
         trace!("DidExchangeStateSM: transit state from RespondedState to NullState");
-        NullState {}
+        trace!("Thread: {:?}", thread);
+        NullState { thread }
     }
 }
 
-impl From<(RespondedState, Ack)> for CompleteState {
-    fn from((state, _ack): (RespondedState, Ack)) -> CompleteState {
+impl From<(RespondedState, Ack, Thread)> for CompleteState {
+    fn from((state, _ack, thread): (RespondedState, Ack, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { did_doc: state.did_doc, protocols: None }
+        trace!("Thread: {:?}", thread);
+        CompleteState { did_doc: state.did_doc, protocols: None, thread }
     }
 }
 
-impl From<(RespondedState, Ping)> for CompleteState {
-    fn from((state, _ping): (RespondedState, Ping)) -> CompleteState {
+impl From<(RespondedState, Ping, Thread)> for CompleteState {
+    fn from((state, _ping, thread): (RespondedState, Ping, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { did_doc: state.did_doc, protocols: None }
+        trace!("Thread: {:?}", thread);
+        CompleteState { did_doc: state.did_doc, protocols: None, thread }
     }
 }
 
-impl From<(RespondedState, PingResponse)> for CompleteState {
-    fn from((state, _ping_response): (RespondedState, PingResponse)) -> CompleteState {
+impl From<(RespondedState, PingResponse, Thread)> for CompleteState {
+    fn from((state, _ping_response, thread): (RespondedState, PingResponse, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { did_doc: state.did_doc, protocols: None }
+        trace!("Thread: {:?}", thread);
+        CompleteState { did_doc: state.did_doc, protocols: None, thread }
     }
 }
 
 impl From<(CompleteState, Vec<ProtocolDescriptor>)> for CompleteState {
     fn from((state, protocols): (CompleteState, Vec<ProtocolDescriptor>)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from CompleteState to CompleteState");
-        CompleteState { did_doc: state.did_doc, protocols: Some(protocols) }
+        CompleteState { did_doc: state.did_doc, protocols: Some(protocols), thread: state.thread }
     }
 }
 
 impl InvitedState {
     fn handle_connection_request(&self, request: &Request,
-                                 agent_info: &AgentInfo) -> VcxResult<(SignedResponse, AgentInfo)> {
+                                 agent_info: &AgentInfo,
+                                 thread: &Thread) -> VcxResult<(SignedResponse, AgentInfo)> {
         trace!("InvitedState:handle_connection_request >>> request: {:?}, agent_info: {:?}", request, agent_info);
 
         request.connection.did_doc.validate()?;
@@ -189,7 +214,7 @@ impl InvitedState {
             .ask_for_ack();
 
         let signed_response = response.clone()
-            .set_thread_id(&request.id.0)
+            .set_thread(thread.to_owned())
             .encode(&prev_agent_info.pw_vk)?;
 
         new_agent_info.send_message(&signed_response.to_a2a_message(), &request.connection.did_doc)?;
@@ -199,7 +224,7 @@ impl InvitedState {
 }
 
 impl RequestedState {
-    fn handle_connection_response(&self, response: SignedResponse, agent_info: &AgentInfo) -> VcxResult<Response> {
+    fn handle_connection_response(&self, response: SignedResponse, agent_info: &AgentInfo) -> VcxResult<(Response, Thread)> {
         trace!("RequestedState:handle_connection_response >>> response: {:?}, agent_info: {:?}", response, agent_info);
 
         let remote_vk: String = self.did_doc.recipient_keys().get(0).cloned()
@@ -207,28 +232,39 @@ impl RequestedState {
 
         let response: Response = response.decode(&remote_vk)?;
 
-        if !response.from_thread(&self.request.id.0) {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot handle Response: thread id does not match: {:?}", response.thread)));
+        if !response.from_thread(&self.request.id.to_string()) {
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                          format!("Received Connection Response from different thread: {:?}. Expected Thread: {:?}", response.thread, self.thread)));
         }
+
+        let thread = self.thread.clone()
+            .increment_sender_order()
+            .update_received_order(&response.connection.did);
 
         let message = if response.please_ack.is_some() {
             Ack::create()
-                .set_thread_id(&response.thread.thid.clone().unwrap_or_default())
+                .set_thread(thread.clone())
                 .to_a2a_message()
         } else {
             Ping::create()
-                .set_thread_id(response.thread.thid.clone().unwrap_or_default())
+                .set_thread(thread.clone())
                 .to_a2a_message()
         };
 
         agent_info.send_message(&message, &response.connection.did_doc)?;
 
-        Ok(response)
+        Ok((response, thread))
     }
 }
 
 impl RespondedState {
+    fn handle_ack(&self, ack: &Ack) -> VcxResult<()> {
+        self.thread.check_message_order(&self.did_doc.id, &ack.thread)?;
+        Ok(())
+    }
+
     fn handle_ping(&self, ping: &Ping, agent_info: &AgentInfo) -> VcxResult<()> {
+        self.thread.check_message_order(&self.did_doc.id, &ping.thread.clone().unwrap_or_default())?;
         _handle_ping(ping, agent_info, &self.did_doc)
     }
 }
@@ -313,14 +349,22 @@ impl DidExchangeSM {
             Actor::Inviter => {
                 DidExchangeSM {
                     source_id: source_id.to_string(),
-                    state: ActorDidExchangeState::Inviter(DidExchangeState::Null(NullState {})),
+                    state: ActorDidExchangeState::Inviter(
+                        DidExchangeState::Null(
+                            NullState { thread: Thread::new() }
+                        )
+                    ),
                     agent_info: AgentInfo::default(),
                 }
             }
             Actor::Invitee => {
                 DidExchangeSM {
                     source_id: source_id.to_string(),
-                    state: ActorDidExchangeState::Invitee(DidExchangeState::Null(NullState {})),
+                    state: ActorDidExchangeState::Invitee(
+                        DidExchangeState::Null(
+                            NullState { thread: Thread::new() }
+                        )
+                    ),
                     agent_info: AgentInfo::default(),
                 }
             }
@@ -473,25 +517,32 @@ impl DidExchangeSM {
                     DidExchangeState::Invited(state) => {
                         match message {
                             DidExchangeMessages::ExchangeRequestReceived(request) => {
-                                match state.handle_connection_request(&request, &agent_info) {
+                                let thread = Thread::new()
+                                    .set_thid(request.id.to_string())
+                                    .update_received_order(&request.connection.did_doc.id);
+
+                                match state.handle_connection_request(&request, &agent_info, &thread) {
                                     Ok((response, new_agent_info)) => {
                                         let prev_agent_info = agent_info.clone();
                                         agent_info = new_agent_info;
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Responded((state, request, response, prev_agent_info).into()))
+                                        ActorDidExchangeState::Inviter(DidExchangeState::Responded((state, request, response, prev_agent_info, thread).into()))
                                     }
                                     Err(err) => {
                                         let problem_report = ProblemReport::create()
                                             .set_problem_code(ProblemCode::RequestProcessingError)
                                             .set_explain(err.to_string())
-                                            .set_thread_id(&request.id.0);
+                                            .set_thread(thread.clone());
 
                                         agent_info.send_message(&problem_report.to_a2a_message(), &request.connection.did_doc).ok(); // IS is possible?
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
+                                        ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report, thread).into()))
                                     }
                                 }
                             }
                             DidExchangeMessages::ProblemReportReceived(problem_report) => {
-                                ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
+                                let thread = Thread::new()
+                                    .set_thid(problem_report.id.to_string());
+
+                                ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report, thread).into()))
                             }
                             _ => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Invited(state))
@@ -504,26 +555,76 @@ impl DidExchangeSM {
                     DidExchangeState::Responded(state) => {
                         match message {
                             DidExchangeMessages::AckReceived(ack) => {
-                                ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ack).into()))
+                                match state.handle_ack(&ack) {
+                                    Ok(()) => {
+                                        let thread = state.thread.clone()
+                                            .update_received_order(&state.did_doc.id);
+
+                                        ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ack, thread).into()))
+                                    }
+                                    Err(err) => {
+                                        let thread = state.thread.clone()
+                                            .increment_sender_order()
+                                            .update_received_order(&state.did_doc.id);
+
+                                        let problem_report = ProblemReport::create()
+                                            .set_problem_code(ProblemCode::RequestProcessingError)
+                                            .set_explain(err.to_string())
+                                            .set_thread(thread.clone());
+
+                                        agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc).ok();
+                                        ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report, thread).into()))
+                                    }
+                                }
                             }
                             DidExchangeMessages::PingReceived(ping) => {
-                                state.handle_ping(&ping, &agent_info)?;
-                                ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping).into()))
+                                match state.handle_ping(&ping, &agent_info) {
+                                    Ok(()) => {
+                                        let thread = state.thread.clone()
+                                            .update_received_order(&state.did_doc.id);
+
+                                        ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping, thread).into()))
+                                    }
+                                    Err(err) => {
+                                        let thread = state.thread.clone()
+                                            .increment_sender_order()
+                                            .update_received_order(&state.did_doc.id);
+
+                                        let problem_report = ProblemReport::create()
+                                            .set_problem_code(ProblemCode::RequestProcessingError)
+                                            .set_explain(err.to_string())
+                                            .set_thread(thread.clone());
+
+                                        agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc).ok();
+                                        ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report, thread).into()))
+                                    }
+                                }
                             }
                             DidExchangeMessages::ProblemReportReceived(problem_report) => {
-                                ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
+                                let thread = state.thread.clone()
+                                    .update_received_order(&state.did_doc.id);
+
+                                ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report, thread).into()))
                             }
                             DidExchangeMessages::SendPing(comment) => {
+                                let thread = state.thread.clone()
+                                    .increment_sender_order()
+                                    .update_received_order(&state.did_doc.id);
+
                                 let ping =
                                     Ping::create()
                                         .request_response()
-                                        .set_comment(comment);
+                                        .set_comment(comment)
+                                        .set_thread(thread.clone());
 
                                 agent_info.send_message(&ping.to_a2a_message(), &state.did_doc).ok();
-                                ActorDidExchangeState::Inviter(DidExchangeState::Responded(state))
+                                ActorDidExchangeState::Inviter(DidExchangeState::Responded((state, ping, thread).into()))
                             }
                             DidExchangeMessages::PingResponseReceived(ping_response) => {
-                                ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping_response).into()))
+                                let thread = state.thread.clone()
+                                    .update_received_order(&state.did_doc.id);
+
+                                ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping_response, thread).into()))
                             }
                             _ => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Responded(state))
@@ -558,11 +659,11 @@ impl DidExchangeSM {
                                     .set_service_endpoint(agent_info.agency_endpoint()?)
                                     .set_keys(agent_info.recipient_keys(), agent_info.routing_keys()?);
 
+                                let thread = Thread::new()
+                                    .set_thid(request.id.to_string());
+
                                 agent_info.send_message(&request.to_a2a_message(), &DidDoc::from(state.invitation.clone()))?;
-                                ActorDidExchangeState::Invitee(DidExchangeState::Requested((state, request).into()))
-                            }
-                            DidExchangeMessages::ProblemReportReceived(problem_report) => {
-                                ActorDidExchangeState::Invitee(DidExchangeState::Null((state, problem_report).into()))
+                                ActorDidExchangeState::Invitee(DidExchangeState::Requested((state, request, thread).into()))
                             }
                             _ => {
                                 ActorDidExchangeState::Invitee(DidExchangeState::Invited(state))
@@ -573,21 +674,29 @@ impl DidExchangeSM {
                         match message {
                             DidExchangeMessages::ExchangeResponseReceived(response) => {
                                 match state.handle_connection_response(response, &agent_info) {
-                                    Ok(response) => {
-                                        ActorDidExchangeState::Invitee(DidExchangeState::Completed((state, response).into()))
+                                    Ok((response, thread)) => {
+                                        ActorDidExchangeState::Invitee(DidExchangeState::Completed((state, response, thread).into()))
                                     }
                                     Err(err) => {
+                                        let thread = state.thread.clone()
+                                            .increment_sender_order()
+                                            .update_received_order(&state.did_doc.id);
+
                                         let problem_report = ProblemReport::create()
                                             .set_problem_code(ProblemCode::ResponseProcessingError)
                                             .set_explain(err.to_string())
-                                            .set_thread_id(&state.request.id.0);
+                                            .set_thread(thread.clone());
+
                                         agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc).ok();
-                                        ActorDidExchangeState::Invitee(DidExchangeState::Null((state, problem_report).into()))
+                                        ActorDidExchangeState::Invitee(DidExchangeState::Null((state, problem_report, thread).into()))
                                     }
                                 }
                             }
                             DidExchangeMessages::ProblemReportReceived(problem_report) => {
-                                ActorDidExchangeState::Invitee(DidExchangeState::Null((state, problem_report).into()))
+                                let thread = state.thread.clone()
+                                    .update_received_order(&state.did_doc.id);
+
+                                ActorDidExchangeState::Invitee(DidExchangeState::Null((state, problem_report, thread).into()))
                             }
                             _ => {
                                 ActorDidExchangeState::Invitee(DidExchangeState::Requested(state))
@@ -603,6 +712,7 @@ impl DidExchangeSM {
                 }
             }
         };
+
         Ok(DidExchangeSM { source_id, agent_info, state })
     }
 
@@ -623,6 +733,31 @@ impl DidExchangeSM {
                     DidExchangeState::Requested(ref state) => Some(state.did_doc.clone()),
                     DidExchangeState::Responded(ref state) => Some(state.did_doc.clone()),
                     DidExchangeState::Completed(ref state) => Some(state.did_doc.clone()),
+                }
+        }
+    }
+
+    pub fn completed_connection_state_info(&self) -> VcxResult<CompletedConnectionInfo> {
+        match self.state {
+            ActorDidExchangeState::Inviter(ref state) =>
+                match state {
+                    DidExchangeState::Completed(ref state) => {
+                        Ok(CompletedConnectionInfo {
+                            agent: self.agent_info.clone(),
+                            remote_did_doc: state.did_doc.clone(),
+                        })
+                    }
+                    _ => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Connection is not completed yet."))
+                },
+            ActorDidExchangeState::Invitee(ref state) =>
+                match state {
+                    DidExchangeState::Completed(ref state) => {
+                        Ok(CompletedConnectionInfo {
+                            agent: self.agent_info.clone(),
+                            remote_did_doc: state.did_doc.clone(),
+                        })
+                    }
+                    _ => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Connection is not completed yet."))
                 }
         }
     }
@@ -719,9 +854,15 @@ pub mod test {
     use v3::messages::connection::problem_report::tests::_problem_report;
     use v3::messages::trust_ping::ping::tests::_ping;
     use v3::messages::trust_ping::ping_response::tests::_ping_response;
-    use v3::messages::ack::tests::_ack;
+    use v3::messages::ack::tests::_ack as t_ack;
     use v3::messages::discovery::query::tests::_query;
     use v3::messages::discovery::disclose::tests::_disclose;
+
+    pub fn _ack() -> Ack {
+        let mut ack = t_ack();
+        ack.thread.sender_order = 1;
+        ack
+    }
 
     pub mod inviter {
         use super::*;
@@ -766,6 +907,7 @@ pub mod test {
 
         mod step {
             use super::*;
+            use v3::messages::connection::response::tests::_thread;
 
             #[test]
             fn test_did_exchange_init() {
@@ -800,13 +942,23 @@ pub mod test {
             }
 
             #[test]
-            fn test_did_exchange_handle_exchange_request_message_from_invited_state() {
+            fn test_did_exchange_handle_exchange_request_message_from_invited_state() -> Result<(), String> {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
+                let request = _request();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Responded(_)), did_exchange_sm.state);
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(request.clone())).unwrap();
+
+                match did_exchange_sm.state {
+                    ActorDidExchangeState::Inviter(DidExchangeState::Responded(state)) => {
+                        assert_eq!(request.id.to_string(), state.thread.thid.unwrap());
+                        assert_eq!(0, state.thread.sender_order);
+                        assert_eq!(0, state.thread.received_orders.get(&request.connection.did).cloned().unwrap());
+                        Ok(())
+                    }
+                    other => Err(format!("State expected to be Responded, but: {:?}", other))
+                }
             }
 
             #[test]
@@ -852,9 +1004,7 @@ pub mod test {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = inviter_sm().to_inviter_responded_state();
-
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
-
 
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
             }
@@ -865,7 +1015,10 @@ pub mod test {
 
                 let mut did_exchange_sm = inviter_sm().to_inviter_responded_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::PingReceived(_ping())).unwrap();
+                let mut ping = _ping();
+                ping.thread = Some(_thread().set_sender_order(1));
+
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::PingReceived(ping)).unwrap();
 
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
             }
@@ -1229,14 +1382,20 @@ pub mod test {
             }
 
             #[test]
-            fn test_did_exchange_handle_connect_message_from_invited_state() {
+            fn test_did_exchange_handle_connect_message_from_invited_state() -> Result<(), String> {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = invitee_sm().to_invitee_invited_state();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
 
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Requested(_)), did_exchange_sm.state);
+                match did_exchange_sm.state {
+                    ActorDidExchangeState::Invitee(DidExchangeState::Requested(state)) => {
+                        assert_eq!(0, state.thread.sender_order);
+                        Ok(())
+                    }
+                    other => Err(format!("State expected to be Responded, but: {:?}", other))
+                }
             }
 
             #[test]
