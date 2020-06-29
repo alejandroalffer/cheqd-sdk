@@ -125,10 +125,10 @@ impl AgentInfo {
         EncryptionEnvelope::open(message.payload()?)
     }
 
-    pub fn send_message(&self, message: &A2AMessage, did_dod: &DidDoc) -> VcxResult<()> {
-        trace!("Agent::send_message >>> message: {:?}, did_doc: {:?}", message, did_dod);
-        let envelope = EncryptionEnvelope::create(&message, Some(&self.pw_vk), &did_dod)?;
-        httpclient::post_message(&envelope.0, &did_dod.get_endpoint())?;
+    pub fn send_message(&self, message: &A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
+        trace!("Agent::send_message >>> message: {:?}, did_doc: {:?}", message, did_doc);
+        let envelope = EncryptionEnvelope::create(&message, Some(&self.pw_vk), &did_doc)?;
+        httpclient::post_message(&envelope.0, &did_doc.get_endpoint())?;
         Ok(())
     }
 
