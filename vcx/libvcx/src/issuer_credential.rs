@@ -670,16 +670,6 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
     })
 }
 
-pub fn get_credential_status(handle: u32) -> VcxResult<u32> {
-    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
-        match obj {
-            IssuerCredentials::Pending(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidIssuerCredentialHandle, "Cannot get credential status for V1 Credential object")),
-            IssuerCredentials::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidIssuerCredentialHandle, "Cannot get credential status for V1 Credential object")),
-            IssuerCredentials::V3(ref obj) => obj.get_credential_status(),
-        }
-    })
-}
-
 pub fn release(handle: u32) -> VcxResult<()> {
     ISSUER_CREDENTIAL_MAP.release(handle)
         .or(Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle)))

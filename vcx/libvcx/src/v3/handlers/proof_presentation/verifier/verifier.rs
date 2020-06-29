@@ -44,11 +44,6 @@ impl Verifier {
         self.verifier_sm.state()
     }
 
-    pub fn presentation_status(&self) -> u32 {
-        trace!("Verifier::presentation_state >>>");
-        self.verifier_sm.presentation_status()
-    }
-
     pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
         trace!("Verifier::update_state >>> message: {:?}", message);
 
@@ -58,7 +53,14 @@ impl Verifier {
             return self.update_state_with_message(message_);
         }
 
-        let agent_info = self.verifier_sm.get_agent_info()?.clone();
+        let agent_info = match self.verifier_sm.get_agent_info() {
+            Some(agent_info) => agent_info.clone(),
+            None => {
+                warn!("Could not update Verifier state: no information about Connection.");
+                return Ok(());
+            }
+        };
+
         let messages = agent_info.get_messages()?;
 
         if let Some((uid, message)) = self.verifier_sm.find_message_to_handle(messages) {
@@ -87,7 +89,7 @@ impl Verifier {
 
     pub fn verify_presentation(&mut self, presentation: Presentation) -> VcxResult<()> {
         trace!("Verifier::verify_presentation >>> presentation: {:?}", presentation);
-        self.step(VerifierMessages::VerifyPresentation(presentation))
+        self.step(VerifierMessages::PresentationReceived(presentation))
     }
 
     pub fn send_presentation_request(&mut self, connection_handle: u32) -> VcxResult<()> {

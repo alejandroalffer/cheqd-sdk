@@ -7,7 +7,7 @@ use v3::messages::connection::did_doc::DidDoc;
 */
 
 #[derive(Debug, Serialize)]
-pub struct ConnectionStateInfo {
+pub struct PairwiseConnectionInfo {
     pub my: SideConnectionInfo,
     pub their: Option<SideConnectionInfo>,
 }
@@ -27,8 +27,9 @@ pub struct SideConnectionInfo {
     object store within Issuer / Holder / Verifier / Prover
     state machines as relationship to specific pairwise connection
 */
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CompletedConnectionInfo {
+pub struct InternalConnectionInfo {
     pub agent: AgentInfo,
     pub remote_did_doc: DidDoc,
 }

@@ -11,10 +11,9 @@ use proof::Proof;
 
 use std::collections::HashMap;
 use error::prelude::*;
-use v3::handlers::connection::types::CompletedConnectionInfo;
+use v3::handlers::connection::types::InternalConnectionInfo;
 use messages::thread::Thread;
 use v3::handlers::connection::agent::AgentInfo;
-use v3::messages::connection::did_doc::DidDoc;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct VerifierSM {
@@ -52,7 +51,8 @@ pub struct InitialState {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationRequestSentState {
     presentation_request: PresentationRequest,
-    connection: CompletedConnectionInfo,
+    connection: InternalConnectionInfo,
+    #[serde(default)]
     thread: Thread,
 }
 
@@ -61,11 +61,12 @@ pub struct FinishedState {
     presentation_request: PresentationRequest,
     presentation: Option<Presentation>,
     status: Status,
+    #[serde(default)]
     thread: Thread,
 }
 
-impl From<(InitialState, PresentationRequest, CompletedConnectionInfo, Thread)> for PresentationRequestSentState {
-    fn from((_state, presentation_request, connection, thread): (InitialState, PresentationRequest, CompletedConnectionInfo, Thread)) -> Self {
+impl From<(InitialState, PresentationRequest, InternalConnectionInfo, Thread)> for PresentationRequestSentState {
+    fn from((_state, presentation_request, connection, thread): (InitialState, PresentationRequest, InternalConnectionInfo, Thread)) -> Self {
         trace!("VerifierSM transit state from InitialState to PresentationRequestSentState");
         trace!("Thread: {:?}", thread);
         PresentationRequestSentState {
@@ -91,7 +92,7 @@ impl From<(PresentationRequestSentState, Presentation, Thread)> for FinishedStat
 
 impl From<(PresentationRequestSentState, ProblemReport, Thread)> for FinishedState {
     fn from((state, problem_report, thread): (PresentationRequestSentState, ProblemReport, Thread)) -> Self {
-        trace!("VerifierSM transit state from PresentationRequestSentState to FinishedState");
+        trace!("VerifierSM transit state from PresentationRequestSentState to FinishedState with ProblemReport: {:?}", problem_report);
         trace!("Thread: {:?}", thread);
         FinishedState {
             presentation_request: state.presentation_request,
@@ -103,9 +104,8 @@ impl From<(PresentationRequestSentState, ProblemReport, Thread)> for FinishedSta
 }
 
 impl PresentationRequestSentState {
-    fn verify_presentation(&self, presentation: &Presentation) -> VcxResult<Thread> {
-        let mut thread = self.thread.clone()
-            .update_received_order(&self.connection.remote_did_doc.id);
+    fn verify_presentation(&self, presentation: &Presentation, thread: &Thread) -> VcxResult<Thread> {
+        let mut thread = thread.clone();
 
         let valid = Proof::validate_indy_proof(&presentation.presentations_attach.content()?,
                                                &self.presentation_request.request_presentations_attach.content()?)?;
@@ -115,8 +115,7 @@ impl PresentationRequestSentState {
         }
 
         if presentation.please_ack.is_some() {
-            thread = thread
-                .update_received_order(&self.connection.remote_did_doc.id);
+            thread = thread.increment_sender_order();
 
             let ack = PresentationAck::create()
                 .set_thread(thread.clone());
@@ -137,20 +136,20 @@ impl VerifierSM {
                 VerifierState::Initiated(_) => {
                     // do not process message
                 }
-                VerifierState::PresentationRequestSent(_) => {
+                VerifierState::PresentationRequestSent(ref state) => {
                     match message {
                         A2AMessage::Presentation(presentation) => {
-                            if presentation.from_thread(&self.thread_id()) {
+                            if presentation.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::Presentation(presentation)));
                             }
                         }
                         A2AMessage::PresentationProposal(proposal) => {
-                            if proposal.from_thread(&self.thread_id()) {
+                            if proposal.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::PresentationProposal(proposal)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.from_thread(&self.thread_id()) {
+                            if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -175,7 +174,7 @@ impl VerifierSM {
             VerifierState::Initiated(state) => {
                 match message {
                     VerifierMessages::SendPresentationRequest(connection_handle) => {
-                        let connection = ::connection::get_completed_connection_state_info(connection_handle)?;
+                        let connection = ::connection::get_internal_connection_info(connection_handle)?;
 
                         let presentation_request: PresentationRequestData =
                             state.presentation_request_data.clone()
@@ -202,15 +201,16 @@ impl VerifierSM {
             }
             VerifierState::PresentationRequestSent(state) => {
                 match message {
-                    VerifierMessages::VerifyPresentation(presentation) => {
-                        match state.verify_presentation(&presentation) {
+                    VerifierMessages::PresentationReceived(presentation) => {
+                        let mut thread = state.thread.clone()
+                            .update_received_order(&state.connection.remote_did_doc.id);
+
+                        match state.verify_presentation(&presentation, &thread) {
                             Ok(thread) => {
                                 VerifierState::Finished((state, presentation, thread).into())
                             }
                             Err(err) => {
-                                let thread = state.thread.clone()
-                                    .increment_sender_order()
-                                    .update_received_order(&state.connection.remote_did_doc.id);
+                                thread = thread.increment_sender_order();
 
                                 let problem_report =
                                     ProblemReport::create()
@@ -254,8 +254,6 @@ impl VerifierSM {
 
     pub fn source_id(&self) -> String { self.source_id.clone() }
 
-    pub fn thread_id(&self) -> String { self.presentation_request().map(|request| request.id.0.clone()).unwrap_or_default() }
-
     pub fn state(&self) -> u32 {
         match self.state {
             VerifierState::Initiated(_) => VcxStateType::VcxStateInitialized as u32,
@@ -277,38 +275,11 @@ impl VerifierSM {
         }
     }
 
-    pub fn presentation_status(&self) -> u32 {
+    pub fn get_agent_info(&self) -> Option<&AgentInfo> {
         match self.state {
-            VerifierState::Finished(ref state) => state.status.code(),
-            _ => Status::Undefined.code()
-        }
-    }
-
-    pub fn get_agent_info<'a>(&'a self) -> VcxResult<&'a AgentInfo> {
-        match self.state {
-            VerifierState::Initiated(_) => {
-                Err(VcxError::from_msg(VcxErrorKind::NotReady, "Unexpected Verifier state: could not get Connection AgentInfo"))
-            }
-            VerifierState::PresentationRequestSent(ref state) => {
-                Ok(&state.connection.agent)
-            }
-            VerifierState::Finished(_) => {
-                Err(VcxError::from_msg(VcxErrorKind::NotReady, "Unexpected Prover state: could not get Connection AgentInfo"))
-            }
-        }
-    }
-
-    pub fn remote_connection_info<'a>(&'a self) -> VcxResult<&'a DidDoc> {
-        match self.state {
-            VerifierState::Initiated(_) => {
-                Err(VcxError::from_msg(VcxErrorKind::NotReady, "Unexpected Verifier state: could not get Connection Remote DidDoc"))
-            }
-            VerifierState::PresentationRequestSent(ref state) => {
-                Ok(&state.connection.remote_did_doc)
-            }
-            VerifierState::Finished(_) => {
-                Err(VcxError::from_msg(VcxErrorKind::NotReady, "Unexpected Prover state: could not get Connection Remote DidDoc"))
-            }
+            VerifierState::Initiated(_) => None,
+            VerifierState::PresentationRequestSent(ref state) => Some(&state.connection.agent),
+            VerifierState::Finished(_) => None,
         }
     }
 
@@ -367,7 +338,7 @@ pub mod test {
 
         fn to_finished_state(mut self) -> VerifierSM {
             self = self.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
-            self = self.step(VerifierMessages::VerifyPresentation(_presentation())).unwrap();
+            self = self.step(VerifierMessages::PresentationReceived(_presentation())).unwrap();
             self
         }
     }
@@ -416,7 +387,7 @@ pub mod test {
             verifier_sm = verifier_sm.step(VerifierMessages::PresentationRejectReceived(_problem_report())).unwrap();
             assert_match!(VerifierState::Initiated(_), verifier_sm.state);
 
-            verifier_sm = verifier_sm.step(VerifierMessages::VerifyPresentation(_presentation())).unwrap();
+            verifier_sm = verifier_sm.step(VerifierMessages::PresentationReceived(_presentation())).unwrap();
             assert_match!(VerifierState::Initiated(_), verifier_sm.state);
         }
 
@@ -426,10 +397,11 @@ pub mod test {
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
-            verifier_sm = verifier_sm.step(VerifierMessages::VerifyPresentation(_presentation())).unwrap();
+            verifier_sm = verifier_sm.step(VerifierMessages::PresentationReceived(_presentation())).unwrap();
 
             assert_match!(VerifierState::Finished(_), verifier_sm.state);
-            assert_eq!(Status::Success.code(), verifier_sm.presentation_status());
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, verifier_sm.state());
+
         }
 
         //    #[test]
@@ -453,7 +425,7 @@ pub mod test {
             verifier_sm = verifier_sm.step(VerifierMessages::PresentationProposalReceived(_presentation_proposal())).unwrap();
 
             assert_match!(VerifierState::Finished(_), verifier_sm.state);
-            assert_eq!(Status::Failed(_problem_report()).code(), verifier_sm.presentation_status());
+            assert_eq!(VcxStateType::VcxStateNone as u32, verifier_sm.state());
         }
 
         #[test]
@@ -465,7 +437,7 @@ pub mod test {
             verifier_sm = verifier_sm.step(VerifierMessages::PresentationRejectReceived(_problem_report())).unwrap();
 
             assert_match!(VerifierState::Finished(_), verifier_sm.state);
-            assert_eq!(Status::Failed(_problem_report()).code(), verifier_sm.presentation_status());
+            assert_eq!(VcxStateType::VcxStateNone as u32, verifier_sm.state());
         }
 
         #[test]
@@ -485,7 +457,7 @@ pub mod test {
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
-            verifier_sm = verifier_sm.step(VerifierMessages::VerifyPresentation(_presentation())).unwrap();
+            verifier_sm = verifier_sm.step(VerifierMessages::PresentationReceived(_presentation())).unwrap();
 
             verifier_sm = verifier_sm.step(VerifierMessages::PresentationRejectReceived(_problem_report())).unwrap();
             assert_match!(VerifierState::Finished(_), verifier_sm.state);

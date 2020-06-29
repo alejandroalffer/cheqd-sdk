@@ -51,13 +51,15 @@ impl Thread {
     }
 
     pub fn check_message_order(&self, sender: &str, received_message_thread: &Thread) -> VcxResult<()> {
-        let order = self.received_orders.get(sender).cloned().unwrap_or_default();
-        let expected_order = order + 1;
+        let expected_order = match self.received_orders.get(sender).cloned() {
+            Some(order) => order + 1,
+            None => 0
+        };
 
         if received_message_thread.sender_order != expected_order {
             warn!("Message is out of order. Expected sender_order: {}, Received sender_order: {}",
                   expected_order, received_message_thread.sender_order);
-            return Ok(()) // TODO: return error once we sure other clients control threading proper
+            return Ok(()); // TODO: return error once we sure other clients control threading proper
         }
         Ok(())
     }
@@ -97,3 +99,103 @@ macro_rules! threadlike (($type:ident) => (
         }
     }
 ));
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const THID: &str = "id";
+
+    #[test]
+    fn test_thread_new() {
+        let thread = Thread::new();
+        let expected = Thread {
+            thid: None,
+            pthid: None,
+            sender_order: 0,
+            received_orders: HashMap::new(),
+        };
+        assert_eq!(expected, thread);
+    }
+
+    #[test]
+    fn test_thread_set_thid() {
+        let thread = Thread::new()
+            .set_thid(THID.to_string());
+
+        assert_eq!(THID, thread.thid.unwrap());
+    }
+
+    #[test]
+    fn test_thread_set_sender_order() {
+        let sender_order = 1;
+
+        let thread = Thread::new()
+            .set_sender_order(sender_order);
+
+        assert_eq!(sender_order, thread.sender_order);
+    }
+
+    #[test]
+    fn test_thread_increment_sender_order() {
+        let thread = Thread::new();
+        assert_eq!(0, thread.sender_order);
+
+        let thread = thread.increment_sender_order();
+        assert_eq!(1, thread.sender_order);
+    }
+
+    #[test]
+    fn test_thread_update_received_order() {
+        let did = "qwertytyyu";
+
+        let thread = Thread::new();
+        assert_eq!(None, thread.received_orders.get(did));
+
+        let thread = thread.update_received_order(did);
+        assert_eq!(Some(0), thread.received_orders.get(did).cloned());
+
+        let thread = thread.update_received_order(did);
+        assert_eq!(Some(1), thread.received_orders.get(did).cloned());
+    }
+
+    #[test]
+    fn test_thread_is_reply() {
+        let thread = Thread::new();
+        assert!(!thread.is_reply(THID));
+
+        let thread = Thread::new()
+            .set_thid(THID.to_string());
+
+        assert!(thread.is_reply(THID));
+        assert!(!thread.is_reply("other"));
+    }
+
+    #[test]
+    fn test_thread_check_message_order() {
+        let did = "qwertytyyu";
+
+        let thread = Thread::new()
+            .set_thid(THID.to_string());
+
+        let received_thread = thread.clone()
+            .set_sender_order(0);
+
+        // thread.received orders = {}  and received_thread.sender_order = 0
+        thread.check_message_order(did, &received_thread).unwrap();
+
+        // thread.received orders = {did: 0}  and received_thread.sender_order = 1
+        let thread = thread.update_received_order(did);
+        let received_thread = received_thread.clone().increment_sender_order();
+        thread.check_message_order(did, &received_thread).unwrap();
+
+        // thread.received orders = {did: 1}  and received_thread.sender_order = 2
+        let thread = thread.update_received_order(did);
+        let received_thread = received_thread.clone().increment_sender_order();
+        thread.check_message_order(did, &received_thread).unwrap();
+
+        // thread.received orders = {did: 2}  and received_thread.sender_order = 2
+        let thread = thread.update_received_order(did);
+        thread.check_message_order(did, &received_thread).unwrap(); // FIXME: it will fail once we update `check_message_order` to throw error
+    }
+}
