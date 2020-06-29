@@ -16,6 +16,7 @@ pub mod agent_provisioning;
 pub mod token_provisioning;
 #[macro_use]
 pub mod thread;
+pub mod issuance;
 
 use std::u8;
 use settings;

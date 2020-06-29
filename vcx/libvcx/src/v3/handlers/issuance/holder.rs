@@ -55,13 +55,15 @@ impl HolderSM {
 
         if self.is_terminal_state() { return Ok(self); }
 
-        let agent = self.state.get_agent_info()?;
+        let agent = self.state.get_agent_info()?.clone();
         let messages = agent.get_messages()?;
 
         match self.find_message_to_handle(messages) {
             Some((uid, msg)) => {
+                let state = self.handle_message(msg.into())?;
                 agent.update_message_status(uid)?;
-                self.handle_message(msg.into())
+                Ok(state)
+
             }
             None => Ok(self)
         }

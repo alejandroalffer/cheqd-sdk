@@ -8,6 +8,9 @@ use error::prelude::*;
 use utils::libindy::anoncreds;
 use utils::qualifier;
 use v3::messages::connection::service::Service;
+use messages::get_message::Message;
+use messages::payload::Payloads;
+use messages::thread::Thread;
 
 static PROOF_REQUEST: &str = "PROOF_REQUEST";
 static PROOF_DATA: &str = "proof_request_data";
@@ -313,6 +316,31 @@ impl ProofRequestMessage {
     }
 }
 
+pub fn set_proof_req_ref_message(request: &str, thread: Option<Thread>, msg_id: &str) -> VcxResult<ProofRequestMessage> {
+    let mut request: ProofRequestMessage = serde_json::from_str(&request)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, format!("Cannot deserialize proof request: {}", err)))?;
+
+    request.msg_ref_id = Some(msg_id.to_owned());
+    request.thread_id = thread.and_then(|tr| tr.thid.clone());
+
+    Ok(request)
+}
+
+pub fn parse_proof_req_message(message: &Message, my_vk: &str) -> VcxResult<ProofRequestMessage> {
+    let payload = message.payload.as_ref()
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot get payload"))?;
+
+    let (request, thread) = Payloads::decrypt(&my_vk, payload)?;
+
+    let mut request: ProofRequestMessage = serde_json::from_str(&request)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, format!("Cannot deserialize proof request: {}", err)))?;
+
+    request.msg_ref_id = Some(message.uid.to_owned());
+    request.thread_id = thread.and_then(|tr| tr.thid.clone());
+
+    Ok(request)
+}
+
 impl ProofRequestData {
     const DEFAULT_VERSION: &'static str = "1.0";
 
@@ -544,6 +572,6 @@ mod tests {
     fn test_indy_proof_req_parses_correctly() {
         let _setup = SetupDefaults::init();
 
-        let _proof_req: ProofRequestData = serde_json::from_str(::utils::constants::INDY_PROOF_REQ_JSON).unwrap();
+        let _proof_req: ProofRequestMessage = serde_json::from_str(r#"{"@type":{"name":"PROOF_REQUEST","version":"1.0"},"@topic":{"mid":0,"tid":0},"proof_request_data":{"nonce":"14485060341131021134890","name":"proof_from_alice","version":"0.1","requested_attributes":{"first_name":{"name":"first_name","restrictions":[{"schema_id":null,"schema_issuer_did":null,"schema_name":null,"schema_version":null,"issuer_did":"V4SGRU86Z58d6TV7PBUe6f","cred_def_id":null}]},"last_name":{"name":"last_name","restrictions":[{"schema_id":null,"schema_issuer_did":null,"schema_name":null,"schema_version":null,"issuer_did":"V4SGRU86Z58d6TV7PBUe6f","cred_def_id":null}]},"email":{"name":"email","restrictions":[{"schema_id":null,"schema_issuer_did":null,"schema_name":null,"schema_version":null,"issuer_did":"V4SGRU86Z58d6TV7PBUe6f","cred_def_id":null}]}},"requested_predicates":{},"non_revoked":null,"ver":null},"msg_ref_id":null,"from_timestamp":null,"to_timestamp":null,"thread_id":null}"#).unwrap();
     }
 }

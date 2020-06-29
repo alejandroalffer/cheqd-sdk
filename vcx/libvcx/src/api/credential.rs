@@ -932,7 +932,7 @@ mod tests {
 
     use ::credential::tests::BAD_CREDENTIAL_OFFER;
     use utils::constants;
-    use credential_request::CredentialRequest;
+    use messages::issuance::credential_request::CredentialRequest;
 
     fn _vcx_credential_create_with_offer_c_closure(offer: &str) -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();

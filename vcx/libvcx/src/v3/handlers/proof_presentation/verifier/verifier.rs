@@ -1,7 +1,6 @@
 use error::prelude::*;
 use std::convert::TryInto;
 
-use messages::get_message::Message;
 use messages::proofs::proof_request::ProofRequestMessage;
 use messages::proofs::proof_message::ProofMessage;
 
@@ -9,7 +8,7 @@ use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::handlers::proof_presentation::verifier::states::VerifierSM;
 use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
-use v3::handlers::connection::connection::Connection;
+use v3::messages::a2a::A2AMessage;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {
@@ -73,16 +72,10 @@ impl Verifier {
     pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
         trace!("Verifier::update_state_with_message >>> message: {:?}", message);
 
-        let message: Message = ::serde_json::from_str(&message)
+        let message: A2AMessage = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state with message: Message deserialization failed: {:?}", err)))?;
 
-        let agent_info = self.verifier_sm.get_agent_info()?.clone();
-
-        let uid = message.uid.clone();
-        let a2a_message = Connection::decode_message(&message)?;
-
-        self.handle_message(a2a_message.into())?;
-        agent_info.update_message_status(uid)?;
+        self.handle_message(message.into())?;
 
         Ok(())
     }

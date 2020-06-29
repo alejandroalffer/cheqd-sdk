@@ -141,15 +141,20 @@ impl Payloads {
     }
 
     pub fn decrypt_payload_v1(my_vk: &str, payload: &Vec<i8>) -> VcxResult<PayloadV1> {
+        debug!("decrypt_payload_v1 >>>");
         let (_, data) = crypto::parse_msg(&my_vk, &to_u8(payload))?;
 
         let my_payload: PayloadV1 = rmp_serde::from_slice(&data[..])
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot decrypt payload: {}", err)))?;
 
+        debug!("decrypt_payload_v1 <<< payload: {:?}", my_payload);
+
         Ok(my_payload)
     }
 
     pub fn decrypt_payload_v2(_my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV2> {
+        debug!("decrypt_payload_v2 >>>");
+
         let payload = ::serde_json::to_vec(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
@@ -171,10 +176,14 @@ impl Payloads {
             my_payload.thread.thid = Some(my_payload.id.clone());
         }
 
+        debug!("decrypt_payload_v2 <<< payload: {:?}", my_payload);
+
         Ok(my_payload)
     }
 
     pub fn decrypt_payload_v12(_my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV12> {
+        debug!("decrypt_payload_v12 >>>");
+
         let payload = ::serde_json::to_vec(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
@@ -192,6 +201,8 @@ impl Payloads {
                 VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
             })?;
 
+        debug!("decrypt_payload_v12 <<< payload: {:?}", my_payload);
+
         Ok(my_payload)
     }
 }
@@ -205,7 +216,7 @@ pub enum PayloadTypes {
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct PayloadTypeV1 {
-    name: String,
+    pub name: String,
     ver: String,
     fmt: String,
 }

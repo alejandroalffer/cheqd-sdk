@@ -25,7 +25,7 @@ use v3::handlers::connection::connection::Connection as ConnectionV3;
 use v3::handlers::connection::states::ActorDidExchangeState;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation as InvitationV3;
-use v3::messages::a2a::{A2AMessage, MessageId};
+use v3::messages::a2a::A2AMessage;
 use v3::messages::connection::did_doc::DidDoc;
 use v3::handlers::connection::types::CompletedConnectionInfo;
 
@@ -1305,24 +1305,6 @@ pub fn send_message(handle: u32, message: A2AMessage) -> VcxResult<()> {
 
 pub fn send_message_to_self_endpoint(message: &A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
     ConnectionV3::send_message_to_self_endpoint(message, did_doc)
-}
-
-pub fn add_pending_messages(handle: u32, messages: HashMap<MessageId, String>) -> VcxResult<()> {
-    CONNECTION_MAP.get(handle, |connection| {
-        match connection {
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)),
-            Connections::V3(ref connection) => connection.add_pending_messages(messages.clone())
-        }
-    })
-}
-
-pub fn remove_pending_message(handle: u32, id: &MessageId) -> VcxResult<()> {
-    CONNECTION_MAP.get(handle, |connection| {
-        match connection {
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)),
-            Connections::V3(ref connection) => connection.remove_pending_message(id.clone())
-        }
-    })
 }
 
 pub fn is_v3_connection(connection_handle: u32) -> VcxResult<bool> {
