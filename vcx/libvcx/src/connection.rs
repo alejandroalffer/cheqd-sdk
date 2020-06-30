@@ -1373,7 +1373,7 @@ pub mod tests {
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
         ::utils::devsetup::set_institution();
 
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_secs(5));
 
         update_state(alice, None).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(alice));
