@@ -696,6 +696,7 @@ mod tests {
         // AS CONSUMER GET MESSAGE
         ::utils::devsetup::set_consumer();
 
+        thread::sleep(Duration::from_secs(5));
         // download hello message
         let retrieved_message = download_message(hello_uid).unwrap();
 
