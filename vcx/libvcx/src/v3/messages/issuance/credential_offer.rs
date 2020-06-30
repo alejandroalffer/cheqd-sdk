@@ -4,7 +4,7 @@ use v3::messages::attachment::{Attachments, AttachmentId};
 use v3::messages::mime_type::MimeType;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
-use issuer_credential::CredentialOffer as CredentialOfferV1;
+use messages::issuance::credential_offer::CredentialOffer as CredentialOfferV1;
 use messages::payload::PayloadKinds;
 use std::convert::TryInto;
 

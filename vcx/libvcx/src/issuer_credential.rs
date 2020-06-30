@@ -9,7 +9,6 @@ use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
 use messages::get_message::get_ref_msg;
 use connection;
-use credential_request::CredentialRequest;
 use utils::error;
 use utils::libindy::{payments, anoncreds};
 use utils::constants::CRED_MSG;
@@ -21,6 +20,9 @@ use error::prelude::*;
 
 use v3::handlers::issuance::Issuer;
 use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
+use messages::issuance::credential_offer::CredentialOffer;
+use messages::issuance::credential::CredentialMessage;
+use messages::issuance::credential_request::CredentialRequest;
 
 lazy_static! {
     static ref ISSUER_CREDENTIAL_MAP: ObjectCache < IssuerCredentials > = Default::default();
@@ -75,41 +77,6 @@ pub struct IssuerCredential {
     agent_did: Option<String>,
     agent_vk: Option<String>,
     thread: Option<Thread>
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct CredentialOffer {
-    pub msg_type: String,
-    pub version: String,
-    //vcx version of cred_offer
-    pub to_did: String,
-    //their_pw_did for this relationship
-    pub from_did: String,
-    //my_pw_did for this relationship
-    pub libindy_offer: String,
-    pub cred_def_id: String,
-    pub credential_attrs: serde_json::Map<String, serde_json::Value>,
-    //promised attributes revealed in credential
-    pub schema_seq_no: u32,
-    pub claim_name: String,
-    pub claim_id: String,
-    pub msg_ref_id: Option<String>,
-    pub thread_id: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct CredentialMessage {
-    pub libindy_cred: String,
-    pub rev_reg_def_json: String,
-    pub cred_def_id: String,
-    pub msg_type: String,
-    pub claim_offer_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cred_revoc_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub revoc_reg_delta_json: Option<String>,
-    pub version: String,
-    pub from_did: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
@@ -850,7 +817,7 @@ pub mod tests {
     use serde_json::Value;
     use settings;
     use connection::tests::build_test_connection;
-    use credential_request::CredentialRequest;
+    use messages::issuance::credential_request::CredentialRequest;
     #[allow(unused_imports)]
     use utils::{constants::*,
                 libindy::{LibindyMock,
@@ -863,6 +830,7 @@ pub mod tests {
     use utils::devsetup::*;
     use utils::httpclient::AgencyMock;
     use credential_def::tests::create_cred_def_fake;
+    use messages::issuance::credential_offer::parse_json_offer;
 
     static DEFAULT_CREDENTIAL_NAME: &str = "Credential";
     static DEFAULT_CREDENTIAL_ID: &str = "defaultCredentialId";
@@ -902,7 +870,7 @@ pub mod tests {
 
     pub fn create_standard_issuer_credential(connection_handle: Option<u32>) -> IssuerCredential {
         let credential_req: CredentialRequest = serde_json::from_str(CREDENTIAL_REQ_STRING).unwrap();
-        let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
+        let (credential_offer, _) = parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
         let mut issuer_credential = IssuerCredential {
             source_id: "standard_credential".to_owned(),
             schema_seq_no: 32,
@@ -943,7 +911,7 @@ pub mod tests {
 
     pub fn create_pending_issuer_credential() -> IssuerCredential {
         let credential_req: CredentialRequest = serde_json::from_str(CREDENTIAL_REQ_STRING).unwrap();
-        let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
+        let (credential_offer, _) = parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
         let connection_handle = Some(::connection::tests::build_test_connection());
         let mut credential: IssuerCredential = IssuerCredential {
             source_id: "test_has_pending_credential_request".to_owned(),
