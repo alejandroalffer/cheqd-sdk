@@ -30,6 +30,37 @@ public class UtilsApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Provision an agent in the agency, populate configuration and wallet for this agent.
+     *
+     * @param  config         provisioning configuration.
+     *       {
+     *         protocol_type: String
+     *         agency_url: String,
+     *         pub agency_did: String,
+     *         agency_verkey: String,
+     *         wallet_name: Option(String),
+     *         wallet_key: String,
+     *         wallet_type: Option(String),
+     *         agent_seed: Option(String),
+     *         enterprise_seed: Option(String),
+     *         wallet_key_derivation: Option(String),
+     *         name: Option(String),
+     *         logo: Option(String),
+     *         path: Option(String),
+     *         storage_config: Option(String),
+     *         storage_credentials: Option(String),
+     *         pool_config: Option(String),
+     *         did_method: Option(String),
+     *         communication_method: Option(String),
+     *         webhook_url: Option(String),
+     *         use_latest_protocols: Option(String),
+     *      }
+     *
+     * @return                populated config that can be used for library initialization.
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static String vcxProvisionAgent(String config) {
         ParamGuard.notNullOrWhiteSpace(config, "config");
         logger.debug("vcxProvisionAgent() called with: config = [****]");
@@ -39,6 +70,37 @@ public class UtilsApi extends VcxJava.API {
 
     }
 
+    /**
+     * Provision an agent in the agency, populate configuration and wallet for this agent.
+     *
+     * @param  conf           provisioning configuration.
+     *       {
+     *         protocol_type: String
+     *         agency_url: String,
+     *         pub agency_did: String,
+     *         agency_verkey: String,
+     *         wallet_name: Option(String),
+     *         wallet_key: String,
+     *         wallet_type: Option(String),
+     *         agent_seed: Option(String),
+     *         enterprise_seed: Option(String),
+     *         wallet_key_derivation: Option(String),
+     *         name: Option(String),
+     *         logo: Option(String),
+     *         path: Option(String),
+     *         storage_config: Option(String),
+     *         storage_credentials: Option(String),
+     *         pool_config: Option(String),
+     *         did_method: Option(String),
+     *         communication_method: Option(String),
+     *         webhook_url: Option(String),
+     *         use_latest_protocols: Option(String),
+     *      }
+     *
+     * @return                populated config that can be used for library initialization.
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> vcxAgentProvisionAsync(String conf) throws VcxException {
         CompletableFuture<String> future = new CompletableFuture<String>();
         logger.debug("vcxAgentProvisionAsync() called with: conf = [****]");
@@ -59,22 +121,22 @@ public class UtilsApi extends VcxJava.API {
         agency_url: String,
         pub agency_did: String,
         agency_verkey: String,
-        wallet_name: Option<String>,
+        wallet_name: Option(String),
         wallet_key: String,
-        wallet_type: Option<String>,
-        agent_seed: Option<String>,
-        enterprise_seed: Option<String>,
-        wallet_key_derivation: Option<String>,
-        name: Option<String>,
-        logo: Option<String>,
-        path: Option<String>,
-        storage_config: Option<String>,
-        storage_credentials: Option<String>,
-        pool_config: Option<String>,
-        did_method: Option<String>,
-        communication_method: Option<String>,
-        webhook_url: Option<String>,
-        use_latest_protocols: Option<String>,
+        wallet_type: Option(String),
+        agent_seed: Option(String),
+        enterprise_seed: Option(String),
+        wallet_key_derivation: Option(String),
+        name: Option(String),
+        logo: Option(String),
+        path: Option(String),
+        storage_config: Option(String),
+        storage_credentials: Option(String),
+        pool_config: Option(String),
+        did_method: Option(String),
+        communication_method: Option(String),
+        webhook_url: Option(String),
+        use_latest_protocols: Option(String),
      },
      token: {
            "id": String,
@@ -103,22 +165,22 @@ public class UtilsApi extends VcxJava.API {
             agency_url: String,
             pub agency_did: String,
             agency_verkey: String,
-            wallet_name: Option<String>,
+            wallet_name: Option(String),
             wallet_key: String,
-            wallet_type: Option<String>,
-            agent_seed: Option<String>,
-            enterprise_seed: Option<String>,
-            wallet_key_derivation: Option<String>,
-            name: Option<String>,
-            logo: Option<String>,
-            path: Option<String>,
-            storage_config: Option<String>,
-            storage_credentials: Option<String>,
-            pool_config: Option<String>,
-            did_method: Option<String>,
-            communication_method: Option<String>,
-            webhook_url: Option<String>,
-            use_latest_protocols: Option<String>,
+            wallet_type: Option(String),
+            agent_seed: Option(String),
+            enterprise_seed: Option(String),
+            wallet_key_derivation: Option(String),
+            name: Option(String),
+            logo: Option(String),
+            path: Option(String),
+            storage_config: Option(String),
+            storage_credentials: Option(String),
+            pool_config: Option(String),
+            did_method: Option(String),
+            communication_method: Option(String),
+            webhook_url: Option(String),
+            use_latest_protocols: Option(String),
       }
       source_id: String // Customer Id
       com_method: {
@@ -154,6 +216,16 @@ public class UtilsApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Update information on the agent (ie, comm method and type)
+     *
+     * @param  config         New agent updated configuration as JSON
+     *                        "{"id":"123","value":"value"}"
+     *
+     * @return                void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> vcxUpdateAgentInfo(String config) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(config, "config");
         logger.debug("vcxUpdateAgentInfo() called with: config = [****]");
@@ -180,6 +252,28 @@ public class UtilsApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Retrieve messages from the agent
+     *
+     * @param  messageStatus  optional, comma separated - query for messages with the specified status.
+     *                             Statuses:
+     *                                  MS-101 - Created
+     *                                  MS-102 - Sent
+     *                                  MS-103 - Received
+     *                                  MS-104 - Accepted
+     *                                  MS-105 - Rejected
+     *                                  MS-106 - Reviewed
+     *                        "MS-103,MS-106"
+     * @param  uids           optional, comma separated - query for messages with the specified uids
+     *                        "s82g63,a2h587"
+     * @param  pwdids         optional, comma separated - DID's pointing to specific connection
+     *                        "did1,did2"
+     *
+     * @return                The list of all found messages
+     *                        "[{"pairwiseDID":"did","msgs":[{"statusCode":"MS-106","payload":null,"senderDID":"","uid":"6BDkgc3z0E","type":"aries","refMsgId":null,"deliveryDetails":[],"decryptedPayload":"{"@msg":".....","@type":{"fmt":"json","name":"aries","ver":"1.0"}}"}]}]"
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> vcxGetMessages(String messageStatus, String uids, String pwdids) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(messageStatus, "messageStatus");
         logger.debug("vcxGetMessages() called with: messageStatus = [" + messageStatus + "], uids = [" + uids + "], pwdids = [****]");
@@ -197,6 +291,16 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Retrieves single message from the agency by the given uid.
+     *
+     * @param  uid  id of the message to query.
+     *
+     * @return                Received message:
+     *                        "{"pairwiseDID":"did","msgs":[{"statusCode":"MS-106","payload":null,"senderDID":"","uid":"6BDkgc3z0E","type":"aries","refMsgId":null,"deliveryDetails":[],"decryptedPayload":"{"@msg":".....","@type":{"fmt":"json","name":"aries","ver":"1.0"}}"}]}"
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> vcxGetMessage(String uid) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(uid, "uid");
         logger.debug("vcxGetMessage() called with: uid = [" + uid + "]");
@@ -212,6 +316,26 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Retrieve messages from the Cloud Agent
+     *
+     * @param  messageStatus  optional, comma separated - query for messages with the specified status.
+     *                             Statuses:
+     *                                  MS-101 - Created
+     *                                  MS-102 - Sent
+     *                                  MS-103 - Received
+     *                                  MS-104 - Accepted
+     *                                  MS-105 - Rejected
+     *                                  MS-106 - Reviewed
+     *                        "MS-103,MS-106"
+     * @param  uids           optional, comma separated - query for messages with the specified uids
+     *                        "s82g63,a2h587"
+     *
+     * @return                The list of all found messages
+     *                        "[{"pairwiseDID":"did","msgs":[{"statusCode":"MS-106","payload":null,"senderDID":"","uid":"6BDkgc3z0E","type":"aries","refMsgId":null,"deliveryDetails":[],"decryptedPayload":"{"@msg":".....","@type":{"fmt":"json","name":"aries","ver":"1.0"}}"}]}]"
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> vcxGetAgentMessages(String messageStatus, String uids) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(messageStatus, "messageStatus");
         logger.debug("vcxGetAgentMessages() called with: messageStatus = [" + messageStatus + "], uids = [" + uids + "]");
@@ -239,6 +363,25 @@ public class UtilsApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Update the status of messages from the specified connection
+     *
+     * @param  messageStatus  message status to set
+     *                             Statuses:
+     *                                  MS-101 - Created
+     *                                  MS-102 - Sent
+     *                                  MS-103 - Received
+     *                                  MS-104 - Accepted
+     *                                  MS-105 - Rejected
+     *                                  MS-106 - Reviewed
+     *                        "MS-103,MS-106"
+     * @param  msgJson        list of messages to update
+     *                        [{"pairwiseDID":"QSrw8hebcvQxiwBETmAaRs","uids":["mgrmngq"]},...]
+     *
+     * @return               void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> vcxUpdateMessages(String messageStatus, String msgJson) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(messageStatus, "messageStatus");
         ParamGuard.notNull(msgJson, "msgJson");
@@ -267,6 +410,13 @@ public class UtilsApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get ledger fees from the network
+     *
+     * @return               the fee structure for the sovrin network
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> getLedgerFees() throws VcxException {
         logger.debug("getLedgerFees() called");
         CompletableFuture<String> future = new CompletableFuture<>();
@@ -280,6 +430,14 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Retrieve author agreement and acceptance mechanisms set on the Ledger
+     *
+     * @return               transaction author agreement set on the ledger
+     *                       "{"text":"Default agreement", "version":"1.0.0", "aml": {"label1": "description"}}"
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> getLedgerAuthorAgreement() throws VcxException {
         logger.debug("getLedgerAuthorAgreement() called");
         CompletableFuture<String> future = new CompletableFuture<>();
@@ -293,6 +451,19 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Set some accepted agreement as active.
+     * <p>
+     * Either combination text/version ot hash must be passed.
+     * 
+     * @param  text                 Optional(string) text of transaction agreement
+     * @param  version              Optional(string) version of transaction agreement
+     * @param  hash                 Optional(string) hash on text and version. This parameter is required if text and version parameters are ommited.
+     * @param  accMechType          mechanism how user has accepted the TAA
+     * @param  timeOfAcceptance     UTC timestamp when user has accepted the TAA
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static void setActiveTxnAuthorAgreementMeta(String text, String version,
                                                          String hash, String accMechType, long timeOfAcceptance) throws VcxException {
         ParamGuard.notNull(accMechType, "accMechType");
@@ -323,6 +494,28 @@ public class UtilsApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Gets minimal request price for performing an action in case the requester can perform this action.
+     *
+     * @param  actionJson       definition of action to get price
+     *                          {
+     *                              "auth_type": ledger transaction alias or associated value,
+     *                              "auth_action": type of an action.,
+     *                              "field": transaction field,
+     *                              "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+     *                              "new_value": (Optional) new value that can be used to fill the field,
+     *                          }
+     * @param  requesterInfoJson  (Optional) request definition ( otherwise context info will be used).
+     *                          {
+     *                              "role": string - role of a user which can sign transaction.
+     *                              "count": string - count of users.
+     *                              "is_owner": bool - if user is an owner of transaction.
+     *                          }
+     *
+     * @return                 price must be paid to perform the requested action
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Long> vcxGetRequestPrice(String actionJson, String requesterInfoJson) throws VcxException {
         ParamGuard.notNull(actionJson, "actionJson");
         logger.debug("vcxGetRequestPrice() called with: actionJson = [" + actionJson + "], requesterInfoJson = [" + requesterInfoJson + "]");
@@ -347,6 +540,15 @@ public class UtilsApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Endorse transaction to the ledger preserving an original author
+     *
+     * @param  transactionJson  transaction to endorse
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> vcxEndorseTransaction(String transactionJson) throws VcxException {
         ParamGuard.notNull(transactionJson, "transactionJson");
         logger.debug("vcxEndorseTransaction() called with: transactionJson = [" + transactionJson + "]");

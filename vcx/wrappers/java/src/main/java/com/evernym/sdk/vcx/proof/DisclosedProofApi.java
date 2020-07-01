@@ -17,35 +17,6 @@ public class DisclosedProofApi extends VcxJava.API {
     }
 
     private static final Logger logger = LoggerFactory.getLogger("DisclosedProofApi");
-    private static Callback vcxProofCreateCB = new Callback() {
-        @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err, int proofHandle) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], proofHandle = [" + proofHandle + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
-            if (!checkCallback(future, err)) return;
-            future.complete(proofHandle);
-        }
-    };
-
-    public static CompletableFuture<CreateProofMsgIdResult> proofCreate(
-            String sourceId,
-            String requestedAttributes,
-            String requestedPredicates,
-            String name
-    ) throws VcxException {
-        ParamGuard.notNull(sourceId, "sourceId");
-        ParamGuard.notNull(requestedAttributes, "requestedAttributes");
-        ParamGuard.notNull(requestedPredicates, "requestedPredicates");
-        ParamGuard.notNull(name, "name");
-        logger.debug("proofCreate() called with: sourceId = [" + sourceId + "], requestedAttributes = [" + requestedAttributes + "], requestedPredicates = [" + requestedPredicates + "], name = [" + name + "]");
-        CompletableFuture<CreateProofMsgIdResult> future = new CompletableFuture<>();
-        int commandHandle = addFuture(future);
-
-        int result = LibVcx.api.vcx_disclosed_proof_create_with_request(commandHandle, sourceId, requestedAttributes, requestedPredicates, name, vcxProofCreateCB);
-        checkResult(result);
-
-        return future;
-    }
 
     private static Callback vcxProofCreateWithMsgIdCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
@@ -58,6 +29,17 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     *  Create a DisclosedProof object based off of a known message id (containing Proof Request) for a given connection.
+     *
+     * @param  sourceId             Institution's personal identification for the credential.
+     * @param  connectionHandle     handle pointing to a Connection object to query for Proof Request message.
+     * @param  msgId                id of the message on Agency that contains the Proof Request.
+     *                              
+     * @return                      handle that should be used to perform actions with the DisclosedProof object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<CreateProofMsgIdResult> proofCreateWithMsgId(
             String sourceId,
             int connectionHandle,
@@ -85,6 +67,16 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Query the agency for the received messages.
+     * Checks for any messages changing state in the DisclosedProof object and updates the state attribute.
+     *
+     * @param  proofHandle          handle pointing to a DisclosedProof object.
+     *
+     * @return                      the most current state of the DisclosedProof object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofUpdateState(
             int proofHandle
     ) throws VcxException {
@@ -93,6 +85,23 @@ public class DisclosedProofApi extends VcxJava.API {
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_disclosed_proof_update_state(commandHandle, proofHandle, vcxProofUpdateStateCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    public static CompletableFuture<Integer> proofUpdateStateWithMessage(
+            int proofHandle,
+            String message
+    ) throws VcxException {
+        ParamGuard.notNull(proofHandle, "proofHandle");
+        ParamGuard.notNull(message, "message");
+
+        logger.debug("proofUpdateStateWithMessage() called with: proofHandle = [" + proofHandle + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_disclosed_proof_update_state_with_message(commandHandle, proofHandle, message, vcxProofUpdateStateCB);
         checkResult(result);
 
         return future;
@@ -108,6 +117,16 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Queries agency for Proof Request messages from the given connection.
+     *
+     * @param  connectionHandle     handle pointing to Connection object to query for Proof Request messages.
+     *
+     * @return                      List of received Proof Request messages as JSON string.
+     *                              "[{"@topic":{"mid":9,"tid":1},"@type":{"name":"PROOF_REQUEST","version":"1.0"},"msg_ref_id":"ymy5nth","proof_request_data":{"name":"AccountCertificate","nonce":"838186471541979035208225","requested_attributes":{"business_2":{"name":"business"},"email_1":{"name":"email"},"name_0":{"name":"name"}},"requested_predicates":{},"version":"0.1"}}]"
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> proofGetRequests(
             int connectionHandle
     ) throws VcxException {
@@ -131,6 +150,18 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get the current state of the DisclosedProof object
+     * Credential states:
+     *         3 - Proof Request Received
+     *         4 - Proof Sent
+     *
+     * @param  proofHandle          handle pointing to a DisclosedProof object.
+     *
+     * @return                      the most current state of the DisclosedProof object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofGetState(
             int proofHandle
     ) throws VcxException {
@@ -144,7 +175,15 @@ public class DisclosedProofApi extends VcxJava.API {
         return future;
     }
 
-
+    /**
+     * Releases the DisclosedProof object by de-allocating memory
+     *
+     * @param  proofHandle          handle pointing to a DisclosedProof object.
+     *
+     * @return                      void
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static int proofRelease(int proofHandle) throws VcxException {
         ParamGuard.notNull(proofHandle, "proofHandle");
         logger.debug("proofRelease() called with: proofHandle = [" + proofHandle + "]");
@@ -166,6 +205,16 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get credentials from wallet matching to the proof request associated with proof object
+     *
+     * @param  proofHandle          handle pointing to a DisclosedProof object.
+     *
+     * @return                      the list of credentials that can be used for proof generation
+     *                              "{'attrs': {'attribute_0': [{'cred_info': {'schema_id': 'id', 'cred_def_id': 'id', 'attrs': {'attr_name': 'attr_value', ...}, 'referent': '914c7e11'}}]}}"
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> proofRetrieveCredentials(
             int proofHandle
     ) throws VcxException {
@@ -192,6 +241,17 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Accept Proof Request associated with DisclosedProof object and generates a Proof from the selected credentials and self attested attributes
+     *
+     * @param  proofHandle              handle pointing to a DisclosedProof object.
+     * @param  selectedCredentials      a json string with a credential for each proof request attribute.
+     * @param  selfAttestedAttributes   a json string with attributes self attested by user
+     *
+     * @return                          void
+     *
+     * @throws VcxException             If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofGenerate(
             int proofHandle,
             String selectedCredentials,
@@ -220,6 +280,16 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Send a Proof to the connection, called after having received a proof request
+     *
+     * @param  proofHandle              handle pointing to a DisclosedProof object.
+     * @param  connectionHandle         handle pointing to a Connection object to use for sending message.
+     *
+     * @return                          void
+     *
+     * @throws VcxException             If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofSend(
             int proofHandle,
             int connectionHandle
@@ -246,6 +316,16 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Send a Proof Rejection message to the connection, called after having received a Proof Request
+     *
+     * @param  proofHandle              handle pointing to a DisclosedProof object.
+     * @param  connectionHandle         handle pointing to a Connection object to use for sending message.
+     *
+     * @return                          void
+     *
+     * @throws VcxException             If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofReject(
             int proofHandle,
             int connectionHandle
@@ -270,6 +350,15 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get the Proof message for sending.
+     *
+     * @param  proofHandle              handle pointing to a DisclosedProof object.
+     *
+     * @return                          Proof Message as JSON string.
+     *
+     * @throws VcxException             If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> getProofMsg(
             int proofHandle
     ) throws VcxException {
@@ -293,6 +382,15 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get the Proof Reject message for sending.
+     *
+     * @param  proofHandle              handle pointing to a DisclosedProof object.
+     *
+     * @return                          Proof Reject Message as JSON string.
+     *
+     * @throws VcxException             If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> getRejectMsg(
             int proofHandle
     ) throws VcxException {
@@ -317,6 +415,20 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Create a DisclosedProof object for fulfilling a corresponding proof request.
+     *
+     * @param  sourceId         Institution's personal identification for the credential.
+     * @param  proofRequest     received Proof Request message. The format of Proof Request depends on communication method:
+     *                              proprietary:
+     *                                  "{"@topic":{"mid":9,"tid":1},"@type":{"name":"PROOF_REQUEST","version":"1.0"},"msg_ref_id":"ymy5nth","proof_request_data":{"name":"AccountCertificate","nonce":"838186471541979035208225","requested_attributes":{"business_2":{"name":"business"},"email_1":{"name":"email"},"name_0":{"name":"name"}},"requested_predicates":{},"version":"0.1"}}"
+     *                              aries:
+     *                                  "{"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation","@id": "<uuid-request>","comment": "some comment","request_presentations~attach": [{"@id": "libindy-request-presentation-0","mime-type": "application/json","data":  {"base64": "<bytes for base64>"}}]}"
+     *
+     * @return                  handle that should be used to perform actions with the DisclosedProof object.
+     *
+     * @throws VcxException     If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofCreateWithRequest(
             String sourceId,
             String proofRequest
@@ -344,6 +456,15 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get JSON string representation of DisclosedProof object.
+     *
+     * @param  proofHandle          handle pointing to a DisclosedProof object.
+     *
+     * @return                      DisclosedProof object as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> proofSerialize(
             int proofHandle
     ) throws VcxException {
@@ -367,6 +488,15 @@ public class DisclosedProofApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Takes a json string representing a DisclosedProof object and recreates an object matching the JSON.
+     *
+     * @param  serializedProof      JSON string representing a DisclosedProof object.
+     *
+     * @return                      handle that should be used to perform actions with the DisclosedProof object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> proofDeserialize(
             String serializedProof
     ) throws VcxException {
@@ -391,6 +521,25 @@ public class DisclosedProofApi extends VcxJava.API {
 		}
 	};
 
+    /**
+     * Declines Presentation Request.
+     * There are two ways of following interaction:
+     *     - Prover wants to propose using a different presentation - pass `proposal` parameter.
+     *     - Prover doesn't want to continue interaction - pass `reason` parameter.
+     * <p>
+     * Note that only one of these parameters can be passed.
+     * <p>
+     * Note that proposing of different presentation is supported for `aries` protocol only.
+     *
+     * @param  proofHandle              handle pointing to a DisclosedProof object.
+     * @param  connectionHandle         handle pointing to a Connection object to use for sending message.
+     * @param  reason                   (Optional) human-readable string that explain the reason of decline.
+     * @param  proposal                 (Optional) the proposed format of presentation request.
+     *
+     * @return                          void
+     *
+     * @throws VcxException             If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Void> proofDeclineRequest(
             int proofHandle,
             int connectionHandle,

@@ -273,7 +273,7 @@ pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
 /// Retrieves schema's id
 ///
 /// #Params
-/// schema_handle: Schema handle that was provided during creation. Used to access proof object
+/// schema_handle: Schema handle that was provided during creation.
 ///
 /// cb: Callback that provides schema id and provides error status
 ///
@@ -425,7 +425,7 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Checks if schema is published on the Ledger and updates the  state
+/// Checks if schema is published on the Ledger and updates the state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

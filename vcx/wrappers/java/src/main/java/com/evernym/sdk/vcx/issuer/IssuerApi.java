@@ -27,6 +27,22 @@ public class IssuerApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Create a IssuerCredential object that provides a credential for an enterprise's user
+     *
+     * @param  sourceId             Institution's personal identification for the credential.
+     * @param  credentialDefHandle  handle pointing to CredentialDefinition to use for issuance. 
+     *                              It must be already stored in the wallet and written to the ledger.
+     * @param  issuerId             DID corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
+     * @param  credentialData       List of attributes offered credential will contain.
+     *                              "{"state":"UT"}"
+     * @param  credentialName       Human-readable name of the credential - ex. Drivers Licence
+     * @param  price                price user have to pay to receive credential.
+     *
+     * @return                      handle that should be used to perform actions with the IssuerCredential object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> issuerCreateCredential(String sourceId,
                                                                     int credentialDefHandle,
                                                                     String issuerId,
@@ -71,6 +87,16 @@ public class IssuerApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Send a Credential Offer to user showing what will be included in the actual credential.
+     *
+     * @param  credentialHandle  handle pointing to IssuerCredential object.
+     * @param  connectionHandle  handle pointing to Connection object to use for message sending. 
+     *                           
+     * @return                   void // TODO: fix returning value
+     *
+     * @throws VcxException      If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> issuerSendCredentialOffer(int credentialHandle,
                                                                        int connectionHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
@@ -89,6 +115,15 @@ public class IssuerApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Gets the Credential Offer message that can be sent to the specified connection
+     *
+     * @param  credentialHandle  handle pointing to IssuerCredential object.
+     *
+     * @return                   Credential Offer message as JSON string
+     *
+     * @throws VcxException      If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> issuerGetCredentialOfferMsg(int credentialHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         logger.debug("issuerSendCredentialOffer() called with: credentialHandle = [****]");
@@ -114,6 +149,16 @@ public class IssuerApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Query the agency for the received messages.
+     * Checks for any messages changing state in the IssuerCredential object and updates the state attribute.
+     *
+     * @param  credentialHandle  handle pointing to IssuerCredential object.
+     *
+     * @return                   the most current state of IssuerCredential object.
+     *
+     * @throws VcxException      If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> issuerCredentialUpdateState(int credentialHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         logger.debug("issuerCredentialUpdateState() called with: credentialHandle = [" + credentialHandle + "]");
@@ -124,8 +169,20 @@ public class IssuerApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Update the state of the IssuerCredential object based on the given message.
+     *
+     * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     * @param  message              message to process for any IssuerCredential state transitions.
+     *
+     * @return                      the most current state of the IssuerCredential object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> issuerCredentialUpdateStateWithMessage(int credentialHandle, String message) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
+        ParamGuard.notNull(message, "message");
+
         logger.debug("issuerCredentialUpdateStateWithMessage() called with: credentialHandle = [" + credentialHandle + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
@@ -144,6 +201,20 @@ public class IssuerApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get the current state of the IssuerCredential object
+     * Credential states:
+     *         1 - Initialized
+     *         2 - Credential Offer Sent
+     *         3 - Credential Request Received
+     *         4 - Credential Issued
+     *
+     * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     *
+     * @return                      the most current state of the IssuerCredential object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> issuerCredentialGetState(int credentialHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         logger.debug("issuerCredentialGetState() called with: credentialHandle = [" + credentialHandle + "]");
@@ -163,6 +234,16 @@ public class IssuerApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Sends the Credential message to the end user (holder).
+     *
+     * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     * @param  connectionHandle     handle pointing to a Connection object to use for message sending.
+     *
+     * @return                      the most current state of the IssuerCredential object.
+     *
+     * @throws VcxException         void // TODO: fix returning type
+     */
     public static CompletableFuture<String> issuerSendCredential(int credentialHandle,
                                                                  int connectionHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
@@ -181,6 +262,15 @@ public class IssuerApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Gets the Credential message that can be sent to the user.
+     *
+     * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     *
+     * @return                      Credential message as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> issuerGetCredentialMsg(int credentialHandle,
                                                                    String myPwDid) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
@@ -215,6 +305,15 @@ public class IssuerApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get JSON string representation of IssuerCredential object.
+     *
+     * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     *
+     * @return                      IssuerCredential object as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> issuerCredentialSerialize(int credentialHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         logger.debug("issuerCredentialSerialize() called with: credentialHandle = [" + credentialHandle + "]");
@@ -247,6 +346,15 @@ public class IssuerApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Takes a json string representing a IssuerCredential object and recreates an object matching the JSON.
+     *
+     * @param  serializedData  JSON string representing a IssuerCredential object.
+     *
+     * @return                 handle that should be used to perform actions with the IssuerCredential object.
+     *
+     * @throws VcxException    If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> issuerCredentialDeserialize(String serializedData) throws VcxException {
         ParamGuard.notNull(serializedData, "serializedData");
         logger.debug("issuerCredentialDeserialize() called with: serializedData = [****]");
@@ -261,8 +369,6 @@ public class IssuerApi extends VcxJava.API {
         checkResult(result);
         return future;
     }
-
-
 
     public static CompletableFuture<Integer> issuerTerminateCredential(
             int credentialHandle,
@@ -286,6 +392,16 @@ public class IssuerApi extends VcxJava.API {
         return future;
 
     }
+
+    /**
+     * Releases the IssuerCredential object by de-allocating memory
+     *
+     * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     *
+     * @return                      void
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static int issuerCredentialRelease(int credentialHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         logger.debug("issuerCredentialRelease() called with: credentialHandle = [" + credentialHandle + "]");
@@ -296,6 +412,15 @@ public class IssuerApi extends VcxJava.API {
         return result;
     }
 
+    /**
+     * Gets the Credential Request message that can be sent to the user.
+     *
+     * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     *
+     * @return                      Credential Request message as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> issuerCredentialRequest(
             int credentialHandle,
             String credentialRequest) throws VcxException {
