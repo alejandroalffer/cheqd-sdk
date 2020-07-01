@@ -17,7 +17,7 @@ public class DisclosedProofApi extends VcxJava.API {
     }
 
     private static final Logger logger = LoggerFactory.getLogger("DisclosedProofApi");
-    
+
     private static Callback vcxProofCreateWithMsgIdCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, int proofHandle, String proofRequest) {

@@ -339,11 +339,6 @@ public abstract class LibVcx {
         /**
          * Create a Proof object for fulfilling a corresponding proof request
          */
-        public int vcx_disclosed_proof_create_with_request(int command_handle, String source_id, String requested_attrs, String requested_predicates, String name, Callback cb);
-
-        /**
-         * Create a Proof object for fulfilling a corresponding proof request
-         */
         public int vcx_disclosed_proof_create_with_request(int command_handle, String source_id, String proof_req, Callback cb);
 
         /**
