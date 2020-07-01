@@ -56,6 +56,17 @@ public class VcxApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Initializes VCX with config
+     * An example file is at libvcx/sample_config/config.json
+     * The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+     *
+     * @param  configJson       config as JSON string to use for library initialization
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> vcxInitWithConfig(String configJson) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(configJson, "config");
         logger.debug("vcxInitWithConfig() called with: configJson = [****]");
@@ -72,6 +83,17 @@ public class VcxApi extends VcxJava.API {
 
     }
 
+    /**
+     * Initializes VCX with config file
+     * An example file is at libvcx/sample_config/config.json
+     * The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+     *
+     * @param  configPath       path to config file to use for library initialization
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<Integer> vcxInit(String configPath) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(configPath, "configPath");
         logger.debug("vcxInit() called with: configPath = [" + configPath + "]");
@@ -85,6 +107,15 @@ public class VcxApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Initialize vcx with the minimal configuration (wallet, pool must already be set with)
+     *
+     * @param  configJson       minimal configuration as JSON string
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static int vcxInitMinimal(String configJson) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(configJson, "config");
         logger.debug("vcxInitMinimal() called with: configJson = [" + configJson + "]");
@@ -96,6 +127,15 @@ public class VcxApi extends VcxJava.API {
         return result;
     }
 
+    /**
+     * Reset libvcx to a pre-configured state, releasing/deleting any handles and freeing memory
+     *
+     * @param  deleteWallet     specify whether wallet/pool should be deleted
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static int vcxShutdown(Boolean deleteWallet) throws VcxException {
         logger.debug("vcxShutdown() called with: deleteWallet = [" + deleteWallet + "]");
         int result = LibVcx.api.vcx_shutdown(deleteWallet);
@@ -118,6 +158,14 @@ public class VcxApi extends VcxJava.API {
         LibVcx.logMessage(loggerName, level, message);
     }
 
+    /**
+     * Set custom logger implementation.
+     * Allows library user to provide custom logger implementation as set of handlers.
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static int vcxSetLogger(Pointer context, Callback enabled, Callback log, Callback flush) throws VcxException {
         logger.debug("vcxSetLogger()");
         int result = LibVcx.api.vcx_set_logger(context, enabled, log, flush);
@@ -125,6 +173,17 @@ public class VcxApi extends VcxJava.API {
         return result;
     }
 
+    /**
+     * Set default logger implementation.
+     * Allows library user use `env_logger` logger as default implementation.
+     * More details about `env_logger` and its customization can be found here: https://crates.io/crates/env_logger
+     *
+     * @param  logLevel         (optional) pattern that corresponds with the log messages to show.
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static int vcxSetDefaultLogger(String logLevel) throws VcxException {
         logger.debug("vcxSetDefaultLogger()");
         int result = LibVcx.api.vcx_set_default_logger(logLevel);

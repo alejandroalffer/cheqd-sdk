@@ -28,6 +28,15 @@ public class TokenApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Get the total balance from all addresses contained in the configured wallet.
+     *
+     * @param  paymentHandle            unused parameter (pass 0)
+     * @return                          payment information stored in the wallet
+     *                                  "{"balance":6,"balance_str":"6","addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"source":"pay:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"}]}]}"
+     *
+     * @throws VcxException             If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> getTokenInfo(
             int paymentHandle
     ) throws VcxException {
@@ -52,6 +61,17 @@ public class TokenApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Send tokens to a specific address
+     *
+     * @param  paymentHandle            unused parameter (pass 0)
+     * @param  tokens                   number of tokens to send
+     * @param  recipient                address of recipient
+     *
+     * @return                          receipt of token transfer
+     *
+     * @throws VcxException             If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> sendTokens(
             int paymentHandle,
             String tokens,
@@ -78,6 +98,15 @@ public class TokenApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Add a payment address to the wallet
+     *
+     * @param  seed            Seed to use for creation
+     *
+     * @return                 generated payment address
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
     public static CompletableFuture<String> createPaymentAddress(
             String seed
     ) throws VcxException {

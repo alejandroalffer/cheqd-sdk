@@ -37,56 +37,58 @@ public abstract class LibVcx {
          * Helper API for testing purposes.
          */
         public void vcx_set_next_agency_response(int msg);
+
+        /*
+        * Helper API to fetch last error details
+        * */
         public void vcx_get_current_error(PointerByReference error);
 
         /**
-         * Schema object
-         *
-         * For creating, validating and committing a schema to the sovrin ledger.
+         * The API represent Credential Schema that will be published on the Ledger and used for Issuance.
          */
 
         /**
-         * Creates a schema from a json string. Populates a handle to the new schema.
+         * Create a new Schema object and publish correspondent record on the ledger.
          */
         public int vcx_schema_create(int command_handle, String source_id, String schema_name, String version, String schema_data, int payment_handle, Callback cb);
 
          /**
-         * Create a Schema that will be published by Endorser later.
+         * Create a new Schema object that will be published by Endorser later.
          */
         public int vcx_schema_prepare_for_endorser(int command_handle, String source_id, String schema_name, String version, String schema_data, String endorser, Callback cb);
 
         /**
-         * Populates status with the current State of this claim.
+         * Takes the schema object and returns a json string of all its attributes.
          */
         public int vcx_schema_serialize(int command_handle, int schema_handle, Callback cb);
 
         /**
-         * Re-creates a claim object from the specified serialization.
+         * Takes a json string representing a schema object and recreates an object matching the json.
          */
         public int vcx_schema_deserialize(int command_handle, String serialized_schema, Callback cb);
 
         /**
-         * Populates data with the contents of the schema handle.
+         * Retrieves all of the data associated with a schema on the ledger.
          */
         public int vcx_schema_get_attributes(int command_handle, String source_id, String schema_id, Callback cb);
 
         /**
-         * Populates sequence_no with the actual sequence number of the schema on the sovrin ledger.
+         * Retrieves schema's id.
          */
         public int vcx_schema_get_schema_id(int command_handle, int schema_handle, Callback cb);
 
         /**
-         * Release memory associated with schema object.
+         * Releases the schema object by de-allocating memory.
          */
         public int vcx_schema_release(int handle);
 
         /**
-         * Request a State update from the agent for the given schema.
+         * Checks if schema is published on the Ledger and updates the state.
          */
         public int vcx_schema_update_state(int command_handle, int schema_handle, Callback cb);
 
         /**
-         * Retrieves the State of the schema
+         * Get the current state of the schema object.
          */
         public int vcx_schema_get_state(int command_handle, int schema_handle, Callback cb);
 
@@ -94,19 +96,21 @@ public abstract class LibVcx {
 
 
         /**
-         * connection object
+         * Tha API represents a pairwise connection with another identity owner.
+         * Once the connection, is established communication can happen securely and privately.
+         * Credentials and Presentations are exchanged using this object.
          *
          * For creating a connection with an identity owner for interactions such as exchanging
          * claims and proofs.
          */
 
         /**
-         * Creates a connection object to a specific identity owner. Populates a handle to the new connection.
+         * Create a Connection object that provides a pairwise connection for an institution's user.
          */
         public int vcx_connection_create(int command_handle, String source_id, Callback cb);
 
         /**
-         * Asynchronously request a connection be made.
+         * Establishes connection between institution and its user.
          */
         public int vcx_connection_connect(int command_handle, int connection_handle, String connection_type, Callback cb);
 
@@ -126,57 +130,58 @@ public abstract class LibVcx {
         public int vcx_connection_get_redirect_details(int command_handle, int connection_handle, Callback cb);
 
         /**
-         * Returns the contents of the connection handle or null if the connection does not exist.
+         * Takes the Connection object and returns a json string of all its attributes.
          */
         public int vcx_connection_serialize(int command_handle, int connection_handle, Callback cb);
 
         /**
-         * Re-creates a connection object from the specified serialization.
+         * Takes a json string representing a connection object and recreates an object matching the json.
          */
         public int vcx_connection_deserialize(int command_handle, String serialized_claim, Callback cb);
 
         /**
-         * Request a State update from the agent for the given connection.
+         * Query the agency for the received messages.
+         * Checks for any messages changing state in the connection and updates the state attribute.
          */
         public int vcx_connection_update_state(int command_handle, int connection_handle, Callback cb);
 
         /**
-         * Request a State update from the given message for the given connection.
+         * Update the state of the Connection object based on the given message.
          */
         public int vcx_connection_update_state_with_message(int command_handle, int connection_handle, String message, Callback cb);
 
         /**
-         * Retrieves the State of the connection
+         * Returns the current state of the Connection object.
          */
         public int vcx_connection_get_state(int command_handle, int connection_handle, Callback cb);
 
         /**
-         * Releases the connection from memory.
+         * Releases the connection object by de-allocating memory.
          */
         public int vcx_connection_release(int connection_handle);
 
         /**
-         * Get the invite details for the connection.
+         * Get the invite details that were sent or can be sent to the remote side.
          */
         public int vcx_connection_invite_details(int command_handle, int connection_handle, int abbreviated, Callback cb);
 
         /**
-         * Creates a connection from the invite details.
+         * Create a Connection object from the given invite_details that provides a pairwise connection.
          */
         public int vcx_connection_create_with_invite(int command_handle, String source_id, String invite_details, Callback cb);
 
         /**
-         * Deletes a connection and send a delete API request to backend to delete connection
+         * Delete a Connection object from the agency and release its handle.
          */
         public int vcx_connection_delete_connection(int command_handle, int connection_handle, Callback cb);
 
         /**
-         * Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel
+         * Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
          */
         public int vcx_connection_send_ping(int command_handle, int connection_handle, String comment, Callback cb);
 
         /**
-         * Send discovery features message to the specified connection to discover which features it supports, and to what extent
+         * Send discovery features message to the specified connection to discover which features it supports, and to what extent.
          */
         public int vcx_connection_send_discovery_features(int command_handle, int connection_handle, String query, String comment, Callback cb);
 
@@ -186,122 +191,72 @@ public abstract class LibVcx {
         public int vcx_connection_info(int command_handle, int connection_handle, Callback cb);
 
         /**
-         * credential issuer object
-         *
-         * Used for offering and managing a credential with an identity owner.
-         */
-        /** Get my pairwise did from connection */
+         * Retrieves pw_did from Connection object.
+         * */
         public int vcx_connection_get_pw_did(int command_handle, int connection_handle, Callback cb);
 
-        /** Get their pairwise did from connection */
+        /**
+         * Get their pairwise did from connection
+         * */
         public int vcx_connection_get_their_pw_did(int command_handle, int connection_handle, Callback cb);
 
-        /** Send a message to the specified connection
-         ///
-         /// #params
-         ///
-         /// command_handle: command handle to map callback to user context.
-         ///
-         /// connection_handle: connection to receive the message
-         ///
-         /// msg: actual message to send
-         ///
-         /// send_message_options: config options json string that contains following options
-         ///     {
-         ///         msg_type: String, // type of message to send
-         ///         msg_title: String, // message title (user notification)
-         ///         ref_msg_id: Option<String>, // If responding to a message, id of the message
-         ///     }
-         ///
-         /// cb: Callback that provides array of matching messages retrieved
-         ///
-         /// #Returns
-         /// Error code as a u32
+        /**
+         * Send a message to the specified connection
          */
         public int vcx_connection_send_message(int command_handle, int connection_handle, String msg, String send_message_options, Callback cb);
 
-        /** Generate a signature for the specified data
-         ///
-         /// #params
-         ///
-         /// command_handle: command handle to map callback to user context.
-         ///
-         /// connection_handle: connection to receive the message
-         ///
-         /// data_raw: raw data buffer for signature
-         ///
-         /// data:len: length of data buffer
-         ///
-         /// cb: Callback that provides the generated signature
-         ///
-         /// #Returns
-         /// Error code as a u32
+        /**
+         * Generate a signature for the specified data
          */
         public int vcx_connection_sign_data(int command_handle, int connection_handle, byte[] data_raw, int data_len, Callback cb);
 
-        /** Verify the signature is valid for the specified data
-         ///
-         /// #params
-         ///
-         /// command_handle: command handle to map callback to user context.
-         ///
-         /// connection_handle: connection to receive the message
-         ///
-         /// data_raw: raw data buffer for signature
-         ///
-         /// data_len: length of data buffer
-         ///
-         /// signature_raw: raw data buffer for signature
-         ///
-         /// signature_len: length of data buffer
-         ///
-         /// cb: Callback that specifies whether the signature was valid or not
-         ///
-         /// #Returns
-         /// Error code as a u32
+        /**
+         * Verify the signature is valid for the specified data
          */
         public int vcx_connection_verify_signature(int command_handle, int connection_handle, byte[] data_raw, int data_len, byte[] signature_raw, int signature_len, Callback cb);
 
         /**
-         * credential issuer object
-         *
-         * Used for offering and managing a credential with an identity owner.
+         * The API represents an Issuer side in credential issuance process.
+         * Assumes that pairwise connection between Issuer and Holder is already established.
          */
 
-        /** Creates a credential object from the specified credentialdef handle. Populates a handle the new credential. */
+        /** Send a credential offer to user showing what will be included in the actual credential. */
         public int vcx_issuer_create_credential(int command_handle, String source_id, int cred_def_handle, String issuer_did, String credential_data, String credential_name, String price, Callback cb);
 
-        /** Asynchronously sends the credential offer to the connection. */
+        /** Send a credential offer to user showing what will be included in the actual credential. */
         public int vcx_issuer_send_credential_offer(int command_handle, int credential_handle, int connection_handle, Callback cb);
 
-        /** Get the credential offer message that can be sent to the specified connection */
+        /** Gets the offer message that can be sent to the specified connection */
         public int vcx_issuer_get_credential_offer_msg(int command_handle, int credential_handle, Callback cb);
 
-        /** Updates the state of the credential from the agency. */
+        /**
+         * Query the agency for the received messages.
+         * Checks for any messages changing state in the object and updates the state attribute.
+         * */
         public int vcx_issuer_credential_update_state(int command_handle, int credential_handle, Callback cb);
 
-        /** Updates the state of the credential from the given message. */
+        /** Update the state of the credential based on the given message. */
         public int vcx_issuer_credential_update_state_with_message(int command_handle, int credential_handle, String message, Callback cb);
 
-        /** Retrieves the state of the issuer_credential. */
+        /** Get the current state of the issuer credential object. */
         public int vcx_issuer_credential_get_state(int command_handle, int credential_handle, Callback cb);
 
-        /** Asynchronously send the credential to the connection. Populates a handle to the new transaction. */
+        /** Sends the credential to the end user (holder). */
         public int vcx_issuer_send_credential(int command_handle, int credential_handle, int connection_handle, Callback cb);
 
-        /** Get the credential message that can be sent to the specified connection */
+        /** Gets the credential message that can be sent to the user */
         public int vcx_issuer_get_credential_msg(int command_handle, int credential_handle, String my_pw_did, Callback cb);
 
-        /** Populates status with the current state of this credential. */
+        /** Takes the credential object and returns a json string of all its attributes. */
         public int vcx_issuer_credential_serialize(int command_handle, int credential_handle, Callback cb);
 
-        /** Re-creates a credential object from the specified serialization. */
+        /** Takes a json string representing an issuer credential object and recreates an object matching the json. */
         public int vcx_issuer_credential_deserialize(int command_handle, String serialized_credential, Callback cb);
 
         /** Terminates a credential for the specified reason. */
         public int vcx_issuer_terminate_credential(int command_handle, int credential_handle, int state_type, String msg);
 
-        /** Releases the credential from memory. */
+        /** Releases the issuer credential object by deallocating memory. */
         public int vcx_issuer_credential_release(int credential_handle);
 
         /** Populates credential_request with the latest credential request received. (not in MVP) */
@@ -312,23 +267,21 @@ public abstract class LibVcx {
 
 
         /**
-         * proof object
-         *
-         * Used for requesting and managing a proof request with an identity owner.
+         * APIs in this module are called by a verifier throughout the request-proof-and-verify process.
          */
 
         /**
-         * Creates a proof object.  Populates a handle to the new proof.
+         * Create a new Proof object that requests a proof for an enterprise
          */
         public int vcx_proof_create(int command_handle, String source_id, String requested_attrs, String requested_predicates, String revocationInterval, String name, Callback cb);
 
         /**
-         * Asynchronously send a proof request to the connection.
+         * Sends a proof request to pairwise connection.
          */
         public int vcx_proof_send_request(int command_handle, int proof_handle, int connection_handle, Callback cb);
 
         /**
-         * Get the proof request message for sending.
+         * Get the proof request message that can be sent to the specified connection.
          */
         public int vcx_proof_get_request_msg(int command_handle, int proof_handle, Callback cb);
 
@@ -339,7 +292,7 @@ public abstract class LibVcx {
         public int vcx_get_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
 
         /**
-         * Populate response_data with the latest proof offer received.
+         * Get Proof message.
         */
         public int vcx_get_proof_msg(int command_handle, int proof_handle, Callback cb);
 
@@ -349,58 +302,52 @@ public abstract class LibVcx {
         public int vcx_proof_accepted(int proof_handle, String response_data);
 
         /**
-         * Populates status with the current State of this proof request.
+         * Query the agency for the received messages.
+         * Checks for any messages changing state in the object and updates the state attribute.
          */
         public int vcx_proof_update_state(int command_handle, int proof_handle, Callback cb);
 
         /**
-         * Updates the state of the proof from the given message.
+         * Update the state of the proof based on the given message.
          */
         public int vcx_proof_update_state_with_message(int command_handle, int proof_handle, String message, Callback cb);
 
         /**
-         * Retrieves the State of the proof.
+         * Get the current state of the proof object.
          */
         public int vcx_proof_get_state(int command_handle, int proof_handle, Callback cb);
 
         /**
-         * Populates status with the current State of this proof.
+         * Takes the proof object and returns a json string of all its attributes.
          */
         public int vcx_proof_serialize(int command_handle, int proof_handle, Callback cb);
 
         /**
-         * Re-creates a proof object from the specified serialization.
+         * Takes a json string representing a proof object and recreates an object matching the json
          */
         public int vcx_proof_deserialize(int command_handle, String serialized_proof, Callback cb);
 
         /**
-         * Releases the proof from memory.
+         * Releases the proof object by de-allocating memory
          */
         public int vcx_proof_release(int proof_handle);
 
         /**
-         * disclosed_proof object
-         *
-         * Used for sending a disclosed_proof to an identity owner.
+         * APIs in this module are called by a prover throughout the request-proof-and-verify process.
          */
 
         /**
-         * Creates a disclosed_proof object.  Populates a handle to the new disclosed_proof.
-         */
-        public int vcx_disclosed_proof_create_with_request(int command_handle, String source_id, String requested_attrs, String requested_predicates, String name, Callback cb);
-
-        /**
-         * Create a proof object with proof request
+         * Create a Proof object for fulfilling a corresponding proof request
          */
         public int vcx_disclosed_proof_create_with_request(int command_handle, String source_id, String proof_req, Callback cb);
 
         /**
-         * Asynchronously send a proof to the connection.
+         * Send a proof to the connection, called after having received a proof request
          */
         public int vcx_disclosed_proof_send_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
 
         /**
-         * Asynchronously send a proof reject to the connection.
+         * Send a proof rejection to the connection, called after having received a proof request
          */
         public int vcx_disclosed_proof_reject_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
 
@@ -410,12 +357,12 @@ public abstract class LibVcx {
         public int vcx_disclosed_proof_get_proof_msg(int command_handle, int proof_handle, Callback cb);
 
         /**
-         * Get the proof reject message for sending.
+         * Get the reject proof message for sending.
          */
         public int vcx_disclosed_proof_get_reject_msg(int command_handle, int proof_handle, Callback cb);
 
         /**
-         * Populates status with the current State of this disclosed_proof request.
+         * Checks for any state change in the disclosed proof and updates the state attribute
          */
         public int vcx_disclosed_proof_update_state(int command_handle, int proof_handle, Callback cb);
 
@@ -430,43 +377,43 @@ public abstract class LibVcx {
         public int vcx_disclosed_proof_get_requests(int command_handle, int connection_handle, Callback cb);
 
         /**
-         * Retrieves the State of the disclosed_proof.
+         * Get the current state of the disclosed proof object.
          */
         public int vcx_disclosed_proof_get_state(int command_handle, int proof_handle, Callback cb);
 
         /**
-         * Populates status with the current State of this disclosed_proof.
+         * Takes the disclosed proof object and returns a json string of all its attributes.
          */
         public int vcx_disclosed_proof_serialize(int command_handle, int proof_handle, Callback cb);
 
         /**
-         * Re-creates a disclosed_proof object from the specified serialization.
+         * Takes a json string representing an disclosed proof object and recreates an object matching the json.
          */
         public int vcx_disclosed_proof_deserialize(int command_handle, String serialized_proof, Callback cb);
 
         /**
-         * Releases the disclosed_proof from memory.
+         * Releases the disclosed proof object by de-allocating memory.
          */
         public int vcx_disclosed_proof_release(int proof_handle);
 
         /**
-         * Create proof instance with a message id
+         * Create a proof based off of a known message id for a given connection.
          */
         public int vcx_disclosed_proof_create_with_msgid(int command_handle, String source_id, int connection_handle, String msd_id, Callback cb);
 
         /**
-         * Retrieve credentials that matches with the proof request
+         * Get credentials from wallet matching to the proof request associated with proof object.
          */
         public int vcx_disclosed_proof_retrieve_credentials(int command_handle, int proof_handle, Callback cb);
 
         /**
-         * Generate a proof that can be sent later
+         * Accept proof request associated with proof object and generates a proof from the selected credentials and self attested attributes.
          */
         public int vcx_disclosed_proof_generate_proof(int command_handle, int proof_handle, String selected_credentials, String self_attested_attributes, Callback cb);
 
 
         /**
-         * Declines presentation request.
+         * Declines presentation request..
          */
         public int vcx_disclosed_proof_decline_presentation_request(int command_handle, int proof_handle, int connection_handle, String reason, String proposal, Callback cb);
 
@@ -475,20 +422,45 @@ public abstract class LibVcx {
          * UtilsApi object
          *
          */
+
+        /*
+        * Provision an agent in the agency, populate configuration and wallet for this agent.
+        * */
         public String vcx_provision_agent(String json);
 
+        /*
+        * Provision an agent in the agency, populate configuration and wallet for this agent.
+        * */
         public int vcx_agent_provision_async(int command_handle, String json,Callback cb);
 
+        /*
+        * Provision an agent in the agency, populate configuration and wallet for this agent.
+        * */
         public String vcx_provision_agent_with_token(String config, String token);
 
+        /*
+        * Update information on the agent (ie, comm method and type)
+        * */
         public int vcx_get_provision_token(int command_handle, String config, Callback cb);
 
+        /*
+        * Update information on the agent (ie, comm method and type)
+        * */
         public int vcx_agent_update_info(int command_handle,String json,Callback cb);
 
+        /*
+        * Get ledger fees from the network
+        * */
         public int vcx_ledger_get_fees(int command_handle, Callback cb);
 
+        /*
+        * Retrieve author agreement and acceptance mechanisms set on the Ledger
+        * */
         public int vcx_get_ledger_author_agreement(int command_handle, Callback cb);
 
+        /*
+        * Set some accepted agreement as active.
+        * */
         public int vcx_set_active_txn_author_agreement_meta(String text, String version, String hash, String accMechType, long timeOfAcceptance);
 
         /// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
@@ -626,23 +598,29 @@ public abstract class LibVcx {
         public int  indy_append_txn_author_agreement_acceptance_to_request(int command_handle, String request_json, String text, String version, String taa_digest, String mechanism, Long time, Callback cb);
 
 
+        /*
+        * Set the pool handle before calling vcx_init_minimal
+        * */
         public int vcx_pool_set_handle(int handle);
 
+        /*
+        * Gets minimal request price for performing an action in case the requester can perform this action.
+        * */
         public int vcx_get_request_price(int command_handle, String action_json, String requester_info_json, Callback cb);
 
-        /** Endorse transaction to the ledger preserving an original author */
+        /*
+        * Endorse transaction to the ledger preserving an original author
+        * */
         public int vcx_endorse_transaction(int command_handle, String transaction, Callback cb);
 
         /**
-         * credential object
-         *
-         * Used for accepting and requesting a credential with an identity owner.
+         * The API represents a Holder side in credential issuance process.
          */
 
-        /** Creates a credential object from the specified credentialdef handle. Populates a handle the new credential. */
+        /** Create a Credential object that requests and receives a credential for an institution. */
         public int vcx_credential_create_with_offer(int command_handle, String source_id, String credential_offer,Callback cb);
 
-        /** Creates a credential object from the connection and msg id. Populates a handle the new credential. */
+        /** Create a Credential object based off of a known message id for a given connection. */
         public int vcx_credential_create_with_msgid(int command_handle, String source_id, int connection, String msg_id,Callback cb);
 
         /** Accept credential for the given offer. */
@@ -651,28 +629,31 @@ public abstract class LibVcx {
         /** Asynchronously sends the credential request to the connection. */
         public int vcx_credential_send_request(int command_handle, int credential_handle, int connection_handle,int payment_handle, Callback cb);
 
-        /** Get credential request message for given connection */
+        /** Approves the credential offer and gets the credential request message that can be sent to the specified connection */
         public int vcx_credential_get_request_msg(int command_handle, int credential_handle, String myPwDid, String theirPwDid, int payment_handle, Callback cb);
 
-        /** Check for any credential offers from the connection. */
+        /** Queries agency for credential offers from the given connection. */
         public int vcx_credential_get_offers(int command_handle, int connection_handle,Callback cb);
 
-        /** Updates the State of the credential from the agency. */
+        /**
+         * Query the agency for the received messages.
+         * Checks for any messages changing state in the credential object and updates the state attribute.
+         * */
         public int vcx_credential_update_state(int command_handle, int credential_handle,Callback cb);
 
-        /** Updates the state of the credential from the given message. */
+        /** Update the state of the credential based on the given message. */
         public int vcx_credential_update_state_with_message(int command_handle, int credential_handle, String message, Callback cb);
 
-        /** Retrieves the State of the credential - including storing the credential if it has been sent. */
+        /** Get the current state of the credential object. */
         public int vcx_credential_get_state(int command_handle, int credential_handle, Callback cb);
 
-        /** Populates status with the current State of this credential. */
+        /** Takes the credential object and returns a json string of all its attributes. */
         public int vcx_credential_serialize(int command_handle, int credential_handle, Callback cb);
 
-        /** Re-creates a credential from the specified serialization. */
+        /** Takes a json string representing an credential object and recreates an object matching the json. */
         public int vcx_credential_deserialize(int command_handle, String serialized_credential, Callback cb);
 
-        /** Releases the credential from memory. */
+        /** Releases the credential object by de-allocating memory. */
         public int vcx_credential_release(int credential_handle);
 
         /** Retrieve information about a stored credential in user's wallet, including credential id and the credential itself. */
@@ -754,7 +735,7 @@ public abstract class LibVcx {
          * Used for getting and updating messages
          */
 
-        /** Get messages for given uids or pairwise did from agency endpoint */
+        /** Retrieve messages from the agent. */
         public int vcx_messages_download(int command_handle, String messageStatus, String uids, String pwdids, Callback cb);
 
         /** Retrieve single message from the agency by the given uid. */
@@ -763,40 +744,38 @@ public abstract class LibVcx {
         /** Get messages for given uids from Cloud Agent */
         public int vcx_download_agent_messages(int command_handle, String messageStatus, String uids, Callback cb);
 
-        /** Update message status for a object of uids */
+        /** Update the status of messages from the specified connection */
         public int vcx_messages_update_status(int command_handle, String messageStatus, String msgJson, Callback cb);
 
         /**
-         * credentialdef object
-         *
-         * For creating, validating and committing a credential definition to the sovrin ledger.
+         * Object representing Credential Definition publishing on the Ledger and used for the Issuance.
          */
 
-        /** Creates a credential definition from the given schema.  Populates a handle to the new credentialdef. */
+        /** Create a new CredentialDef object and publish correspondent record on the ledger. */
         int vcx_credentialdef_create(int command_handle, String source_id, String credentialdef_name, String schema_id, String issuer_did, String tag,  String config, int payment_handle, Callback cb);
 
-        /** Create a credential definition from the given schema that will be published by Endorser later. */
+        /** Create a new CredentialDef object that will be published by Endorser later. */
         int vcx_credentialdef_prepare_for_endorser(int command_handle, String source_id, String credentialdef_name, String schema_id, String issuer_did, String tag,  String config, String endorser, Callback cb);
 
-        /** Creates a credential definition from the given credential definition id. */
+        /** Create a new CredentialDef object from a cred_def_id. */
         int vcx_credentialdef_create_with_id(int command_handle, String source_id, String credentialdef_id, String issuer_did, String revocation_config, Callback cb);
 
-        /** Populates status with the current state of this credential. */
+        /** Takes the credentialdef object and returns a json string of all its attributes. */
         int vcx_credentialdef_serialize(int command_handle, int credentialdef_handle, Callback cb);
 
-        /** Re-creates a credential object from the specified serialization. */
+        /** Takes a json string representing a credentialdef object and recreates an object matching the json. */
         int vcx_credentialdef_deserialize(int command_handle, String serialized_credentialdef, Callback cb);
 
-        /** Release memory associated with credentialdef object. */
+        /** Releases the credentialdef object by de-allocating memory. */
         int vcx_credentialdef_release(int handle);
 
-        /** Retrieves cred_def_id from credentialdef object. */
+        /** Retrieves credential definition's id. */
         int vcx_credentialdef_get_cred_def_id(int command_handle, int cred_def_handle, Callback cb);
 
-        /** Updates the State of the credential def from the ledger. */
+        /** Checks if credential definition is published on the Ledger and updates the state if it is. */
         public int vcx_credentialdef_update_state(int command_handle, int credentialdef_handle,Callback cb);
 
-        /** Retrieves the State of the credential def */
+        /** Get the current state of the credential definition object */
         public int vcx_credentialdef_get_state(int command_handle, int credentialdef_handle, Callback cb);
 
         /**
