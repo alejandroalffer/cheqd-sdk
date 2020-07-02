@@ -14,11 +14,15 @@ use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::discovery::query::Query;
 use v3::messages::discovery::disclose::{Disclose, ProtocolDescriptor};
 use v3::messages::a2a::protocol_registry::ProtocolRegistry;
+use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
+use v3::messages::outofband::handshake_reuse::HandshakeReuse;
+use v3::messages::outofband::handshake_reuse_accepted::HandshakeReuseAccepted;
 
 use std::collections::HashMap;
 
 use error::prelude::*;
 use messages::thread::Thread;
+use v3::handlers::connection::types::CompletedConnection;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeSM {
@@ -75,6 +79,7 @@ pub struct InitializedState {}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InvitedState {
     invitation: Invitation,
+    pthid: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,12 +99,14 @@ pub struct RespondedState {
     thread: Thread,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompleteState {
-    did_doc: DidDoc,
-    protocols: Option<Vec<ProtocolDescriptor>>,
+    pub did_doc: DidDoc,
+    pub protocols: Option<Vec<ProtocolDescriptor>>,
     #[serde(default)]
-    thread: Thread,
+    pub thread: Thread,
+    #[serde(default)]
+    pub onetime: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,7 +119,32 @@ pub struct FailedState {
 impl From<(InitializedState, Invitation)> for InvitedState {
     fn from((_state, invitation): (InitializedState, Invitation)) -> InvitedState {
         trace!("DidExchangeStateSM: transit state from InitializedState to InvitedState");
-        InvitedState { invitation }
+        InvitedState { invitation, pthid: None }
+    }
+}
+
+impl From<(InitializedState, OutofbandInvitation)> for InvitedState {
+    fn from((_state, mut invitation): (InitializedState, OutofbandInvitation)) -> InvitedState {
+        trace!("DidExchangeStateSM: transit state from InitializedState to InvitedState");
+        let pthid = invitation.id.to_string();
+        let invitation = Invitation::from(invitation.service.remove(0))
+            .set_label(invitation.label.unwrap_or_default());
+        InvitedState { invitation, pthid: Some(pthid) }
+    }
+}
+
+impl From<(InitializedState, OutofbandInvitation)> for CompleteState {
+    fn from((_state, mut invitation): (InitializedState, OutofbandInvitation)) -> CompleteState {
+        trace!("DidExchangeStateSM: transit state from InitializedState to CompleteState with Out-of-Band Invitation");
+        let thread = Thread::new()
+            .set_pthid(invitation.id.to_string());
+
+        CompleteState {
+            did_doc: DidDoc::from(invitation.service.remove(0)),
+            protocols: None,
+            thread,
+            onetime: true,
+        }
     }
 }
 
@@ -160,7 +192,7 @@ impl From<(RequestedState, Response, Thread)> for CompleteState {
     fn from((_state, response, thread): (RequestedState, Response, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: response.connection.did_doc, protocols: None, thread }
+        CompleteState { did_doc: response.connection.did_doc, protocols: None, thread, onetime: false }
     }
 }
 
@@ -176,7 +208,7 @@ impl From<(RespondedState, Ack, Thread)> for CompleteState {
     fn from((state, _ack, thread): (RespondedState, Ack, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState with Ack");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: state.did_doc, protocols: None, thread }
+        CompleteState { did_doc: state.did_doc, protocols: None, thread, onetime: false }
     }
 }
 
@@ -184,7 +216,7 @@ impl From<(RespondedState, Ping, Thread)> for CompleteState {
     fn from((state, _ping, thread): (RespondedState, Ping, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState with Ping");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: state.did_doc, protocols: None, thread }
+        CompleteState { did_doc: state.did_doc, protocols: None, thread, onetime: false }
     }
 }
 
@@ -192,14 +224,14 @@ impl From<(RespondedState, PingResponse, Thread)> for CompleteState {
     fn from((state, _ping_response, thread): (RespondedState, PingResponse, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState with PingResponse");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: state.did_doc, protocols: None, thread }
+        CompleteState { did_doc: state.did_doc, protocols: None, thread, onetime: false }
     }
 }
 
 impl From<(CompleteState, Vec<ProtocolDescriptor>)> for CompleteState {
     fn from((state, protocols): (CompleteState, Vec<ProtocolDescriptor>)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from CompleteState to CompleteState");
-        CompleteState { did_doc: state.did_doc, protocols: Some(protocols), thread: state.thread }
+        CompleteState { did_doc: state.did_doc, protocols: Some(protocols), thread: state.thread, onetime: false }
     }
 }
 
@@ -329,6 +361,14 @@ impl CompleteState {
             DidExchangeMessages::DiscloseReceived(disclose) => {
                 DidExchangeState::Completed((self, disclose.protocols).into())
             }
+            DidExchangeMessages::SendHandshakeReuse(invitation) => {
+                self.handle_send_reuse(invitation, agent_info)?;
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::HandshakeReuseReceived(handshake_reuse) => {
+                self.handle_reuse(handshake_reuse, agent_info)?;
+                DidExchangeState::Completed(self)
+            }
             _ => {
                 DidExchangeState::Completed(self)
             }
@@ -366,6 +406,42 @@ impl CompleteState {
             .set_thread_id(query.id.0.clone());
 
         agent_info.send_message(&disclose.to_a2a_message(), &self.did_doc)
+    }
+
+    fn handle_send_reuse(&self, invitation: OutofbandInvitation, agent_info: &AgentInfo) -> VcxResult<()> {
+        let handshake_reuse = HandshakeReuse::create();
+
+        let thread = Thread::new()
+            .set_thid(handshake_reuse.id.to_string())
+            .set_pthid(invitation.id.to_string());
+
+        let handshake_reuse = handshake_reuse
+            .set_thread(thread);
+
+        agent_info.send_message(&handshake_reuse.to_a2a_message(), &self.did_doc).ok();
+        Ok(())
+    }
+
+    fn handle_reuse(&self, handshake_reuse: HandshakeReuse, agent_info: &AgentInfo) -> VcxResult<()> {
+        let thread = handshake_reuse.thread.clone()
+            .update_received_order(&self.did_doc.id);
+
+        let handshake_reuse_accepted = HandshakeReuseAccepted::create()
+            .set_thread(thread);
+
+        agent_info.send_message(&handshake_reuse_accepted.to_a2a_message(), &self.did_doc).ok();
+        Ok(())
+    }
+
+    pub fn send_message(&self, message: &A2AMessage, agent_info: &AgentInfo) -> VcxResult<()>{
+        self.warn_if_onetime_connection();
+        agent_info.send_message(message, &self.did_doc)
+    }
+
+    pub fn warn_if_onetime_connection(&self) {
+        if self.onetime {
+            warn!("You are using one-time connection. The other side of communication might have erased it already")
+        }
     }
 }
 
@@ -654,6 +730,13 @@ impl DidExchangeSM {
                             DidExchangeMessages::InvitationReceived(invitation) => {
                                 ActorDidExchangeState::Invitee(DidExchangeState::Invited((state, invitation).into()))
                             }
+                            DidExchangeMessages::OutofbandInvitationReceived(invitation) => {
+                                if invitation.handshake_protocols.len() > 0 {
+                                    ActorDidExchangeState::Invitee(DidExchangeState::Invited((state, invitation).into()))
+                                } else {
+                                    ActorDidExchangeState::Invitee(DidExchangeState::Completed((state, invitation).into()))
+                                }
+                            }
                             _ => {
                                 ActorDidExchangeState::Invitee(DidExchangeState::Initialized(state))
                             }
@@ -671,7 +754,8 @@ impl DidExchangeSM {
                                     .set_keys(agent_info.recipient_keys(), agent_info.routing_keys()?);
 
                                 let thread = Thread::new()
-                                    .set_thid(request.id.to_string());
+                                    .set_thid(request.id.to_string())
+                                    .set_opt_pthid(state.pthid.clone());
 
                                 agent_info.send_message(&request.to_a2a_message(), &DidDoc::from(state.invitation.clone()))?;
                                 ActorDidExchangeState::Invitee(DidExchangeState::Requested((state, request, thread).into()))
@@ -757,6 +841,19 @@ impl DidExchangeSM {
         }
     }
 
+    pub fn completed_connection(&self) -> Option<CompletedConnection> {
+        match self.state {
+            ActorDidExchangeState::Invitee(ref state) | ActorDidExchangeState::Inviter(ref state) =>
+                match state {
+                    DidExchangeState::Completed(ref state) => Some(CompletedConnection {
+                        agent: self.agent_info.clone(),
+                        data: state.clone(),
+                    }),
+                    _ => None
+                },
+        }
+    }
+
     pub fn get_invitation(&self) -> Option<&Invitation> {
         match self.state {
             ActorDidExchangeState::Inviter(DidExchangeState::Invited(ref state)) |
@@ -819,6 +916,7 @@ pub mod test {
     use v3::messages::ack::tests::_ack as t_ack;
     use v3::messages::discovery::query::tests::_query;
     use v3::messages::discovery::disclose::tests::_disclose;
+    use v3::messages::outofband::invitation::tests::{_invitation as _outofband_invitation, _invitation_no_handshake as _outofband_invitation_no_handshake};
 
     pub fn _ack() -> Ack {
         let mut ack = t_ack();
@@ -1332,14 +1430,57 @@ pub mod test {
             }
 
             #[test]
-            fn test_did_exchange_handle_invite_message_from_initialized_state() {
+            fn test_did_exchange_handle_invite_message_from_initialized_state() -> Result<(), String> {
                 let _setup = AgencyModeSetup::init();
 
                 let mut did_exchange_sm = invitee_sm();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::InvitationReceived(_invitation())).unwrap();
 
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Invited(_)), did_exchange_sm.state);
+                match did_exchange_sm.state {
+                    ActorDidExchangeState::Invitee(DidExchangeState::Invited(state)) => {
+                        assert_eq!(None, state.pthid);
+                        Ok(())
+                    }
+                    other => Err(format!("State expected to be Invited, but: {:?}", other))
+                }
+            }
+
+            #[test]
+            fn test_did_exchange_handle_outofband_invite_message_from_initialized_state() -> Result<(), String> {
+                let _setup = AgencyModeSetup::init();
+
+                let mut did_exchange_sm = invitee_sm();
+                let invitation = _outofband_invitation();
+
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::OutofbandInvitationReceived(invitation.clone())).unwrap();
+
+                match did_exchange_sm.state {
+                    ActorDidExchangeState::Invitee(DidExchangeState::Invited(state)) => {
+                        assert_eq!(invitation.id.to_string(), state.pthid.unwrap());
+                        Ok(())
+                    }
+                    other => Err(format!("State expected to be Invited, but: {:?}", other))
+                }
+            }
+
+            #[test]
+            fn test_did_exchange_handle_outofband_invite_without_handshake_message_from_initialized_state() -> Result<(), String> {
+                let _setup = AgencyModeSetup::init();
+
+                let mut did_exchange_sm = invitee_sm();
+                let invitation = _outofband_invitation_no_handshake();
+
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::OutofbandInvitationReceived(invitation.clone())).unwrap();
+
+                match did_exchange_sm.state {
+                    ActorDidExchangeState::Invitee(DidExchangeState::Completed(state)) => {
+                        assert!(state.onetime);
+                        assert_eq!(invitation.id.to_string(), state.thread.pthid.unwrap());
+                        Ok(())
+                    }
+                    other => Err(format!("State expected to be Invited, but: {:?}", other))
+                }
             }
 
             #[test]

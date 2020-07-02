@@ -274,6 +274,95 @@ pub extern fn vcx_connection_create_with_invite(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Create a Connection object from the given Out-of-Band Invitation.
+/// Depending on the format of Invitation there are two way of follow interaction:
+///     * Invitation contains `handshake_protocols`: regular Connection process will be ran.
+///         Follow steps as for regular Connection establishment.
+///     * Invitation does not contain `handshake_protocols`: one-time completed Connection object will be created.
+///         You can use `vcx_connection_send_message` or specific function to send a response message.
+///         Note that on repeated message sending an error will be thrown.
+///
+/// NOTE: this method can be used when `aries` protocol is set.
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the Connection
+///
+/// invite: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
+///
+/// cb: Callback that provides connection handle and error status of request
+///
+/// # Examples
+/// invite ->
+///     {
+///         "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+///         "@id": "<id used for context as pthid>", -  the unique ID of the message.
+///         "label": Optional<string>, - a string that the receiver may want to display to the user,
+///                                      likely about who sent the out-of-band message.
+///         "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+///                                          the user or use in automatically deciding what to do with the out-of-band message.
+///         "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+///                                     about the context-specific goal of the out-of-band message.
+///         "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+///                                                     that the receiver can use in responding to the message in order to create or reuse a connection with the sender.
+///                                                     One or both of handshake_protocols and request~attach MUST be included in the message.
+///         "request~attach": Optional<[
+///             {
+///                 "@id": "request-0",
+///                 "mime-type": "application/json",
+///                 "data": {
+///                     "json": "<json of protocol message>"
+///                 }
+///             }
+///         ]>, - an attachment decorator containing an array of request messages in order of preference that the receiver can using in responding to the message.
+///               One or both of handshake_protocols and request~attach MUST be included in the message.
+///         "service": [
+///             {
+///                 "id": string
+///                 "type": string,
+///                 "recipientKeys": [string],
+///                 "routingKeys": [string],
+///                 "serviceEndpoint": string
+///             }
+///         ] - an item that is the equivalent of the service block of a DIDDoc that the receiver is to use in responding to the message.
+///     }
+///
+/// # Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn create_connection_with_outofband_invitation(command_handle: CommandHandle,
+                                                          source_id: *const c_char,
+                                                          invite: *const c_char,
+                                                          cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                                               err: u32,
+                                                                               connection_handle: u32)>) -> u32 {
+    info!("create_connection_with_outofband_invitation >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(invite, VcxErrorKind::InvalidOption);
+    trace!("create_connection_with_outofband_invitation(command_handle: {}, source_id: {})", command_handle, source_id);
+    spawn(move || {
+        match create_connection_with_outofband_invite(&source_id, &invite) {
+            Ok(handle) => {
+                trace!("create_connection_with_outofband_invitation_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, handle, source_id);
+                cb(command_handle, error::SUCCESS.code_num, handle);
+            }
+            Err(x) => {
+                warn!("create_connection_with_outofband_invitation_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, x, 0, source_id);
+                cb(command_handle, x.into(), 0);
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Accept connection for the given invitation.
 ///
 /// This function performs the following actions:
@@ -470,28 +559,28 @@ pub extern fn vcx_connection_redirect(command_handle: CommandHandle,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_redirect - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     if !is_valid_handle(redirect_connection_handle) {
         error!("vcx_connection_redirect - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     trace!("vcx_connection_redirect(command_handle: {}, connection_handle: {}, redirect_connection_handle: {}), source_id: {:?}",
            command_handle, connection_handle, redirect_connection_handle, source_id);
 
-    spawn(move|| {
+    spawn(move || {
         match redirect(connection_handle, redirect_connection_handle) {
             Ok(_) => {
                 trace!("vcx_connection_redirect_cb(command_handle: {}, rc: {})", command_handle, error::SUCCESS.message);
                 cb(command_handle, error::SUCCESS.code_num);
-            },
+            }
             Err(e) => {
                 trace!("vcx_connection_redirect_cb(command_handle: {}, rc: {})", command_handle, e);
                 cb(command_handle, e.into());
-            },
+            }
         };
 
         Ok(())
@@ -514,17 +603,17 @@ pub extern fn vcx_connection_get_redirect_details(command_handle: CommandHandle,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_redirect_details - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
-    spawn(move|| {
-        match get_redirect_details(connection_handle){
+    spawn(move || {
+        match get_redirect_details(connection_handle) {
             Ok(str) => {
                 trace!("vcx_connection_get_redirect_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
                        command_handle, connection_handle, error::SUCCESS.message, str, source_id);
                 let msg = CStringUtils::string_to_cstring(str);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_get_redirect_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {:?})",
                       command_handle, connection_handle, x, "null", source_id);
@@ -725,7 +814,7 @@ pub extern fn vcx_connection_update_state_with_message(command_handle: CommandHa
         Err(_) => return VcxError::from(VcxErrorKind::InvalidJson).into(),
     };
 
-    spawn(move|| {
+    spawn(move || {
         let result = update_state_with_message(connection_handle, message);
 
         let rc = match result {
@@ -1239,6 +1328,90 @@ pub extern fn vcx_connection_send_discovery_features(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Send a message to reuse existing Connection instead of setting up a new one
+/// as response on received Out-of-Band Invitation.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to awaken and send reuse message.
+///
+/// invite: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// # Examples
+/// invite ->
+///     {
+///         "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+///         "@id": "<id used for context as pthid>", -  the unique ID of the message.
+///         "label": Optional<string>, - a string that the receiver may want to display to the user,
+///                                      likely about who sent the out-of-band message.
+///         "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+///                                          the user or use in automatically deciding what to do with the out-of-band message.
+///         "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+///                                     about the context-specific goal of the out-of-band message.
+///         "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+///                                                     that the receiver can use in responding to the message in order to create or reuse a connection with the sender.
+///                                                     One or both of handshake_protocols and request~attach MUST be included in the message.
+///         "request~attach": Optional<[
+///             {
+///                 "@id": "request-0",
+///                 "mime-type": "application/json",
+///                 "data": {
+///                     "json": "<json of protocol message>"
+///                 }
+///             }
+///         ]>, - an attachment decorator containing an array of request messages in order of preference that the receiver can using in responding to the message.
+///               One or both of handshake_protocols and request~attach MUST be included in the message.
+///         "service": [
+///             {
+///                 "id": string
+///                 "type": string,
+///                 "recipientKeys": [string],
+///                 "routingKeys": [string],
+///                 "serviceEndpoint": string
+///             }
+///         ] - an item that is the equivalent of the service block of a DIDDoc that the receiver is to use in responding to the message.
+///     }
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_send_reuse(command_handle: u32,
+                                        connection_handle: u32,
+                                        invite: *const c_char,
+                                        cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_connection_send_reuse >>>");
+
+    check_useful_c_str!(invite, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_send_reuse(command_handle: {}, connection_handle: {})",
+           command_handle, connection_handle);
+
+    spawn(move || {
+        match send_reuse(connection_handle, invite) {
+            Ok(()) => {
+                trace!("vvcx_connection_send_reuse_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vvcx_connection_send_reuse_cb(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Get the information about the connection state.
 ///
 /// Note: This method can be used for `aries` communication method only.
@@ -1335,22 +1508,22 @@ pub extern fn vcx_connection_get_pw_did(command_handle: u32,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
-    spawn(move|| {
+    spawn(move || {
         match get_pw_did(connection_handle) {
             Ok(json) => {
                 trace!("vcx_connection_get_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, pw_did: {}), source_id: {:?}",
                        command_handle, connection_handle, error::SUCCESS.message, json, source_id);
                 let msg = CStringUtils::string_to_cstring(json);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_get_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, pw_did: {}), source_id: {:?}",
                       command_handle, connection_handle, x, "null", source_id);
                 cb(command_handle, x.into(), ptr::null_mut());
-            },
+            }
         };
 
         Ok(())
@@ -1384,22 +1557,22 @@ pub extern fn vcx_connection_get_their_pw_did(command_handle: u32,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
-    spawn(move|| {
+    spawn(move || {
         match get_their_pw_did(connection_handle) {
             Ok(json) => {
                 trace!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {}), source_id: {:?}",
                        command_handle, connection_handle, error::SUCCESS.message, json, source_id);
                 let msg = CStringUtils::string_to_cstring(json);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {}), source_id: {:?}",
                       command_handle, connection_handle, x, "null", source_id);
                 cb(command_handle, x.into(), ptr::null_mut());
-            },
+            }
         };
 
         Ok(())
@@ -1470,14 +1643,14 @@ mod tests {
         let _setup = SetupMocks::init();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
-        let rc = vcx_connection_redirect(cb.command_handle, 0, 0,Some(cb.get_callback()));
+        let rc = vcx_connection_redirect(cb.command_handle, 0, 0, Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
 
         let handle = build_test_connection();
         assert!(handle > 0);
 
         let cb = return_types_u32::Return_U32::new().unwrap();
-        let rc = vcx_connection_redirect(cb.command_handle,handle, 0,Some(cb.get_callback()));
+        let rc = vcx_connection_redirect(cb.command_handle, handle, 0, Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
 
         let handle2 = create_connection("alice2").unwrap();
@@ -1485,7 +1658,7 @@ mod tests {
         assert!(handle2 > 0);
 
         let cb = return_types_u32::Return_U32::new().unwrap();
-        let rc = vcx_connection_redirect(cb.command_handle,handle, handle2,Some(cb.get_callback()));
+        let rc = vcx_connection_redirect(cb.command_handle, handle, handle2, Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
     }
 

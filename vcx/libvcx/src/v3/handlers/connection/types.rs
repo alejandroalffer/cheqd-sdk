@@ -1,6 +1,6 @@
 use v3::messages::discovery::disclose::ProtocolDescriptor;
 use v3::handlers::connection::agent::AgentInfo;
-use v3::messages::connection::did_doc::DidDoc;
+use v3::handlers::connection::states::CompleteState;
 
 /*
     object returning by vcx_connection_info
@@ -29,7 +29,7 @@ pub struct SideConnectionInfo {
 */
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct InternalConnectionInfo {
+pub struct CompletedConnection {
     pub agent: AgentInfo,
-    pub remote_did_doc: DidDoc,
+    pub data: CompleteState,
 }

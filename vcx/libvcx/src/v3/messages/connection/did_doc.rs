@@ -311,6 +311,26 @@ impl From<DidDoc> for Invitation {
     }
 }
 
+impl From<Service> for DidDoc {
+    fn from(service: Service) -> DidDoc {
+        let mut did_doc: DidDoc = DidDoc::default();
+        did_doc.set_id(service.id.to_string());
+        did_doc.set_service_endpoint(service.service_endpoint.clone());
+        did_doc.set_keys(service.recipient_keys, service.routing_keys);
+        did_doc
+    }
+}
+
+impl From<Service> for Invitation {
+    fn from(service: Service) -> Invitation {
+        Invitation::create()
+            .set_id(service.id)
+            .set_service_endpoint(service.service_endpoint)
+            .set_recipient_keys(service.recipient_keys)
+            .set_routing_keys(service.routing_keys)
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -359,6 +379,17 @@ pub mod tests {
 
     pub fn _label() -> String {
         String::from("test")
+    }
+
+    pub fn _service() -> Service {
+        Service {
+            id: _id(),
+            type_: "".to_string(),
+            priority: 0,
+            recipient_keys: _recipient_keys(),
+            routing_keys: _routing_keys(),
+            service_endpoint: _service_endpoint(),
+        }
     }
 
     pub fn _did_doc() -> DidDoc {

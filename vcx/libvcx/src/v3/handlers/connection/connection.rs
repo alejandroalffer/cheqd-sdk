@@ -8,7 +8,8 @@ use v3::messages::a2a::A2AMessage;
 use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::basic_message::message::BasicMessage;
-use v3::handlers::connection::types::{SideConnectionInfo, PairwiseConnectionInfo, InternalConnectionInfo};
+use v3::handlers::connection::types::{SideConnectionInfo, PairwiseConnectionInfo, CompletedConnection};
+use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
@@ -40,6 +41,20 @@ impl Connection {
         Ok(connection)
     }
 
+    pub fn create_with_outofband_invite(source_id: &str, invitation: OutofbandInvitation) -> VcxResult<Connection> {
+        trace!("Connection::create_with_outofband_invite >>> source_id: {}", source_id);
+
+        invitation.validate()?;
+
+        let mut connection = Connection {
+            connection_sm: DidExchangeSM::new(Actor::Invitee, source_id),
+        };
+
+        connection.process_outofband_invite(invitation)?;
+
+        Ok(connection)
+    }
+
     pub fn source_id(&self) -> String { self.connection_sm.source_id().to_string() }
 
     pub fn state(&self) -> u32 { self.connection_sm.state() }
@@ -65,6 +80,11 @@ impl Connection {
     pub fn process_invite(&mut self, invitation: Invitation) -> VcxResult<()> {
         trace!("Connection::process_invite >>> invitation: {:?}", invitation);
         self.step(DidExchangeMessages::InvitationReceived(invitation))
+    }
+
+    pub fn process_outofband_invite(&mut self, invitation: OutofbandInvitation) -> VcxResult<()> {
+        trace!("Connection::process_outofband_invite >>> invitation: {:?}", invitation);
+        self.step(DidExchangeMessages::OutofbandInvitationReceived(invitation))
     }
 
     pub fn get_invite_details(&self) -> VcxResult<String> {
@@ -196,6 +216,11 @@ impl Connection {
         self.handle_message(DidExchangeMessages::DiscoverFeatures((query, comment)))
     }
 
+    pub fn send_reuse(&mut self, invitation: OutofbandInvitation) -> VcxResult<()> {
+        trace!("Connection::send_reuse >>> invitation: {:?}", invitation);
+        self.handle_message(DidExchangeMessages::SendHandshakeReuse(invitation))
+    }
+
     pub fn get_connection_info(&self) -> VcxResult<String> {
         trace!("Connection::get_connection_info >>>");
 
@@ -223,25 +248,16 @@ impl Connection {
 
         let connection_info = PairwiseConnectionInfo {
             my: current,
-            their: remote
+            their: remote,
         };
 
         return Ok(json!(connection_info).to_string());
     }
 
-    pub fn get_internal_connection_info(&self) -> VcxResult<InternalConnectionInfo> {
-        let remote_did_doc = self.connection_sm.did_doc()
+    pub fn get_completed_connection(&self) -> VcxResult<CompletedConnection> {
+        self.connection_sm.completed_connection()
             .ok_or(VcxError::from_msg(VcxErrorKind::NotReady,
-                                      "Connection is not ready yet. Could not find remote DidDoc"))?;
-
-        let agent = self.agent_info().clone();
-
-        let connection_info = InternalConnectionInfo {
-            agent,
-            remote_did_doc,
-        };
-
-        Ok(connection_info)
+                                      "Connection is not completed yet. You cannot not use pending Connection for interaction."))
     }
 }
 

@@ -3,7 +3,7 @@ use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential::Credential;
 use v3::messages::status::Status;
 use v3::messages::error::ProblemReport;
-use v3::handlers::connection::types::InternalConnectionInfo;
+use v3::handlers::connection::types::CompletedConnection;
 use messages::thread::Thread;
 
 // Possible Transitions:
@@ -49,7 +49,7 @@ pub struct OfferSentState {
     pub cred_data: String,
     pub rev_reg_id: Option<String>,
     pub tails_file: Option<String>,
-    pub connection: InternalConnectionInfo,
+    pub connection: CompletedConnection,
     #[serde(default)]
     pub thread: Thread,
 }
@@ -61,14 +61,14 @@ pub struct RequestReceivedState {
     pub rev_reg_id: Option<String>,
     pub tails_file: Option<String>,
     pub request: CredentialRequest,
-    pub connection: InternalConnectionInfo,
+    pub connection: CompletedConnection,
     #[serde(default)]
     pub thread: Thread,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CredentialSentState {
-    pub connection: InternalConnectionInfo,
+    pub connection: CompletedConnection,
     #[serde(default)]
     pub thread: Thread,
 }
@@ -81,8 +81,8 @@ pub struct FinishedState {
     pub thread: Thread,
 }
 
-impl From<(InitialState, String, InternalConnectionInfo, Thread)> for OfferSentState {
-    fn from((state, offer, connection, thread): (InitialState, String, InternalConnectionInfo, Thread)) -> Self {
+impl From<(InitialState, String, CompletedConnection, Thread)> for OfferSentState {
+    fn from((state, offer, connection, thread): (InitialState, String, CompletedConnection, Thread)) -> Self {
         trace!("IssuerSM: transit state from InitialState to OfferSentState");
         trace!("Thread: {:?}", thread);
         OfferSentState {
@@ -182,7 +182,7 @@ pub enum HolderState {
 pub struct RequestSentState {
     pub req_meta: String,
     pub cred_def_json: String,
-    pub connection: InternalConnectionInfo,
+    pub connection: CompletedConnection,
     #[serde(default)]
     pub thread: Thread,
 }
@@ -212,8 +212,8 @@ pub struct FinishedHolderState {
     pub thread: Thread,
 }
 
-impl From<(OfferReceivedState, String, String, InternalConnectionInfo, Thread)> for RequestSentState {
-    fn from((state, req_meta, cred_def_json, connection, thread): (OfferReceivedState, String, String, InternalConnectionInfo, Thread)) -> Self {
+impl From<(OfferReceivedState, String, String, CompletedConnection, Thread)> for RequestSentState {
+    fn from((state, req_meta, cred_def_json, connection, thread): (OfferReceivedState, String, String, CompletedConnection, Thread)) -> Self {
         trace!("HolderSM: transit state from OfferReceivedState to RequestSentState");
         trace!("Thread: {:?}", state.thread);
         RequestSentState {

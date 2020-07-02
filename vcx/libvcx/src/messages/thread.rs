@@ -23,6 +23,16 @@ impl Thread {
         self
     }
 
+    pub fn set_pthid(mut self, pthid: String) -> Thread {
+        self.pthid = Some(pthid);
+        self
+    }
+
+    pub fn set_opt_pthid(mut self, pthid: Option<String>) -> Thread {
+        self.pthid = pthid;
+        self
+    }
+
     pub fn set_sender_order(mut self, order: u32) -> Thread {
         self.sender_order = order;
         self
