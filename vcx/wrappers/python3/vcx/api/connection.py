@@ -61,11 +61,17 @@ class Connection(VcxStateful):
         Invitee:
             VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
 
+            VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_outofband_invitation`
+                                              (create Connection object with Out-of-Band Invitation containing `handshake_protocols`) is called.
+
             VcxStateType::VcxStateRequestReceived - once `vcx_connection_connect` (accept `ConnectionInvite` and send `ConnectionRequest` message) is called.
 
             VcxStateType::VcxStateAccepted - once `ConnectionResponse` messages is received.
                                              send `Ack` message if requested.
                                              use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+
+            VcxStateType::VcxStateAccepted - once `vcx_connection_create_with_outofband_invitation`
+                                              (create one-time Connection object with Out-of-Band Invitation does not containing `handshake_protocols`) is called.
 
             VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
                                             OR
@@ -104,6 +110,8 @@ class Connection(VcxStateful):
 
         Invitee:
             VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateOfferSent
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` (invite contains `handshake_protocols`) - VcxStateType::VcxStateOfferSent
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` (no `handshake_protocols`) - VcxStateType::VcxStateAccepted
 
             VcxStateType::VcxStateOfferSent - `vcx_connection_connect` - VcxStateType::VcxStateRequestReceived
             VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
@@ -131,6 +139,7 @@ class Connection(VcxStateful):
         PingResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
         Query - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#query-message-type
         Disclose - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#disclose-message-type
+        Out-of-Band Invitation - https://github.com/hyperledger/aries-rfcs/tree/master/features/0434-outofband#message-type-httpsdidcommorgout-of-bandverinvitation
 
     TODO: document attributes
     """

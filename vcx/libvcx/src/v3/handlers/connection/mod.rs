@@ -31,13 +31,6 @@ pub mod tests {
                 .encode(&key).unwrap();
         ::connection::update_state(connection_handle, Some(json!(response.to_a2a_message()).to_string())).unwrap();
 
-        let ack = Ack::create()
-            .set_thread(
-                response.thread
-                    .set_sender_order(1)
-            );
-        ::connection::update_state(connection_handle, Some(json!(ack.to_a2a_message()).to_string())).unwrap();
-
         connection_handle
     }
 
