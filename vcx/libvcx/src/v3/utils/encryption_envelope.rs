@@ -24,6 +24,8 @@ impl EncryptionEnvelope {
     fn encrypt_for_pairwise(message: &A2AMessage,
                             pw_verkey: Option<&str>,
                             did_doc: &DidDoc) -> VcxResult<Vec<u8>> {
+        trace!("EncryptionEnvelope::encrypt_for_pairwise >>> pw_verkey: {:?}", pw_verkey);
+
         let message = match message {
             A2AMessage::Generic(message_) => message_.to_string(),
             message => json!(message).to_string()
@@ -53,6 +55,8 @@ impl EncryptionEnvelope {
     fn wrap_into_forward(message: Vec<u8>,
                          to: &str,
                          routing_key: &str) -> VcxResult<Vec<u8>> {
+        trace!("EncryptionEnvelope::wrap_into_forward >>> to: {:?}", to);
+
         let message = A2AMessage::Forward(Forward::new(to.to_string(), message)?);
 
         let message = json!(message).to_string();

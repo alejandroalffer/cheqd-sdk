@@ -25,6 +25,9 @@ use v3::handlers::connection::connection::Connection as ConnectionV3;
 use v3::handlers::connection::states::ActorDidExchangeState;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation as InvitationV3;
+use v3::messages::a2a::A2AMessage;
+use v3::handlers::connection::types::InternalConnectionInfo;
+
 use settings::ProtocolTypes;
 
 lazy_static! {
@@ -1263,23 +1266,11 @@ impl From<(Connection, ActorDidExchangeState)> for ConnectionV3 {
     }
 }
 
-use v3::messages::a2a::A2AMessage;
-use v3::messages::connection::did_doc::DidDoc;
-
 pub fn get_messages(handle: u32) -> VcxResult<HashMap<String, A2AMessage>> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
+            Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `get_messages`.")),
             Connections::V3(ref mut connection) => connection.get_messages(),
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
-        }
-    })
-}
-
-pub fn update_message_status(handle: u32, uid: String) -> VcxResult<()> {
-    CONNECTION_MAP.get_mut(handle, |connection| {
-        match connection {
-            Connections::V3(ref mut connection) => connection.update_message_status(uid.clone()),
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
         }
     })
 }
@@ -1287,32 +1278,10 @@ pub fn update_message_status(handle: u32, uid: String) -> VcxResult<()> {
 pub fn get_message_by_id(handle: u32, msg_id: String) -> VcxResult<A2AMessage> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
+            Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `get_message_by_id`.")),
             Connections::V3(ref mut connection) => connection.get_message_by_id(&msg_id),
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
         }
     })
-}
-
-pub fn decode_message(handle: u32, message: Message) -> VcxResult<A2AMessage> {
-    CONNECTION_MAP.get_mut(handle, |connection| {
-        match connection {
-            Connections::V3(ref mut connection) => connection.decode_message(&message),
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
-        }
-    })
-}
-
-pub fn send_message(handle: u32, message: A2AMessage) -> VcxResult<()> {
-    CONNECTION_MAP.get_mut(handle, |connection| {
-        match connection {
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)),
-            Connections::V3(ref mut connection) => connection.send_message(&message)
-        }
-    })
-}
-
-pub fn send_message_to_self_endpoint(message: A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
-    ConnectionV3::send_message_to_self_endpoint(&message, did_doc)
 }
 
 pub fn is_v3_connection(connection_handle: u32) -> VcxResult<bool> {
@@ -1327,7 +1296,7 @@ pub fn is_v3_connection(connection_handle: u32) -> VcxResult<bool> {
 pub fn send_ping(connection_handle: u32, comment: Option<String>) -> VcxResult<()> {
     CONNECTION_MAP.get_mut(connection_handle, |connection| {
         match connection {
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
+            Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `send_ping`.")),
             Connections::V3(ref mut connection) => connection.send_ping(comment.clone())
         }
     })
@@ -1336,7 +1305,7 @@ pub fn send_ping(connection_handle: u32, comment: Option<String>) -> VcxResult<(
 pub fn send_discovery_features(connection_handle: u32, query: Option<String>, comment: Option<String>) -> VcxResult<()> {
     CONNECTION_MAP.get_mut(connection_handle, |connection| {
         match connection {
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
+            Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `send_discovery_features`.")),
             Connections::V3(ref mut connection) => connection.send_discovery_features(query.clone(), comment.clone())
         }
     })
@@ -1345,8 +1314,17 @@ pub fn send_discovery_features(connection_handle: u32, query: Option<String>, co
 pub fn get_connection_info(handle: u32) -> VcxResult<String> {
     CONNECTION_MAP.get(handle, |cxn| {
         match cxn {
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
+            Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `get_connection_info`.")),
             Connections::V3(ref connection) => connection.get_connection_info()
+        }
+    })
+}
+
+pub fn get_internal_connection_info(handle: u32) -> VcxResult<InternalConnectionInfo> {
+    CONNECTION_MAP.get(handle, |cxn| {
+        match cxn {
+            Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `get_internal_connection_info`.")),
+            Connections::V3(ref connection) => connection.get_internal_connection_info()
         }
     })
 }
@@ -1894,7 +1872,7 @@ pub mod tests {
         let (connection_handle, connection_serialized) =
             accept_connection_invite("test", INVITE_DETAIL_STRING, None).unwrap();
 
-        assert!(connection_handle > 0 );
+        assert!(connection_handle > 0);
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(connection_handle));
         assert_eq!(connection_serialized, to_string(connection_handle).unwrap());
     }

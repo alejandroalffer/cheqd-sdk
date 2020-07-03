@@ -1,17 +1,14 @@
-use messages::get_message::Message;
 use error::prelude::*;
+use std::collections::HashMap;
 
 use v3::handlers::connection::states::{DidExchangeSM, Actor, ActorDidExchangeState};
 use v3::handlers::connection::messages::DidExchangeMessages;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::connection::invite::Invitation;
-
-use std::collections::HashMap;
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::basic_message::message::BasicMessage;
-use v3::messages::discovery::disclose::ProtocolDescriptor;
-
+use v3::handlers::connection::types::{SideConnectionInfo, PairwiseConnectionInfo, InternalConnectionInfo};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
@@ -82,10 +79,6 @@ impl Connection {
         }
     }
 
-    pub fn actor(&self) -> Actor {
-        self.connection_sm.actor()
-    }
-
     pub fn connect(&mut self) -> VcxResult<()> {
         trace!("Connection::connect >>> source_id: {}", self.connection_sm.source_id());
         self.step(DidExchangeMessages::Connect())
@@ -99,11 +92,10 @@ impl Connection {
         }
 
         let messages = self.get_messages()?;
-        let agent_info = self.agent_info().clone();
 
         if let Some((uid, message)) = self.connection_sm.find_message_to_handle(messages) {
             self.handle_message(message.into())?;
-            agent_info.update_message_status(uid)?;
+            self.agent_info().update_message_status(uid)?;
         };
 
         if let Some(prev_agent_info) = self.connection_sm.prev_agent_info().cloned() {
@@ -148,19 +140,6 @@ impl Connection {
     pub fn handle_message(&mut self, message: DidExchangeMessages) -> VcxResult<()> {
         trace!("Connection: handle_message >>> {:?}", message);
         self.step(message)
-    }
-
-    pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
-        match message.decrypted_payload {
-            Some(ref payload) => {
-                let message: ::messages::payload::PayloadV1 = ::serde_json::from_str(&payload)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
-
-                ::serde_json::from_str::<A2AMessage>(&message.msg)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))
-            }
-            None => self.agent_info().decode_message(message)
-        }
     }
 
     pub fn send_message(&self, message: &A2AMessage) -> VcxResult<()> {
@@ -242,30 +221,28 @@ impl Connection {
             None => None
         };
 
-        let connection_info = ConnectionInfo { my: current, their: remote };
+        let connection_info = PairwiseConnectionInfo {
+            my: current,
+            their: remote
+        };
 
-        let connection_info_json = serde_json::to_string(&connection_info)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("Cannot serialize ConnectionInfo: {:?}", err)))?;
-
-        return Ok(connection_info_json);
+        return Ok(json!(connection_info).to_string());
     }
-}
 
-#[derive(Debug, Serialize)]
-struct ConnectionInfo {
-    my: SideConnectionInfo,
-    their: Option<SideConnectionInfo>,
-}
+    pub fn get_internal_connection_info(&self) -> VcxResult<InternalConnectionInfo> {
+        let remote_did_doc = self.connection_sm.did_doc()
+            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady,
+                                      "Connection is not ready yet. Could not find remote DidDoc"))?;
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct SideConnectionInfo {
-    did: String,
-    recipient_keys: Vec<String>,
-    routing_keys: Vec<String>,
-    service_endpoint: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    protocols: Option<Vec<ProtocolDescriptor>>,
+        let agent = self.agent_info().clone();
+
+        let connection_info = InternalConnectionInfo {
+            agent,
+            remote_did_doc,
+        };
+
+        Ok(connection_info)
+    }
 }
 
 #[cfg(test)]

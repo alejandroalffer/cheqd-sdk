@@ -250,6 +250,12 @@ impl MessageId {
     }
 }
 
+impl ToString for MessageId {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
 impl Default for MessageId {
     #[cfg(all(test, not(feature = "aries")))]
     fn default() -> MessageId {

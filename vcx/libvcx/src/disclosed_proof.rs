@@ -937,16 +937,6 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
     }).map_err(handle_err)
 }
 
-pub fn get_presentation_status(handle: u32) -> VcxResult<u32> {
-    HANDLE_MAP.get(handle, |obj| {
-        match obj {
-            DisclosedProofs::Pending(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidDisclosedProofHandle, "Cannot get presentation status for V1 DisclosedProof object")),
-            DisclosedProofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidDisclosedProofHandle, "Cannot get presentation status for V1 DisclosedProof object")),
-            DisclosedProofs::V3(ref obj) => Ok(obj.presentation_status())
-        }
-    })
-}
-
 #[cfg(test)]
 mod tests {
     extern crate serde_json;
