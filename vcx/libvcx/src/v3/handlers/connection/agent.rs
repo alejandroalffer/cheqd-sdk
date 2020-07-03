@@ -134,7 +134,7 @@ impl AgentInfo {
 
         let message = match message.decrypted_payload {
             Some(ref payload) => {
-                trace!("Agent: Message Payload is already decoded");
+                debug!("Agent: Message Payload is already decoded");
 
                 let message: ::messages::payload::PayloadV1 = ::serde_json::from_str(&payload)
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
