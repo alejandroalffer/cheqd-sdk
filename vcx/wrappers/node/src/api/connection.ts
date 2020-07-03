@@ -155,12 +155,63 @@ export interface IConnectionCreateData {
 export type IConnectionInvite = string
 
 /**
+ * A string representing a out-of-band invitation json object.
+ *     {
+ *         "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+ *         "@id": "<id used for context as pthid>", -  the unique ID of the message.
+ *         "label": Optional<string>, - a string that the receiver may want to display to the user,
+ *                                      likely about who sent the out-of-band message.
+ *         "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+ *                                          the user or use in automatically deciding what 
+ *                                          to do with the out-of-band message.
+ *         "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+ *                                     about the context-specific goal of the out-of-band message.
+ *         "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+ *                                                     that the receiver can use in responding to the message
+ *                                                     in order to create or reuse a connection with the sender.
+ *                                                     One or both of handshake_protocols and request~attach
+ *                                                     MUST be included in the message.
+ *         "request~attach": Optional<[
+ *             {
+ *                 "@id": "request-0",
+ *                 "mime-type": "application/json",
+ *                 "data": {
+ *                     "json": "<json of protocol message>"
+ *                 }
+ *             }
+ *         ]>, - an attachment decorator containing an array of request messages in order of preference
+ *               that the receiver can using in responding to the message.
+ *               One or both of handshake_protocols and request~attach MUST be included in the message.
+ *         "service": [
+ *             {
+ *                 "id": string
+ *                 "type": string,
+ *                 "recipientKeys": [string],
+ *                 "routingKeys": [string],
+ *                 "serviceEndpoint": string
+ *             }
+ *         ] - an item that is the equivalent of the service block of a DIDDoc 
+ *             that the receiver is to use in responding to the message.
+ *     }
+ */
+export type IConnectionOutofbandInvite = string
+
+/**
  * @description Interface that represents the parameters for `Connection.createWithInvite` function.
  * @interface
  */
 export interface IRecipientInviteInfo extends IConnectionCreateData {
   // Invitation provided by an entity that wishes to make a connection.
   invite: IConnectionInvite
+}
+
+/**
+ * @description Interface that represents the parameters for `Connection.createWithOutofbandInvite` function.
+ * @interface
+ */
+export interface IRecipientOutofbandInviteInfo extends IConnectionCreateData {
+  // Out-of-Band Invitation provided by an entity that wishes interaction.
+  invite: IConnectionOutofbandInvite
 }
 
 /**
@@ -220,7 +271,8 @@ export interface ISignatureData {
  *             "recipientKeys": array<str> - Recipient keys
  *             "routingKeys": array<str> - Routing keys
  *             "serviceEndpoint": <str> - Endpoint
- *             "protocols": array<str> - The set of protocol supported by side. Is filled after DiscoveryFeatures process was completed.
+ *             "protocols": array<str> - The set of protocol supported by side.
+ *                                       Is filled after DiscoveryFeatures process was completed.
  *          }
  *    }
  */
@@ -279,6 +331,35 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
       await connection._create((cb) => rustAPI().vcx_connection_create_with_invite(commandHandle,
                                                  id, invite, cb))
 
+      return connection
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Create a Connection object from the given Out-of-Band Invitation.
+   * Depending on the format of Invitation there are two way of follow interaction:
+   *     * Invitation contains `handshake_protocols`: regular Connection process will be ran.
+   *         Follow steps as for regular Connection establishment.
+   *     * Invitation does not contain `handshake_protocols`: one-time completed Connection object will be created.
+   *         You can use `vcx_connection_send_message` or specific function to send a response message.
+   *         Note that on repeated message sending an error will be thrown.
+   *
+   * NOTE: this method can be used when `aries` protocol is set.
+   *
+   * Example:
+   * ```
+   * sourceId = 'foobar123'
+   * connection_handle = await Connection.createWithOutofbandInvite({sourceId, invite})
+   * ```
+   */
+  public static async createWithOutofbandInvite ({ id, invite }: IRecipientOutofbandInviteInfo): Promise<Connection> {
+    const connection = new Connection(id)
+    const commandHandle = 0
+    try {
+      await connection._create((cb) => rustAPI().vcx_connection_create_with_outofband_invitation(commandHandle,
+                                                 id, invite, cb))
       return connection
     } catch (err) {
       throw new VCXInternalError(err)
@@ -649,17 +730,56 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   }
 
   /**
-   * Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+   * Send discovery features message to the specified connection to discover 
+   * which features it supports, and to what extent.
    *
    * Note that this function is useful in case `aries` communication method is used.
    * In other cases it returns ActionNotSupported error.
    *
    */
-  public async sendDiscoveryFeatures (query: string | null | undefined, comment: string | null | undefined): Promise<void> {
+  public async sendDiscoveryFeatures (query: string | null | undefined,
+                                      comment: string | null | undefined): Promise<void> {
     try {
       return await createFFICallbackPromise<void>(
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_connection_send_discovery_features(0, this.handle, query, comment, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Send a message to reuse existing Connection instead of setting up a new one
+   * as response on received Out-of-Band Invitation.
+   *
+   * Note that this function works in case `aries` communication method is used.
+   *     In other cases it returns ActionNotSupported error.
+   *
+   * Example:
+   * ```
+   * await connection.sendReuse(invite)
+   * ```
+   */
+  public async sendReuse (invite: IConnectionOutofbandInvite): Promise<void> {
+    try {
+      return await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_send_reuse(0, this.handle, invite, cb)
           if (rc) {
             reject(rc)
           }

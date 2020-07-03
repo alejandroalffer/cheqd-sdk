@@ -57,7 +57,8 @@ export const dataCredentialDefCreate = (): ICredentialDefCreateData => ({
     tailsFile: undefined
   },
   schemaId: 'testCredentialDefSchemaId',
-  sourceId: 'testCredentialDefSourceId'
+  sourceId: 'testCredentialDefSourceId',
+  tag: 'TAG1'
 })
 
 export const dataCredentialDefCreateWithId = (): ICredentialDefCreateDataWithId => ({

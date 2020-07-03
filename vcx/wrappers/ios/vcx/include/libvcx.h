@@ -164,6 +164,9 @@ vcx_error_t vcx_connection_invite_details(vcx_command_handle_t command_handle, v
 /** Creates a connection from the invite details. */
 vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handle, const char *source_id, const char *invite_details, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_connection_handle_t connection_handle));
 
+/** Create a Connection object from the given Out-of-Band Invitation. */
+vcx_error_t vcx_connection_create_with_outofband_invitation(vcx_command_handle_t command_handle, const char *source_id, const char *invite, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_connection_handle_t connection_handle));
+
 /** Deletes a connection, send an API call to agency to stop sending messages from this connection */
 vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t err));
 
@@ -201,6 +204,18 @@ vcx_error_t vcx_connection_sign_data(vcx_command_handle_t command_handle, vcx_co
 
 /** Verify the signature is valid for the specified data */
 vcx_error_t vcx_connection_verify_signature(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, uint8_t const* data_raw, unsigned int data_len, uint8_t const* signature_raw, unsigned int signature_len, void (*cb)(vcx_command_handle_t, vcx_error_t err, vcx_bool_t valid));
+
+/** Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel. */
+vcx_error_t vcx_connection_send_ping(vcx_command_handle_t command_handle,
+                                     vcx_connection_handle_t connection_handle,
+                                     const char *comment,
+                                     void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+
+/** Send a message to reuse existing Connection instead of setting up a new one as response on received Out-of-Band Invitation. */
+vcx_error_t vcx_connection_send_reuse(vcx_command_handle_t command_handle,
+                                      vcx_connection_handle_t connection_handle,
+                                      const char *invite,
+                                      void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
 /**
  * credential issuer object

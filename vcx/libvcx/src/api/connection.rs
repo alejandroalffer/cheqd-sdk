@@ -331,27 +331,27 @@ pub extern fn vcx_connection_create_with_invite(command_handle: CommandHandle,
 /// # Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn create_connection_with_outofband_invitation(command_handle: CommandHandle,
-                                                          source_id: *const c_char,
-                                                          invite: *const c_char,
-                                                          cb: Option<extern fn(xcommand_handle: CommandHandle,
-                                                                               err: u32,
-                                                                               connection_handle: u32)>) -> u32 {
-    info!("create_connection_with_outofband_invitation >>>");
+pub extern fn vcx_connection_create_with_outofband_invitation(command_handle: CommandHandle,
+                                                              source_id: *const c_char,
+                                                              invite: *const c_char,
+                                                              cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                                                   err: u32,
+                                                                                   connection_handle: u32)>) -> u32 {
+    info!("vcx_connection_create_with_outofband_invitation >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
     check_useful_c_str!(invite, VcxErrorKind::InvalidOption);
-    trace!("create_connection_with_outofband_invitation(command_handle: {}, source_id: {})", command_handle, source_id);
+    trace!("vcx_connection_create_with_outofband_invitation(command_handle: {}, source_id: {})", command_handle, source_id);
     spawn(move || {
         match create_connection_with_outofband_invite(&source_id, &invite) {
             Ok(handle) => {
-                trace!("create_connection_with_outofband_invitation_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                trace!("vcx_connection_create_with_outofband_invitation_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                        command_handle, error::SUCCESS.message, handle, source_id);
                 cb(command_handle, error::SUCCESS.code_num, handle);
             }
             Err(x) => {
-                warn!("create_connection_with_outofband_invitation_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                warn!("vcx_connection_create_with_outofband_invitation_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, x, 0, source_id);
                 cb(command_handle, x.into(), 0);
             }
@@ -1331,11 +1331,14 @@ pub extern fn vcx_connection_send_discovery_features(command_handle: u32,
 /// Send a message to reuse existing Connection instead of setting up a new one
 /// as response on received Out-of-Band Invitation.
 ///
+/// Note that this function works in case `aries` communication method is used.
+///     In other cases it returns ActionNotSupported error.
+///
 /// #params
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// connection_handle: connection to awaken and send reuse message.
+/// connection_handle: handle pointing to Connection to awaken and send reuse message.
 ///
 /// invite: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
 ///

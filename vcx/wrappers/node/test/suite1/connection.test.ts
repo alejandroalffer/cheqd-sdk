@@ -2,7 +2,7 @@ import '../module-resolver-helper'
 
 import { assert } from 'chai'
 import { connectionCreate, connectionCreateConnect, dataConnectionCreate } from 'helpers/entities'
-import { INVITE_ACCEPTED_MESSAGE, INVITE_REDIRECTED_MESSAGE, INVITE_DETAILS } from 'helpers/test-constants'
+import { INVITE_ACCEPTED_MESSAGE, INVITE_REDIRECTED_MESSAGE, INVITE_DETAILS, OUTOFBAND_INVITE } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow, sleep } from 'helpers/utils'
 import { Connection, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
@@ -227,14 +227,20 @@ describe('Connection:', () => {
     })
   })
 
-  describe('acceptConnectionInvite:', () => {
-    it('success', async () => {
-      const connection = await Connection.acceptConnectionInvite({
-        data: '{"connection_type":"QR"}',
+  describe('createWithOutofbandInvite:', () => {
+    it('success: create with out-of-band invitation', async () => {
+      await Connection.createWithOutofbandInvite({
         id: 'new',
-        invite: INVITE_DETAILS
+        invite: OUTOFBAND_INVITE
       })
-      assert.equal(await connection.getState(), StateType.Accepted)
+    })
+  })
+
+  describe('sendReuse:', () => {
+    it('success: send reuse', async () => {
+      const connection = await connectionCreate()
+      const error = await shouldThrow(() => connection.sendReuse(OUTOFBAND_INVITE))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
     })
   })
 })

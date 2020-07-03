@@ -216,6 +216,16 @@ public abstract class LibVcx {
         public int vcx_connection_verify_signature(int command_handle, int connection_handle, byte[] data_raw, int data_len, byte[] signature_raw, int signature_len, Callback cb);
 
         /**
+         * Create a Connection object from the given Out-of-Band Invitation.
+         */
+        public int vcx_connection_create_with_outofband_invitation(int command_handle, String source_id, String invite, Callback cb);
+
+        /**
+         * Send a message to reuse existing Connection instead of setting up a new one as response on received Out-of-Band Invitation.
+         */
+        public int vcx_connection_send_reuse(int command_handle, int connection_handle, String invite, Callback cb);
+
+        /**
          * The API represents an Issuer side in credential issuance process.
          * Assumes that pairwise connection between Issuer and Holder is already established.
          */
