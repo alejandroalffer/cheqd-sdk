@@ -28,11 +28,6 @@ impl Prover {
 
     pub fn state(&self) -> u32 { self.prover_sm.state() }
 
-    pub fn presentation_status(&self) -> u32 {
-        trace!("Prover::presentation_state >>>");
-        self.prover_sm.presentation_status()
-    }
-
     pub fn retrieve_credentials(&self) -> VcxResult<String> {
         trace!("Prover::retrieve_credentials >>>");
         let presentation_request = self.prover_sm.presentation_request().request_presentations_attach.content()?;
@@ -72,12 +67,18 @@ impl Prover {
             return self.update_state_with_message(message_);
         }
 
-        let connection_handle = self.prover_sm.connection_handle()?;
-        let messages = connection::get_messages(connection_handle)?;
+        let agent_info = match self.prover_sm.get_agent_info() {
+            Some(agent_info) => agent_info.clone(),
+            None => {
+                warn!("Could not update Prover state: no information about Connection.");
+                return Ok(());
+            }
+        };
 
+        let messages = agent_info.get_messages()?;
         if let Some((uid, message)) = self.prover_sm.find_message_to_handle(messages) {
             self.handle_message(message.into())?;
-            connection::update_message_status(connection_handle, uid)?;
+            agent_info.update_message_status(uid)?;
         };
 
         Ok(())

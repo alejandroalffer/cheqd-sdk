@@ -805,20 +805,6 @@ pub fn get_payment_information(handle: u32) -> VcxResult<Option<PaymentInfo>> {
     }).map_err(handle_err)
 }
 
-pub fn get_credential_status(handle: u32) -> VcxResult<u32> {
-    HANDLE_MAP.get(handle, |obj| {
-        match obj {
-            Credentials::Pending(_) => {
-                Err(VcxError::from_msg(VcxErrorKind::InvalidCredentialHandle, "Cannot get credential status for Pending object"))
-            }
-            Credentials::V1(_) => {
-                Err(VcxError::from_msg(VcxErrorKind::InvalidCredentialHandle, "Cannot get credential status for V1 object"))
-            }
-            Credentials::V3(ref obj) => obj.get_credential_status(),
-        }
-    })
-}
-
 #[cfg(test)]
 pub mod tests {
     use super::*;

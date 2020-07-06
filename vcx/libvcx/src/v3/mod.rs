@@ -15,6 +15,8 @@ pub mod test {
     use indy_sys::WalletHandle;
     use utils::plugins::init_plugin;
     use messages::payload::PayloadV1;
+    use api::VcxStateType;
+    use v3::messages::a2a::A2AMessage;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -177,6 +179,12 @@ pub mod test {
             set_wallet_handle(self.wallet_handle);
         }
 
+        pub fn send_message(&self, message: &A2AMessage) {
+            self.activate();
+            let agent_info = ::connection::get_internal_connection_info(self.connection_handle).unwrap();
+            agent_info.agent.send_message(message, &agent_info.remote_did_doc).unwrap();
+        }
+
         pub fn create_schema(&mut self) {
             self.activate();
             let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
@@ -274,8 +282,7 @@ pub mod test {
 
             ::issuer_credential::send_credential(self.credential_handle, self.connection_handle).unwrap();
             ::issuer_credential::update_state(self.credential_handle, None).unwrap();
-            assert_eq!(4, ::issuer_credential::get_state(self.credential_handle).unwrap());
-            assert_eq!(::v3::messages::status::Status::Success.code(), ::issuer_credential::get_credential_status(self.credential_handle).unwrap());
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, ::issuer_credential::get_state(self.credential_handle).unwrap());
         }
 
         pub fn request_presentation(&mut self) {
@@ -291,15 +298,20 @@ pub mod test {
 
         pub fn verify_presentation(&self) {
             self.activate();
-            self.update_proof_state(4, ::v3::messages::status::Status::Success.code())
+            self.update_proof_state(4)
         }
 
-        pub fn update_proof_state(&self, expected_state: u32, expected_status: u32) {
+        pub fn update_proof_state(&self, expected_state: u32) {
             self.activate();
 
             ::proof::update_state(self.presentation_handle, None).unwrap();
             assert_eq!(expected_state, ::proof::get_state(self.presentation_handle).unwrap());
-            assert_eq!(expected_status, ::proof::get_proof_state(self.presentation_handle).unwrap());
+        }
+
+        pub fn update_message(&self, uid: &str) {
+            self.activate();
+            let agent_info = ::connection::get_internal_connection_info(self.connection_handle).unwrap();
+            agent_info.agent.update_message_status(uid.to_string()).unwrap();
         }
 
         pub fn teardown(&self) {
@@ -390,8 +402,7 @@ pub mod test {
         pub fn accept_credential(&self) {
             self.activate();
             ::credential::update_state(self.credential_handle, None).unwrap();
-            assert_eq!(4, ::credential::get_state(self.credential_handle).unwrap());
-            assert_eq!(::v3::messages::status::Status::Success.code(), ::credential::get_credential_status(self.credential_handle).unwrap());
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, ::credential::get_state(self.credential_handle).unwrap());
         }
 
         pub fn get_proof_request_messages(&self) -> String {
@@ -465,7 +476,13 @@ pub mod test {
         pub fn ensure_presentation_verified(&self) {
             self.activate();
             ::disclosed_proof::update_state(self.presentation_handle, None).unwrap();
-            assert_eq!(::v3::messages::status::Status::Success.code(), ::disclosed_proof::get_presentation_status(self.presentation_handle).unwrap());
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, ::disclosed_proof::get_state(self.presentation_handle).unwrap());
+        }
+
+        pub fn update_message_status(&self, uid: String) {
+            self.activate();
+            let agent_info = ::connection::get_internal_connection_info(self.connection_handle).unwrap();
+            agent_info.agent.update_message_status(uid).unwrap();
         }
     }
 
@@ -669,7 +686,7 @@ pub mod test {
 
             alice.credential_handle = ::credential::credential_create_with_offer("test", &message.message).unwrap();
 
-            ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
+            alice.update_message_status(message.uid);
 
             ::credential::send_credential_request(alice.credential_handle, alice.connection_handle).unwrap();
             assert_eq!(2, ::credential::get_state(alice.credential_handle).unwrap());
@@ -687,7 +704,7 @@ pub mod test {
 
             alice.presentation_handle = ::disclosed_proof::create_proof("test", &message.message).unwrap();
 
-            ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
+            alice.update_message_status(message.uid);
 
             let credentials = alice.get_credentials_for_presentation();
 
