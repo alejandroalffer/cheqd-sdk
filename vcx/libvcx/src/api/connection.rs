@@ -283,6 +283,75 @@ pub extern fn vcx_connection_create_with_invite(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Create a Connection object that provides an Out-of-Band Connection for an institution's user.
+///
+/// NOTE: this method can be used when `aries` protocol is set.
+///
+/// NOTE: this method is EXPERIMENTAL
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the Connection. It'll be used as a label in Invitation.
+///
+/// goal_code: Optional<string> - a self-attested code the receiver may want to display to
+///                               the user or use in automatically deciding what to do with the out-of-band message.
+///
+/// goal:  Optional<string> - a self-attested string that the receiver may want to display to the user about
+///                           the context-specific goal of the out-of-band message.
+///
+/// handshake: whether Inviter wants to establish regular connection using `connections` handshake protocol.
+///            if false, one-time connection channel will be created.
+///
+/// request_attach: Optional<string> - An additional message as JSON that will be put into attachment decorator
+///                                     that the receiver can using in responding to the message.
+///
+/// cb: Callback that provides
+///     - error status of function
+///     - connection handle that should be used to perform actions with the Connection object.
+///
+/// # Returns
+/// Error code as a u32
+#[no_mangle]
+#[allow(unused_assignments)]
+pub extern fn vcx_connection_create_outofband(command_handle: CommandHandle,
+                                              source_id: *const c_char,
+                                              goal_code: *const c_char,
+                                              goal: *const c_char,
+                                              handshake: bool,
+                                              request_attach: *const c_char,
+                                              cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, connection_handle: u32)>) -> u32 {
+    info!("vcx_connection_create_outofband >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(goal_code, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(goal, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(request_attach, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_create_outofband(command_handle: {}, source_id: {}, goal_code: {:?}, goal: {:?}, handshake: {}, request_attach: {:?})",
+           command_handle, source_id, goal_code, goal, handshake, request_attach);
+
+    spawn(move || {
+        match create_outofband_connection(&source_id, goal_code, goal, handshake, request_attach) {
+            Ok(handle) => {
+                trace!("vcx_connection_create_outofband_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, handle, source_id);
+                cb(command_handle, error::SUCCESS.code_num, handle);
+            }
+            Err(x) => {
+                warn!("vcx_connection_create_outofband_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, x, 0, source_id);
+                cb(command_handle, x.into(), 0);
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Create a Connection object from the given Out-of-Band Invitation.
 /// Depending on the format of Invitation there are two way of follow interaction:
 ///     * Invitation contains `handshake_protocols`: regular Connection process will be ran.

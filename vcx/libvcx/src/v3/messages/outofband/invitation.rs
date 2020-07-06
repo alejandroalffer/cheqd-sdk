@@ -40,13 +40,33 @@ impl Invitation {
         self
     }
 
+    pub fn set_opt_goal_code(mut self, goal_code: Option<String>) -> Invitation {
+        self.goal_code = goal_code;
+        self
+    }
+
     pub fn set_goal(mut self, goal: String) -> Invitation {
         self.goal = Some(goal);
         self
     }
 
+    pub fn set_opt_goal(mut self, goal: Option<String>) -> Invitation {
+        self.goal = goal;
+        self
+    }
+
     pub fn set_handshake_protocol(mut self, handshake_protocol: String) -> Invitation {
         self.handshake_protocols.push(handshake_protocol);
+        self
+    }
+
+    pub fn set_handshake(mut self, request_handshake: bool) -> Invitation {
+        if request_handshake {
+            // Out-of-Band RFC contains that format of handshake protocol for Connections protocol.
+            // But it differs from format in Connection RFC where we use DID's
+            self.handshake_protocols.push(String::from("https://didcomm.org/connections/1.0"));
+//            self.handshake_protocols.push(MessageFamilies::Outofband.id());
+        }
         self
     }
 
@@ -57,6 +77,13 @@ impl Invitation {
 
     pub fn set_request_attach(mut self, attachment: String) -> VcxResult<Invitation> {
         self.request_attach.add_base64_encoded_json_attachment(AttachmentId::OutofbandRequest, ::serde_json::Value::String(attachment))?;
+        Ok(self)
+    }
+
+    pub fn set_opt_request_attach(mut self, attachment: Option<String>) -> VcxResult<Invitation> {
+        if let Some(attachment_) = attachment {
+            self.request_attach.add_base64_encoded_json_attachment(AttachmentId::OutofbandRequest, ::serde_json::Value::String(attachment_))?;
+        }
         Ok(self)
     }
 

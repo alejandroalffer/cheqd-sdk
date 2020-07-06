@@ -6,12 +6,10 @@ pub mod types;
 
 #[cfg(test)]
 pub mod tests {
-    use v3::messages::connection::invite::tests::_invitation_json;
     use v3::messages::connection::invite::Invitation;
     use v3::messages::connection::response::Response;
     use v3::messages::connection::did_doc::tests::_service_endpoint;
     use v3::messages::connection::request::tests::_request;
-    use v3::messages::ack::Ack;
 
     pub fn mock_connection() -> u32 {
         let key = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL".to_string();
@@ -49,6 +47,7 @@ pub mod tests {
         use v3::test::{Faber, Alice};
         use v3::messages::ack::tests::_ack;
         use v3::messages::a2a::A2AMessage;
+        use v3::messages::connection::invite::tests::_invitation_json;
 
         #[test]
         fn test_create_connection_works() {

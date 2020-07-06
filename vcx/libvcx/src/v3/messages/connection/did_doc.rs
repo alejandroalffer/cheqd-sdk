@@ -1,4 +1,5 @@
 use v3::messages::connection::invite::Invitation;
+use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 
 use error::prelude::*;
 use url::Url;
@@ -9,6 +10,7 @@ pub const KEY_TYPE: &str = "Ed25519VerificationKey2018";
 pub const KEY_AUTHENTICATION_TYPE: &str = "Ed25519SignatureAuthentication2018";
 pub const SERVICE_SUFFIX: &str = "indy";
 pub const SERVICE_TYPE: &str = "IndyAgent";
+pub const SERVICE_ID: &str = "#inline";
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct DidDoc {
@@ -289,6 +291,32 @@ impl Default for Service {
     }
 }
 
+impl Service {
+    pub fn create() -> Self {
+        Service::default()
+    }
+
+    pub fn set_id(mut self, id: String)-> Self {
+        self.id = id;
+        self
+    }
+
+    pub fn set_service_endpoint(mut self, service_endpoint: String) -> Self {
+        self.service_endpoint = service_endpoint;
+        self
+    }
+
+    pub fn set_routing_keys(mut self, routing_keys: Vec<String>) -> Self {
+        self.routing_keys = routing_keys;
+        self
+    }
+
+    pub fn set_recipient_keys(mut self, recipient_keys: Vec<String>) -> Self {
+        self.recipient_keys = recipient_keys;
+        self
+    }
+}
+
 impl From<Invitation> for DidDoc {
     fn from(invite: Invitation) -> DidDoc {
         let mut did_doc: DidDoc = DidDoc::default();
@@ -314,7 +342,6 @@ impl From<DidDoc> for Invitation {
 impl From<Service> for DidDoc {
     fn from(service: Service) -> DidDoc {
         let mut did_doc: DidDoc = DidDoc::default();
-        did_doc.set_id(service.id.to_string());
         did_doc.set_service_endpoint(service.service_endpoint.clone());
         did_doc.set_keys(service.recipient_keys, service.routing_keys);
         did_doc
@@ -328,6 +355,12 @@ impl From<Service> for Invitation {
             .set_service_endpoint(service.service_endpoint)
             .set_recipient_keys(service.recipient_keys)
             .set_routing_keys(service.routing_keys)
+    }
+}
+
+impl From<OutofbandInvitation> for DidDoc {
+    fn from(invite: OutofbandInvitation) -> DidDoc {
+        DidDoc::from(invite.service.clone().remove(0))
     }
 }
 

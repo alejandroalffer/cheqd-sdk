@@ -712,6 +712,22 @@ pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     handle
 }
 
+pub fn create_outofband_connection(source_id: &str, goal_code: Option<String>, goal: Option<String>,
+                                   handshake: bool, request_attach: Option<String>) -> VcxResult<u32> {
+    trace!("create_outofband_connection >>> source_id: {}, goal_code: {:?}, goal: {:?}, handshake: {}, request_attach: {:?}",
+           source_id, goal_code, goal, handshake, request_attach);
+
+    if !settings::is_aries_protocol_set() {
+        return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported,
+        "Library must be initialized with `Aries` related `protocol_type` to create Out-of-Band connection"))
+    }
+
+    let connection = Connections::V3(ConnectionV3::create_outofband(source_id, goal_code, goal, handshake, request_attach));
+    let handle = store_connection(connection);
+    debug!("create_connection >>> created out-of-band connection V3, handle: {:?}", handle);
+    return handle;
+}
+
 pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResult<u32> {
     debug!("create connection {} with invite {}", source_id, details);
 
