@@ -164,6 +164,9 @@ vcx_error_t vcx_connection_invite_details(vcx_command_handle_t command_handle, v
 /** Creates a connection from the invite details. */
 vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handle, const char *source_id, const char *invite_details, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_connection_handle_t connection_handle));
 
+/** Create a Connection object that provides an Out-of-Band Connection for an institution's user. */
+vcx_error_t vcx_connection_create_outofband(vcx_command_handle_t command_handle, const char *source_id, const char *goal_code, const char *goal, int handshake, const char *request_attach, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_connection_handle_t connection_handle));
+
 /** Create a Connection object from the given Out-of-Band Invitation. */
 vcx_error_t vcx_connection_create_with_outofband_invitation(vcx_command_handle_t command_handle, const char *source_id, const char *invite, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_connection_handle_t connection_handle));
 

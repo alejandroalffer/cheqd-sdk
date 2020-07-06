@@ -308,4 +308,13 @@ class ConnectionApiTest {
 			TestHelper.getResultFromFuture(ConnectionApi.connectionSendReuse(connectionHandle, TestHelper.convertToValidJson(outofbandInvite)));
 		});
 	}
+
+	@Test
+	@DisplayName("connection create outofband")
+	void connectionCreateOutofband() {
+		Assertions.assertThrows(ExecutionException.class, () -> {
+			TestHelper.getResultFromFuture(
+					ConnectionApi.vcxConnectionCreateOutofband("Foo", null, "Foo Goal", true, null));
+		});
+	}
 }

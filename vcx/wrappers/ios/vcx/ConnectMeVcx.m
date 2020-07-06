@@ -402,6 +402,31 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    }
 }
 
+- (void)connectionCreateOutofband:(NSString *)sourceId
+                         goalCode:(NSString *)goalCode
+                             goal:(NSString *)goal
+                        handshake:(BOOL *)handshake
+                    requestAttach:(NSString *)requestAttach
+                       completion:(void (^)(NSError *error, NSInteger connectionHandle))completion
+{
+   vcx_error_t ret;
+
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+   const char *sourceId_char = [sourceId cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *goalCode_char = [goalCode cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *goal_char = [goal cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *requestAttach_char = [requestAttach cStringUsingEncoding:NSUTF8StringEncoding];
+   ret = vcx_connection_create_outofband(handle, sourceId_char, goalCode_char, goal_char, handshake, requestAttach_char, VcxWrapperCommonHandleCallback);
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+   }
+}
+
 - (void)acceptConnectionWithInvite:(NSString *)invitationId
                 inviteDetails:(NSString *)inviteDetails
                 connectionType:(NSString *)connectionType
@@ -575,7 +600,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 {
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     const char *comment_ctype = [comment cStringUsingEncoding:NSUTF8StringEncoding];
-    vcx_error_t ret = vcx_connection_send_message(handle,
+    vcx_error_t ret = vcx_connection_send_ping(handle,
                                                   connectionHandle,
                                                   comment_ctype,
                                                   VcxWrapperCommonCallback);

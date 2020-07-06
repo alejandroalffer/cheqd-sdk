@@ -110,6 +110,11 @@ public abstract class LibVcx {
         public int vcx_connection_create(int command_handle, String source_id, Callback cb);
 
         /**
+         * Create a Connection object that provides an Out-of-Band Connection for an institution's user.
+         */
+        public int vcx_connection_create_outofband(int command_handle, String source_id, String goal_code, String goal, boolean handshake, String requestAttach, Callback cb);
+
+        /**
          * Establishes connection between institution and its user.
          */
         public int vcx_connection_connect(int command_handle, int connection_handle, String connection_type, Callback cb);

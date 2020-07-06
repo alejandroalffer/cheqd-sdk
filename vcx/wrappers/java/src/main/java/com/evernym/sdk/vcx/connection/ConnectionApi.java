@@ -189,6 +189,48 @@ public class ConnectionApi extends VcxJava.API {
 		return future;
 	}
 
+	/**
+	 * Create a Connection object that provides an Out-of-Band Connection for an institution's user.
+	 * NOTE: this method can be used when `aries` protocol is set.
+	 * NOTE: this method is EXPERIMENTAL
+	 *
+	 * @param  sourceId     institution's personal identification for the connection.
+	 *                      It'll be used as a label for Connection Invitation.
+	 * @param  goalCode     a self-attested code the receiver may want to display to
+	 *                      the user or use in automatically deciding what to do with the out-of-band message.
+	 * @param  goal         a self-attested string that the receiver may want to display to the user about
+	 *                      the context-specific goal of the out-of-band message.
+	 * @param  handshake    whether Inviter wants to establish regular connection using `connections` handshake protocol.
+	 *                      if false, one-time connection channel will be created.
+	 * @param  requestAttach  An additional message as JSON that will be put into attachment decorator
+	 *                        that the receiver can using in responding to the message.
+	 *
+	 * @return              handle that should be used to perform actions with the Connection object.
+	 *
+	 * @throws VcxException If an exception occurred in Libvcx library.
+	 */
+	public static CompletableFuture<Integer> vcxConnectionCreateOutofband(String sourceId, String goalCode,
+	                                                                      String goal, boolean handshake,
+	                                                                      String requestAttach) throws VcxException {
+		ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
+		logger.debug("vcxConnectionCreateOutofband() called with: sourceId = [ {} ], goalCode = [ {} ], " +
+				"goal = [ {} ], handshake = [ {} ], requestAttach = [ {} ]", sourceId, goalCode, goal, handshake, requestAttach);
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_create_outofband(
+				commandHandle,
+				sourceId,
+				goalCode,
+				goal,
+				handshake,
+				requestAttach,
+				vcxConnectionCreateCB
+		);
+		checkResult(result);
+		return future;
+	}
+
 	private static Callback vcxUpdateStateCB = new Callback() {
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int commandHandle, int err, int s) {
