@@ -99,7 +99,7 @@ impl DidDoc {
 
                 self.public_key.push(
                     Ed25519PublicKey {
-                        id: key_id,
+                        id: key_reference.clone(),
                         type_: String::from(KEY_TYPE),
                         controller: self.id.clone(),
                         public_key_base_58: key.clone(),
@@ -188,7 +188,7 @@ impl DidDoc {
     fn validate_public_key(&self, target_key: &str) -> VcxResult<&Ed25519PublicKey> {
         let id = DidDoc::_parse_key_reference(target_key);
 
-        let key = self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string())
+        let key = self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string() || key_.id == target_key.to_string())
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Cannot find PublicKey definition for key: {:?}", id)))?;
 
         if key.type_ != KEY_TYPE {
@@ -258,7 +258,7 @@ impl DidDoc {
     fn key_for_reference(&self, key_reference: &str) -> String {
         let id = DidDoc::_parse_key_reference(key_reference);
 
-        self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string())
+        self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string() || key_.id == key_reference)
             .map(|key| key.public_key_base_58.clone())
             .unwrap_or(id)
     }
@@ -420,8 +420,27 @@ pub mod tests {
             type_: "".to_string(),
             priority: 0,
             recipient_keys: _recipient_keys(),
-            routing_keys: _routing_keys(),
             service_endpoint: _service_endpoint(),
+            routing_keys: _routing_keys(),
+        }
+    }
+
+    pub fn _did_doc_old() -> DidDoc {
+        DidDoc {
+            context: String::from(CONTEXT),
+            id: _id(),
+            public_key: vec![
+                Ed25519PublicKey { id: "1".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+            ],
+            authentication: vec![
+                Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
+            ],
+            service: vec![Service {
+                service_endpoint: _service_endpoint(),
+                recipient_keys: vec![_key_reference_1()],
+                routing_keys: vec![_key_2(), _key_3()],
+                ..Default::default()
+            }],
         }
     }
 
@@ -430,7 +449,7 @@ pub mod tests {
             context: String::from(CONTEXT),
             id: _id(),
             public_key: vec![
-                Ed25519PublicKey { id: "1".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+                Ed25519PublicKey { id: _key_reference_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
             ],
             authentication: vec![
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
@@ -536,6 +555,7 @@ pub mod tests {
 
     #[test]
     fn test_did_doc_validate_works() {
+        _did_doc_old().validate().unwrap();
         _did_doc().validate().unwrap();
         _did_doc_2().validate().unwrap();
         _did_doc_3().validate().unwrap();
@@ -549,12 +569,21 @@ pub mod tests {
     }
 
     #[test]
+    fn test_did_doc_old_key_for_reference_works() {
+        assert_eq!(_key_1(), _did_doc_old().key_for_reference(&_key_reference_1()));
+    }
+
+    #[test]
     fn test_did_doc_resolve_keys_works() {
         let (recipient_keys, routing_keys) = _did_doc().resolve_keys();
         assert_eq!(_recipient_keys(), recipient_keys);
         assert_eq!(_routing_keys(), routing_keys);
 
         let (recipient_keys, routing_keys) = _did_doc_2().resolve_keys();
+        assert_eq!(_recipient_keys(), recipient_keys);
+        assert_eq!(_routing_keys(), routing_keys);
+
+        let (recipient_keys, routing_keys) = _did_doc_old().resolve_keys();
         assert_eq!(_recipient_keys(), recipient_keys);
         assert_eq!(_routing_keys(), routing_keys);
     }
