@@ -243,4 +243,17 @@ describe('Connection:', () => {
       assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
     })
   })
+
+  describe('create out-of-band:', () => {
+    it('success', async () => {
+      const data = {
+        goal: 'Foo Goal',
+        handshake: true,
+        id: 'foobar123'
+      }
+      const error = await shouldThrow(() => Connection.createOutofband(data))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+
+    })
+  })
 })

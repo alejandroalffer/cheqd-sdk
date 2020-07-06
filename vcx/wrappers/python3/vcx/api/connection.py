@@ -172,6 +172,44 @@ class Connection(VcxStateful):
                                         c_params)
 
     @staticmethod
+    async def create_outofband(source_id: str, goal_code: Optional[str], goal: Optional[str], 
+                               handshake: bool, request_attach: Optional[str]):
+        """
+        Create a Connection object that provides an Out-of-Band Connection for an institution's user.
+
+        NOTE: this method can be used when `aries` protocol is set.
+
+        NOTE: this method is EXPERIMENTAL
+
+        :param source_id: Institution's unique ID for the connection
+        :param goal_code: a self-attested code the receiver may want to display to
+                          the user or use in automatically deciding what to do with the out-of-band message.
+        :param goal: a self-attested string that the receiver may want to display to the user about
+                     the context-specific goal of the out-of-band message.
+        :param handshake: whether Inviter wants to establish regular connection using `connections` handshake protocol.
+                          if false, one-time connection channel will be created.
+        :param request_attach: An additional message as JSON that will be put into attachment decorator
+                            that the receiver can using in responding to the message.
+
+        :return: connection object
+        Example:
+        connection = await Connection.create_outofband('Foo', None, 'Foo Goal', True, None)
+        """
+        constructor_params = (source_id,)
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_goal_code = c_char_p(goal_code.encode('utf-8')) if goal_code is not None else None
+        c_goal = c_char_p(goal.encode('utf-8')) if goal is not None else None
+        c_handshake = c_bool(handshake)
+        c_request_attach= c_char_p(request_attach.encode('utf-8')) if request_attach is not None else None
+
+        c_params = (c_source_id, c_goal_code, c_goal, c_handshake, c_request_attach, )
+
+        return await Connection._create( "vcx_connection_create_outofband",
+                                        constructor_params,
+                                        c_params)
+
+    @staticmethod
     async def create_with_details(source_id: str, invite_details: str):
         """
         Create a connection object with a provided invite, represents a single endpoint and can be used for sending and receiving

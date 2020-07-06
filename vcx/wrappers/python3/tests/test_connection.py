@@ -234,3 +234,12 @@ async def test_send_reuse():
     with pytest.raises(VcxError) as e:
         await connection.send_reuse(outofband_invite)
     assert ErrorCode.ActionNotSupported == e.value.error_code
+    assert connection.handle > 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_create_outofband():
+    with pytest.raises(VcxError) as e:
+        connection = await Connection.create_outofband('Foo', None, 'Foo Goal', True, None)
+    assert ErrorCode.ActionNotSupported == e.value.error_code

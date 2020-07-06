@@ -160,6 +160,27 @@ export interface IConnectionCreateData {
   id: string
 }
 
+/**
+ * @description Interface that represents the parameters for `Connection.createOutofband` function.
+ * @interface
+ */
+export interface IConnectionCreateOutofbandData {
+  // Institution's personal identification for the connection
+  id: string,
+  // a self-attested code the receiver may want to display to
+  // the user or use in automatically deciding what to do with the out-of-band message.
+  goalCode?: string,
+  // a self-attested string that the receiver may want to display to the user about
+  // the context-specific goal of the out-of-band message.
+  goal?: string,
+  // whether Inviter wants to establish regular connection using `connections` handshake protocol.
+  // if false, one-time connection channel will be created.
+  handshake: boolean,
+  // An additional message as JSON that will be put into attachment decorator
+  // that the receiver can using in responding to the message.
+  requestAttach?: string,
+}
+
 // A string representing a invitation json object.
 export type IConnectionInvite = string
 
@@ -316,6 +337,36 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
       const connection = new Connection(id)
       const commandHandle = 0
       await connection._create((cb) => rustAPI().vcx_connection_create(commandHandle, id, cb))
+      return connection
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Create a Connection object that provides an Out-of-Band Connection for an institution's user.
+   *
+   * NOTE: this method can be used when `aries` protocol is set.
+   *
+   * NOTE: this method is EXPERIMENTAL
+   *
+   * Example:
+   * ```
+   * const data = {
+   *  id: 'foobar123',
+   *  goal: 'Foo Goal',
+   *  handshake: true,
+   * }
+   * connection = await Connection.createOutofband(data)
+   * ```
+   */
+  public static async createOutofband ({ id, goalCode, goal, handshake, requestAttach }:
+    IConnectionCreateOutofbandData): Promise<Connection> {
+    try {
+      const connection = new Connection(id)
+      const commandHandle = 0
+      await connection._create((cb) => rustAPI().vcx_connection_create_outofband(
+        commandHandle, id, goalCode, goal, handshake, requestAttach, cb))
       return connection
     } catch (err) {
       throw new VCXInternalError(err)

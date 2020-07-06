@@ -146,6 +146,43 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
                                            const char *invite_details,
                                            void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_connection_handle_t));
 
+/// Create a Connection object that provides an Out-of-Band Connection for an institution's user.
+///
+/// NOTE: this method can be used when `aries` protocol is set.
+///
+/// NOTE: this method is EXPERIMENTAL
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the Connection. It'll be used as a label in Invitation.
+///
+/// goal_code: Optional<string> - a self-attested code the receiver may want to display to
+///                               the user or use in automatically deciding what to do with the out-of-band message.
+///
+/// goal:  Optional<string> - a self-attested string that the receiver may want to display to the user about
+///                           the context-specific goal of the out-of-band message.
+///
+/// handshake: whether Inviter wants to establish regular connection using `connections` handshake protocol.
+///            if false, one-time connection channel will be created.
+///
+/// request_attach: Optional<string> - An additional message as JSON that will be put into attachment decorator
+///                                     that the receiver can using in responding to the message.
+///
+/// cb: Callback that provides
+///     - error status of function
+///     - connection handle that should be used to perform actions with the Connection object.
+///
+/// # Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_create_outofband(vcx_command_handle_t command_handle,
+                                           const char *source_id,
+                                           const char *goal_code,
+                                           const char *goal,
+                                           vcx_bool_t handshake,
+                                           const char *request_attach,
+                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_connection_handle_t));
+
 /// Accept connection for the given invitation.
 ///
 /// This function performs the following actions:
