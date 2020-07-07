@@ -386,7 +386,6 @@ public class WalletApi extends VcxJava.API {
         checkResult(result);
 
         return future;
-
     }
 
     private static Callback vcxBackupWalletBackupBackupCB = new Callback() {
@@ -402,10 +401,10 @@ public class WalletApi extends VcxJava.API {
     /**
      * Wallet Backup to the Cloud
      *
-     * @param  walletBackupHandle  handle pointing to WalletBackup object.
-     * @param path                 path to export wallet to User's File System. (This instance of the export
+     * @param walletBackupHandle  handle pointing to WalletBackup object.
+     * @param path                path to export wallet to User's File System. (This instance of the export
      *
-     * @return                     void
+     * @return                    void
      *
      * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
      */
@@ -440,9 +439,9 @@ public class WalletApi extends VcxJava.API {
      *
      * @param  walletBackupHandle  handle pointing to WalletBackup object.
      *
-     * @return                     the most current state of the WalletBackup object
+     * @return                      the most current state of the WalletBackup object.
      *
-     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     * @throws VcxException         If an exception occurred in Libvcx library.
      */
     public static CompletableFuture<Integer> updateWalletBackupState(
         int walletBackupHandle  // is this a int?
@@ -515,12 +514,12 @@ public class WalletApi extends VcxJava.API {
      *
      * @throws VcxException         If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<Integer> serializeBackupWallet(
+    public static CompletableFuture<String> serializeBackupWallet(
         int walletBackupHandle // is this a int?
     )  throws VcxException {
         ParamGuard.notNull(walletBackupHandle, "walletBackupHandle");
         logger.debug("serializeBackupWallet() called with: walletBackupHandle = [" + walletBackupHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_wallet_backup_serialize(commandHandle, walletBackupHandle, vcxWalletBackupSerializeCB);
@@ -577,7 +576,13 @@ public class WalletApi extends VcxJava.API {
      * Requests a recovery of a backup previously stored with a cloud agent
      *
      * @param  config          config to use for wallet backup restoring
-     *                         "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":"","key_derivation":""}"
+     *                         "{
+     *                              "wallet_name":string, - new wallet name
+     *                              "wallet_key":string, - key to use for encryption of the new wallet
+     *                              "exported_wallet_path":string, - path to exported wallet
+     *                              "backup_key":string, - key used for export
+     *                              "key_derivation":Option(string) - key derivation method to use for new wallet
+     *                         }"
      *
      * @return                 void
      *
