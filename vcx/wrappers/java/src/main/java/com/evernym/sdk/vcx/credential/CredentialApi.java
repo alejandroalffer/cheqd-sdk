@@ -68,10 +68,9 @@ public class CredentialApi extends VcxJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int command_handle, int err) {
             logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
-            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(command_handle);
             if (!checkCallback(future,err)) return;
-            // returning empty string from here because we don't want to complete future with null
-            future.complete("");
+            future.complete(null);
         }
     };
 
@@ -86,13 +85,13 @@ public class CredentialApi extends VcxJava.API {
      *
      * @throws VcxException         If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<String> credentialSendRequest(
+    public static CompletableFuture<Void> credentialSendRequest(
             int credentialHandle,
             int connectionHandle,
             int paymentHandle
     ) throws VcxException {
         logger.debug("credentialSendRequest() called with: credentialHandle = [" + credentialHandle + "], connectionHandle = [" + connectionHandle + "], paymentHandle = [" + paymentHandle + "]");
-        CompletableFuture<String> future = new CompletableFuture<String>();
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_credential_send_request(

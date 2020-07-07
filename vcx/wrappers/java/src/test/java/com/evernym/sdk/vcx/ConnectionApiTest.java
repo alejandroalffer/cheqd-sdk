@@ -107,9 +107,8 @@ class ConnectionApiTest {
 		Integer connectionHandle = _createConnection();
 		String payload = "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
 		TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connectionHandle, TestHelper.convertToValidJson(payload)));
-		CompletableFuture<Integer> futureDelete = ConnectionApi.deleteConnection(connectionHandle);
+		CompletableFuture<Void> futureDelete = ConnectionApi.deleteConnection(connectionHandle);
 		Awaitility.await().until(futureDelete::isDone);
-		assert (futureDelete.get() == 0);
 	}
 
 	@Test
@@ -118,7 +117,7 @@ class ConnectionApiTest {
 
 		Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {
 			Integer connectionHandle = _createConnection();
-			CompletableFuture<Integer> futureDelete = ConnectionApi.deleteConnection(connectionHandle);
+			CompletableFuture<Void> futureDelete = ConnectionApi.deleteConnection(connectionHandle);
 			Awaitility.await().until(futureDelete::isDone);
 			CompletableFuture<String> future = ConnectionApi.connectionSerialize(connectionHandle);
 			Awaitility.await().until(future::isDone);
@@ -239,7 +238,7 @@ class ConnectionApiTest {
     void redirectConnection() throws VcxException, ExecutionException, InterruptedException {
         int redirectConnectionHandle = _createConnection();
         int connectionHandle = _createConnectionWithInvite(TestHelper.convertToValidJson(inviteDetails));
-        CompletableFuture<Integer> redirectInvitation = ConnectionApi.vcxConnectionRedirect(connectionHandle, redirectConnectionHandle);
+        CompletableFuture<Void> redirectInvitation = ConnectionApi.vcxConnectionRedirect(connectionHandle, redirectConnectionHandle);
         Awaitility.await().until(redirectInvitation::isDone);
         CompletableFuture<Integer> futureGetState = ConnectionApi.connectionGetState(connectionHandle);
         Awaitility.await().until(futureGetState::isDone);
