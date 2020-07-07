@@ -354,8 +354,6 @@ public class WalletApi extends VcxJava.API {
         LibVcx.api.vcx_wallet_set_handle(handle);
     }
 
-    // vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id,
-    //                                       void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
     private static Callback vcxCreateWalletBackupCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, int walletHandle) {
@@ -391,11 +389,8 @@ public class WalletApi extends VcxJava.API {
         checkResult(result);
 
         return future;
-
     }
 
-    // vcx_error_t vcx_wallet_backup_backup(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *path, const char *backup_key,
-    //                                   void (*cb)(vcx_command_handle_t, vcx_error_t));
     private static Callback vcxBackupWalletBackupBackupCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {
@@ -410,10 +405,10 @@ public class WalletApi extends VcxJava.API {
     /**
      * Wallet Backup to the Cloud
      *
-     * @param  walletBackupHandle  handle pointing to WalletBackup object.
-     * @param path                 path to export wallet to User's File System. (This instance of the export
+     * @param walletBackupHandle  handle pointing to WalletBackup object.
+     * @param path                path to export wallet to User's File System. (This instance of the export
      *
-     * @return                     void
+     * @return                    void
      *
      * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
      */
@@ -433,8 +428,6 @@ public class WalletApi extends VcxJava.API {
         return future;
     }
 
-    // vcx_error_t vcx_wallet_backup_update_state(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
-    //                                     void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
     private static Callback vcxUpdateWalletBackupStateCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, int state) {
@@ -450,9 +443,9 @@ public class WalletApi extends VcxJava.API {
      *
      * @param  walletBackupHandle  handle pointing to WalletBackup object.
      *
-     * @return                     the most current state of the WalletBackup object
+     * @return                      the most current state of the WalletBackup object.
      *
-     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     * @throws VcxException         If an exception occurred in Libvcx library.
      */
     public static CompletableFuture<Integer> updateWalletBackupState(
         int walletBackupHandle  // is this a int?
@@ -468,8 +461,7 @@ public class WalletApi extends VcxJava.API {
         return future;
 
     }
-    // vcx_error_t vcx_wallet_backup_update_state_with_message(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle, const char *message,
-    //                                                     void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
     private static Callback vcxUpdateWalletBackupStateWithMessageCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, int state) {
@@ -507,9 +499,6 @@ public class WalletApi extends VcxJava.API {
 
     }
 
-
-    // vcx_error_t vcx_wallet_backup_serialize(vcx_command_handle_t command_handle, vcx_wallet_backup_handle_t wallet_backup_handle,
-    //                                     void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
     private static Callback vcxWalletBackupSerializeCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String data) {
@@ -530,12 +519,12 @@ public class WalletApi extends VcxJava.API {
      *
      * @throws VcxException         If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<Integer> serializeBackupWallet(
+    public static CompletableFuture<String> serializeBackupWallet(
         int walletBackupHandle // is this a int?
     )  throws VcxException {
         ParamGuard.notNull(walletBackupHandle, "walletBackupHandle");
         logger.debug("serializeBackupWallet() called with: walletBackupHandle = [" + walletBackupHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_wallet_backup_serialize(commandHandle, walletBackupHandle, vcxWalletBackupSerializeCB);
@@ -545,9 +534,6 @@ public class WalletApi extends VcxJava.API {
 
     }
 
-
-    // vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, const char *wallet_backup_str,
-    //                                       void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));
     private static Callback vcxWalletBackupDeserializeCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, int walletBackupHandle) {
@@ -596,7 +582,13 @@ public class WalletApi extends VcxJava.API {
      * Requests a recovery of a backup previously stored with a cloud agent
      *
      * @param  config          config to use for wallet backup restoring
-     *                         "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":"","key_derivation":""}"
+     *                         "{
+     *                              "wallet_name":string, - new wallet name
+     *                              "wallet_key":string, - key to use for encryption of the new wallet
+     *                              "exported_wallet_path":string, - path to exported wallet
+     *                              "backup_key":string, - key used for export
+     *                              "key_derivation":Option(string) - key derivation method to use for new wallet
+     *                         }"
      *
      * @return                 void
      *
