@@ -33,8 +33,10 @@ use indy_sys::CommandHandle;
         VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `CredentialRequest` message) is called.
 
         VcxStateType::VcxStateAccepted - once `Credential` messages is received.
-        VcxStateType::None - once `ProblemReport` messages is received.
-                                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+
+        VcxStateType::None - 1) once `ProblemReport` messages is received.
+                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+                             2) once `vcx_credential_reject` is called.
 
     # Transitions
 
@@ -49,9 +51,11 @@ use indy_sys::CommandHandle;
         VcxStateType::None - `vcx_credential_create_with_offer` - VcxStateType::VcxStateRequestReceived
 
         VcxStateType::VcxStateRequestReceived - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+        VcxStateType::VcxStateRequestReceived - `vcx_credential_reject` - VcxStateType::None
 
         VcxStateType::VcxStateOfferSent - received `Credential` - VcxStateType::VcxStateAccepted
         VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+        VcxStateType::VcxStateOfferSent - `vcx_credential_reject` - VcxStateType::None
 
     # Messages
 
@@ -906,6 +910,68 @@ pub extern fn vcx_credential_get_payment_txn(command_handle: CommandHandle,
                 error!("vcx_credential_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {}",
                        command_handle, x, "null", credential::get_source_id(handle).unwrap_or_default());
                 cb(command_handle, x.into(), ptr::null());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Send a Credential rejection to the connection.
+/// It can be called once Credential Offer or Credential messages are received.
+///
+/// Note that this function can be used for `aries` communication protocol.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+/// command_handle: command handle to map callback to user context
+///
+/// credential_handle: handle pointing to created Credential object.
+///
+/// connection_handle:  handle pointing to Connection object identifying pairwise connection.
+///
+/// comment: (Optional) human-friendly message to insert into Reject message.
+///
+/// cb: Callback that provides error status
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_credential_reject(command_handle: CommandHandle,
+                                    credential_handle: u32,
+                                    connection_handle: u32,
+                                    comment: *const c_char,
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
+    info!("vcx_credential_reject >>>");
+
+    check_useful_opt_c_str!(comment, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !credential::is_valid_handle(credential_handle) {
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
+    }
+
+    let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
+    trace!("vcx_credential_reject(command_handle: {}, credential_handle: {}, connection_handle: {}, comment: {:?}), source_id: {:?}",
+           command_handle, credential_handle, connection_handle, comment, source_id);
+
+    spawn(move || {
+        match credential::reject(credential_handle, connection_handle, comment) {
+            Ok(()) => {
+                trace!("vcx_credential_reject_cb(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, error::SUCCESS.code_num, source_id);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_credential_reject_cb(command_handle: {}, rc: {}) source_id: {}",
+                      command_handle, e, source_id);
+                cb(command_handle, e.into());
             }
         };
 

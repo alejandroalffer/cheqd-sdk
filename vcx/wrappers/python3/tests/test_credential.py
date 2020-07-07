@@ -271,3 +271,12 @@ async def test_credential_accept_offer():
     assert credential.handle > 0
     assert await credential.get_state() == State.OfferSent
     assert credential.serialized == await credential.serialize()
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_reject_credential():
+    connection = await Connection.create(source_id)
+    credential = await Credential.create(source_id, offer)
+    with pytest.raises(VcxError) as e:
+        await credential.reject(connection, None)
+    assert ErrorCode.ActionNotSupported == e.value.error_code
