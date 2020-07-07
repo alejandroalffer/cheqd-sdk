@@ -50,7 +50,8 @@ import java9.util.concurrent.CompletableFuture;
  *
  *   aries:
  *       Inviter:
- *           VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+ *           VcxStateType::VcxStateInitialized - 1) once `vcx_connection_create` (create Connection object) is called.
+ *                                               2) once `vcx_connection_create_with_outofband_invitation` (create OutofbandConnection object) is called with `handshake:true`.
  *
  *           VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (prepared Connection invite) is called.
  *
@@ -58,27 +59,26 @@ import java9.util.concurrent.CompletableFuture;
  *                                                   accept `ConnectionRequest` and send `ConnectionResponse` message.
  *                                                   use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
  *
- *           VcxStateType::VcxStateAccepted - once `Ack` messages is received.
- *                                            use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *           VcxStateType::VcxStateAccepted - 1) once `Ack` messages is received.
+ *                                               use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *                                            2) once `vcx_connection_connect` is called for Outoband Connection created with `handshake:false`.
  *
  *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
  *                                           OR
  *                                       `ConnectionProblemReport` messages is received on state updates.
  *
  *       Invitee:
- *           VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
- *
- *           VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_outofband_invitation`
- *                                             (create Connection object with Out-of-Band Invitation containing `handshake_protocols`) is called.
+ *           VcxStateType::VcxStateOfferSent - 1) once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+ *                                             2) once `vcx_connection_create_with_outofband_invitation`
+ *                                                (create Connection object with Out-of-Band Invitation containing `handshake_protocols`) is called.
  *
  *           VcxStateType::VcxStateRequestReceived - once `vcx_connection_connect` (accept `ConnectionInvite` and send `ConnectionRequest` message) is called.
  *
- *           VcxStateType::VcxStateAccepted - once `ConnectionResponse` messages is received.
- *                                            send `Ack` message if requested.
- *                                            use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
- *
- *           VcxStateType::VcxStateAccepted - once `vcx_connection_create_with_outofband_invitation`
- *                                            (create one-time Connection object with Out-of-Band Invitation does not containing `handshake_protocols`) is called.
+ *           VcxStateType::VcxStateAccepted - 1) once `ConnectionResponse` messages is received.
+ *                                               send `Ack` message if requested.
+ *                                               use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *           VcxStateType::VcxStateAccepted - 2) once `vcx_connection_create_with_outofband_invitation`
+ *                                               (create one-time Connection object with Out-of-Band Invitation does not containing `handshake_protocols`) is called.
  *
  *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
  *                                           OR
@@ -101,8 +101,10 @@ import java9.util.concurrent.CompletableFuture;
  *   aries - RFC: https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
  *       Inviter:
  *           VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+ *           VcxStateType::None - `vcx_connection_create_with_outofband_invitation` - VcxStateType::VcxStateInitialized
  *
  *           VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+ *           VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateAccepted (Out-ob-Band Connection created with `handshake:false`)
  *
  *           VcxStateType::VcxStateOfferSent - received `ConnectionRequest` - VcxStateType::VcxStateRequestReceived
  *           VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
