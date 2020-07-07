@@ -501,4 +501,50 @@ public class CredentialApi extends VcxJava.API {
 
         return future;
     }
+
+    private static Callback vcxCredentialRejectCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int command_handle, int err) {
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(command_handle);
+            if (!checkCallback(future,err)) return;
+            future.complete(null);
+        }
+    };
+
+    /**
+     * Send a Credential rejection to the connection.
+     * It can be called once Credential Offer or Credential messages are received.
+     *
+     * Note that this function can be used for `aries` communication protocol.
+     * In other cases it returns ActionNotSupported error.
+     *
+     * @param  credentialHandle     handle pointing to a Credential object.
+     * @param  connectionHandle     handle pointing to a Connection identifying pairwise connection..
+     * @param  comment              (Optional) human-friendly message to insert into Reject message.
+     *
+     * @return                      void
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Void> credentialReject(
+            int credentialHandle,
+            int connectionHandle,
+            String comment
+    ) throws VcxException {
+        logger.debug("credentialReject() called with: sourceId = [ {} ], connectionHandle = [ {} ], comment = [ {} ]", credentialHandle, connectionHandle, comment);
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_credential_reject(
+                commandHandle,
+                credentialHandle,
+                connectionHandle,
+                comment,
+                vcxCredentialRejectCB);
+        checkResult(result);
+
+        return future;
+
+    }
 }

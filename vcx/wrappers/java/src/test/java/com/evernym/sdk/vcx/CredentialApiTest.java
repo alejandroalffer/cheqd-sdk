@@ -186,4 +186,14 @@ class CredentialApiTest {
         int state = TestHelper.getResultFromFuture(CredentialApi.credentialGetState(credential.getCredentialHandle()));
         assertEquals(2, state);
     }
+
+    @Test
+    @DisplayName("reject credential offer")
+    void rejectCredentialOffer() throws VcxException, ExecutionException, InterruptedException {
+        int credential = TestHelper._createCredential();
+        int connection = TestHelper._createConnection();
+        Assertions.assertThrows(ExecutionException.class, () -> {
+            TestHelper.getResultFromFuture(CredentialApi.credentialReject(credential, connection, null));
+        });
+    }
 }

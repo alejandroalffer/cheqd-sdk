@@ -31,8 +31,9 @@ import { PaymentManager } from './vcx-payment-txn'
  *            VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `CredentialRequest` message) is called.
  *
  *            VcxStateType::VcxStateAccepted - once `Credential` messages is received.
- *            VcxStateType::None - once `ProblemReport` messages is received.
- *                                                    use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+ *            VcxStateType::None - 1) once `ProblemReport` messages is received.
+ *                                    use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+ *                                 2) once `vcx_credential_reject` is called.
  *
  *        # Transitions
  *
@@ -47,9 +48,11 @@ import { PaymentManager } from './vcx-payment-txn'
  *            VcxStateType::None - `vcx_credential_create_with_offer` - VcxStateType::VcxStateRequestReceived
  *
  *            VcxStateType::VcxStateRequestReceived - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+ *            VcxStateType::VcxStateRequestReceived - `vcx_credential_reject` - VcxStateType::None
  *
  *            VcxStateType::VcxStateOfferSent - received `Credential` - VcxStateType::VcxStateAccepted
  *            VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+ *            VcxStateType::VcxStateOfferSent - `vcx_credential_reject` - VcxStateType::None
  *
  *        # Messages
  *
@@ -108,6 +111,17 @@ export interface ICredentialSendData {
   connection: Connection,
   // Fee amount
   payment: number
+}
+
+/**
+ * @description Interface that represents the parameters for `Credential.reject` function.
+ * @interface
+ */
+export interface ICredentialRejectData {
+  // Connection to send credential rejection
+  connection: Connection,
+  // human-friendly message to insert into Reject message.
+  comment?: string
 }
 
 export interface ICredentialGetRequestMessageData {
@@ -429,6 +443,43 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
             } else {
               resolve(info)
             }
+          })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Send a Credential rejection to the connection.
+   * It can be called once Credential Offer or Credential messages are received.
+   *
+   * Note that this function can be used for `aries` communication protocol.
+   * In other cases it returns ActionNotSupported error.
+   *
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * credential = Credential.create(data)
+   * await credential.reject({ connection, 'Foo' })
+   * ```
+   *
+   */
+  public async reject ({ connection, comment }: ICredentialRejectData): Promise<void> {
+    try {
+      await createFFICallbackPromise<void>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credential_reject(0, this.handle, connection.handle, comment, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
           })
         )
     } catch (err) {

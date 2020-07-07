@@ -17,6 +17,7 @@ use std::collections::HashMap;
 
 use credential;
 use v3::handlers::connection::agent::AgentInfo;
+use messages::thread::Thread;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HolderSM {
@@ -141,6 +142,15 @@ impl HolderSM {
                         }
                     }
                 }
+                CredentialIssuanceMessage::CredentialRejectSend((connection_handle, comment)) => {
+                    let connection = ::connection::get_internal_connection_info(connection_handle)?;
+                    let thread = state_data.thread.clone()
+                        .update_received_order(&connection.remote_did_doc.id);
+
+                    let problem_report = _reject_credential(&connection, &thread, comment)?;
+
+                    HolderState::Finished((state_data, problem_report, thread).into())
+                }
                 _ => {
                     warn!("Credential Issuance can only start on holder side with Credential Offer");
                     HolderState::OfferReceived(state_data)
@@ -174,6 +184,17 @@ impl HolderSM {
                 CredentialIssuanceMessage::ProblemReport(problem_report) => {
                     let thread = state_data.thread.clone()
                         .update_received_order(&state_data.connection.remote_did_doc.id);
+
+                    HolderState::Finished((state_data, problem_report, thread).into())
+                }
+                CredentialIssuanceMessage::CredentialRejectSend((connection_handle, comment)) => {
+                    let connection = ::connection::get_internal_connection_info(connection_handle)?;
+
+                    let thread = state_data.thread.clone()
+                        .increment_sender_order()
+                        .update_received_order(&connection.remote_did_doc.id);
+
+                    let problem_report = _reject_credential(&connection, &thread, comment)?;
 
                     HolderState::Finished((state_data, problem_report, thread).into())
                 }
@@ -282,6 +303,15 @@ impl OfferReceivedState {
     }
 }
 
+fn _reject_credential(connection: &InternalConnectionInfo, thread: &Thread, comment: Option<String>) -> VcxResult<ProblemReport>{
+    let problem_report = ProblemReport::create()
+        .set_comment(comment.unwrap_or(String::from("Credential Offer was rejected.")))
+        .set_thread(thread.clone());
+
+    connection.agent.send_message(&problem_report.to_a2a_message(), &connection.remote_did_doc)?;
+    Ok(problem_report)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -367,6 +397,22 @@ mod test {
         }
 
         #[test]
+        fn test_issuer_handle_reject_creedntial_message_from_offer_received_state() -> Result<(), String> {
+            let _setup = SetupAriesMocks::init();
+
+            let mut holder_sm = _holder_sm();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRejectSend((mock_connection(), None))).unwrap();
+
+            match holder_sm.state {
+                HolderState::Finished(state) => {
+                    assert_eq!(2, state.status.code());
+                    Ok(())
+                }
+                other => Err(format!("State expected to be Finished, but: {:?}", other))
+            }
+        }
+
+        #[test]
         fn test_issuer_handle_other_messages_from_offer_received_state() {
             let _setup = SetupAriesMocks::init();
 
@@ -413,6 +459,23 @@ mod test {
 
             assert_match!(HolderState::Finished(_), holder_sm.state);
             assert_eq!(VcxStateType::VcxStateNone as u32, holder_sm.state());
+        }
+
+        #[test]
+        fn test_issuer_handle_reject_creedntial_message_from_request_sent_state() -> Result<(), String> {
+            let _setup = SetupAriesMocks::init();
+
+            let mut holder_sm = _holder_sm();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRejectSend((mock_connection(), None))).unwrap();
+
+            match holder_sm.state {
+                HolderState::Finished(state) => {
+                    assert_eq!(2, state.status.code());
+                    Ok(())
+                }
+                other => Err(format!("State expected to be Finished, but: {:?}", other))
+            }
         }
 
         #[test]

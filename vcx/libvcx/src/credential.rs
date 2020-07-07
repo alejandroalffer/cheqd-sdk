@@ -805,6 +805,36 @@ pub fn get_payment_information(handle: u32) -> VcxResult<Option<PaymentInfo>> {
     }).map_err(handle_err)
 }
 
+pub fn reject(handle: u32, connection_handle: u32, comment: Option<String>) -> VcxResult<()> {
+    HANDLE_MAP.get_mut(handle, |credential| {
+        let new_credential = match credential {
+            Credentials::Pending(ref mut obj) => {
+                // if Aries connection is established --> Convert PendingCredential object to Aries credential
+                if ::connection::is_v3_connection(connection_handle)? {
+                    let credential_offer = obj.credential_offer.clone()
+                        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Can not get CredentialOffer of Credential object in Pending state"))?;
+
+                    let mut holder = Holder::create(credential_offer.try_into()?, &obj.get_source_id())?;
+                    holder.send_reject(connection_handle, comment.clone())?;
+
+                    Credentials::V3(holder)
+                } else {  // else --> error
+                    return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary communication protocol doesn't support `reject_credential` action."))
+                }
+            }
+            Credentials::V1(ref mut obj) => {
+                return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary communication protocol doesn't support `reject_credential` action."))
+            }
+            Credentials::V3(ref mut obj) => {
+                obj.send_reject(connection_handle, comment.clone())?;
+                Credentials::V3(obj.clone())
+            }
+        };
+        *credential = new_credential;
+        Ok(())
+    }).map_err(handle_err)
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;

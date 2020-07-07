@@ -2,6 +2,7 @@ from ctypes import *
 from vcx.common import do_call, create_cb
 from vcx.api.connection import Connection
 from vcx.api.vcx_stateful import VcxStateful
+from typing import Optional
 
 import json
 
@@ -30,8 +31,9 @@ class Credential(VcxStateful):
         VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `CredentialRequest` message) is called.
 
         VcxStateType::VcxStateAccepted - once `Credential` messages is received.
-        VcxStateType::None - once `ProblemReport` messages is received.
-                                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+        VcxStateType::None - 1) once `ProblemReport` messages is received.
+                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+                             2) once `vcx_credential_reject` is called.
 
     # Transitions
 
@@ -46,9 +48,11 @@ class Credential(VcxStateful):
         VcxStateType::None - `vcx_credential_create_with_offer` - VcxStateType::VcxStateRequestReceived
 
         VcxStateType::VcxStateRequestReceived - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+        VcxStateType::VcxStateRequestReceived - `vcx_credential_reject` - VcxStateType::None
 
         VcxStateType::VcxStateOfferSent - received `Credential` - VcxStateType::VcxStateAccepted
         VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+        VcxStateType::VcxStateOfferSent - `vcx_credential_reject` - VcxStateType::None
 
     # Messages
 
@@ -474,6 +478,37 @@ class Credential(VcxStateful):
 
         return json.loads(payment_txn.decode())
 
+    async def reject(self, connection: Connection, comment: Optional[str] = None):
+        """
+        Send a Credential rejection to the connection.
+        It can be called once Credential Offer or Credential messages are received.
+
+        Note that this function can be used for `aries` communication protocol.
+        In other cases it returns ActionNotSupported error.
+
+        :param connection: connection to submit credential reject
+        :param comment: (Optional) human-friendly message to insert into Reject message.
+        :return:
+
+        Example:
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        credential = await Credential.create(source_id, offer)
+        await credential.reject(connection, None)
+        """
+        if not hasattr(Credential.reject, "cb"):
+            self.logger.debug("vcx_credential_reject: Creating callback")
+            Credential.reject.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_credential_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+        c_comment = c_char_p(comment.encode('utf-8')) if comment is not None else None
+
+        await do_call('vcx_credential_reject',
+                      c_credential_handle,
+                      c_connection_handle,
+                      c_comment,
+                      Credential.reject.cb)
 
 
 
