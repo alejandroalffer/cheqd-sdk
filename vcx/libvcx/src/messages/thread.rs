@@ -18,6 +18,12 @@ impl Thread {
         Thread::default()
     }
 
+    pub fn from_parent(parent: &Thread) -> Thread {
+        let mut th = Thread::default();
+        th.pthid = parent.thid.clone();
+        th
+    }
+
     pub fn set_thid(mut self, thid: String) -> Thread {
         self.thid = Some(thid);
         self
@@ -54,6 +60,11 @@ impl Thread {
         self.received_orders.entry(did.to_string())
             .and_modify(|e| *e += 1)
             .or_insert(0);
+    }
+
+    pub fn set_pthid(mut self, thid: String) -> Thread {
+        self.pthid = Some(thid);
+        self
     }
 
     pub fn is_reply(&self, id: &str) -> bool {
