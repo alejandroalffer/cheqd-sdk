@@ -183,6 +183,11 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)credentialGetOffers:(VcxHandle)connectionHandle
                  completion:(void (^)(NSError *error, NSString *offers))completion;
 
+- (void)credentialReject:(NSInteger)credentialHandle
+        connectionHandle:(VcxHandle)connectionHandle
+                 comment:(NSString *)comment
+              completion:(void (^)(NSError *error))completion;
+
 - (void)credentialSerialize:(NSInteger)credentialHandle
                  completion:(void (^)(NSError *error, NSString *state))completion;
 

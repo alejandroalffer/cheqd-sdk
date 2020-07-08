@@ -661,6 +661,9 @@ public abstract class LibVcx {
         /** Retrieve information about a stored credential in user's wallet, including credential id and the credential itself. */
         public int vcx_get_credential(int command_handle, int credential_handle, Callback cb);
 
+        /** Send a Credential rejection to the connection. */
+        public int vcx_credential_reject(int command_handle, int credential_handle, int connection_handle, String comment, Callback cb);
+
         /**
          * wallet object
          *

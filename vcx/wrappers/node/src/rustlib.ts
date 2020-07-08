@@ -213,6 +213,8 @@ export interface IFFIEntryPoint {
   vcx_credential_get_offers: (commandId: number, connectionHandle: number, cb: any) => number,
   vcx_credential_get_payment_info: (commandId: number, handle: number, cb: any) => number,
   vcx_credential_get_payment_txn: (commandId: number, handle: number, cb: any) => number,
+  vcx_credential_reject: (commandId: number, handle: number, connectionHandle: number,
+                          comment: string | undefined | null, cb: any) => number,
 
   // logger
   vcx_set_default_logger: (level: string) => number,
@@ -433,6 +435,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_credential_get_offers: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_credential_get_payment_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
   vcx_credential_get_payment_txn: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
+  vcx_credential_reject: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CONNECTION_HANDLE,
+    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
 
   // credentialDef
   vcx_credentialdef_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,

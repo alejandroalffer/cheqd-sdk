@@ -621,6 +621,31 @@ vcx_error_t vcx_credential_get_payment_txn(vcx_command_handle_t command_handle,
                                         vcx_credential_handle_t handle,
                                         void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+/// Send a Credential rejection to the connection.
+/// It can be called once Credential Offer or Credential messages are received.
+///
+/// Note that this function can be used for `aries` communication protocol.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+/// command_handle: command handle to map callback to user context
+///
+/// credential_handle: handle pointing to created Credential object.
+///
+/// connection_handle:  handle pointing to Connection object identifying pairwise connection.
+///
+/// comment: (Optional) human-friendly message to insert into Reject message.
+///
+/// cb: Callback that provides error status
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_credential_reject(vcx_command_handle_t command_handle,
+                                  vcx_credential_handle_t handle,
+                                  connection_handle handle,
+                                  const char *comment,
+                                  void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 // Get the current state of the credential object
 //
 // #Params

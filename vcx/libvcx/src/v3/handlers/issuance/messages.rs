@@ -18,6 +18,7 @@ pub enum CredentialIssuanceMessage {
     Credential(Credential),
     CredentialAck(CredentialAck),
     ProblemReport(ProblemReport),
+    CredentialRejectSend((u32, Option<String>)),
     Unknown
 }
 

@@ -376,6 +376,9 @@ vcx_error_t vcx_credential_deserialize(vcx_command_handle_t, const char *seriali
 /** Releases the credential from memory. */
 vcx_error_t vcx_credential_release(vcx_credential_handle_t credential_handle);
 
+/** Send a Credential rejection to the connection. */
+vcx_error_t vcx_credential_reject(vcx_command_handle_t command_handle, vcx_credential_handle_t handle, vcx_connection_handle_t connection_handle, const char *comment, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 /**
  * wallet object
  *

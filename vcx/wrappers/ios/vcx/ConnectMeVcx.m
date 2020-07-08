@@ -763,6 +763,27 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
        });
     }
 }
+
+- (void)credentialReject:(NSInteger)credentialHandle
+        connectionHandle:(VcxHandle)connectionHandle
+                 comment:(NSString *)comment
+              completion:(void (^)(NSError *error))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * c_comment = [comment cStringUsingEncoding:NSUTF8StringEncoding];
+
+    ret = vcx_credential_reject(handle, credentialHandle, connectionHandle, c_comment, VcxWrapperCommonCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret]);
+       });
+    }
+}
+
 - (void)credentialGetState:(NSInteger)credentialHandle
                 completion:(void (^)(NSError *error, NSInteger state))completion{
     vcx_error_t ret;

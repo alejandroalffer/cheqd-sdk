@@ -87,6 +87,10 @@ impl Holder {
         self.step(CredentialIssuanceMessage::CredentialRequestSend(connection_handle))
     }
 
+    pub fn send_reject(&mut self, connection_handle: u32, comment: Option<String>) -> VcxResult<()> {
+        self.step(CredentialIssuanceMessage::CredentialRejectSend((connection_handle, comment)))
+    }
+
     pub fn update_state(&mut self, msg: Option<String>) -> VcxResult<()> {
         match msg {
             Some(msg) => {
