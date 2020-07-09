@@ -822,7 +822,7 @@ pub fn reject(handle: u32, connection_handle: u32, comment: Option<String>) -> V
                     return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary communication protocol doesn't support `reject_credential` action."))
                 }
             }
-            Credentials::V1(ref mut obj) => {
+            Credentials::V1(_) => {
                 return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary communication protocol doesn't support `reject_credential` action."))
             }
             Credentials::V3(ref mut obj) => {

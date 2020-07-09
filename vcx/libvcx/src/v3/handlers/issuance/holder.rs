@@ -144,9 +144,9 @@ impl HolderSM {
                     }
                 }
                 CredentialIssuanceMessage::CredentialRejectSend((connection_handle, comment)) => {
-                    let connection = ::connection::get_internal_connection_info(connection_handle)?;
+                    let connection = ::connection::get_completed_connection(connection_handle)?;
                     let thread = state_data.thread.clone()
-                        .update_received_order(&connection.remote_did_doc.id);
+                        .update_received_order(&connection.data.did_doc.id);
 
                     let problem_report = _reject_credential(&connection, &thread, comment)?;
 
@@ -189,11 +189,11 @@ impl HolderSM {
                     HolderState::Finished((state_data, problem_report, thread).into())
                 }
                 CredentialIssuanceMessage::CredentialRejectSend((connection_handle, comment)) => {
-                    let connection = ::connection::get_internal_connection_info(connection_handle)?;
+                    let connection = ::connection::get_completed_connection(connection_handle)?;
 
                     let thread = state_data.thread.clone()
                         .increment_sender_order()
-                        .update_received_order(&connection.remote_did_doc.id);
+                        .update_received_order(&connection.data.did_doc.id);
 
                     let problem_report = _reject_credential(&connection, &thread, comment)?;
 
@@ -304,12 +304,12 @@ impl OfferReceivedState {
     }
 }
 
-fn _reject_credential(connection: &InternalConnectionInfo, thread: &Thread, comment: Option<String>) -> VcxResult<ProblemReport>{
+fn _reject_credential(connection: &CompletedConnection, thread: &Thread, comment: Option<String>) -> VcxResult<ProblemReport>{
     let problem_report = ProblemReport::create()
         .set_comment(comment.unwrap_or(String::from("Credential Offer was rejected.")))
         .set_thread(thread.clone());
 
-    connection.agent.send_message(&problem_report.to_a2a_message(), &connection.remote_did_doc)?;
+    connection.agent.send_message(&problem_report.to_a2a_message(), &connection.data.did_doc)?;
     Ok(problem_report)
 }
 
