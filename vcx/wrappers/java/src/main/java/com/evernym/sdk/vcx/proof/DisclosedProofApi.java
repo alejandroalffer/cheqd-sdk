@@ -233,11 +233,9 @@ public class DisclosedProofApi extends VcxJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            // resolving with no error
-            Integer result = 0;
-            future.complete(result);
+            future.complete(null);
         }
     };
 
@@ -252,13 +250,13 @@ public class DisclosedProofApi extends VcxJava.API {
      *
      * @throws VcxException             If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<Integer> proofGenerate(
+    public static CompletableFuture<Void> proofGenerate(
             int proofHandle,
             String selectedCredentials,
             String selfAttestedAttributes
     ) throws VcxException {
         logger.debug("proofGenerate() called with: proofHandle = [" + proofHandle + "], selectedCredentials = [****], selfAttestedAttributes = [****]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
+        CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_disclosed_proof_generate_proof(commandHandle, proofHandle, selectedCredentials, selfAttestedAttributes, vcxProofGenerateCB);
@@ -272,11 +270,9 @@ public class DisclosedProofApi extends VcxJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            // resolving with no error
-            Integer result = 0;
-            future.complete(result);
+            future.complete(null);
         }
     };
 
@@ -290,12 +286,12 @@ public class DisclosedProofApi extends VcxJava.API {
      *
      * @throws VcxException             If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<Integer> proofSend(
+    public static CompletableFuture<Void> proofSend(
             int proofHandle,
             int connectionHandle
     ) throws VcxException {
         logger.debug("proofSend() called with: proofHandle = [" + proofHandle + "], connectionHandle = [" + connectionHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
+        CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_disclosed_proof_send_proof(commandHandle, proofHandle, connectionHandle, vcxProofSendCB);
@@ -326,12 +322,12 @@ public class DisclosedProofApi extends VcxJava.API {
      *
      * @throws VcxException             If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<Integer> proofReject(
+    public static CompletableFuture<Void> proofReject(
             int proofHandle,
             int connectionHandle
     ) throws VcxException {
         logger.debug("proofReject() called with: proofHandle = [" + proofHandle + "], connectionHandle = [" + connectionHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
+        CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_disclosed_proof_reject_proof(commandHandle, proofHandle, connectionHandle, vcxProofSendCB);
@@ -520,7 +516,6 @@ public class DisclosedProofApi extends VcxJava.API {
 			logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(command_handle);
 			if (! checkCallback(future, err)) return;
-
 			future.complete(null);
 		}
 	};

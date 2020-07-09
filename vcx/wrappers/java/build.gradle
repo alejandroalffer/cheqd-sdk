@@ -33,14 +33,14 @@ test {
 
 task("buildJavadoc", type: Javadoc) {    
     title = "VCX SDK ${version()}"
-    failOnError = true
+    failOnError = false
     source = sourceSets.main.java.srcDirs
     classpath += files(sourceSets.main.runtimeClasspath)
     destinationDir = file("${project.docsDir}/javadoc-${version()}")
 }
 
-task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
     baseName = fullVersionName()
+task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
     classifier = 'javadoc'
     from tasks["buildJavadoc"].destinationDir
 }

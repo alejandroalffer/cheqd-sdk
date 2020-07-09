@@ -21,6 +21,135 @@ import java9.util.concurrent.CompletableFuture;
  * Created by abdussami on 03/06/18.
  */
 
+/**
+ *   The object of the VCX API representing a pairwise relationship with another identity owner.
+ *   Once the relationship, or connection, is established communication can happen securely and privately.
+ *   Credentials and Proofs are exchanged using this object.
+ *
+ *   # States
+ *
+ *   The set of object states and transitions depends on communication method is used.
+ *   The communication method can be specified as config option on one of *_init function. The default communication method us `proprietary`.
+ *
+ *   proprietary:
+ *       Inviter:
+ *           VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+ *
+ *           VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (send Connection invite) is called.
+ *
+ *           VcxStateType::VcxStateAccepted - once `connReqAnswer` messages is received.
+ *                                            use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called.
+ *
+ *       Invitee:
+ *           VcxStateType::VcxStateRequestReceived - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+ *
+ *           VcxStateType::VcxStateAccepted - once `vcx_connection_connect` (accept Connection invite) is called.
+ *
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called.
+ *
+ *   aries:
+ *       Inviter:
+ *           VcxStateType::VcxStateInitialized - 1) once `vcx_connection_create` (create Connection object) is called.
+ *                                               2) once `vcx_connection_create_with_outofband_invitation` (create OutofbandConnection object) is called with `handshake:true`.
+ *
+ *           VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (prepared Connection invite) is called.
+ *
+ *           VcxStateType::VcxStateRequestReceived - once `ConnectionRequest` messages is received.
+ *                                                   accept `ConnectionRequest` and send `ConnectionResponse` message.
+ *                                                   use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *
+ *           VcxStateType::VcxStateAccepted - 1) once `Ack` messages is received.
+ *                                               use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *                                            2) once `vcx_connection_connect` is called for Outoband Connection created with `handshake:false`.
+ *
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
+ *                                           OR
+ *                                       `ConnectionProblemReport` messages is received on state updates.
+ *
+ *       Invitee:
+ *           VcxStateType::VcxStateOfferSent - 1) once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+ *                                             2) once `vcx_connection_create_with_outofband_invitation`
+ *                                                (create Connection object with Out-of-Band Invitation containing `handshake_protocols`) is called.
+ *
+ *           VcxStateType::VcxStateRequestReceived - once `vcx_connection_connect` (accept `ConnectionInvite` and send `ConnectionRequest` message) is called.
+ *
+ *           VcxStateType::VcxStateAccepted - 1) once `ConnectionResponse` messages is received.
+ *                                               send `Ack` message if requested.
+ *                                               use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *           VcxStateType::VcxStateAccepted - 2) once `vcx_connection_create_with_outofband_invitation`
+ *                                               (create one-time Connection object with Out-of-Band Invitation does not containing `handshake_protocols`) is called.
+ *
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
+ *                                           OR
+ *                                       `ConnectionProblemReport` messages is received on state updates.
+ *
+ *   # Transitions
+ *
+ *   proprietary:
+ *       Inviter:
+ *           VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+ *           VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+ *           VcxStateType::VcxStateOfferSent - received `connReqAnswer` - VcxStateType::VcxStateAccepted
+ *           any state - `vcx_connection_delete_connection` - `VcxStateType::VcxStateNone`
+ *
+ *       Invitee:
+ *           VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateRequestReceived
+ *           VcxStateType::VcxStateRequestReceived - `vcx_connection_connect` - VcxStateType::VcxStateAccepted
+ *           any state - `vcx_connection_delete_connection` - `VcxStateType::VcxStateNone`
+ *
+ *   aries - RFC: https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
+ *       Inviter:
+ *           VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+ *           VcxStateType::None - `vcx_connection_create_with_outofband_invitation` - VcxStateType::VcxStateInitialized
+ *
+ *           VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+ *           VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateAccepted (Out-ob-Band Connection created with `handshake:false`)
+ *
+ *           VcxStateType::VcxStateOfferSent - received `ConnectionRequest` - VcxStateType::VcxStateRequestReceived
+ *           VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateRequestReceived - received `Ack` - VcxStateType::VcxStateAccepted
+ *           VcxStateType::VcxStateRequestReceived - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateAccepted - received `Ping`, `PingResponse`, `Query`, `Disclose` - VcxStateType::VcxStateAccepted
+ *
+ *           any state - `vcx_connection_delete_connection` - VcxStateType::VcxStateNone
+ *
+ *       Invitee:
+ *           VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateOfferSent
+ *           VcxStateType::None - `vcx_connection_create_with_outofband_invitation` (invite contains `handshake_protocols`) - VcxStateType::VcxStateOfferSent
+ *           VcxStateType::None - `vcx_connection_create_with_outofband_invitation` (no `handshake_protocols`) - VcxStateType::VcxStateAccepted
+ *
+ *           VcxStateType::VcxStateOfferSent - `vcx_connection_connect` - VcxStateType::VcxStateRequestReceived
+ *           VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateRequestReceived - received `ConnectionResponse` - VcxStateType::VcxStateAccepted
+ *           VcxStateType::VcxStateRequestReceived - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateAccepted - received `Ping`, `PingResponse`, `Query`, `Disclose` - VcxStateType::VcxStateAccepted
+ *
+ *           any state - `vcx_connection_delete_connection` - VcxStateType::VcxStateNone
+ *
+ *   # Messages
+ *
+ *   proprietary:
+ *       ConnectionRequest (`connReq`)
+ *       ConnectionRequestAnswer (`connReqAnswer`)
+ *
+ *   aries:
+ *       Invitation - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+ *       ConnectionRequest - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#1-connection-request
+ *       ConnectionResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#2-connection-response
+ *       ConnectionProblemReport - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#error-message-example
+ *       Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+ *       Ping - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
+ *       PingResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
+ *       Query - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#query-message-type
+ *       Disclose - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#disclose-message-type
+ *       Out-of-Band Invitation - https://github.com/hyperledger/aries-rfcs/tree/master/features/0434-outofband#message-type-httpsdidcommorgout-of-bandverinvitation
+ */
+
 public class ConnectionApi extends VcxJava.API {
 
 	private static final Logger logger = LoggerFactory.getLogger("ConnectionApi");
@@ -62,13 +191,55 @@ public class ConnectionApi extends VcxJava.API {
 		return future;
 	}
 
+	/**
+	 * Create a Connection object that provides an Out-of-Band Connection for an institution's user.
+	 * NOTE: this method can be used when `aries` protocol is set.
+	 * NOTE: this method is EXPERIMENTAL
+	 *
+	 * @param  sourceId     institution's personal identification for the connection.
+	 *                      It'll be used as a label for Connection Invitation.
+	 * @param  goalCode     a self-attested code the receiver may want to display to
+	 *                      the user or use in automatically deciding what to do with the out-of-band message.
+	 * @param  goal         a self-attested string that the receiver may want to display to the user about
+	 *                      the context-specific goal of the out-of-band message.
+	 * @param  handshake    whether Inviter wants to establish regular connection using `connections` handshake protocol.
+	 *                      if false, one-time connection channel will be created.
+	 * @param  requestAttach  An additional message as JSON that will be put into attachment decorator
+	 *                        that the receiver can using in responding to the message.
+	 *
+	 * @return              handle that should be used to perform actions with the Connection object.
+	 *
+	 * @throws VcxException If an exception occurred in Libvcx library.
+	 */
+	public static CompletableFuture<Integer> vcxConnectionCreateOutofband(String sourceId, String goalCode,
+	                                                                      String goal, boolean handshake,
+	                                                                      String requestAttach) throws VcxException {
+		ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
+		logger.debug("vcxConnectionCreateOutofband() called with: sourceId = [ {} ], goalCode = [ {} ], " +
+				"goal = [ {} ], handshake = [ {} ], requestAttach = [ {} ]", sourceId, goalCode, goal, handshake, requestAttach);
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_create_outofband(
+				commandHandle,
+				sourceId,
+				goalCode,
+				goal,
+				handshake,
+				requestAttach,
+				vcxConnectionCreateCB
+		);
+		checkResult(result);
+		return future;
+	}
+
 	private static Callback vcxUpdateStateCB = new Callback() {
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int commandHandle, int err, int s) {
-			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], state = [" + s + "]");
+		public void callback(int commandHandle, int err, int state) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], state = [" + state + "]");
 			CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
 			if (! checkCallback(future, err)) return;
-			Integer result = s;
+			Integer result = state;
 			future.complete(result);
 		}
 	};
@@ -131,12 +302,6 @@ public class ConnectionApi extends VcxJava.API {
 			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], connectionHandle = [" + connectionHandle + "]");
 			CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
 			if (! checkCallback(future, err)) return;
-			// TODO complete with exception if we find error
-//            if (err != 0) {
-//                future.completeExceptionally();
-//            } else {
-//
-//            }
 			Integer result = connectionHandle;
 			future.complete(result);
 		}
@@ -175,11 +340,11 @@ public class ConnectionApi extends VcxJava.API {
 		return future;
 	}
 
-	private static Callback vcxConnectionConnectCB = new Callback() {
+	private static Callback vcxCreateConnectionWithOutofbandInviteCB = new Callback() {
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int commandHandle, int err, String inviteDetails) {
-			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], inviteDetails = [****]");
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+		public void callback(int commandHandle, int err, int connectionHandle) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], connectionHandle = [" + connectionHandle + "]");
+			CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
 			if (! checkCallback(future, err)) return;
 			// TODO complete with exception if we find error
 //            if (err != 0) {
@@ -187,6 +352,85 @@ public class ConnectionApi extends VcxJava.API {
 //            } else {
 //
 //            }
+			Integer result = connectionHandle;
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Create a Connection object from the given Out-of-Band Invitation.
+	 * Depending on the format of Invitation there are two way of follow interaction:
+	 *     * Invitation contains `handshake_protocols`: regular Connection process will be ran.
+	 *         Follow steps as for regular Connection establishment.
+	 *     * Invitation does not contain `handshake_protocols`: one-time completed Connection object will be created.
+	 *         You can use `vcx_connection_send_message` or specific function to send a response message.
+	 *         Note that on repeated message sending an error will be thrown.
+	 *
+	 * NOTE: this method can be used when `aries` protocol is set.
+	 *
+	 * @param  sourceId  institution's personal identification for the connection.
+	 *                      It'll be used as a connection response label.
+	 * @param  invite    A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
+	 *                  {
+	 *                      "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+	 *                      "@id": "<id used for context as pthid>", -  the unique ID of the message.
+	 *                      "label": Optional<string>, - a string that the receiver may want to display to the user,
+	 *                                                  likely about who sent the out-of-band message.
+	 *                      "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+	 *                                                      the user or use in automatically deciding what to do with the out-of-band message.
+	 *                      "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+	 *                                                  about the context-specific goal of the out-of-band message.
+	 *                      "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+	 *                                                                  that the receiver can use in responding to the message in order to create or reuse a connection with the sender.
+	 *                                                                  One or both of handshake_protocols and request~attach MUST be included in the message.
+	 *                      "request~attach": Optional<[
+	 *                          {
+	 *                              "@id": "request-0",
+	 *                              "mime-type": "application/json",
+	 *                              "data": {
+	 *                                  "json": "<json of protocol message>"
+	 *                              }
+	 *                          }
+	 *                      ]>, - an attachment decorator containing an array of request messages in order of preference that the receiver can using in responding to the message.
+	 *                            One or both of handshake_protocols and request~attach MUST be included in the message.
+	 *                      "service": [
+	 *                          {
+	 *                              "id": string
+	 *                              "type": string,
+	 *                              "recipientKeys": [string],
+	 *                              "routingKeys": [string],
+	 *                              "serviceEndpoint": string
+	 *                          }
+	 *                      ] - an item that is the equivalent of the service block of a DIDDoc that the receiver is to use in responding to the message.
+	 *                  }
+	 *
+	 * @return               handle that should be used to perform actions with the Connection object.
+	 *
+	 * @throws VcxException  If an exception occurred in Libvcx library.
+	 */
+	public static CompletableFuture<Integer> vcxCreateConnectionWithOutofbandInvite(String sourceId, String invite) throws VcxException {
+		ParamGuard.notNull(sourceId, "sourceId");
+		ParamGuard.notNull(invite, "invite");
+		logger.debug("vcxCreateConnectionWithOutofbandInvite() called with: sourceId = [" + sourceId + "], invite = [****]");
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_create_with_outofband_invitation(
+				commandHandle,
+				sourceId,
+				invite,
+				vcxCreateConnectionWithOutofbandInviteCB
+		);
+		checkResult(result);
+		return future;
+	}
+
+	private static Callback vcxConnectionConnectCB = new Callback() {
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int commandHandle, int err, String inviteDetails) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], inviteDetails = [****]");
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+			if (! checkCallback(future, err)) return;
 			String result = inviteDetails;
 			future.complete(result);
 		}
@@ -299,9 +543,9 @@ public class ConnectionApi extends VcxJava.API {
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int commandHandle, int err) {
 			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
-			CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
 			if (!checkCallback(future, err)) return;
-			future.complete(0);
+			future.complete(null);
 		}
 	};
 
@@ -315,11 +559,11 @@ public class ConnectionApi extends VcxJava.API {
 	 *
 	 * @throws VcxException      If an exception occurred in Libvcx library.
 	 */
-	public static CompletableFuture<Integer> vcxConnectionRedirect(int connectionHandle, int redirectConnectionHandle) throws VcxException {
+	public static CompletableFuture<Void> vcxConnectionRedirect(int connectionHandle, int redirectConnectionHandle) throws VcxException {
 		ParamGuard.notNull(connectionHandle, "connectionHandle");
 		ParamGuard.notNull(redirectConnectionHandle, "redirectConnectionHandle");
 		logger.debug("vcxConnectionRedirect() called with: connectionHandle = [" + connectionHandle + "], redirectConnectionHandle = [" + redirectConnectionHandle + "]");
-		CompletableFuture<Integer> future = new CompletableFuture<>();
+		CompletableFuture<Void> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
 		int result = LibVcx.api.vcx_connection_redirect(
@@ -374,12 +618,6 @@ public class ConnectionApi extends VcxJava.API {
 			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], serializedData = [" + serializedData + "]");
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
 			if (! checkCallback(future, err)) return;
-			// TODO complete with exception if we find error
-//            if (err != 0) {
-//                future.completeExceptionally();
-//            } else {
-//
-//            }
 			future.complete(serializedData);
 		}
 	};
@@ -414,12 +652,6 @@ public class ConnectionApi extends VcxJava.API {
 			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], connectionHandle = [" + connectionHandle + "]");
 			CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
 			if (! checkCallback(future, err)) return;
-			// TODO complete with exception if we find error
-//            if (err != 0) {
-//                future.completeExceptionally();
-//            } else {
-//
-//            }
 			future.complete(connectionHandle);
 		}
 	};
@@ -453,9 +685,9 @@ public class ConnectionApi extends VcxJava.API {
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int commandHandle, int err) {
 			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
-			CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
 			if (! checkCallback(future, err)) return;
-			future.complete(0);
+			future.complete(null);
 		}
 	};
 
@@ -470,9 +702,9 @@ public class ConnectionApi extends VcxJava.API {
 	 *
 	 * @throws VcxException    If an exception occurred in Libvcx library.
 	 */
-	public static CompletableFuture<Integer> deleteConnection(int connectionHandle) throws VcxException {
+	public static CompletableFuture<Void> deleteConnection(int connectionHandle) throws VcxException {
 		logger.debug("deleteConnection() called with: connectionHandle = [" + connectionHandle + "]");
-		CompletableFuture<Integer> future = new CompletableFuture<>();
+		CompletableFuture<Void> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
 		int result = LibVcx.api.vcx_connection_delete_connection(commandHandle, connectionHandle, vcxConnectionDeleteCB);
@@ -845,6 +1077,67 @@ public class ConnectionApi extends VcxJava.API {
 		int commandHandle = addFuture(future);
 		int result = LibVcx.api.vcx_connection_info(commandHandle, connectionHandle, vcxConnectionInfoCB);
 		checkResult(result);
+		return future;
+	}
+
+	/**
+	 * Send a message to reuse existing Connection instead of setting up a new one as response on received Out-of-Band Invitation.
+	 * <p>
+	 * Note that this function works in case `aries` communication method is used.
+	 * In other cases it returns ActionNotSupported error.
+	 *
+	 * @param  connectionHandle handle pointing to a Connection object to awaken and send reuse message.
+	 * @param  invite           A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
+	 *                          {
+	 *                              "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+	 *                              "@id": "<id used for context as pthid>", -  the unique ID of the message.
+	 *                              "label": Optional<string>, - a string that the receiver may want to display to the user,
+	 *                                                          likely about who sent the out-of-band message.
+	 *                              "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+	 *                                                              the user or use in automatically deciding what to do with the out-of-band message.
+	 *                              "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+	 *                                                          about the context-specific goal of the out-of-band message.
+	 *                              "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+	 *                                                                          that the receiver can use in responding to the message in order to create or reuse a connection with the sender.
+	 *                                                                          One or both of handshake_protocols and request~attach MUST be included in the message.
+	 *                              "request~attach": Optional<[
+	 *                                  {
+	 *                                      "@id": "request-0",
+	 *                                      "mime-type": "application/json",
+	 *                                      "data": {
+	 *                                          "json": "<json of protocol message>"
+	 *                                      }
+	 *                                  }
+	 *                              ]>, - an attachment decorator containing an array of request messages in order of preference that the receiver can using in responding to the message.
+	 *                                  One or both of handshake_protocols and request~attach MUST be included in the message.
+	 *                              "service": [
+	 *                                  {
+	 *                                      "id": string
+	 *                                      "type": string,
+	 *                                      "recipientKeys": [string],
+	 *                                      "routingKeys": [string],
+	 *                                      "serviceEndpoint": string
+	 *                                  }
+	 *                              ] - an item that is the equivalent of the service block of a DIDDoc that the receiver is to use in responding to the message.
+	 *                          }
+	 *
+	 * @return                  void
+	 *
+	 * @throws VcxException     If an exception occurred in Libvcx library.
+	 */
+	public static CompletableFuture<Void> connectionSendReuse(
+			int connectionHandle,
+			String invite
+	) throws VcxException {
+		ParamGuard.notNull(invite, "invite");
+
+		logger.debug("connectionSendReuse() called with: connectionHandle = [" + connectionHandle + "], invite = [*****]");
+		CompletableFuture<Void> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_send_reuse(commandHandle, connectionHandle, invite, voidCb);
+		checkResult(result);
+
 		return future;
 	}
 }

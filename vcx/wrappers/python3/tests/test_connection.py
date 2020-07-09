@@ -8,6 +8,7 @@ from vcx.api.connection import Connection
 source_id = '123'
 connection_options = '{"connection_type":"SMS","phone":"8019119191","use_public_did":true}'
 details = '{"connReqId":"njjmmdg","senderAgencyDetail":{"DID":"YRuVCckY6vfZfX9kcQZe3u","endpoint":"52.38.32.107:80/agency/msg","verKey":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"senderDetail":{"DID":"JZho9BzVAEk8jJ1hwrrDiZ","agentKeyDlgProof":{"agentDID":"JDF8UHPBTXigvtJWeeMJzx","agentDelegatedKey":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","signature":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"logoUrl":"https://robohash.org/123","name":"Evernym","verKey":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"statusCode":"MS-101","statusMsg":"message created","targetName":"there"}'
+outofband_invite = '{"@type":"https://didcomm.org/out-of-band/%VER/invitation","@id":"<idusedforcontextaspthid>","label":"FaberCollege","handshake_protocols":["https://didcomm.org/connections/1.0"],"service":[{"id":"#inline","type":"did-communication","recipientKeys":["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],"routingKeys":[],"serviceEndpoint":"https://example.com:5000"}]}'
 
 
 @pytest.mark.asyncio
@@ -217,3 +218,28 @@ async def test_accept_connection_invite():
     assert connection.handle > 0
     assert State.Accepted == await connection.get_state()
     assert connection.serialized == await connection.serialize()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_create_with_outofband_invite():
+    connection = await Connection.create_with_outofband_invite(source_id, outofband_invite)
+    assert connection.handle > 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_send_reuse():
+    connection = await Connection.create(source_id)
+    with pytest.raises(VcxError) as e:
+        await connection.send_reuse(outofband_invite)
+    assert ErrorCode.ActionNotSupported == e.value.error_code
+    assert connection.handle > 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_create_outofband():
+    with pytest.raises(VcxError) as e:
+        connection = await Connection.create_outofband('Foo', None, 'Foo Goal', True, None)
+    assert ErrorCode.ActionNotSupported == e.value.error_code

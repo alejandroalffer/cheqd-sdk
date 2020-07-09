@@ -93,10 +93,9 @@ public class ProofApi extends VcxJava.API {
     private static Callback vcxProofSendRequestCB = new Callback() {
         public void callback(int commandHandle, int err){
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
             if(!checkCallback(future,err)) return;
-            Integer result = commandHandle;
-            future.complete(result);
+            future.complete(null);
         }
     };
 
@@ -106,18 +105,18 @@ public class ProofApi extends VcxJava.API {
      * @param  proofHandle          handle pointing to a Proof object.
      * @param  connectionHandle     handle pointing to a Connection object to use for sending message.
      *
-     * @return                          void
+     * @return                      void
      *
      * @throws VcxException         If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<Integer> proofSendRequest(
+    public static CompletableFuture<Void> proofSendRequest(
             int proofHandle,
             int connectionHandle
     ) throws VcxException {
         ParamGuard.notNull(proofHandle, "proofHandle");
         ParamGuard.notNull(connectionHandle, "connectionHandle");
         logger.debug("proofSendRequest() called with: proofHandle = [" + proofHandle + "], connectionHandle = [" + connectionHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
+        CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_proof_send_request(commandHandle, proofHandle, connectionHandle, vcxProofSendRequestCB);

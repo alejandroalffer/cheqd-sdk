@@ -152,7 +152,8 @@ impl AgentInfo {
 
     pub fn send_message(&self, message: &A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
         trace!("Agent::send_message >>> message: {:?}, did_doc: {:?}", message, did_doc);
-        let envelope = EncryptionEnvelope::create(&message, Some(&self.pw_vk), &did_doc)?;
+        let pw_key = if self.pw_vk.is_empty() { None} else {Some(self.pw_vk.clone())};
+        let envelope = EncryptionEnvelope::create(&message, pw_key.as_ref().map(String::as_str), &did_doc)?;
         httpclient::post_message(&envelope.0, &did_doc.get_endpoint())?;
         trace!("Agent::send_message <<<");
         Ok(())

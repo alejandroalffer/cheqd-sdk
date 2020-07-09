@@ -45,3 +45,7 @@ export const INVITE_DETAILS = '{"statusCode":"MS-101","connReqId":"NjcwOWU","sen
   "WRUzXXuFVTYkT8CjSZpFvT","logoUrl":"ent-logo-url","verKey":"ESE6MnqAyjRigduPG454vfLvKhMbmaZjy9vqxCnSKQnp"},\
   "senderAgencyDetail":{"DID":"BDSmVkzxRYGE4HKyMKxd1H","verKey":"HsaWDKnJtgoBsyqG2zKa5xRvKZzZHhkiCDH7eU3iqRsv",\
   "endpoint":"localhost:9001/agency/msg"},"targetName":"there","statusMsg":"message created"}'
+export const OUTOFBAND_INVITE = '{"@type":"https://didcomm.org/out-of-band/%VER/invitation",\
+"@id":"<idusedforcontextaspthid>","label":"FaberCollege","handshake_protocols":["https://didcomm.org/connections/1.0"],\
+"service":[{"id":"#inline","type":"did-communication","recipientKeys":\
+["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],"routingKeys":[],"serviceEndpoint":"https://example.com:5000"}]}'

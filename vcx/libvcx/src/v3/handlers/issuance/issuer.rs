@@ -159,12 +159,14 @@ impl IssuerSM {
                         )))
                         .set_offers_attach(&cred_offer)?;
                     let cred_offer_msg = state_data.append_credential_preview(cred_offer_msg)?;
+
+                    let connection = ::connection::get_completed_connection(connection_handle)?;
+
                     let thread = Thread::new()
-                        .set_thid(cred_offer_msg.id.to_string());
+                        .set_thid(cred_offer_msg.id.to_string())
+                        .set_opt_pthid(connection.data.thread.pthid.clone());
 
-                    let connection = ::connection::get_internal_connection_info(connection_handle)?;
-
-                    connection.agent.send_message(&cred_offer_msg.to_a2a_message(), &connection.remote_did_doc)?;
+                    connection.data.send_message(&cred_offer_msg.to_a2a_message(), &connection.agent)?;
                     IssuerState::OfferSent((state_data, cred_offer, connection, thread).into())
                 }
                 _ => {
@@ -175,25 +177,25 @@ impl IssuerSM {
             IssuerState::OfferSent(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequest(request) => {
                     let thread = state_data.thread.clone()
-                        .update_received_order(&state_data.connection.remote_did_doc.id);
+                        .update_received_order(&state_data.connection.data.did_doc.id);
 
                     IssuerState::RequestReceived((state_data, request, thread).into())
                 }
                 CredentialIssuanceMessage::CredentialProposal(_) => {
                     let thread = state_data.thread.clone()
                         .increment_sender_order()
-                        .update_received_order(&state_data.connection.remote_did_doc.id);
+                        .update_received_order(&state_data.connection.data.did_doc.id);
 
                     let problem_report = ProblemReport::create()
                         .set_comment(String::from("CredentialProposal is not supported"))
                         .set_thread(thread.clone());
 
-                    state_data.connection.agent.send_message(&problem_report.to_a2a_message(), &state_data.connection.remote_did_doc)?;
+                    state_data.connection.data.send_message(&problem_report.to_a2a_message(), &state_data.connection.agent)?;
                     IssuerState::Finished((state_data, problem_report, thread).into())
                 }
                 CredentialIssuanceMessage::ProblemReport(problem_report) => {
                     let thread = state_data.thread.clone()
-                        .update_received_order(&state_data.connection.remote_did_doc.id);
+                        .update_received_order(&state_data.connection.data.did_doc.id);
 
                     IssuerState::Finished((state_data, problem_report, thread).into())
                 }
@@ -204,19 +206,18 @@ impl IssuerSM {
             },
             IssuerState::RequestReceived(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialSend(connection_handle) => {
-                    let connection = ::connection::get_internal_connection_info(connection_handle)?;
+                    let connection = ::connection::get_completed_connection(connection_handle)?;
 
                     let thread = state_data.thread.clone()
                         .increment_sender_order()
-                        .update_received_order(&state_data.connection.remote_did_doc.id);
+                        .update_received_order(&state_data.connection.data.did_doc.id);
 
                     match state_data.create_credential() {
                         Ok(credential_msg) => {
                             let credential_msg = credential_msg
                                 .set_thread(thread.clone());
 
-
-                            connection.agent.send_message(&credential_msg.to_a2a_message(), &connection.remote_did_doc)?;
+                            connection.data.send_message(&credential_msg.to_a2a_message(), &connection.agent)?;
                             IssuerState::Finished((state_data, thread).into())
                         }
                         Err(err) => {
@@ -224,7 +225,7 @@ impl IssuerSM {
                                 .set_comment(err.to_string())
                                 .set_thread(thread.clone());
 
-                            state_data.connection.agent.send_message(&problem_report.to_a2a_message(), &connection.remote_did_doc)?;
+                            state_data.connection.data.send_message(&problem_report.to_a2a_message(), &connection.agent)?;
                             IssuerState::Finished((state_data, problem_report, thread).into())
                         }
                     }
@@ -238,14 +239,14 @@ impl IssuerSM {
                 CredentialIssuanceMessage::ProblemReport(_problem_report) => {
                     info!("Interaction closed with failure");
                     let thread = state_data.thread.clone()
-                        .update_received_order(&state_data.connection.remote_did_doc.id);
+                        .update_received_order(&state_data.connection.data.did_doc.id);
 
                     IssuerState::Finished((state_data, thread).into())
                 }
                 CredentialIssuanceMessage::CredentialAck(_ack) => {
                     info!("Interaction closed with success");
                     let thread = state_data.thread.clone()
-                        .update_received_order(&state_data.connection.remote_did_doc.id);
+                        .update_received_order(&state_data.connection.data.did_doc.id);
 
                     IssuerState::Finished((state_data, thread).into())
                 }
@@ -309,7 +310,7 @@ impl RequestReceivedState {
     fn create_credential(&self) -> VcxResult<Credential> {
         trace!("Issuer::RequestReceivedState::create_credential >>>");
 
-        self.thread.check_message_order(&self.connection.remote_did_doc.id, &self.request.thread)?;
+        self.thread.check_message_order(&self.connection.data.did_doc.id, &self.request.thread)?;
 
         let request = &self.request.requests_attach.content()?;
 

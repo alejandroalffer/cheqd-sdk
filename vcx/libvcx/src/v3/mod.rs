@@ -17,6 +17,8 @@ pub mod test {
     use messages::payload::PayloadV1;
     use api::VcxStateType;
     use v3::messages::a2a::A2AMessage;
+    use v3::handlers::connection::types::OutofbandMeta;
+    use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -181,8 +183,8 @@ pub mod test {
 
         pub fn send_message(&self, message: &A2AMessage) {
             self.activate();
-            let agent_info = ::connection::get_internal_connection_info(self.connection_handle).unwrap();
-            agent_info.agent.send_message(message, &agent_info.remote_did_doc).unwrap();
+            let agent_info = ::connection::get_completed_connection(self.connection_handle).unwrap();
+            agent_info.agent.send_message(message, &agent_info.data.did_doc).unwrap();
         }
 
         pub fn create_schema(&mut self) {
@@ -228,6 +230,14 @@ pub mod test {
             ::connection::update_state(self.connection_handle, None).unwrap();
             assert_eq!(2, ::connection::get_state(self.connection_handle));
 
+            ::connection::get_invite_details(self.connection_handle, false).unwrap()
+        }
+
+        pub fn create_outofband_connection(&mut self, invite: OutofbandMeta) -> String {
+            self.activate();
+
+            self.connection_handle = ::connection::create_outofband_connection("alice", invite.goal_code, invite.goal, invite.handshake, invite.request_attach).unwrap();
+            ::connection::connect(self.connection_handle, None).unwrap();
             ::connection::get_invite_details(self.connection_handle, false).unwrap()
         }
 
@@ -310,7 +320,7 @@ pub mod test {
 
         pub fn update_message(&self, uid: &str) {
             self.activate();
-            let agent_info = ::connection::get_internal_connection_info(self.connection_handle).unwrap();
+            let agent_info = ::connection::get_completed_connection(self.connection_handle).unwrap();
             agent_info.agent.update_message_status(uid.to_string()).unwrap();
         }
 
@@ -372,6 +382,12 @@ pub mod test {
             ::connection::connect(self.connection_handle, None).unwrap();
             ::connection::update_state(self.connection_handle, None).unwrap();
             assert_eq!(3, ::connection::get_state(self.connection_handle));
+        }
+
+        pub fn accept_outofband_invite(&mut self, invite: &str) {
+            self.activate();
+            self.connection_handle = ::connection::create_connection_with_outofband_invite("faber", invite).unwrap();
+            ::connection::connect(self.connection_handle, None).unwrap();
         }
 
         pub fn update_state(&self, expected_state: u32) {
@@ -481,7 +497,7 @@ pub mod test {
 
         pub fn update_message_status(&self, uid: String) {
             self.activate();
-            let agent_info = ::connection::get_internal_connection_info(self.connection_handle).unwrap();
+            let agent_info = ::connection::get_completed_connection(self.connection_handle).unwrap();
             agent_info.agent.update_message_status(uid).unwrap();
         }
     }
@@ -716,6 +732,105 @@ pub mod test {
         }
 
         faber.verify_presentation();
+    }
+
+    #[cfg(feature = "aries")]
+    #[test]
+    fn test_outofband_connection_works() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Publish Schema and Credential Definition
+        faber.create_schema();
+
+        ::std::thread::sleep(::std::time::Duration::from_secs(2));
+
+        faber.create_credential_definition();
+
+        let meta = OutofbandMeta {
+            goal_code: None,
+            goal: Some(String::from("Test Goal")),
+            handshake: true,
+            request_attach: None
+        };
+        let invite = faber.create_outofband_connection(meta);
+        println!("invite {}", invite);
+        let outofband_invite: OutofbandInvitation = ::serde_json::from_str(&invite).unwrap();
+        assert_eq!(1, outofband_invite.handshake_protocols.len());
+        assert_eq!(0, outofband_invite.request_attach.0.len());
+
+        alice.accept_outofband_invite(&invite);
+
+        // Connection is not completed
+        assert_eq!(VcxStateType::VcxStateOfferSent as u32, ::connection::get_state(faber.connection_handle));
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, ::connection::get_state(alice.connection_handle));
+
+        // Complete connection
+        faber.update_state(3);
+        alice.update_state(4);
+        faber.update_state(4);
+
+        // Credential issuance
+        faber.offer_credential();
+        alice.accept_offer();
+        faber.send_credential();
+        alice.accept_credential();
+    }
+
+    #[cfg(feature = "aries")]
+    #[test]
+    fn test_outofband_connection_works_without_handshake() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Publish Schema and Credential Definition
+        faber.create_schema();
+
+        ::std::thread::sleep(::std::time::Duration::from_secs(2));
+
+        faber.create_credential_definition();
+
+        let meta = OutofbandMeta {
+            goal_code: None,
+            goal: Some(String::from("Test Goal")),
+            handshake: false,
+            request_attach: Some(String::from("{}"))
+        };
+        let invite = faber.create_outofband_connection(meta);
+        let outofband_invite: OutofbandInvitation = ::serde_json::from_str(&invite).unwrap();
+        assert_eq!(0, outofband_invite.handshake_protocols.len());
+        assert_eq!(1, outofband_invite.request_attach.0.len());
+
+        alice.accept_outofband_invite(&invite);
+
+        // Connection is not completed
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, ::connection::get_state(faber.connection_handle));
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, ::connection::get_state(alice.connection_handle));
+
+        // Alice Send Basic Message
+        alice.activate();
+
+        {
+            let basic_message = r#"Hi there"#;
+            ::connection::send_generic_message(alice.connection_handle, basic_message, "").unwrap();
+
+            faber.activate();
+            let messages = ::connection::get_messages(faber.connection_handle).unwrap();
+            assert_eq!(1, messages.len());
+
+            let message = messages.values().next().unwrap().clone();
+
+            match message {
+                A2AMessage::BasicMessage(message) => assert_eq!(basic_message, message.content),
+                _ => assert!(false)
+            }
+        }
     }
 }
 

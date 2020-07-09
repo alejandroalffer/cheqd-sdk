@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 class ConnectionApiTest {
 
 	String inviteDetails = "{'statusCode':'MS-101','connReqId':'NjcwOWU','senderDetail':{'name':'ent-name','agentKeyDlgProof':{'agentDID':'U5LXs4U7P9msh647kToezy','agentDelegatedKey':'FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq','signature':'gkVDhwe2/FEtFqJYBm2wbEvqGlBwAGGaC19Oebj/3ZtZ/KpZs7K2JFMgTqTb29xTTAad04AjfNa76931eRa6BA=='},'DID':'WRUzXXuFVTYkT8CjSZpFvT','logoUrl':'ent-logo-url','verKey':'ESE6MnqAyjRigduPG454vfLvKhMbmaZjy9vqxCnSKQnp'},'senderAgencyDetail':{'DID':'BDSmVkzxRYGE4HKyMKxd1H','verKey':'HsaWDKnJtgoBsyqG2zKa5xRvKZzZHhkiCDH7eU3iqRsv','endpoint':'localhost:9001/agency/msg'},'targetName':'there','statusMsg':'message created'}";
+	String outofbandInvite= "{'@type':'https://didcomm.org/out-of-band/%VER/invitation','@id':'<idusedforcontextaspthid>','label':'FaberCollege','handshake_protocols':['https://didcomm.org/connections/1.0'],'service':[{'id':'#inline','type':'did-communication','recipientKeys':['did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH'],'routingKeys':[],'serviceEndpoint':'https://example.com:5000'}]}";
 
 	@BeforeEach
 	void setup() throws Exception {
@@ -107,9 +108,8 @@ class ConnectionApiTest {
 		Integer connectionHandle = _createConnection();
 		String payload = "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
 		TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connectionHandle, TestHelper.convertToValidJson(payload)));
-		CompletableFuture<Integer> futureDelete = ConnectionApi.deleteConnection(connectionHandle);
+		CompletableFuture<Void> futureDelete = ConnectionApi.deleteConnection(connectionHandle);
 		Awaitility.await().until(futureDelete::isDone);
-		assert (futureDelete.get() == 0);
 	}
 
 	@Test
@@ -118,7 +118,7 @@ class ConnectionApiTest {
 
 		Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {
 			Integer connectionHandle = _createConnection();
-			CompletableFuture<Integer> futureDelete = ConnectionApi.deleteConnection(connectionHandle);
+			CompletableFuture<Void> futureDelete = ConnectionApi.deleteConnection(connectionHandle);
 			Awaitility.await().until(futureDelete::isDone);
 			CompletableFuture<String> future = ConnectionApi.connectionSerialize(connectionHandle);
 			Awaitility.await().until(future::isDone);
@@ -218,6 +218,7 @@ class ConnectionApiTest {
 		assert (updateStateResult == 4);
 	}
 
+	@Test
 	@DisplayName("send ping")
 	void sendPing() {
 		Assertions.assertThrows(ExecutionException.class, () -> {
@@ -234,12 +235,13 @@ class ConnectionApiTest {
 			TestHelper.getResultFromFuture(ConnectionApi.connectionSendDiscoveryFeatures(connectionHandle, null, null));
 		});
 	}
+
     @Test
     @DisplayName("test redirect")
     void redirectConnection() throws VcxException, ExecutionException, InterruptedException {
         int redirectConnectionHandle = _createConnection();
         int connectionHandle = _createConnectionWithInvite(TestHelper.convertToValidJson(inviteDetails));
-        CompletableFuture<Integer> redirectInvitation = ConnectionApi.vcxConnectionRedirect(connectionHandle, redirectConnectionHandle);
+        CompletableFuture<Void> redirectInvitation = ConnectionApi.vcxConnectionRedirect(connectionHandle, redirectConnectionHandle);
         Awaitility.await().until(redirectInvitation::isDone);
         CompletableFuture<Integer> futureGetState = ConnectionApi.connectionGetState(connectionHandle);
         Awaitility.await().until(futureGetState::isDone);
@@ -287,7 +289,31 @@ class ConnectionApiTest {
 								TestHelper.convertToValidJson(payload)));
 		assertNotSame(null, result.getConnectionHandle());
 		assertNotSame(0, result.getConnectionSerialized());
+	}
 
+	@Test
+	@DisplayName("create connection with out-of-band invitation")
+	void createConnectionWithOutofbandInvitation() throws VcxException, ExecutionException, InterruptedException {
+		int connection = TestHelper.getResultFromFuture(
+				ConnectionApi.vcxCreateConnectionWithOutofbandInvite("test", TestHelper.convertToValidJson(outofbandInvite)));
+		assertNotSame(0, connection);
+	}
 
+	@Test
+	@DisplayName("send reuse")
+	void sendReuse() {
+		Assertions.assertThrows(ExecutionException.class, () -> {
+			int connectionHandle = _createConnection();
+			TestHelper.getResultFromFuture(ConnectionApi.connectionSendReuse(connectionHandle, TestHelper.convertToValidJson(outofbandInvite)));
+		});
+	}
+
+	@Test
+	@DisplayName("connection create outofband")
+	void connectionCreateOutofband() {
+		Assertions.assertThrows(ExecutionException.class, () -> {
+			TestHelper.getResultFromFuture(
+					ConnectionApi.vcxConnectionCreateOutofband("Foo", null, "Foo Goal", true, null));
+		});
 	}
 }

@@ -56,6 +56,7 @@ pub struct Json {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AttachmentId {
+    OutofbandRequest,
     CredentialOffer,
     CredentialRequest,
     Credential,
@@ -67,6 +68,7 @@ pub enum AttachmentId {
 impl Serialize for AttachmentId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let value = match self {
+            AttachmentId::OutofbandRequest => "request-0",
             AttachmentId::CredentialOffer => "libindy-cred-offer-0",
             AttachmentId::CredentialRequest => "libindy-cred-request-0",
             AttachmentId::Credential => "libindy-cred-0",
@@ -82,6 +84,7 @@ impl<'de> Deserialize<'de> for AttachmentId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
         match value.as_str() {
+            Some("request-0") => Ok(AttachmentId::OutofbandRequest),
             Some("libindy-cred-offer-0") => Ok(AttachmentId::CredentialOffer),
             Some("libindy-cred-request-0") => Ok(AttachmentId::CredentialRequest),
             Some("libindy-cred-0") => Ok(AttachmentId::Credential),

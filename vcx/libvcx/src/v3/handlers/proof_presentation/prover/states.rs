@@ -15,7 +15,7 @@ use disclosed_proof::DisclosedProof;
 use error::prelude::*;
 use messages::thread::Thread;
 use v3::messages::ack::Ack;
-use v3::handlers::connection::types::InternalConnectionInfo;
+use v3::handlers::connection::types::CompletedConnection;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::handlers::connection::connection::Connection;
 
@@ -83,7 +83,7 @@ pub struct PresentationPreparationFailedState {
 pub struct PresentationSentState {
     presentation_request: PresentationRequest,
     presentation: Presentation,
-    connection: InternalConnectionInfo,
+    connection: CompletedConnection,
     #[serde(default)]
     thread: Thread,
 }
@@ -134,8 +134,8 @@ impl From<(InitialState, Thread)> for FinishedState {
     }
 }
 
-impl From<(PresentationPreparedState, InternalConnectionInfo, Presentation, Thread)> for PresentationSentState {
-    fn from((state, connection, presentation, thread): (PresentationPreparedState, InternalConnectionInfo, Presentation, Thread)) -> Self {
+impl From<(PresentationPreparedState, CompletedConnection, Presentation, Thread)> for PresentationSentState {
+    fn from((state, connection, presentation, thread): (PresentationPreparedState, CompletedConnection, Presentation, Thread)) -> Self {
         trace!("ProverSM transit state from PresentationPreparedState to PresentationSentState");
         trace!("Thread: {:?}", thread);
         PresentationSentState {
@@ -209,7 +209,7 @@ impl InitialState {
 
 impl PresentationSentState {
     fn handle_ack(&self, ack: &Ack) -> VcxResult<()> {
-        self.thread.check_message_order(&self.connection.remote_did_doc.id, &ack.thread)?;
+        self.thread.check_message_order(&self.connection.data.did_doc.id, &ack.thread)?;
         Ok(())
     }
 }
@@ -292,14 +292,14 @@ impl ProverSM {
                         }
                     }
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
-                        let connection = ::connection::get_internal_connection_info(connection_handle)?;
-                        let thread = thread.clone().update_received_order(&connection.remote_did_doc.id);
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+                        let thread = thread.clone().update_received_order(&connection.data.did_doc.id);
                         Self::_handle_reject_presentation_request(&connection, &reason, &state.presentation_request, &thread)?;
                         ProverState::Finished((state, thread).into())
                     }
                     ProverMessages::ProposePresentation((connection_handle, preview)) => {
-                        let connection = ::connection::get_internal_connection_info(connection_handle)?;
-                        let thread = thread.clone().update_received_order(&connection.remote_did_doc.id);
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+                        let thread = thread.clone().update_received_order(&connection.data.did_doc.id);
                         Self::_handle_presentation_proposal(&connection, preview, &state.presentation_request, &thread)?;
                         ProverState::Finished((state, thread).into())
                     }
@@ -311,16 +311,17 @@ impl ProverSM {
             ProverState::PresentationPrepared(state) => {
                 match message {
                     ProverMessages::SendPresentation(connection_handle) => {
-                        let connection = ::connection::get_internal_connection_info(connection_handle)?;
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
                         let thread = state.thread.clone()
-                            .update_received_order(&connection.remote_did_doc.id);
+                            .update_received_order(&connection.data.did_doc.id)
+                            .set_opt_pthid(connection.data.thread.pthid.clone());
 
                         let presentation = state.presentation.clone()
                             .set_thread(thread.clone());
 
                         match state.presentation_request.service.clone() {
                             None => {
-                                connection.agent.send_message(&presentation.to_a2a_message(), &connection.remote_did_doc)?;
+                                connection.data.send_message(&presentation.to_a2a_message(), &connection.agent)?;
                                 ProverState::PresentationSent((state, connection, presentation, thread).into())
                             }
                             Some(service) => {
@@ -330,14 +331,14 @@ impl ProverSM {
                         }
                     }
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
-                        let connection = ::connection::get_internal_connection_info(connection_handle)?;
-                        let thread = state.thread.clone().update_received_order(&connection.remote_did_doc.id);
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+                        let thread = state.thread.clone().update_received_order(&connection.data.did_doc.id);
                         Self::_handle_reject_presentation_request(&connection, &reason, &state.presentation_request, &thread)?;
                         ProverState::Finished((state, thread).into())
                     }
                     ProverMessages::ProposePresentation((connection_handle, preview)) => {
-                        let connection = ::connection::get_internal_connection_info(connection_handle)?;
-                        let thread = state.thread.clone().update_received_order(&connection.remote_did_doc.id);
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+                        let thread = state.thread.clone().update_received_order(&connection.data.did_doc.id);
                         Self::_handle_presentation_proposal(&connection, preview, &state.presentation_request, &thread)?;
                         ProverState::Finished((state, thread).into())
                     }
@@ -349,9 +350,9 @@ impl ProverSM {
             ProverState::PresentationPreparationFailed(state) => {
                 match message {
                     ProverMessages::SendPresentation(connection_handle) => {
-                        let connection = ::connection::get_internal_connection_info(connection_handle)?;
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
                         let thread = state.thread.clone()
-                            .update_received_order(&connection.remote_did_doc.id);
+                            .update_received_order(&connection.data.did_doc.id);
 
                         let problem_report = state.problem_report.clone()
                             .set_thread(thread.clone())
@@ -359,7 +360,7 @@ impl ProverSM {
 
                         match state.presentation_request.service.clone() {
                             None => {
-                                connection.agent.send_message(&problem_report, &connection.remote_did_doc)?;
+                                connection.data.send_message(&problem_report, &connection.agent)?;
                             }
                             Some(service) => {
                                 Connection::send_message_to_self_endpoint(&problem_report, &service.into())?;
@@ -376,7 +377,7 @@ impl ProverSM {
                 match message {
                     ProverMessages::PresentationAckReceived(ack) => {
                         let mut thread = state.thread.clone()
-                            .update_received_order(&state.connection.remote_did_doc.id);
+                            .update_received_order(&state.connection.data.did_doc.id);
 
                         match state.handle_ack(&ack) {
                             Ok(()) => {
@@ -389,14 +390,14 @@ impl ProverSM {
                                     .set_comment(err.to_string())
                                     .set_thread(thread.clone());
 
-                                state.connection.agent.send_message(&problem_report.to_a2a_message(), &state.connection.remote_did_doc)?;
+                                state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
                                 ProverState::Finished((state, problem_report, thread).into())
                             }
                         }
                     }
                     ProverMessages::PresentationRejectReceived(problem_report) => {
                         let thread = state.thread.clone()
-                            .update_received_order(&state.connection.remote_did_doc.id);
+                            .update_received_order(&state.connection.data.did_doc.id);
 
                         ProverState::Finished((state, problem_report, thread).into())
                     }
@@ -414,26 +415,26 @@ impl ProverSM {
         Ok(ProverSM { source_id, state })
     }
 
-    fn _handle_reject_presentation_request(connection: &InternalConnectionInfo, reason: &str, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<()> {
+    fn _handle_reject_presentation_request(connection: &CompletedConnection, reason: &str, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<()> {
         let problem_report = ProblemReport::create()
             .set_comment(reason.to_string())
             .set_thread(thread.clone());
 
         match presentation_request.service.clone() {
-            None => connection.agent.send_message(&problem_report.to_a2a_message(), &connection.remote_did_doc)?,
+            None => connection.data.send_message(&problem_report.to_a2a_message(), &connection.agent)?,
             Some(service) => Connection::send_message_to_self_endpoint(&problem_report.to_a2a_message(), &service.into())?
         }
 
         Ok(())
     }
 
-    fn _handle_presentation_proposal(connection: &InternalConnectionInfo, preview: PresentationPreview, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<()> {
+    fn _handle_presentation_proposal(connection: &CompletedConnection, preview: PresentationPreview, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<()> {
         let proposal = PresentationProposal::create()
             .set_presentation_preview(preview)
             .set_thread(thread.clone());
 
         match presentation_request.service.clone() {
-            None => connection.agent.send_message(&proposal.to_a2a_message(), &connection.remote_did_doc)?,
+            None => connection.data.send_message(&proposal.to_a2a_message(), &connection.agent)?,
             Some(service) => Connection::send_message_to_self_endpoint(&proposal.to_a2a_message(), &service.into())?
         }
 
