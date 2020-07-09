@@ -209,10 +209,10 @@ public class UtilsApi extends VcxJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             Integer result = commandHandle;
-            future.complete(result);
+            future.complete(null);
         }
     };
 
@@ -226,10 +226,10 @@ public class UtilsApi extends VcxJava.API {
      *
      * @throws VcxException   If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<Integer> vcxUpdateAgentInfo(String config) throws VcxException {
+    public static CompletableFuture<Void> vcxUpdateAgentInfo(String config) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(config, "config");
         logger.debug("vcxUpdateAgentInfo() called with: config = [****]");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_agent_update_info(
@@ -356,10 +356,9 @@ public class UtilsApi extends VcxJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            Integer result = commandHandle;
-            future.complete(result);
+            future.complete(null);
         }
     };
 
@@ -382,11 +381,11 @@ public class UtilsApi extends VcxJava.API {
      *
      * @throws VcxException   If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<Integer> vcxUpdateMessages(String messageStatus, String msgJson) throws VcxException {
+    public static CompletableFuture<Void> vcxUpdateMessages(String messageStatus, String msgJson) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(messageStatus, "messageStatus");
         ParamGuard.notNull(msgJson, "msgJson");
         logger.debug("vcxUpdateMessages() called with: messageStatus = [" + messageStatus + "], msgJson = [****]");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_messages_update_status(
@@ -413,7 +412,7 @@ public class UtilsApi extends VcxJava.API {
     /**
      * Get ledger fees from the network
      *
-     * @return               the fee structure for the sovrin network
+     * @return                the fee structure for the sovrin network
      *
      * @throws VcxException   If an exception occurred in Libvcx library.
      */
@@ -533,10 +532,9 @@ public class UtilsApi extends VcxJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            Integer result = commandHandle;
-            future.complete(result);
+            future.complete(null);
         }
     };
 
@@ -549,10 +547,10 @@ public class UtilsApi extends VcxJava.API {
      *
      * @throws VcxException   If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<Integer> vcxEndorseTransaction(String transactionJson) throws VcxException {
+    public static CompletableFuture<Void> vcxEndorseTransaction(String transactionJson) throws VcxException {
         ParamGuard.notNull(transactionJson, "transactionJson");
         logger.debug("vcxEndorseTransaction() called with: transactionJson = [" + transactionJson + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_endorse_transaction(
