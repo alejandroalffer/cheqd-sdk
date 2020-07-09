@@ -97,24 +97,24 @@ impl DidDoc {
                 let key_id = id.to_string();
                 let key_reference = DidDoc::_build_key_reference(&self.id, &key_id);
 
-                self.public_key.push(
-                    Ed25519PublicKey {
-                        id: key_reference.clone(),
-                        type_: String::from(KEY_TYPE),
-                        controller: self.id.clone(),
-                        public_key_base_58: key.clone(),
-                    });
-
-                self.authentication.push(
-                    Authentication {
-                        type_: String::from(KEY_AUTHENTICATION_TYPE),
-                        public_key: key_reference.clone(),
-                    });
+//                self.public_key.push(
+//                    Ed25519PublicKey {
+//                        id: key_reference.clone(),
+//                        type_: String::from(KEY_TYPE),
+//                        controller: self.id.clone(),
+//                        public_key_base_58: key.clone(),
+//                    });
+//
+//                self.authentication.push(
+//                    Authentication {
+//                        type_: String::from(KEY_AUTHENTICATION_TYPE),
+//                        public_key: key_reference.clone(),
+//                    });
 
 
                 self.service.get_mut(0)
                     .map(|service| {
-                        service.recipient_keys.push(key_reference);
+                        service.recipient_keys.push(key.clone());
                         service
                     });
             });
@@ -448,6 +448,21 @@ pub mod tests {
         DidDoc {
             context: String::from(CONTEXT),
             id: _id(),
+            public_key: vec![],
+            authentication: vec![],
+            service: vec![Service {
+                service_endpoint: _service_endpoint(),
+                recipient_keys: vec![_key_1()],
+                routing_keys: vec![_key_2(), _key_3()],
+                ..Default::default()
+            }],
+        }
+    }
+
+    pub fn _did_doc_full() -> DidDoc {
+        DidDoc {
+            context: String::from(CONTEXT),
+            id: _id(),
             public_key: vec![
                 Ed25519PublicKey { id: _key_reference_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
             ],
@@ -555,8 +570,9 @@ pub mod tests {
 
     #[test]
     fn test_did_doc_validate_works() {
-        _did_doc_old().validate().unwrap();
         _did_doc().validate().unwrap();
+        _did_doc_old().validate().unwrap();
+        _did_doc_full().validate().unwrap();
         _did_doc_2().validate().unwrap();
         _did_doc_3().validate().unwrap();
         _did_doc_4().validate().unwrap();
@@ -565,7 +581,7 @@ pub mod tests {
 
     #[test]
     fn test_did_doc_key_for_reference_works() {
-        assert_eq!(_key_1(), _did_doc().key_for_reference(&_key_reference_1()));
+        assert_eq!(_key_1(), _did_doc_full().key_for_reference(&_key_reference_1()));
     }
 
     #[test]
@@ -575,7 +591,7 @@ pub mod tests {
 
     #[test]
     fn test_did_doc_resolve_keys_works() {
-        let (recipient_keys, routing_keys) = _did_doc().resolve_keys();
+        let (recipient_keys, routing_keys) = _did_doc_full().resolve_keys();
         assert_eq!(_recipient_keys(), recipient_keys);
         assert_eq!(_routing_keys(), routing_keys);
 
