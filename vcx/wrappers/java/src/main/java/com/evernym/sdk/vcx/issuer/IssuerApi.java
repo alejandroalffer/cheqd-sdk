@@ -266,6 +266,7 @@ public class IssuerApi extends VcxJava.API {
      * Gets the Credential message that can be sent to the user.
      *
      * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     * @param  myPwDid              Pairwise key used for Connection set up (use ConnectionApi.connectionGetPwDid to get).
      *
      * @return                      Credential message as JSON string.
      *
@@ -415,9 +416,12 @@ public class IssuerApi extends VcxJava.API {
     /**
      * Gets the Credential Request message that can be sent to the user.
      *
-     * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     * WARN: Outdated function that MUST NOT be used.
      *
-     * @return                      Credential Request message as JSON string.
+     * @param  credentialHandle     -
+     * @param  credentialRequest    -
+     *
+     * @return                      -
      *
      * @throws VcxException         If an exception occurred in Libvcx library.
      */

@@ -58,8 +58,6 @@ public class UtilsApi extends VcxJava.API {
      *      }
      *
      * @return                populated config that can be used for library initialization.
-     *
-     * @throws VcxException   If an exception occurred in Libvcx library.
      */
     public static String vcxProvisionAgent(String config) {
         ParamGuard.notNullOrWhiteSpace(config, "config");
@@ -113,39 +111,48 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
-    /** #Params
-     config: configuration
-
-     config = {
-        protocol_type: String
-        agency_url: String,
-        pub agency_did: String,
-        agency_verkey: String,
-        wallet_name: Option(String),
-        wallet_key: String,
-        wallet_type: Option(String),
-        agent_seed: Option(String),
-        enterprise_seed: Option(String),
-        wallet_key_derivation: Option(String),
-        name: Option(String),
-        logo: Option(String),
-        path: Option(String),
-        storage_config: Option(String),
-        storage_credentials: Option(String),
-        pool_config: Option(String),
-        did_method: Option(String),
-        communication_method: Option(String),
-        webhook_url: Option(String),
-        use_latest_protocols: Option(String),
-     },
-     token: {
-           "id": String,
-           "sponsor": String, //Name of Enterprise sponsoring the provisioning
-           "nonce": String,
-           "timestamp": String,
-           "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
-           "sponsor_vk": String,
-         }
+    /**
+     * Provision an agent in the agency, populate configuration and wallet for this agent.
+     *
+     * @param  config           provisioning configuration.
+     *       {
+     *         protocol_type: String
+     *         agency_url: String,
+     *         pub agency_did: String,
+     *         agency_verkey: String,
+     *         wallet_name: Option(String),
+     *         wallet_key: String,
+     *         wallet_type: Option(String),
+     *         agent_seed: Option(String),
+     *         enterprise_seed: Option(String),
+     *         wallet_key_derivation: Option(String),
+     *         name: Option(String),
+     *         logo: Option(String),
+     *         path: Option(String),
+     *         storage_config: Option(String),
+     *         storage_credentials: Option(String),
+     *         pool_config: Option(String),
+     *         did_method: Option(String),
+     *         communication_method: Option(String),
+     *         webhook_url: Option(String),
+     *         use_latest_protocols: Option(String),
+     *      }
+     * @param  token          provisioning token.
+     *      {
+     *          This can be a push notification endpoint to contact the sponsee or
+     *          an id that the sponsor uses to reference the sponsee in its backend system
+     *          "sponsee_id": String,
+     *          "sponsor_id": String, //Persistent Id of the Enterprise sponsoring the provisioning
+     *          "nonce": String,
+     *          "timestamp": String,
+     *          "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
+     *          "sponsor_vk": String,
+     *        }
+     *
+     * @return                populated config that can be used for library initialization.
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     * 
      **/
       public static String vcxAgentProvisionWithToken(String config, String token) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(config, "config");
@@ -157,38 +164,47 @@ public class UtilsApi extends VcxJava.API {
         return result;
     }
 
-    /** config:
-     {
-      vcx_config: VcxConfig // Same config passed to agent provision
-      {
-            protocol_type: String
-            agency_url: String,
-            pub agency_did: String,
-            agency_verkey: String,
-            wallet_name: Option(String),
-            wallet_key: String,
-            wallet_type: Option(String),
-            agent_seed: Option(String),
-            enterprise_seed: Option(String),
-            wallet_key_derivation: Option(String),
-            name: Option(String),
-            logo: Option(String),
-            path: Option(String),
-            storage_config: Option(String),
-            storage_credentials: Option(String),
-            pool_config: Option(String),
-            did_method: Option(String),
-            communication_method: Option(String),
-            webhook_url: Option(String),
-            use_latest_protocols: Option(String),
-      }
-      source_id: String // Customer Id
-      com_method: {
-          type: u32 // 1 means push notifcation, its the only one registered
-          id: String,
-          value: String,
-      }
-      # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
+    /**
+     * Get Provisioning token
+     *
+     * @param  config           provisioning configuration.
+     * {
+     *     vcx_config: VcxConfig // Same config passed to agent provision
+     *     {
+     *           protocol_type: String
+     *           agency_url: String,
+     *           pub agency_did: String,
+     *           agency_verkey: String,
+     *           wallet_name: Option(String),
+     *           wallet_key: String,
+     *           wallet_type: Option(String),
+     *           agent_seed: Option(String),
+     *           enterprise_seed: Option(String),
+     *           wallet_key_derivation: Option(String),
+     *           name: Option(String),
+     *           logo: Option(String),
+     *           path: Option(String),
+     *           storage_config: Option(String),
+     *           storage_credentials: Option(String),
+     *           pool_config: Option(String),
+     *           did_method: Option(String),
+     *           communication_method: Option(String),
+     *           webhook_url: Option(String),
+     *           use_latest_protocols: Option(String),
+     *     }
+     *     sponsee_id: String,
+     *     sponsor_id: String,
+     *     com_method: {
+     *         type: u32 // 1 means push notifcation, its the only one registered
+     *         id: String,
+     *         value: String,
+     *     }
+     * }
+     *
+     * @return                provisioning token
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     *
      **/
     public static CompletableFuture<Integer> vcxGetProvisionToken(String config) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(config, "config");

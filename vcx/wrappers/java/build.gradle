@@ -33,13 +33,10 @@ test {
 
 task("buildJavadoc", type: Javadoc) {    
     title = "VCX SDK ${version()}"
-    failOnError = false
+    failOnError = true
     source = sourceSets.main.java.srcDirs
     classpath += files(sourceSets.main.runtimeClasspath)
     destinationDir = file("${project.docsDir}/javadoc-${version()}")
-    options {
-        links("https://docs.oracle.com/javase/8/docs/api/")
-    }
 }
 
 task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
