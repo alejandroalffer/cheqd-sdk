@@ -824,7 +824,6 @@ pub mod test {
             let messages = ::connection::get_messages(faber.connection_handle).unwrap();
             assert_eq!(1, messages.len());
 
-            let uid = messages.keys().next().unwrap().clone();
             let message = messages.values().next().unwrap().clone();
 
             match message {
