@@ -62,11 +62,6 @@ impl Thread {
             .or_insert(0);
     }
 
-    pub fn set_pthid(mut self, thid: String) -> Thread {
-        self.pthid = Some(thid);
-        self
-    }
-
     pub fn is_reply(&self, id: &str) -> bool {
         self.thid.clone().unwrap_or_default() == id.to_string()
     }
