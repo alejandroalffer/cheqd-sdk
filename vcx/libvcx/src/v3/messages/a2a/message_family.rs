@@ -12,6 +12,7 @@ pub enum MessageFamilies {
     TrustPing,
     DiscoveryFeatures,
     Basicmessage,
+    Outofband,
     Unknown(String)
 }
 
@@ -30,6 +31,7 @@ impl MessageFamilies {
             MessageFamilies::TrustPing => "1.0",
             MessageFamilies::DiscoveryFeatures => "1.0",
             MessageFamilies::Basicmessage => "1.0",
+            MessageFamilies::Outofband => "1.0",
             MessageFamilies::Unknown(_) => "1.0"
         }
     }
@@ -38,18 +40,19 @@ impl MessageFamilies {
         format!("{};spec/{}/{}", Self::DID, self.to_string(), self.version().to_string())
     }
 
-    pub fn actors(&self) -> Option<(Actors, Actors)> {
+    pub fn actors(&self) -> Option<(Option<Actors>, Option<Actors>)> {
         match self {
             MessageFamilies::Routing => None,
-            MessageFamilies::Connections => Some((Actors::Inviter, Actors::Invitee)),
+            MessageFamilies::Connections => Some((Some(Actors::Inviter), Some(Actors::Invitee))),
             MessageFamilies::Notification => None,
             MessageFamilies::Signature => None,
-            MessageFamilies::CredentialIssuance => Some((Actors::Issuer, Actors::Holder)),
+            MessageFamilies::CredentialIssuance => Some((Some(Actors::Issuer), Some(Actors::Holder))),
             MessageFamilies::ReportProblem => None,
-            MessageFamilies::PresentProof => Some((Actors::Prover, Actors::Verifier)),
-            MessageFamilies::TrustPing => Some((Actors::Sender, Actors::Receiver)),
-            MessageFamilies::DiscoveryFeatures => Some((Actors::Sender, Actors::Receiver)),
-            MessageFamilies::Basicmessage => Some((Actors::Sender, Actors::Receiver)),
+            MessageFamilies::PresentProof => Some((Some(Actors::Prover), Some(Actors::Verifier))),
+            MessageFamilies::TrustPing => Some((Some(Actors::Sender), Some(Actors::Receiver))),
+            MessageFamilies::DiscoveryFeatures => Some((Some(Actors::Sender), Some(Actors::Receiver))),
+            MessageFamilies::Basicmessage => Some((Some(Actors::Sender), Some(Actors::Receiver))),
+            MessageFamilies::Outofband => Some((None, Some(Actors::Receiver))),
             MessageFamilies::Unknown(_) => None
         }
     }
@@ -68,6 +71,7 @@ impl From<String> for MessageFamilies {
             "trust_ping" => MessageFamilies::TrustPing,
             "discover-features" => MessageFamilies::DiscoveryFeatures,
             "basicmessage" => MessageFamilies::Basicmessage,
+            "out-of-band" => MessageFamilies::Outofband,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -86,6 +90,7 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::TrustPing => "trust_ping".to_string(),
             MessageFamilies::DiscoveryFeatures => "discover-features".to_string(),
             MessageFamilies::Basicmessage => "basicmessage".to_string(),
+            MessageFamilies::Outofband => "out-of-band".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }

@@ -26,7 +26,7 @@ use v3::handlers::connection::states::ActorDidExchangeState;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation as InvitationV3;
 use v3::messages::a2a::A2AMessage;
-use v3::handlers::connection::types::InternalConnectionInfo;
+use v3::handlers::connection::types::CompletedConnection;
 
 use settings::ProtocolTypes;
 
@@ -712,6 +712,22 @@ pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     handle
 }
 
+pub fn create_outofband_connection(source_id: &str, goal_code: Option<String>, goal: Option<String>,
+                                   handshake: bool, request_attach: Option<String>) -> VcxResult<u32> {
+    trace!("create_outofband_connection >>> source_id: {}, goal_code: {:?}, goal: {:?}, handshake: {}, request_attach: {:?}",
+           source_id, goal_code, goal, handshake, request_attach);
+
+    if !settings::is_aries_protocol_set() {
+        return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported,
+        "Library must be initialized with `Aries` related `protocol_type` to create Out-of-Band connection"))
+    }
+
+    let connection = Connections::V3(ConnectionV3::create_outofband(source_id, goal_code, goal, handshake, request_attach));
+    let handle = store_connection(connection);
+    debug!("create_connection >>> created out-of-band connection V3, handle: {:?}", handle);
+    return handle;
+}
+
 pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResult<u32> {
     debug!("create connection {} with invite {}", source_id, details);
 
@@ -749,6 +765,19 @@ pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResul
     connection.set_state(VcxStateType::VcxStateRequestReceived);
 
     store_connection(Connections::V1(connection))
+}
+
+pub fn create_connection_with_outofband_invite(source_id: &str, invitation: &str) -> VcxResult<u32> {
+    debug!("create connection {} with outofband invite {}", source_id, invitation);
+
+    let invitation = ::serde_json::from_str(invitation)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                          format!("Could not parse Aries Out-of-Band Invitation from message: {:?}, err: {:?}", invitation, err)))?;
+
+    let connection = Connections::V3(ConnectionV3::create_with_outofband_invite(source_id, invitation)?);
+    let handle = store_connection(connection);
+    debug!("create_connection_with_outofband_invite: created connection v3, handle: {:?}", handle);
+    return handle;
 }
 
 pub fn accept_connection_invite(source_id: &str,
@@ -1311,6 +1340,22 @@ pub fn send_discovery_features(connection_handle: u32, query: Option<String>, co
     })
 }
 
+pub fn send_reuse(connection_handle: u32, invitation: String) -> VcxResult<()> {
+    CONNECTION_MAP.get_mut(connection_handle, |connection| {
+        match connection {
+            Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported,
+                                                         "Proprietary Connection type doesn't support this action: `send_reuse`.")),
+            Connections::V3(ref mut connection) => {
+                let invitation = ::serde_json::from_str(&invitation)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      format!("Could not parse Aries Out-of-Band Invitation from message: {:?}, err: {:?}", invitation, err)))?;
+
+                connection.send_reuse(invitation)
+            }
+        }
+    })
+}
+
 pub fn get_connection_info(handle: u32) -> VcxResult<String> {
     CONNECTION_MAP.get(handle, |cxn| {
         match cxn {
@@ -1320,11 +1365,11 @@ pub fn get_connection_info(handle: u32) -> VcxResult<String> {
     })
 }
 
-pub fn get_internal_connection_info(handle: u32) -> VcxResult<InternalConnectionInfo> {
+pub fn get_completed_connection(handle: u32) -> VcxResult<CompletedConnection> {
     CONNECTION_MAP.get(handle, |cxn| {
         match cxn {
             Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `get_internal_connection_info`.")),
-            Connections::V3(ref connection) => connection.get_internal_connection_info()
+            Connections::V3(ref connection) => connection.get_completed_connection()
         }
     })
 }

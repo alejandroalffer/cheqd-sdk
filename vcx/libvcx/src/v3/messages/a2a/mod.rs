@@ -18,6 +18,9 @@ use v3::messages::forward::Forward;
 use v3::messages::error::ProblemReport as CommonProblemReport;
 use v3::messages::issuance::credential_proposal::CredentialProposal;
 use v3::messages::ack::Ack;
+use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
+use v3::messages::outofband::handshake_reuse::HandshakeReuse;
+use v3::messages::outofband::handshake_reuse_accepted::HandshakeReuseAccepted;
 
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
@@ -70,6 +73,12 @@ pub enum A2AMessage {
 
     /// basic message
     BasicMessage(BasicMessage),
+
+    /// Out-of-Band
+    OutOfBandInvitation(OutofbandInvitation),
+    HandshakeReuse(HandshakeReuse),
+    HandshakeReuseAccepted(HandshakeReuseAccepted),
+
 
     /// Any Raw Message
     Generic(Value),
@@ -190,8 +199,23 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::BasicMessage(msg))
                     .map_err(de::Error::custom)
             }
-            (_, other_type) => {
-                warn!("Unexpected @type field structure: {}", other_type);
+            (MessageFamilies::Outofband, A2AMessage::OUTOFBAND_INVITATION) => {
+                OutofbandInvitation::deserialize(value)
+                    .map(|msg| A2AMessage::OutOfBandInvitation(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE) => {
+                HandshakeReuse::deserialize(value)
+                    .map(|msg| A2AMessage::HandshakeReuse(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED) => {
+                HandshakeReuseAccepted::deserialize(value)
+                    .map(|msg| A2AMessage::HandshakeReuseAccepted(msg))
+                    .map_err(de::Error::custom)
+            }
+            (_, _) => {
+                warn!("Unexpected @type field: {}", value["@type"]);
                 Ok(A2AMessage::Generic(value))
             }
         }
@@ -229,6 +253,9 @@ impl Serialize for A2AMessage {
             A2AMessage::Query(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY),
             A2AMessage::Disclose(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::DISCLOSE),
             A2AMessage::BasicMessage(msg) => set_a2a_message_type(msg, MessageFamilies::Basicmessage, A2AMessage::BASIC_MESSAGE),
+            A2AMessage::OutOfBandInvitation(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_INVITATION),
+            A2AMessage::HandshakeReuse(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE),
+            A2AMessage::HandshakeReuseAccepted(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED),
             A2AMessage::Generic(msg) => Ok(msg.clone())
         }.map_err(ser::Error::custom)?;
 
@@ -289,6 +316,9 @@ impl A2AMessage {
     const QUERY: &'static str = "query";
     const DISCLOSE: &'static str = "disclose";
     const BASIC_MESSAGE: &'static str = "message";
+    const OUTOFBAND_INVITATION: &'static str = "invitation";
+    const OUTOFBAND_HANDSHAKE_REUSE: &'static str = "handshake-reuse";
+    const OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED: &'static str = "handshake-reuse-accepted";
 }
 
 #[macro_export]

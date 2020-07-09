@@ -95,10 +95,21 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                      inviteDetails:(NSString *)inviteDetails
                         completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
 
+- (void)connectionCreateOutofband:(NSString *)sourceId
+                         goalCode:(NSString *)goalCode
+                             goal:(NSString *)goal
+                        handshake:(BOOL *)handshake
+                    requestAttach:(NSString *)requestAttach
+                       completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
+
 - (void)acceptConnectionWithInvite:(NSString *)invitationId
                      inviteDetails:(NSString *)inviteDetails
                     connectionType:(NSString *)connectionType
                         completion:(void (^)(NSError *error, NSInteger connectionHandle, NSString *serializedConnection))completion;
+
+- (void)connectionCreateWithOutofbandInvite:(NSString *)invitationId
+                                     invite:(NSString *)invite
+                                 completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
 
 - (void)connectionConnect:(VcxHandle)connectionHandle
            connectionType:(NSString *)connectionType
@@ -125,6 +136,14 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                   withMessage:(NSString *)message
        withSendMessageOptions:(NSString *)sendMessageOptions
                withCompletion:(void (^)(NSError *error, NSString *msg_id))completion;
+
+- (void)connectionSendPing:(VcxHandle)connectionHandle
+                   comment:(NSString *)comment
+            withCompletion:(void (^)(NSError *error))completion;
+
+- (void)connectionSendReuse:(VcxHandle)connectionHandle
+                     invite:(NSString *)invite
+             withCompletion:(void (^)(NSError *error))completion;
 
 - (void)connectionSignData:(VcxHandle)connectionHandle
                   withData:(NSData *)dataRaw

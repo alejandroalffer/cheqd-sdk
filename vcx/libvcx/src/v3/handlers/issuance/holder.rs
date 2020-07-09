@@ -9,7 +9,7 @@ use v3::messages::issuance::credential_ack::CredentialAck;
 use v3::messages::error::ProblemReport;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::status::Status;
-use v3::handlers::connection::types::InternalConnectionInfo;
+use v3::handlers::connection::types::CompletedConnection;
 
 use utils::libindy::anoncreds::{self, libindy_prover_store_credential};
 use error::prelude::*;
@@ -119,9 +119,10 @@ impl HolderSM {
         let state = match state {
             HolderState::OfferReceived(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequestSend(connection_handle) => {
-                    let connection = ::connection::get_internal_connection_info(connection_handle)?;
+                    let connection = ::connection::get_completed_connection(connection_handle)?;
                     let thread = state_data.thread.clone()
-                        .update_received_order(&connection.remote_did_doc.id);
+                        .update_received_order(&connection.data.did_doc.id)
+                        .set_opt_pthid(connection.data.thread.pthid.clone());
 
                     match state_data.make_credential_request(&connection) {
                         Ok((cred_request, req_meta, cred_def_json)) => {
@@ -129,7 +130,7 @@ impl HolderSM {
                             let cred_request = cred_request
                                 .set_thread(thread.clone());
 
-                            connection.agent.send_message(&cred_request.to_a2a_message(), &connection.remote_did_doc)?;
+                            connection.data.send_message(&cred_request.to_a2a_message(), &connection.agent)?;
                             HolderState::RequestSent((state_data, req_meta, cred_def_json, connection, thread).into())
                         }
                         Err(err) => {
@@ -137,7 +138,7 @@ impl HolderSM {
                                 .set_comment(err.to_string())
                                 .set_thread(thread.clone());
 
-                            connection.agent.send_message(&problem_report.to_a2a_message(), &connection.remote_did_doc)?;
+                            connection.data.send_message(&problem_report.to_a2a_message(), &connection.agent)?;
                             HolderState::Finished((state_data, problem_report, thread).into())
                         }
                     }
@@ -160,13 +161,13 @@ impl HolderSM {
                 CredentialIssuanceMessage::Credential(credential) => {
                     let thread = state_data.thread.clone()
                         .increment_sender_order()
-                        .update_received_order(&state_data.connection.remote_did_doc.id);
+                        .update_received_order(&state_data.connection.data.did_doc.id);
 
                     match state_data.store_credential(&credential) {
                         Ok(cred_id) => {
                             if credential.please_ack.is_some() {
                                 let ack = CredentialAck::create().set_thread(thread.clone());
-                                state_data.connection.agent.send_message(&A2AMessage::CredentialAck(ack), &state_data.connection.remote_did_doc)?;
+                                state_data.connection.data.send_message(&A2AMessage::CredentialAck(ack), &state_data.connection.agent)?;
                             }
 
                             HolderState::Finished((state_data, cred_id, credential, thread).into())
@@ -176,14 +177,14 @@ impl HolderSM {
                                 .set_comment(err.to_string())
                                 .set_thread(thread.clone());
 
-                            state_data.connection.agent.send_message(&problem_report.to_a2a_message(), &state_data.connection.remote_did_doc)?;
+                            state_data.connection.data.send_message(&problem_report.to_a2a_message(), &state_data.connection.agent)?;
                             HolderState::Finished((state_data, problem_report, thread).into())
                         }
                     }
                 }
                 CredentialIssuanceMessage::ProblemReport(problem_report) => {
                     let thread = state_data.thread.clone()
-                        .update_received_order(&state_data.connection.remote_did_doc.id);
+                        .update_received_order(&state_data.connection.data.did_doc.id);
 
                     HolderState::Finished((state_data, problem_report, thread).into())
                 }
@@ -272,7 +273,7 @@ impl RequestSentState {
     fn store_credential(&self, credential: &Credential) -> VcxResult<String> {
         trace!("Holder::_store_credential >>>");
 
-        self.thread.check_message_order(&self.connection.remote_did_doc.id, &credential.thread)?;
+        self.thread.check_message_order(&self.connection.data.did_doc.id, &credential.thread)?;
 
         let credential_json = credential.credentials_attach.content()?;
         let rev_reg_id = _parse_rev_reg_id_from_credential(&credential_json)?;
@@ -292,7 +293,7 @@ impl RequestSentState {
 }
 
 impl OfferReceivedState {
-    fn make_credential_request(&self, connection: &InternalConnectionInfo) -> VcxResult<(CredentialRequest, String, String)> {
+    fn make_credential_request(&self, connection: &CompletedConnection) -> VcxResult<(CredentialRequest, String, String)> {
         trace!("Holder::OfferReceivedState::make_credential_request >>> offer: {:?}", self.offer);
 
         let cred_offer = self.offer.offers_attach.content()?;

@@ -6,11 +6,29 @@ pub mod types;
 
 #[cfg(test)]
 pub mod tests {
-    use v3::messages::connection::invite::tests::_invitation_json;
+    use v3::messages::connection::invite::Invitation;
+    use v3::messages::connection::response::Response;
+    use v3::messages::connection::did_doc::tests::_service_endpoint;
+    use v3::messages::connection::request::tests::_request;
 
     pub fn mock_connection() -> u32 {
-        let connection_handle = ::connection::create_connection_with_invite("source_id", &_invitation_json()).unwrap();
+        let key = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL".to_string();
+        let invitation =
+            Invitation::default()
+                .set_recipient_keys(vec![key.clone()]);
+
+        let connection_handle = ::connection::create_connection_with_invite("source_id", &json!(invitation).to_string()).unwrap();
+
         ::connection::connect(connection_handle, None).unwrap();
+
+        let response =
+            Response::default()
+                .set_service_endpoint(_service_endpoint())
+                .set_keys(vec![key.to_string()], vec![])
+                .set_thread_id(&_request().id.0)
+                .encode(&key).unwrap();
+        ::connection::update_state(connection_handle, Some(json!(response.to_a2a_message()).to_string())).unwrap();
+
         connection_handle
     }
 
@@ -29,6 +47,7 @@ pub mod tests {
         use v3::test::{Faber, Alice};
         use v3::messages::ack::tests::_ack;
         use v3::messages::a2a::A2AMessage;
+        use v3::messages::connection::invite::tests::_invitation_json;
 
         #[test]
         fn test_create_connection_works() {

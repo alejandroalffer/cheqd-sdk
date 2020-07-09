@@ -11,7 +11,7 @@ use proof::Proof;
 
 use std::collections::HashMap;
 use error::prelude::*;
-use v3::handlers::connection::types::InternalConnectionInfo;
+use v3::handlers::connection::types::CompletedConnection;
 use messages::thread::Thread;
 use v3::handlers::connection::agent::AgentInfo;
 
@@ -51,7 +51,7 @@ pub struct InitialState {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationRequestSentState {
     presentation_request: PresentationRequest,
-    connection: InternalConnectionInfo,
+    connection: CompletedConnection,
     #[serde(default)]
     thread: Thread,
 }
@@ -65,8 +65,8 @@ pub struct FinishedState {
     thread: Thread,
 }
 
-impl From<(InitialState, PresentationRequest, InternalConnectionInfo, Thread)> for PresentationRequestSentState {
-    fn from((_state, presentation_request, connection, thread): (InitialState, PresentationRequest, InternalConnectionInfo, Thread)) -> Self {
+impl From<(InitialState, PresentationRequest, CompletedConnection, Thread)> for PresentationRequestSentState {
+    fn from((_state, presentation_request, connection, thread): (InitialState, PresentationRequest, CompletedConnection, Thread)) -> Self {
         trace!("VerifierSM transit state from InitialState to PresentationRequestSentState");
         trace!("Thread: {:?}", thread);
         PresentationRequestSentState {
@@ -120,7 +120,7 @@ impl PresentationRequestSentState {
             let ack = PresentationAck::create()
                 .set_thread(thread.clone());
 
-            self.connection.agent.send_message(&A2AMessage::PresentationAck(ack), &self.connection.remote_did_doc)?;
+            self.connection.data.send_message(&A2AMessage::PresentationAck(ack), &self.connection.agent)?;
         }
 
         Ok(thread)
@@ -174,11 +174,11 @@ impl VerifierSM {
             VerifierState::Initiated(state) => {
                 match message {
                     VerifierMessages::SendPresentationRequest(connection_handle) => {
-                        let connection = ::connection::get_internal_connection_info(connection_handle)?;
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
 
                         let presentation_request: PresentationRequestData =
                             state.presentation_request_data.clone()
-                                .set_format_version_for_did(&connection.agent.pw_did, &connection.remote_did_doc.id)?;
+                                .set_format_version_for_did(&connection.agent.pw_did, &connection.data.did_doc.id)?;
 
                         let title = format!("{} wants you to share {}",
                                             ::settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME)?, presentation_request.name);
@@ -189,9 +189,10 @@ impl VerifierSM {
                                 .set_request_presentations_attach(&presentation_request)?;
 
                         let thread = Thread::new()
-                            .set_thid(presentation_request.id.to_string());
+                            .set_thid(presentation_request.id.to_string())
+                            .set_opt_pthid(connection.data.thread.pthid.clone());
 
-                        connection.agent.send_message(&presentation_request.to_a2a_message(), &connection.remote_did_doc)?;
+                        connection.data.send_message(&presentation_request.to_a2a_message(), &connection.agent)?;
                         VerifierState::PresentationRequestSent((state, presentation_request, connection, thread).into())
                     }
                     _ => {
@@ -203,7 +204,7 @@ impl VerifierSM {
                 match message {
                     VerifierMessages::PresentationReceived(presentation) => {
                         let mut thread = state.thread.clone()
-                            .update_received_order(&state.connection.remote_did_doc.id);
+                            .update_received_order(&state.connection.data.did_doc.id);
 
                         match state.verify_presentation(&presentation, &thread) {
                             Ok(thread) => {
@@ -217,28 +218,28 @@ impl VerifierSM {
                                         .set_comment(err.to_string())
                                         .set_thread(thread.clone());
 
-                                state.connection.agent.send_message(&problem_report.to_a2a_message(), &state.connection.remote_did_doc)?;
+                                state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
                                 VerifierState::Finished((state, problem_report, thread).into())
                             }
                         }
                     }
                     VerifierMessages::PresentationRejectReceived(problem_report) => {
                         let thread = state.thread.clone()
-                            .update_received_order(&state.connection.remote_did_doc.id);
+                            .update_received_order(&state.connection.data.did_doc.id);
 
                         VerifierState::Finished((state, problem_report, thread).into())
                     }
                     VerifierMessages::PresentationProposalReceived(_) => { // TODO: handle Presentation Proposal
                         let thread = state.thread.clone()
                             .increment_sender_order()
-                            .update_received_order(&state.connection.remote_did_doc.id);
+                            .update_received_order(&state.connection.data.did_doc.id);
 
                         let problem_report =
                             ProblemReport::create()
                                 .set_comment(String::from("PresentationProposal is not supported"))
                                 .set_thread(thread.clone());
 
-                        state.connection.agent.send_message(&problem_report.to_a2a_message(), &state.connection.remote_did_doc)?;
+                        state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
                         VerifierState::Finished((state, problem_report, thread).into())
                     }
                     _ => {

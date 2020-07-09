@@ -43,7 +43,8 @@ class Connection(VcxStateful):
 
     aries:
         Inviter:
-            VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+            VcxStateType::VcxStateInitialized - 1) once `vcx_connection_create` (create Connection object) is called.
+                                                2) once `vcx_connection_create_with_outofband_invitation` (create OutofbandConnection object) is called with `handshake:true`.
 
             VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (prepared Connection invite) is called.
 
@@ -51,21 +52,26 @@ class Connection(VcxStateful):
                                                     accept `ConnectionRequest` and send `ConnectionResponse` message.
                                                     use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
 
-            VcxStateType::VcxStateAccepted - once `Ack` messages is received.
-                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+            VcxStateType::VcxStateAccepted - 1) once `Ack` messages is received.
+                                                use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+                                             2) once `vcx_connection_connect` is called for Outoband Connection created with `handshake:false`.
 
             VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
                                             OR
                                         `ConnectionProblemReport` messages is received on state updates.
 
         Invitee:
-            VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+            VcxStateType::VcxStateOfferSent - 1) once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+                                              2) once `vcx_connection_create_with_outofband_invitation`
+                                                 (create Connection object with Out-of-Band Invitation containing `handshake_protocols`) is called.
 
             VcxStateType::VcxStateRequestReceived - once `vcx_connection_connect` (accept `ConnectionInvite` and send `ConnectionRequest` message) is called.
 
-            VcxStateType::VcxStateAccepted - once `ConnectionResponse` messages is received.
-                                             send `Ack` message if requested.
-                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+            VcxStateType::VcxStateAccepted - 1) once `ConnectionResponse` messages is received.
+                                                send `Ack` message if requested.
+                                                use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+                                             2) once `vcx_connection_create_with_outofband_invitation`
+                                                (create one-time Connection object with Out-of-Band Invitation does not containing `handshake_protocols`) is called.
 
             VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
                                             OR
@@ -88,8 +94,10 @@ class Connection(VcxStateful):
     aries - RFC: https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
         Inviter:
             VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` - VcxStateType::VcxStateInitialized
 
             VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+            VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateAccepted (Out-ob-Band Connection created with `handshake:false`)
 
             VcxStateType::VcxStateOfferSent - received `ConnectionRequest` - VcxStateType::VcxStateRequestReceived
             VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
@@ -104,6 +112,8 @@ class Connection(VcxStateful):
 
         Invitee:
             VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateOfferSent
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` (invite contains `handshake_protocols`) - VcxStateType::VcxStateOfferSent
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` (no `handshake_protocols`) - VcxStateType::VcxStateAccepted
 
             VcxStateType::VcxStateOfferSent - `vcx_connection_connect` - VcxStateType::VcxStateRequestReceived
             VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
@@ -131,6 +141,7 @@ class Connection(VcxStateful):
         PingResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
         Query - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#query-message-type
         Disclose - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#disclose-message-type
+        Out-of-Band Invitation - https://github.com/hyperledger/aries-rfcs/tree/master/features/0434-outofband#message-type-httpsdidcommorgout-of-bandverinvitation
 
     TODO: document attributes
     """
@@ -159,6 +170,44 @@ class Connection(VcxStateful):
         c_params = (c_source_id,)
 
         return await Connection._create( "vcx_connection_create",
+                                        constructor_params,
+                                        c_params)
+
+    @staticmethod
+    async def create_outofband(source_id: str, goal_code: Optional[str], goal: Optional[str], 
+                               handshake: bool, request_attach: Optional[str]):
+        """
+        Create a Connection object that provides an Out-of-Band Connection for an institution's user.
+
+        NOTE: this method can be used when `aries` protocol is set.
+
+        NOTE: this method is EXPERIMENTAL
+
+        :param source_id: Institution's unique ID for the connection
+        :param goal_code: a self-attested code the receiver may want to display to
+                          the user or use in automatically deciding what to do with the out-of-band message.
+        :param goal: a self-attested string that the receiver may want to display to the user about
+                     the context-specific goal of the out-of-band message.
+        :param handshake: whether Inviter wants to establish regular connection using `connections` handshake protocol.
+                          if false, one-time connection channel will be created.
+        :param request_attach: An additional message as JSON that will be put into attachment decorator
+                            that the receiver can using in responding to the message.
+
+        :return: connection object
+        Example:
+        connection = await Connection.create_outofband('Foo', None, 'Foo Goal', True, None)
+        """
+        constructor_params = (source_id,)
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_goal_code = c_char_p(goal_code.encode('utf-8')) if goal_code is not None else None
+        c_goal = c_char_p(goal.encode('utf-8')) if goal is not None else None
+        c_handshake = c_bool(handshake)
+        c_request_attach= c_char_p(request_attach.encode('utf-8')) if request_attach is not None else None
+
+        c_params = (c_source_id, c_goal_code, c_goal, c_handshake, c_request_attach, )
+
+        return await Connection._create( "vcx_connection_create_outofband",
                                         constructor_params,
                                         c_params)
 
@@ -251,6 +300,71 @@ class Connection(VcxStateful):
         connection.serialized = json.loads(connection_serialized.decode())
 
         return connection
+
+
+    @staticmethod
+    async def create_with_outofband_invite(source_id: str, invite: str):
+        """
+        Create a Connection object from the given Out-of-Band Invitation.
+        Depending on the format of Invitation there are two way of follow interaction:
+            * Invitation contains `handshake_protocols`: regular Connection process will be ran.
+                Follow steps as for regular Connection establishment.
+            * Invitation does not contain `handshake_protocols`: one-time completed Connection object will be created.
+                You can use `vcx_connection_send_message` or specific function to send a response message.
+                Note that on repeated message sending an error will be thrown.
+
+        NOTE: this method can be used when `aries` protocol is set.
+
+        :param source_id: Institution's personal identification for the Connection
+        :param invite_details: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
+            {
+                "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+                "@id": "<id used for context as pthid>", -  the unique ID of the message.
+                "label": Optional<string>, - a string that the receiver may want to display to the user,
+                                            likely about who sent the out-of-band message.
+                "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+                                                the user or use in automatically deciding what to do with the out-of-band message.
+                "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+                                            about the context-specific goal of the out-of-band message.
+                "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+                                                            that the receiver can use in responding to the message in order to create or reuse a connection with the sender.
+                                                            One or both of handshake_protocols and request~attach MUST be included in the message.
+                "request~attach": Optional<[
+                    {
+                        "@id": "request-0",
+                        "mime-type": "application/json",
+                        "data": {
+                            "json": "<json of protocol message>"
+                        }
+                    }
+                ]>, - an attachment decorator containing an array of request messages in order of preference that the receiver can using in responding to the message.
+                    One or both of handshake_protocols and request~attach MUST be included in the message.
+                "service": [
+                    {
+                        "id": string
+                        "type": string,
+                        "recipientKeys": [string],
+                        "routingKeys": [string],
+                        "serviceEndpoint": string
+                    }
+                ] - an item that is the equivalent of the service block of a DIDDoc that the receiver is to use in responding to the message.
+            }
+
+        Example:
+        connection2 = await Connection.create_with_outofband_invite('MyBank', invite)
+
+        :return: connection object
+        """
+        constructor_params = (source_id,)
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_invite = c_char_p(invite.encode('utf-8'))
+
+        c_params = (c_source_id, c_invite, )
+
+        return await Connection._create( "vcx_connection_create_with_outofband_invitation",
+                                        constructor_params,
+                                        c_params)
 
     @staticmethod
     async def deserialize(data: dict):
@@ -589,6 +703,63 @@ class Connection(VcxStateful):
                       c_query,
                       c_comment,
                       Connection.send_discovery_features.cb)
+
+
+    async def send_reuse(self, invite: str,):
+        """
+        Send a message to reuse existing Connection instead of setting up a new one
+        as response on received Out-of-Band Invitation.
+    
+        Note that this function works in case `aries` communication method is used.
+            In other cases it returns ActionNotSupported error.
+
+        :param invite: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
+            {
+                "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+                "@id": "<id used for context as pthid>", -  the unique ID of the message.
+                "label": Optional<string>, - a string that the receiver may want to display to the user,
+                                            likely about who sent the out-of-band message.
+                "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+                                                the user or use in automatically deciding what to do with the out-of-band message.
+                "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+                                            about the context-specific goal of the out-of-band message.
+                "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+                                                            that the receiver can use in responding to the message in order to create or reuse a connection with the sender.
+                                                            One or both of handshake_protocols and request~attach MUST be included in the message.
+                "request~attach": Optional<[
+                    {
+                        "@id": "request-0",
+                        "mime-type": "application/json",
+                        "data": {
+                            "json": "<json of protocol message>"
+                        }
+                    }
+                ]>, - an attachment decorator containing an array of request messages in order of preference that the receiver can using in responding to the message.
+                    One or both of handshake_protocols and request~attach MUST be included in the message.
+                "service": [
+                    {
+                        "id": string
+                        "type": string,
+                        "recipientKeys": [string],
+                        "routingKeys": [string],
+                        "serviceEndpoint": string
+                    }
+                ] - an item that is the equivalent of the service block of a DIDDoc that the receiver is to use in responding to the message.
+            }
+
+        :return: no value
+        """
+        if not hasattr(Connection.send_reuse, "cb"):
+            self.logger.debug("vcx_connection_send_discovery_features: Creating callback")
+            Connection.send_reuse.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_connection_handle = c_uint32(self.handle)
+        c_invite = c_char_p(invite.encode('utf-8'))
+
+        await do_call('vcx_connection_send_reuse',
+                      c_connection_handle,
+                      c_invite,
+                      Connection.send_reuse.cb)
 
     async def get_my_pw_did(self) -> str:
         if not hasattr(Connection.get_my_pw_did, "cb"):
