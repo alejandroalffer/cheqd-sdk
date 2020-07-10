@@ -30,28 +30,15 @@ if [[ $RUSTC_VERSION =~ ^'rustc ' ]]; then
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
         brew doctor
 
-    	echo "brew update"
         brew update
     fi
     
     #2) Install required native libraries and utilities (libsodium is added with URL to homebrew since version<1.0.15 is required)
-    echo "Installing pkgconfig"
-    brew install pkg-config
-    echo "Installing libsodium"
-    brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb
-
-    echo "Installing automake"
-    brew install automake
-
-    echo "Installing autoconf"
-    brew install autoconf
-
-    echo "Installing cmake"
-    brew install cmake
-
-    echo "Installing openssl"
-    brew install openssl
-
-    echo "Installing zmq"
-    brew install zmq
+#    brew install pkg-config
+#    brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb
+#    brew install automake
+#    brew install autoconf
+#    brew install cmake
+#    brew install openssl
+#    brew install zmq
 fi
