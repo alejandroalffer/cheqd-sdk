@@ -23,6 +23,7 @@ if [[ $RUSTC_VERSION =~ ^'rustc ' ]]; then
     rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios x86_64-apple-ios i386-apple-ios
     cargo install cargo-lipo
     cargo install cargo-xcode
+	echo "cargo finish"
     
     BREW_VERSION=`brew --version`
     if ! [[ $BREW_VERSION =~ ^'Homebrew ' ]]; then
