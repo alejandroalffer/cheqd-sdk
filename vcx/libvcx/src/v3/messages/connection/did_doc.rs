@@ -97,19 +97,19 @@ impl DidDoc {
                 let key_id = id.to_string();
                 let key_reference = DidDoc::_build_key_reference(&self.id, &key_id);
 
-//                self.public_key.push(
-//                    Ed25519PublicKey {
-//                        id: key_reference.clone(),
-//                        type_: String::from(KEY_TYPE),
-//                        controller: self.id.clone(),
-//                        public_key_base_58: key.clone(),
-//                    });
-//
-//                self.authentication.push(
-//                    Authentication {
-//                        type_: String::from(KEY_AUTHENTICATION_TYPE),
-//                        public_key: key_reference.clone(),
-//                    });
+                self.public_key.push(
+                    Ed25519PublicKey {
+                        id: key_reference.clone(),
+                        type_: String::from(KEY_TYPE),
+                        controller: self.id.clone(),
+                        public_key_base_58: key.clone(),
+                    });
+
+                self.authentication.push(
+                    Authentication {
+                        type_: String::from(KEY_AUTHENTICATION_TYPE),
+                        public_key: key_reference.clone(),
+                    });
 
 
                 self.service.get_mut(0)
@@ -448,8 +448,12 @@ pub mod tests {
         DidDoc {
             context: String::from(CONTEXT),
             id: _id(),
-            public_key: vec![],
-            authentication: vec![],
+            public_key: vec![
+                Ed25519PublicKey { id: _key_reference_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+            ],
+            authentication: vec![
+                Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
+            ],
             service: vec![Service {
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_1()],
