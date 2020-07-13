@@ -26,19 +26,18 @@ if [[ $RUSTC_VERSION =~ ^'rustc ' ]]; then
     
     BREW_VERSION=`brew --version`
     if ! [[ $BREW_VERSION =~ ^'Homebrew ' ]]; then
-    	brew uninstall --ignore-dependencies python
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-#        brew doctor
+#        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+        brew doctor
 
-#        brew update
+        brew update
     fi
     
     #2) Install required native libraries and utilities (libsodium is added with URL to homebrew since version<1.0.15 is required)
-#    brew install pkg-config
-#    brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb
-#    brew install automake
-#    brew install autoconf
-#    brew install cmake
-#    brew install openssl
-#    brew install zmq
+    brew install pkg-config
+    brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb
+    brew install automake
+    brew install autoconf
+    brew install cmake
+    brew install openssl
+    brew install zmq
 fi
