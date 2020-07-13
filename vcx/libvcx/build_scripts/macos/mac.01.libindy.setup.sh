@@ -27,7 +27,7 @@ if [[ $RUSTC_VERSION =~ ^'rustc ' ]]; then
     BREW_VERSION=`brew --version`
     if ! [[ $BREW_VERSION =~ ^'Homebrew ' ]]; then
     	brew pin python
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+        HOMEBREW_NO_AUTO_UPDATE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 #        brew doctor
 
 #        brew update
