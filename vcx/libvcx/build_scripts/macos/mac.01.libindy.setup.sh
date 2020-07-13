@@ -27,8 +27,7 @@ if [[ $RUSTC_VERSION =~ ^'rustc ' ]]; then
     BREW_VERSION=`brew --version`
     if ! [[ $BREW_VERSION =~ ^'Homebrew ' ]]; then
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-		brew upgrade python@3.8
-        brew doctor
+#        brew doctor
 
 #        brew update
     fi
