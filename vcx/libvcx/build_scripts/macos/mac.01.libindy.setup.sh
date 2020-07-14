@@ -24,14 +24,14 @@ if [[ $RUSTC_VERSION =~ ^'rustc ' ]]; then
     cargo install cargo-lipo
     cargo install cargo-xcode
     
-    BREW_VERSION=`brew --version`
-    if ! [[ $BREW_VERSION =~ ^'Homebrew ' ]]; then
-    	brew unlink python3
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-        brew doctor
-
-        brew update
-    fi
+#    BREW_VERSION=`brew --version`
+#    if ! [[ $BREW_VERSION =~ ^'Homebrew ' ]]; then
+#    	brew unlink python3
+#        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+#        brew doctor
+#
+#        brew update
+#    fi
     
     #2) Install required native libraries and utilities (libsodium is added with URL to homebrew since version<1.0.15 is required)
     brew install pkg-config
