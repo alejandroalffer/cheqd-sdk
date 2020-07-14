@@ -67,22 +67,23 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
 
     BREW_VERSION=`brew --version`
     if ! [[ $BREW_VERSION =~ ^'Homebrew ' ]]; then
+    	brew uninstall python3
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-#        brew doctor
-#        brew update
+        brew doctor
+        brew update
     fi
 
     #2) Install required native libraries and utilities (libsodium is added with URL to homebrew since version<1.0.15 is required)
-#    INSTALL_LIBSODIUM=https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb
-#    brew list pkg-config &>/dev/null || brew install pkg-config
-#    brew list libsodium &>/dev/null || brew install ${INSTALL_LIBSODIUM}
-#    brew list automake &>/dev/null || brew install automake
-#    brew list autoconf &>/dev/null || brew install autoconf
-#    brew list cmake &>/dev/null || brew install cmake
-#    brew list openssl &>/dev/null || brew install openssl
-#    brew list zmq &>/dev/null || brew install zmq
-#    brew list wget &>/dev/null || brew install wget
-#    brew list truncate &>/dev/null || brew install truncate
-#    brew list libzip &>/dev/null || brew install libzip
+    INSTALL_LIBSODIUM=https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb
+    brew list pkg-config &>/dev/null || brew install pkg-config
+    brew list libsodium &>/dev/null || brew install ${INSTALL_LIBSODIUM}
+    brew list automake &>/dev/null || brew install automake
+    brew list autoconf &>/dev/null || brew install autoconf
+    brew list cmake &>/dev/null || brew install cmake
+    brew list openssl &>/dev/null || brew install openssl
+    brew list zmq &>/dev/null || brew install zmq
+    brew list wget &>/dev/null || brew install wget
+    brew list truncate &>/dev/null || brew install truncate
+    brew list libzip &>/dev/null || brew install libzip
 #    brew list python3 &>/dev/null || brew install python3
 fi
