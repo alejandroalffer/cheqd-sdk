@@ -575,4 +575,42 @@ public class UtilsApi extends VcxJava.API {
         checkResult(result);
         return future;
     }
+
+    private static Callback vcxFetchPublicEntitiesCb = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(null);
+        }
+    };
+
+    /**
+     * Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+     * This function performs two steps:
+     *     1) Retrieves the list of all credentials stored in the opened wallet.
+     *     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+     *        correspondent to received credentials from the connected Ledger.
+     *
+     * This helper function can be used, for instance as a background task, to refresh library cache.
+     * This allows us to reduce the time taken for Proof generation by using already cached entities instead of queering the Ledger.
+     *
+     * NOTE: Library must be already initialized (wallet and pool must be opened).
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Void> vcxFetchPublicEntities() throws VcxException {
+        logger.debug("vcxFetchPublicEntities() called");
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_fetch_public_entities(
+                commandHandle,
+                vcxFetchPublicEntitiesCb);
+        checkResult(result);
+        return future;
+    }
 }

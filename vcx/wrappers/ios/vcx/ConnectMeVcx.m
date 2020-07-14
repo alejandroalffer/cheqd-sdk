@@ -1578,6 +1578,20 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (void)fetchPublicEntities:(void (^)(NSError *error))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_fetch_public_entities(handle, VcxWrapperCommonCallback);
+
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
 
 //vcx_error_t vcx_wallet_backup_create(vcx_command_handle_t command_handle, const char *source_id, const char *backup_key,
 //                                     void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_wallet_backup_handle_t));

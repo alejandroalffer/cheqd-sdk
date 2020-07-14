@@ -772,6 +772,9 @@ public abstract class LibVcx {
         /** Update the status of messages from the specified connection */
         public int vcx_messages_update_status(int command_handle, String messageStatus, String msgJson, Callback cb);
 
+        /** Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials. */
+        public int vcx_fetch_public_entities(int command_handle, Callback cb);
+
         /**
          * Object representing Credential Definition publishing on the Ledger and used for the Issuance.
          */

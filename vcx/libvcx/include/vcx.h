@@ -2867,6 +2867,27 @@ vcx_error_t vcx_endorse_transaction(vcx_u32_t command_handle,
                                     const char* transaction
                                     void (*cb)(vcx_command_handle_t, vcx_error_t));
 
+/// Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+/// This function performs two steps:
+///     1) Retrieves the list of all credentials stored in the opened wallet.
+///     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+///        correspondent to received credentials from the connected Ledger.
+///
+/// This helper function can be used, for instance as a background task, to refresh library cache.
+/// This allows us to reduce the time taken for Proof generation by using already cached entities instead of queering the Ledger.
+///
+/// NOTE: Library must be already initialized (wallet and pool must be opened).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides result code
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_fetch_public_entities(vcx_u32_t command_handle,
+                                      void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
