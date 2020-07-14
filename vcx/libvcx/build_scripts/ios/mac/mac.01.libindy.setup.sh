@@ -67,7 +67,6 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
 
     BREW_VERSION=`brew --version`
     if ! [[ $BREW_VERSION =~ ^'Homebrew ' ]]; then
-    	brew uninstall python3
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
         brew doctor
         brew update
