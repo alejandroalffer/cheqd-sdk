@@ -331,7 +331,7 @@ impl RequestedState {
                 .to_a2a_message()
         } else {
             Ping::create()
-                .set_thread(thread.clone())
+                .set_thread(Thread::from_parent(&thread))
                 .to_a2a_message()
         };
 

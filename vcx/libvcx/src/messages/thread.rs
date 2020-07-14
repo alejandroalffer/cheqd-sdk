@@ -18,6 +18,12 @@ impl Thread {
         Thread::default()
     }
 
+    pub fn from_parent(parent: &Thread) -> Thread {
+        let mut th = Thread::default();
+        th.pthid = parent.thid.clone();
+        th
+    }
+
     pub fn set_thid(mut self, thid: String) -> Thread {
         self.thid = Some(thid);
         self
