@@ -153,21 +153,7 @@ public class UtilsApi extends VcxJava.API {
         }
     };
 
-    /**
-     * Update information on the agent (ie, comm method and type)
-     *
-     * @param  config         New agent updated configuration as JSON
-     *                          {
-     *                              "id": "string", 1 means push notifications, its the only one registered
-     *                              "type": Optional(int), notifications type (1 is used by default).
-     *                              "value": "string",
-     *                          }
-     *
-     * @return                void
-     *
-     * @throws VcxException   If an exception occurred in Libvcx library.
-     */
-    public static CompletableFuture<Void> vcxUpdateAgentInfo(String config) throws VcxException {
+    public static CompletableFuture<Integer> vcxUpdateAgentInfo(String config) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(config, "config");
         logger.debug("vcxUpdateAgentInfo() called with: config = [****]");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
