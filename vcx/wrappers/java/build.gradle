@@ -39,8 +39,8 @@ task("buildJavadoc", type: Javadoc) {
     destinationDir = file("${project.docsDir}/javadoc-${version()}")
 }
 
-    baseName = fullVersionName()
 task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
+    baseName = fullVersionName()
     classifier = 'javadoc'
     from tasks["buildJavadoc"].destinationDir
 }
