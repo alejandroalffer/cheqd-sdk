@@ -50,17 +50,14 @@ task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
 
 build.finalizedBy(buildJavadocJar)
 
-static def versionMajor() {
-    return '0.9.2'
-}
-
 static def version() {
-    String version = System.getenv("PACKAGE_VERSION")
-    if (version != null) {
-        return version
-    } else {
-        return versionMajor()
+    String version = "0.9.2"
+    String suffix = System.getenv("CI_PIPELINE_IID")
+    String branch = System.getenv("CI_COMMIT_REF_SLUG")
+    if (suffix != null && !branch.equals("stable")) {
+        version += "." + suffix
     }
+    return version
 }
 
 version = "${version()}"
