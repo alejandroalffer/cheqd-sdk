@@ -32,30 +32,34 @@ public class ProofApi extends VcxJava.API {
      * @param  sourceId             Enterprise's personal identification for the user.
      * @param  requestedAttrs       Describes the list of requested attribute
      *     [{
-     *         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
-     *         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+     *         "name": Optional(string), // attribute name, (case insensitive and ignore spaces)
+     *         "names": Optional([string, string]), // attribute names, (case insensitive and ignore spaces)
      *                                              // NOTE: should either be "name" or "names", not both and not none of them.
      *                                              // Use "names" to specify several attributes that have to match a single credential.
-     *         "restrictions":  Optional<wql query> - set of restrictions applying to requested credentials. (see below)
+     *         "restrictions":  Optional(wql query) - set of restrictions applying to requested credentials. (see below)
      *         "non_revoked": {
-     *             "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
-     *             "to": Optional<(u64)>
+     *             "from": Optional(u64) Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *             "to": Optional(u64)
      *                 //Requested time represented as a total number of seconds from Unix Epoch, Optional
      *         }
      *     }]                               
      * @param  requestedPredicates  predicate specifications prover must provide claim for.
+     *     <pre>
+     *     {@code
      *     [
      *        { // set of requested predicates
      *           "name": attribute name, (case insensitive and ignore spaces)
      *           "p_type": predicate type (Currently ">=" only)
      *           "p_value": int predicate value
-     *           "restrictions":  Optional<wql query> -  set of restrictions applying to requested credentials. (see below)
-     *           "non_revoked": Optional<{
-     *               "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
-     *               "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
-     *           }
+     *           "restrictions":  Optional(wql query) -  set of restrictions applying to requested credentials. (see below)
+     *           "non_revoked": Optional({
+     *               "from": Optional(u64) Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *               "to": Optional(u64) Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *           })
      *       }
      *    ]
+     *    }
+     *    </pre>
      *                                            
      * @param  revocationInterval  Optional timestamps to request revocation proof
      * @param  name                label for proof request.
@@ -168,6 +172,7 @@ public class ProofApi extends VcxJava.API {
      * Get Proof message that can be sent to the specified connection.
      *
      * @param  proofHandle          handle pointing to a Proof object.
+     * @param  connectionHandle     handle pointing to a Connection object.
      *
      * @return                      Proof message as JSON string.
      *

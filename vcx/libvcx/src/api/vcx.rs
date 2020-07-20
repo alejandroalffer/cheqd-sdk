@@ -9,6 +9,7 @@ use utils::threadpool::spawn;
 use error::prelude::*;
 use indy::{INVALID_WALLET_HANDLE, CommandHandle};
 use utils::libindy::pool::init_pool;
+use std::thread;
 
 /// Initializes VCX with config settings
 ///
@@ -113,7 +114,7 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
     let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
         Ok(x) => x,
         Err(_) => {
-            trace!("Using default wallet: {}", settings::DEFAULT_WALLET_NAME.to_string());
+            debug!("No `wallet_name` parameter specified in the config JSON. Using default: {}", settings::DEFAULT_WALLET_NAME.to_string());
             settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
             settings::DEFAULT_WALLET_NAME.to_string()
         }
@@ -126,28 +127,47 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
     trace!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
     spawn(move || {
-        if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
-            match init_pool() {
-                Ok(()) => (),
-                Err(e) => {
-                    error!("Init Pool Error {}.", e);
-                    cb(command_handle, e.into());
-                    return Ok(());
-                }
+        let pool_open_thread = thread::spawn(|| {
+            if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
+                init_pool()
+                    .map(|res|{
+                        info!("Init Pool Successful.");
+                        res
+                    })
+            } else {
+                Ok(())
+            }
+        });
+
+        match wallet::open_wallet(&wallet_name,
+                                  wallet_type.as_ref().map(String::as_str),
+                                  storage_config.as_ref().map(String::as_str),
+                                  storage_creds.as_ref().map(String::as_str)) {
+            Ok(_) => {
+                debug!("Init Wallet Successful.");
+            }
+            Err(e) => {
+                error!("Init Wallet Error {}..", e);
+                cb(command_handle, e.into());
+                return Ok(());
             }
         }
 
-        match wallet::open_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str),
-                                  storage_config.as_ref().map(String::as_str), storage_creds.as_ref().map(String::as_str)) {
-            Ok(_) => {
-                debug!("Init Wallet Successful");
+        match pool_open_thread.join() {
+            Ok(Ok(())) => {
                 cb(command_handle, error::SUCCESS.code_num);
             }
-            Err(e) => {
-                error!("Init Wallet Error {}.", e);
+            Ok(Err(e)) => {
+                error!("Init Pool Error {}.", e);
                 cb(command_handle, e.into());
             }
+            Err(e) => {
+                error!("Init Pool Error {:?}.", e);
+                let error = VcxError::from_msg(VcxErrorKind::IOError, format!("Could not join thread: {:?}.", e));
+                cb(command_handle, error.into());
+            }
         }
+
         Ok(())
     });
 
@@ -563,7 +583,6 @@ mod tests {
         assert_eq!(err, error::POOL_LEDGER_CONNECT.code_num);
 
         assert_eq!(get_pool_handle().unwrap_err().kind(), VcxErrorKind::NoPoolOpen);
-        assert_eq!(get_wallet_handle(), INVALID_WALLET_HANDLE);
 
         delete_test_pool();
     }
