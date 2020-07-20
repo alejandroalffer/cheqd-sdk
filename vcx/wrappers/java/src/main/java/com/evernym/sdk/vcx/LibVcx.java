@@ -30,13 +30,17 @@ public abstract class LibVcx {
         public int vcx_reset();
 
         /**
-         * Sovtoken & nullpay
+         * Init Sovtoken payment library
+         *
+         * @return  error code
          */
         public int sovtoken_init();
 //        public int nullpay_init();
 
         /**
          * Helper API for testing purposes.
+         *
+         * @param msg   message to mock next Agency response in case testing mode is enabled.
          */
         public void vcx_set_next_agency_response(int msg);
 
@@ -542,8 +546,8 @@ public abstract class LibVcx {
         /// submitter_did: DID of the request sender.
         /// aml: a set of new acceptance mechanisms:
         /// {
-        ///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
-        ///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+        ///     "<acceptance mechanism label 1>": { acceptance mechanism description 1},
+        ///     "<acceptance mechanism label 2>": { acceptance mechanism description 2},
         ///     ...
         /// }
         /// version: a version of new acceptance mechanisms. (Note: unique on the Ledger)
@@ -843,7 +847,8 @@ public abstract class LibVcx {
     /**
      * Initializes the API with the path to the C-Callable library.
      *
-     * @param searchPath The path to the directory containing the C-Callable library file.
+     * @param searchPath  The path to the directory containing the C-Callable library file.
+     * @param libraryName The name of the library to initialize.
      */
     public static void init(String searchPath, String libraryName) {
 

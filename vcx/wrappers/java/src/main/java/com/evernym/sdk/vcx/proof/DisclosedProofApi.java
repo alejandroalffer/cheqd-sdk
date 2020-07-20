@@ -416,10 +416,14 @@ public class DisclosedProofApi extends VcxJava.API {
      *
      * @param  sourceId         Institution's personal identification for the credential.
      * @param  proofRequest     received Proof Request message. The format of Proof Request depends on communication method:
+     *                          <pre>
+     *                          {@code
      *                              proprietary:
      *                                  "{"@topic":{"mid":9,"tid":1},"@type":{"name":"PROOF_REQUEST","version":"1.0"},"msg_ref_id":"ymy5nth","proof_request_data":{"name":"AccountCertificate","nonce":"838186471541979035208225","requested_attributes":{"business_2":{"name":"business"},"email_1":{"name":"email"},"name_0":{"name":"name"}},"requested_predicates":{},"version":"0.1"}}"
      *                              aries:
      *                                  "{"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation","@id": "<uuid-request>","comment": "some comment","request_presentations~attach": [{"@id": "libindy-request-presentation-0","mime-type": "application/json","data":  {"base64": "<bytes for base64>"}}]}"
+     *                          }
+     *                          </pre>
      *
      * @return                  handle that should be used to perform actions with the DisclosedProof object.
      *
