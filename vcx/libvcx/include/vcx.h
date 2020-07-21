@@ -152,6 +152,10 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
 ///
 /// NOTE: this method is EXPERIMENTAL
 ///
+/// WARN: `request_attach` field is not fully supported in the current library state.
+///        You can use simple messages like Question but it cannot be used
+///         for Credential Issuance and Credential Presentation.
+///
 /// # Params
 /// command_handle: command handle to map callback to user context.
 ///
@@ -167,7 +171,7 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
 ///            if false, one-time connection channel will be created.
 ///
 /// request_attach: Optional<string> - An additional message as JSON that will be put into attachment decorator
-///                                     that the receiver can using in responding to the message.
+///                                    that the receiver can using in responding to the message (for example Question message).
 ///
 /// cb: Callback that provides
 ///     - error status of function
@@ -264,6 +268,9 @@ vcx_error_t vcx_connection_accept_connection_invite(vcx_command_handle_t command
 ///         Note that on repeated message sending an error will be thrown.
 ///
 /// NOTE: this method can be used when `aries` protocol is set.
+///
+/// NOTE: The user has to analyze the value of "request~attach" field yourself and
+///       create/handle the correspondent state object or send a reply once the connection is established.
 ///
 /// # Params
 /// command_handle: command handle to map callback to user context.
@@ -2353,7 +2360,7 @@ vcx_error_t vcx_wallet_verify_with_address(vcx_command_handle_t command_handle,
 // cb: Callback that any errors or a receipt of transfer
 //
 // #Returns
-// Error code as a u32
+// Error code as a
 // Error will be a libindy error code
 //
 vcx_error_t vcx_wallet_delete_record(vcx_command_handle_t command_handle,

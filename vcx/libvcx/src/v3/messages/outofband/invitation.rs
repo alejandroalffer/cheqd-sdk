@@ -9,8 +9,11 @@ const SUPPORTED_HANDSHAKE_PROTOCOL: &str = "connections/1.0";
 pub struct Invitation {
     #[serde(rename = "@id")]
     pub id: MessageId,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub goal_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub goal: Option<String>,
     #[serde(default)]
     pub handshake_protocols: Vec<String>,

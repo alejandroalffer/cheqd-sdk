@@ -195,6 +195,9 @@ public class ConnectionApi extends VcxJava.API {
 	 * Create a Connection object that provides an Out-of-Band Connection for an institution's user.
 	 * NOTE: this method can be used when `aries` protocol is set.
 	 * NOTE: this method is EXPERIMENTAL
+	 * WARN: `requestAttach` field is not fully supported in the current library state.
+	 *        You can use simple messages like Question but it cannot be used
+	 *        for Credential Issuance and Credential Presentation.
 	 *
 	 * @param  sourceId     institution's personal identification for the connection.
 	 *                      It'll be used as a label for Connection Invitation.
@@ -205,7 +208,7 @@ public class ConnectionApi extends VcxJava.API {
 	 * @param  handshake    whether Inviter wants to establish regular connection using `connections` handshake protocol.
 	 *                      if false, one-time connection channel will be created.
 	 * @param  requestAttach  An additional message as JSON that will be put into attachment decorator
-	 *                        that the receiver can using in responding to the message.
+	 *                        that the receiver can using in responding to the message (for example Question message).
 	 *
 	 * @return              handle that should be used to perform actions with the Connection object.
 	 *
@@ -367,6 +370,9 @@ public class ConnectionApi extends VcxJava.API {
 	 *         Note that on repeated message sending an error will be thrown.
 	 *
 	 * NOTE: this method can be used when `aries` protocol is set.
+	 *
+	 * WARN: The user has to analyze the value of "request~attach" field yourself and
+	 *       create/handle the correspondent state object or send a reply once the connection is established.
 	 *
 	 * @param  sourceId  institution's personal identification for the connection.
 	 *                      It'll be used as a connection response label.
