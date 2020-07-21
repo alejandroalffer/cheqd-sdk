@@ -183,6 +183,10 @@ class Connection(VcxStateful):
 
         NOTE: this method is EXPERIMENTAL
 
+        WARN: `request_attach` field is not fully supported in the current library state.
+               You can use simple messages like Question but it cannot be used
+               for Credential Issuance and Credential Presentation.
+
         :param source_id: Institution's unique ID for the connection
         :param goal_code: a self-attested code the receiver may want to display to
                           the user or use in automatically deciding what to do with the out-of-band message.
@@ -191,7 +195,7 @@ class Connection(VcxStateful):
         :param handshake: whether Inviter wants to establish regular connection using `connections` handshake protocol.
                           if false, one-time connection channel will be created.
         :param request_attach: An additional message as JSON that will be put into attachment decorator
-                            that the receiver can using in responding to the message.
+                            that the receiver can using in responding to the message (for example Question message).
 
         :return: connection object
         Example:
@@ -314,6 +318,9 @@ class Connection(VcxStateful):
                 Note that on repeated message sending an error will be thrown.
 
         NOTE: this method can be used when `aries` protocol is set.
+
+        WARN: The user has to analyze the value of "request~attach" field yourself and
+              create/handle the correspondent state object or send a reply once the connection is established.
 
         :param source_id: Institution's personal identification for the Connection
         :param invite_details: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.

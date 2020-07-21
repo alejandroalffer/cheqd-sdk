@@ -35,6 +35,7 @@ async def main():
             "1 - check for credential offer \n "
             "2 - check for proof request \n "
             "3 - pass vc_auth_oidc-challenge \n "
+            "5 - establish out-of-band connection \n "
             "else finish \n") \
             .lower().strip()
         if answer == '0':
@@ -55,6 +56,8 @@ async def main():
             print("#23 Create a Disclosed proof object from proof request")
             proof = await DisclosedProof.create('proof', request)
             await create_proof(None, proof)
+        elif answer == '5':
+            connection_to_faber = await outofband_connect()
         else:
             break
 
@@ -84,6 +87,24 @@ async def connect():
     print("#10 Convert to valid json and string and create a connection to faber")
     jdetails = json.loads(details)
     connection_to_faber = await Connection.accept_connection_invite('faber', json.dumps(jdetails))
+    connection_state = await connection_to_faber.update_state()
+    while connection_state != State.Accepted:
+        sleep(2)
+        await connection_to_faber.update_state()
+        connection_state = await connection_to_faber.get_state()
+
+    print("Connection is established")
+    return connection_to_faber
+
+
+async def outofband_connect():
+    print("#9 Input faber.py invitation details")
+    details = input('invite details: ')
+
+    print("#10 Convert to valid json and string and create a connection to faber")
+    jdetails = json.loads(details)
+    connection_to_faber = await Connection.create_with_outofband_invite('faber', json.dumps(jdetails))
+    await connection_to_faber.connect('{"use_public_did": true}')
     connection_state = await connection_to_faber.update_state()
     while connection_state != State.Accepted:
         sleep(2)

@@ -162,6 +162,9 @@ export interface IConnectionCreateData {
 
 /**
  * @description Interface that represents the parameters for `Connection.createOutofband` function.
+ * WARN: `requestAttach` field is not fully supported in the current library state.
+ *        You can use simple messages like Question but it cannot be used
+ *        for Credential Issuance and Credential Presentation.
  * @interface
  */
 export interface IConnectionCreateOutofbandData {
@@ -177,7 +180,7 @@ export interface IConnectionCreateOutofbandData {
   // if false, one-time connection channel will be created.
   handshake: boolean,
   // An additional message as JSON that will be put into attachment decorator
-  // that the receiver can using in responding to the message.
+  // that the receiver can using in responding to the message (for example Question message).
   requestAttach?: string,
 }
 
@@ -407,6 +410,9 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    *         Note that on repeated message sending an error will be thrown.
    *
    * NOTE: this method can be used when `aries` protocol is set.
+   *
+   * WARN: The user has to analyze the value of "request~attach" field yourself and
+   *       create/handle the correspondent state object or send a reply once the connection is established.
    *
    * Example:
    * ```
