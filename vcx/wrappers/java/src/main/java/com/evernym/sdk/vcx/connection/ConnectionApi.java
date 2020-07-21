@@ -1060,13 +1060,13 @@ public class ConnectionApi extends VcxJava.API {
 	 *                                      "serviceEndpoint": string, - Endpoint
 	 *                                      "protocols": array[string], - The set of protocol supported by current side.
 	 *                                  },
-	 *                                      "remote: { <Option> - details about remote connection side
+	 *                                  "remote: Optional({ - details about remote connection side
 	 *                                      "did": string - DID of remote side
 	 *                                      "recipientKeys": array[string] - Recipient keys of remote side
 	 *                                      "routingKeys": array[string] - Routing keys of remote side
 	 *                                      "serviceEndpoint": string - Endpoint of remote side
 	 *                                      "protocols": array[string] - The set of protocol supported by side. Is filled after DiscoveryFeatures process was completed.
-	 *                                  }
+	 *                                  })
 	 *                              }
 	 *
 	 * @throws VcxException         If an exception occurred in Libvcx library.
