@@ -4,7 +4,7 @@ use v3::handlers::issuance::states::{IssuerState, InitialState, RequestReceivedS
 use v3::messages::a2a::A2AMessage;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential::Credential;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, ProblemReportCodes};
 use v3::messages::mime_type::MimeType;
 use v3::messages::status::Status;
 use messages::thread::Thread;
@@ -186,7 +186,8 @@ impl IssuerSM {
                         .update_received_order(&state_data.connection.data.did_doc.id);
 
                     let problem_report = ProblemReport::create()
-                        .set_comment(String::from("CredentialProposal is not supported"))
+                        .set_description(ProblemReportCodes::Unimplemented)
+                        .set_comment(String::from("credential-proposal message is not supported"))
                         .set_thread(thread.clone());
 
                     state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &state_data.connection.agent)?;
@@ -221,7 +222,8 @@ impl IssuerSM {
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
-                                .set_comment(err.to_string())
+                                .set_description(ProblemReportCodes::InvalidCredentialRequest)
+                                .set_comment(format!("error occurred: {:?}", err))
                                 .set_thread(thread.clone());
 
                             state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.agent)?;

@@ -5,7 +5,7 @@ use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::{PresentationRequest, PresentationRequestData};
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::proof_presentation::presentation_ack::PresentationAck;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, ProblemReportCodes};
 use v3::messages::status::Status;
 use proof::Proof;
 
@@ -213,7 +213,8 @@ impl VerifierSM {
 
                                 let problem_report =
                                     ProblemReport::create()
-                                        .set_comment(err.to_string())
+                                        .set_description(ProblemReportCodes::InvalidPresentation)
+                                        .set_comment(format!("error occurred: {:?}", err))
                                         .set_thread(thread.clone());
 
                                 state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
@@ -234,7 +235,8 @@ impl VerifierSM {
 
                         let problem_report =
                             ProblemReport::create()
-                                .set_comment(String::from("PresentationProposal is not supported"))
+                                .set_description(ProblemReportCodes::Unimplemented)
+                                .set_comment(String::from("presentation-proposal message is not supported"))
                                 .set_thread(thread.clone());
 
                         state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;

@@ -6,7 +6,7 @@ use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use v3::messages::proof_presentation::presentation_proposal::{PresentationProposal, PresentationPreview};
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::proof_presentation::presentation_ack::PresentationAck;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, ProblemReportCodes};
 use v3::messages::status::Status;
 
 use std::collections::HashMap;
@@ -287,7 +287,8 @@ impl ProverSM {
                             Err(err) => {
                                 let problem_report =
                                     ProblemReport::create()
-                                        .set_comment(err.to_string())
+                                        .set_description(ProblemReportCodes::InvalidPresentationRequest)
+                                        .set_comment(format!("error occurred: {:?}", err))
                                         .set_thread(thread.clone());
                                 ProverState::PresentationPreparationFailed((state, problem_report, thread).into())
                             }
@@ -390,7 +391,8 @@ impl ProverSM {
                                 thread = thread.increment_sender_order();
 
                                 let problem_report = ProblemReport::create()
-                                    .set_comment(err.to_string())
+                                    .set_description(ProblemReportCodes::Other(String::from("invalid-message-state")))
+                                    .set_comment(format!("error occurred: {:?}", err))
                                     .set_thread(thread.clone());
 
                                 state.connection.data.send_message(&A2AMessage::PresentationReject(problem_report.clone()), &state.connection.agent)?;
@@ -420,6 +422,7 @@ impl ProverSM {
 
     fn _handle_reject_presentation_request(connection: &CompletedConnection, reason: &str, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<()> {
         let problem_report = ProblemReport::create()
+            .set_description(ProblemReportCodes::PresentationRejected)
             .set_comment(reason.to_string())
             .set_thread(thread.clone());
 

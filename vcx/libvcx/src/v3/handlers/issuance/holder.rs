@@ -6,7 +6,7 @@ use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential_ack::CredentialAck;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, ProblemReportCodes};
 use v3::messages::a2a::A2AMessage;
 use v3::messages::status::Status;
 use v3::handlers::connection::types::CompletedConnection;
@@ -136,7 +136,8 @@ impl HolderSM {
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
-                                .set_comment(err.to_string())
+                                .set_description(ProblemReportCodes::InvalidCredentialOffer)
+                                .set_comment(format!("error occurred: {:?}", err))
                                 .set_thread(thread.clone());
 
                             connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.agent)?;
@@ -175,7 +176,8 @@ impl HolderSM {
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
-                                .set_comment(err.to_string())
+                                .set_description(ProblemReportCodes::InvalidCredential)
+                                .set_comment(format!("error occurred: {:?}", err))
                                 .set_thread(thread.clone());
 
                             state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &state_data.connection.agent)?;
@@ -307,7 +309,8 @@ impl OfferReceivedState {
 
 fn _reject_credential(connection: &CompletedConnection, thread: &Thread, comment: Option<String>) -> VcxResult<ProblemReport>{
     let problem_report = ProblemReport::create()
-        .set_comment(comment.unwrap_or(String::from("Credential Offer was rejected.")))
+        .set_description(ProblemReportCodes::CredentialRejected)
+        .set_comment(comment.unwrap_or(String::from("credential-offer was rejected")))
         .set_thread(thread.clone());
 
     connection.agent.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.data.did_doc)?;
