@@ -31,7 +31,7 @@ public class CredentialApi extends VcxJava.API {
     /**
      * Create a Credential object based off of a known message id (containing Credential Offer) for a given connection.
      *
-     * @param  sourceId             Institution's personal identification for the credential. It'll be used as a label.
+     * @param  sourceId             Institution's personal identification for the credential, should be unique.
      * @param  connectionHandle     handle pointing to a Connection object to query for credential offer message.
      * @param  msgId                id of the message on Agency that contains the credential offer.
      *
@@ -539,7 +539,7 @@ public class CredentialApi extends VcxJava.API {
             int connectionHandle,
             String comment
     ) throws VcxException {
-        logger.debug("credentialReject() called with: sourceId = [ {} ], connectionHandle = [ {} ], comment = [ {} ]", credentialHandle, connectionHandle, comment);
+        logger.debug("credentialReject() called with: credentialHandle = [ {} ], connectionHandle = [ {} ], comment = [ {} ]", credentialHandle, connectionHandle, comment);
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 

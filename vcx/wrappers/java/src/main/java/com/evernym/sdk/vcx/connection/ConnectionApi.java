@@ -169,8 +169,7 @@ public class ConnectionApi extends VcxJava.API {
 	/**
 	 * Create a Connection object that provides a pairwise connection for an institution's user.
 	 *
-	 * @param  sourceId     institution's personal identification for the connection.
-	 *                      It'll be used as a label for Connection Invitation.
+	 * @param  sourceId     user personal identification for the connection, should be unique.
 	 *
 	 * @return              handle that should be used to perform actions with the Connection object.
 	 *
@@ -199,8 +198,7 @@ public class ConnectionApi extends VcxJava.API {
 	 *        You can use simple messages like Question but it cannot be used
 	 *        for Credential Issuance and Credential Presentation.
 	 *
-	 * @param  sourceId     institution's personal identification for the connection.
-	 *                      It'll be used as a label for Connection Invitation.
+	 * @param  sourceId     user personal identification for the connection, should be unique.
 	 * @param  goalCode     a self-attested code the receiver may want to display to
 	 *                      the user or use in automatically deciding what to do with the out-of-band message.
 	 * @param  goal         a self-attested string that the receiver may want to display to the user about
@@ -374,8 +372,7 @@ public class ConnectionApi extends VcxJava.API {
 	 * WARN: The user has to analyze the value of "request~attach" field yourself and
 	 *       create/handle the correspondent state object or send a reply once the connection is established.
 	 *
-	 * @param  sourceId  institution's personal identification for the connection.
-	 *                      It'll be used as a connection response label.
+	 * @param  sourceId  user personal identification for the connection, should be unique.
 	 * @param  invite    A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
 	 *                  {
 	 *                      "@type": "https://didcomm.org/out-of-band/%VER/invitation",

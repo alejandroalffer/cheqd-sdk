@@ -91,7 +91,7 @@ class Credential(VcxStateful):
     async def create(source_id: str, credential_offer: str):
         """
         Creates a credential with an offer.
-        :param source_id: user defined id of object.
+        :param source_id: Institution's personal identification for the credential, should be unique.
         :param credential_offer: JSON string representing the offer used as the basis of creation.
         :return: A created credential
         Example:
@@ -158,7 +158,7 @@ class Credential(VcxStateful):
     async def create_with_msgid(source_id: str, connection: Connection, msg_id: str):
         """
         Create a credential based off of a known message id for a given connection.
-        :param source_id: user defined id of object.
+        :param source_id: Institution's personal identification for the credential, should be unique.
         :param connection: connection to receive offer from
         :param msg_id: id of the message that contains the credential offer
         :return: A created credential
@@ -196,7 +196,7 @@ class Credential(VcxStateful):
         2. Prepares Credential Request and replies to the issuer.
             (equal to `vcx_credential_send_request` function).
 
-        :param source_id: institution's personal identification for the credential, should be unique.
+        :param source_id: Institution's personal identification for the credential, should be unique.
         :param credential_offer: JSON string representing the offer used as the basis of creation.
         :param connection: A pairwise connection with the issuer.
         :return: credential object

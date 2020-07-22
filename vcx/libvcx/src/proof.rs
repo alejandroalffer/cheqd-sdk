@@ -349,10 +349,6 @@ impl Proof {
         let agent_info = get_agent_info()?.pw_info(connection_handle)?;
         apply_agent_info(self, &agent_info);
 
-        let title = format!("{} wants you to share: {}",
-                            settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?,
-                            self.name);
-
         let proof_request = self.generate_proof_request_msg()?;
 
         let response = messages::send_message()
@@ -361,8 +357,8 @@ impl Proof {
             .msg_type(&RemoteMessageType::ProofReq)?
             .agent_did(&agent_info.pw_agent_did()?)?
             .agent_vk(&agent_info.pw_agent_vk()?)?
-            .set_title(&title)?
-            .set_detail(&title)?
+            .set_title(&self.name)?
+            .set_detail(&self.name)?
             .version(agent_info.version.clone())?
             .edge_agent_payload(&agent_info.my_pw_vk()?,
                                 &agent_info.their_pw_vk()?,

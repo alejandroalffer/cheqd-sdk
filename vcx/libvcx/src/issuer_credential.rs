@@ -161,18 +161,11 @@ impl IssuerCredential {
         Ok(error::SUCCESS.code_num)
     }
 
-    pub fn generate_credential_offer_msg(&mut self) -> VcxResult<(String, String)> {
+    pub fn generate_credential_offer_msg(&mut self) -> VcxResult<String> {
         let mut payload = Vec::new();
-
-        let connection_name = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?;
-
-        let payment = self.generate_payment_info()?;
-
-        let title = if let Some(x) = payment {
-            payload.push(json!(x));
-            format!("{} wants you to pay tokens for: {}", connection_name, self.credential_name)
-        } else {
-            format!("{} is offering you a credential: {}", connection_name, self.credential_name)
+        
+        if let Some(payment_info) = self.generate_payment_info()? {
+            payload.push(json!(payment_info));
         };
 
         let credential_offer = self.generate_credential_offer()?;
@@ -185,7 +178,7 @@ impl IssuerCredential {
 
         self.credential_offer = Some(credential_offer);
 
-        Ok((payload, title))
+        Ok(payload)
     }
 
     fn send_credential_offer(&mut self, connection_handle: u32) -> VcxResult<u32> {
@@ -205,7 +198,7 @@ impl IssuerCredential {
         let agent_info = get_agent_info()?.pw_info(connection_handle)?;
         apply_agent_info(self, &agent_info);
 
-        let (payload, title) = self.generate_credential_offer_msg()?;
+        let payload = self.generate_credential_offer_msg()?;
 
         debug!("credential offer data: {}", secret!(&payload));
 
@@ -223,8 +216,8 @@ impl IssuerCredential {
                 )?
                 .agent_did(&agent_info.pw_agent_did()?)?
                 .agent_vk(&agent_info.pw_agent_vk()?)?
-                .set_title(&title)?
-                .set_detail(&title)?
+                .set_title(&self.credential_name)?
+                .set_detail(&self.credential_name)?
                 .status_code(&MessageStatusCode::Accepted)?
                 .send_secure()
                 .map_err(|err| err.extend("could not send credential offer"))?;
@@ -697,7 +690,7 @@ pub fn from_string(credential_data: &str) -> VcxResult<u32> {
     ISSUER_CREDENTIAL_MAP.add(issuer_credential)
 }
 
-pub fn generate_credential_offer_msg(handle: u32) -> VcxResult<(String, String)> {
+pub fn generate_credential_offer_msg(handle: u32) -> VcxResult<String> {
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
             IssuerCredentials::Pending(ref mut obj) => obj.generate_credential_offer_msg(),

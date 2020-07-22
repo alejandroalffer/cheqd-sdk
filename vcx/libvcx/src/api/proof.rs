@@ -73,7 +73,7 @@ use indy_sys::CommandHandle;
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: Enterprise's personal identification for the user.
+/// source_id: Enterprise's personal identification for the proof, should be unique..
 ///
 /// requested_attrs: Describes requested attribute
 ///     {

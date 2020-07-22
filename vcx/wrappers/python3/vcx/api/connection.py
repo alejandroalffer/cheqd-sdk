@@ -159,7 +159,7 @@ class Connection(VcxStateful):
         Create a connection object, represents a single endpoint and can be used for sending and receiving
         credentials and proofs
 
-        :param source_id: Institution's unique ID for the connection
+        :param source_id: User's unique ID for the connection.
         :return: connection object
         Example:
         connection = await Connection.create(source_id)
@@ -187,7 +187,7 @@ class Connection(VcxStateful):
                You can use simple messages like Question but it cannot be used
                for Credential Issuance and Credential Presentation.
 
-        :param source_id: Institution's unique ID for the connection
+        :param source_id: User's unique ID for the connection.
         :param goal_code: a self-attested code the receiver may want to display to
                           the user or use in automatically deciding what to do with the out-of-band message.
         :param goal: a self-attested string that the receiver may want to display to the user about
@@ -222,7 +222,7 @@ class Connection(VcxStateful):
         credentials and proofs
 
         Invite details are provided by the entity offering a connection and generally pulled from a provided QRCode.
-        :param source_id: Institution's unique ID for the connection
+        :param source_id: User's unique ID for the connection.
         :param invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
             Invite format depends on communication method:
                 proprietary:
@@ -261,7 +261,7 @@ class Connection(VcxStateful):
             (equal to `vcx_connection_create_with_invite` function).
         2. Replies to the inviting side (equal to `vcx_connection_connect` function).
 
-        :param source_id: Institution's unique ID for the connection
+        :param source_id: User's unique ID for the connection.
         :param invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
             Invite format depends on communication method:
                 proprietary:
@@ -322,7 +322,7 @@ class Connection(VcxStateful):
         WARN: The user has to analyze the value of "request~attach" field yourself and
               create/handle the correspondent state object or send a reply once the connection is established.
 
-        :param source_id: Institution's personal identification for the Connection
+        :param source_id: User's unique ID for the connection.
         :param invite_details: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
             {
                 "@type": "https://didcomm.org/out-of-band/%VER/invitation",

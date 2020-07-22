@@ -86,7 +86,7 @@ class Proof(VcxStateful):
                      requested_predicates=None):
         """
          Create a new Proof object that requests a proof for an enterprise
-        :param source_id: Tag associated by user of sdk
+        :param source_id: Enterprise's personal identification for the proof, should be unique.
         :param name: Name of the Proof
         :param requested_attrs: Attributes associated with the Proof
            {
