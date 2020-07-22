@@ -242,7 +242,8 @@ impl ProverSM {
                                 return Some((uid, A2AMessage::PresentationAck(ack)));
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::PresentationReject(problem_report) => {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
@@ -355,9 +356,10 @@ impl ProverSM {
                         let thread = state.thread.clone()
                             .update_received_order(&connection.data.did_doc.id);
 
-                        let problem_report = state.problem_report.clone()
-                            .set_thread(thread.clone())
-                            .to_a2a_message();
+                        let problem_report = A2AMessage::PresentationReject(
+                            state.problem_report.clone()
+                                .set_thread(thread.clone())
+                        );
 
                         match state.presentation_request.service.clone() {
                             None => {
@@ -391,7 +393,7 @@ impl ProverSM {
                                     .set_comment(err.to_string())
                                     .set_thread(thread.clone());
 
-                                state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
+                                state.connection.data.send_message(&A2AMessage::PresentationReject(problem_report.clone()), &state.connection.agent)?;
                                 ProverState::Finished((state, problem_report, thread).into())
                             }
                         }
@@ -422,8 +424,8 @@ impl ProverSM {
             .set_thread(thread.clone());
 
         match presentation_request.service.clone() {
-            None => connection.data.send_message(&problem_report.to_a2a_message(), &connection.agent)?,
-            Some(service) => Connection::send_message_to_self_endpoint(&problem_report.to_a2a_message(), &service.into())?
+            None => connection.data.send_message(&A2AMessage::PresentationReject(problem_report), &connection.agent)?,
+            Some(service) => Connection::send_message_to_self_endpoint(&A2AMessage::PresentationReject(problem_report), &service.into())?
         }
 
         Ok(())
@@ -852,6 +854,19 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
                     "key_2".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
                     "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = prover.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
+            }
+
+            // Presentation Reject
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_2".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_3".to_string() => A2AMessage::PresentationReject(_problem_report())
                 );
 
                 let (uid, message) = prover.find_message_to_handle(messages).unwrap();

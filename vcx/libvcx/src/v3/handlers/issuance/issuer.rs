@@ -94,7 +94,8 @@ impl IssuerSM {
                                 }
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::CredentialReject(problem_report)=> {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
@@ -112,7 +113,8 @@ impl IssuerSM {
                                 return Some((uid, A2AMessage::CredentialAck(ack)));
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::CredentialReject(problem_report) => {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
@@ -187,7 +189,7 @@ impl IssuerSM {
                         .set_comment(String::from("CredentialProposal is not supported"))
                         .set_thread(thread.clone());
 
-                    state_data.connection.data.send_message(&problem_report.to_a2a_message(), &state_data.connection.agent)?;
+                    state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &state_data.connection.agent)?;
                     IssuerState::Finished((state_data, problem_report, thread).into())
                 }
                 CredentialIssuanceMessage::ProblemReport(problem_report) => {
@@ -222,7 +224,7 @@ impl IssuerSM {
                                 .set_comment(err.to_string())
                                 .set_thread(thread.clone());
 
-                            state_data.connection.data.send_message(&problem_report.to_a2a_message(), &connection.agent)?;
+                            state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.agent)?;
                             IssuerState::Finished((state_data, problem_report, thread).into())
                         }
                     }
@@ -593,6 +595,19 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
                     "key_2".to_string() => A2AMessage::CredentialAck(_ack()),
                     "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = issuer.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
+            }
+
+            // Credential Reject
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::CredentialAck(_ack()),
+                    "key_3".to_string() => A2AMessage::CredentialReject(_problem_report())
                 );
 
                 let (uid, message) = issuer.find_message_to_handle(messages).unwrap();

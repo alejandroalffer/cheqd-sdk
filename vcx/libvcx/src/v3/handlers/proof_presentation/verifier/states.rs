@@ -148,7 +148,8 @@ impl VerifierSM {
                                 return Some((uid, A2AMessage::PresentationProposal(proposal)));
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::PresentationReject(problem_report)=> {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
@@ -533,6 +534,19 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
                     "key_2".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
+            }
+
+            // Presentation Reject
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_2".to_string() => A2AMessage::PresentationAck(_ack()),
+                    "key_3".to_string() => A2AMessage::PresentationReject(_problem_report())
                 );
 
                 let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
