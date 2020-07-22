@@ -168,10 +168,14 @@ async def issue_credential(connection_to_alice):
 
     print("#14 Poll agency and wait for alice to send a credential request")
     credential_state = await credential.get_state()
-    while credential_state != State.RequestReceived:
+    while credential_state != State.RequestReceived and credential_state != State.Undefined:
         sleep(2)
         await credential.update_state()
         credential_state = await credential.get_state()
+
+    if credential_state == State.Undefined:
+        print("Credential Offer has been rejected")
+        return
 
     print("#17 Issue credential to alice")
     await credential.send_credential(connection_to_alice)
@@ -179,10 +183,15 @@ async def issue_credential(connection_to_alice):
     print("#18 Wait for alice to accept credential")
     await credential.update_state()
     credential_state = await credential.get_state()
-    while credential_state != State.Accepted:
+    while credential_state != State.Accepted and credential_state != State.Undefined:
         sleep(2)
         await credential.update_state()
         credential_state = await credential.get_state()
+
+    if credential_state == State.Accepted:
+        print("Credential has been issued")
+    elif credential_state == State.Undefined:
+        print("Credential has been rejected")
 
 
 async def ask_for_proof(connection_to_alice, institution_did):
@@ -200,10 +209,15 @@ async def ask_for_proof(connection_to_alice, institution_did):
 
     print("#21 Poll agency and wait for alice to provide proof")
     proof_state = await proof.get_state()
-    while proof_state != State.Accepted:
+    while proof_state != State.Accepted and proof_state != State.Undefined:
         sleep(2)
         await proof.update_state()
         proof_state = await proof.get_state()
+        print(proof_state)
+
+    if proof_state == State.Undefined:
+        print("Prof Request has been rejected")
+        return
 
     print("#27 Process the proof provided by alice")
     await proof.get_proof(connection_to_alice)
