@@ -128,15 +128,15 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
 
     spawn(move || {
         let pool_open_thread = thread::spawn(|| {
-            if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
-                init_pool()
-                    .map(|res|{
-                        info!("Init Pool Successful.");
-                        res
-                    })
-            } else {
-                Ok(())
+            if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_err() {
+                return Ok(());
             }
+
+            init_pool()
+                .map(|res| {
+                    info!("Init Pool Successful.");
+                    res
+                })
         });
 
         match wallet::open_wallet(&wallet_name,
@@ -216,6 +216,61 @@ pub extern fn vcx_init_minimal(config: *const c_char) -> u32 {
     settings::log_settings();
 
     trace!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
+
+    error::SUCCESS.code_num
+}
+
+/// Connect to a Pool Ledger
+///
+/// You can deffer connecting to the Pool Ledger during library initialization (vcx_init or vcx_init_with_config)
+/// to decrease the taken time by omitting `genesis_path` field in config JSON.
+/// Next, you can use this function (for instance as a background task) to perform a connection to the Pool Ledger.
+///
+/// Note: Pool must be already initialized before sending any request to the Ledger.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// genesis_path: string - path to pool ledger genesis transactions.
+///
+/// cb: Callback that provides no value
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+pub extern fn vcx_init_pool(command_handle: CommandHandle,
+                            genesis_path: *const c_char,
+                            cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                 err: u32)>) -> u32 {
+    info!("vcx_init_pool >>>");
+
+    check_useful_c_str!(genesis_path, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_init_pool(command_handle: {}, genesis_path: {:?})",
+           command_handle, genesis_path);
+
+    settings::set_config_value(settings::CONFIG_GENESIS_PATH, &genesis_path);
+
+    spawn(move || {
+        match init_pool() {
+            Ok(()) => {
+                trace!("vcx_init_pool_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                error!("vcx_init_pool_cb(command_handle: {}, rc: {})",
+                       command_handle, e);
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
 
     error::SUCCESS.code_num
 }

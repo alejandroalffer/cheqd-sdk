@@ -1538,6 +1538,30 @@ vcx_error_t vcx_init_with_config(vcx_command_handle_t command_handle,
                               const char *config,
                               void (*cb)(vcx_command_handle_t, vcx_error_t));
 
+/// Connect to a Pool Ledger
+///
+/// You can deffer connecting to the Pool Ledger during library initialization (vcx_init or vcx_init_with_config)
+/// to decrease the taken time by omitting `genesis_path` field in config JSON.
+/// Next, you can use this function (for instance as a background task) to perform a connection to the Pool Ledger.
+///
+/// Note: Pool must be already initialized before sending any request to the Ledger.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// genesis_path: string - path to pool ledger genesis transactions.
+///
+/// cb: Callback that provides no value
+///
+/// #Returns
+/// Error code as u32
+vcx_error_t vcx_init_pool(vcx_command_handle_t command_handle,
+                          const char *genesis_path,
+                          void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 // Create a Issuer Credential object that provides a credential for an enterprise's user
 // Assumes a credential definition has been written to the ledger.
 //

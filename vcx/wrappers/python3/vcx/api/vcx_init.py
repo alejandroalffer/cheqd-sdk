@@ -89,3 +89,37 @@ def vcx_init_minimal(config_string: str) -> None:
 
     logger.debug("vcx_init_minimal completed")
     return result
+
+async def vcx_init_pool(genesis_path: str) -> None:
+    """
+    Connect to a Pool Ledger
+   
+    You can deffer connecting to the Pool Ledger during library initialization (vcx_init or vcx_init_with_config)
+    to decrease the taken time by omitting `genesis_path` field in config JSON.
+    Next, you can use this function (for instance as a background task) to perform a connection to the Pool Ledger.
+   
+    Note: Pool must be already initialized before sending any request to the Ledger.
+   
+    Note: EXPERIMENTAL
+
+    :param genesis_path: String - path to pool ledger genesis transactions.
+
+    Example:
+    await vcx_init_pool('/home/username/docker.txn')
+
+    :return: None
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_init_pool, "cb"):
+        logger.debug("vcx_init_pool: Creating callback")
+        vcx_init_pool.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+    c_genesis_path = c_char_p(genesis_path.encode('utf-8'))
+
+    result = await do_call('vcx_init_pool',
+                           c_genesis_path,
+                           vcx_init_pool.cb)
+
+    logger.debug("vcx_init_pool completed")
+    return result

@@ -337,6 +337,24 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 }
 
+- (void)initPool:(NSString *)genesisPath
+            completion:(void (^)(NSError *error))completion
+{
+    const char *genesisPath_char = [genesisPath cStringUsingEncoding:NSUTF8StringEncoding];
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
+    vcx_error_t ret = vcx_init_pool(handle, genesisPath_char, VcxWrapperCommonCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSLog(@"ERROR: initPool: calling completion");
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+
+}
+
 - (void)agentProvisionAsync:(NSString *)config
                completion:(void (^)(NSError *error, NSString *config))completion
 {

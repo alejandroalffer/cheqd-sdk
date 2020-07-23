@@ -126,7 +126,51 @@ public class VcxApi extends VcxJava.API {
 
         return result;
     }
+    private static Callback vcxInitPoolCB = new Callback() {
 
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommandHandle, int err) {
+            logger.debug("callback() called with: xcommandHandle = [" + xcommandHandle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(null);
+
+        }
+    };
+
+    /**
+     * Connect to a Pool Ledger
+     *
+     * You can deffer connecting to the Pool Ledger during library initialization (vcx_init or vcx_init_with_config)
+     * to decrease the taken time by omitting `genesis_path` field in config JSON.
+     * Next, you can use this function (for instance as a background task) to perform a connection to the Pool Ledger.
+     *
+     * Note: Pool must be already initialized before sending any request to the Ledger.
+     *
+     * EXPERIMENTAL
+     *
+     * @param  genesisPath     string path to pool ledger genesis transactions.
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Void> vcxInitPool(String genesisPath) throws VcxException {
+        logger.debug("vcxInitPool() called with: genesisPath = [{}]", genesisPath);
+        ParamGuard.notNull(genesisPath, "genesisPath");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_init_pool(
+                commandHandle,
+                genesisPath,
+                vcxInitPoolCB);
+        checkResult(result);
+
+        return future;
+    }
+    
     /**
      * Reset libvcx to a pre-configured state, releasing/deleting any handles and freeing memory
      *

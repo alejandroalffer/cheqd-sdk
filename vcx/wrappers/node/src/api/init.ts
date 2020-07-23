@@ -95,3 +95,44 @@ export async function initVcxWithConfig (config: string, options: IInitVCXOption
 export function initMinimal (config: string): number {
   return rustAPI().vcx_init_minimal(config)
 }
+
+/**
+ * Connect to a Pool Ledger
+ *
+ * You can deffer connecting to the Pool Ledger during library initialization (vcx_init or vcx_init_with_config)
+ * to decrease the taken time by omitting `genesis_path` field in config JSON.
+ * Next, you can use this function (for instance as a background task) to perform a connection to the Pool Ledger.
+ *
+ * Note: Pool must be already initialized before sending any request to the Ledger.
+ *
+ * Note: EXPERIMENTAL
+ *
+ * Example:
+ * ```
+ * await initPool('/home/username/genesis.txn')
+ * ```
+ */
+export async function initPool (genesisPath: string): Promise<void> {
+  try {
+    return await createFFICallbackPromise<void>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_init_pool(0, genesisPath, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32', 'uint32'],
+        (xhandle: number, err: number) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve()
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}

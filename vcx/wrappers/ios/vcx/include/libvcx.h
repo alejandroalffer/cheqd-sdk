@@ -70,6 +70,8 @@ vcx_error_t vcx_agent_update_info(vcx_command_handle_t handle, const char *json,
 
 vcx_error_t vcx_init_with_config(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 
+vcx_error_t vcx_init_pool(vcx_command_handle_t command_handle, const char *genesis_path, void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 vcx_error_t vcx_init(vcx_command_handle_t handle, const char *config_path, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 //pub extern fn vcx_init (command_handle: u32, config_path:*const c_char, cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32
 
