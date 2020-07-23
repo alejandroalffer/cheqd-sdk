@@ -1,6 +1,7 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
 use messages::thread::Thread;
 use std::collections::HashMap;
+use v3::messages::status::Status;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ProblemReport {
@@ -140,6 +141,20 @@ pub enum Impact {
     Thread,
     #[serde(rename = "connection")]
     Connection,
+}
+
+pub enum Reason {
+    Fail,
+    Reject,
+}
+
+impl Reason {
+    pub fn to_status(&self, problem_report: ProblemReport) -> Status {
+        match self {
+            Reason::Fail => Status::Failed(problem_report),
+            Reason::Reject => Status::Rejected,
+        }
+    }
 }
 
 #[cfg(test)]

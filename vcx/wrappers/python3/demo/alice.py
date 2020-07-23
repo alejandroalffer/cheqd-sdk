@@ -157,7 +157,7 @@ async def reject_offer(connection_to_faber, credential):
 
     print("#16 Check credential offer state")
     credential_state = await credential.get_state()
-    assert credential_state == State.Undefined
+    assert credential_state == State.Rejected
 
 
 async def create_proof(connection_to_faber, proof):
@@ -191,7 +191,7 @@ async def reject_proof(connection_to_faber, proof):
 
     print("#16 Check proof request state")
     proof_state = await proof.get_state()
-    assert proof_state == State.Undefined
+    assert proof_state == State.Rejected
 
 
 if __name__ == '__main__':

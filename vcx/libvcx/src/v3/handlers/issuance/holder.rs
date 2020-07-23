@@ -6,7 +6,7 @@ use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential_ack::CredentialAck;
-use v3::messages::error::{ProblemReport, ProblemReportCodes};
+use v3::messages::error::{ProblemReport, ProblemReportCodes, Reason};
 use v3::messages::a2a::A2AMessage;
 use v3::messages::status::Status;
 use v3::handlers::connection::types::CompletedConnection;
@@ -44,6 +44,7 @@ impl HolderSM {
             HolderState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
+                    Status::Rejected => VcxStateType::VcxStateRejected as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
             }
@@ -141,7 +142,7 @@ impl HolderSM {
                                 .set_thread(thread.clone());
 
                             connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.agent)?;
-                            HolderState::Finished((state_data, problem_report, thread).into())
+                            HolderState::Finished((state_data, problem_report, thread, Reason::Fail).into())
                         }
                     }
                 }
@@ -152,7 +153,7 @@ impl HolderSM {
 
                     let problem_report = _reject_credential(&connection, &thread, comment)?;
 
-                    HolderState::Finished((state_data, problem_report, thread).into())
+                    HolderState::Finished((state_data, problem_report, thread, Reason::Reject).into())
                 }
                 _ => {
                     warn!("Credential Issuance can only start on holder side with Credential Offer");
@@ -181,7 +182,7 @@ impl HolderSM {
                                 .set_thread(thread.clone());
 
                             state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &state_data.connection.agent)?;
-                            HolderState::Finished((state_data, problem_report, thread).into())
+                            HolderState::Finished((state_data, problem_report, thread, Reason::Fail).into())
                         }
                     }
                 }
@@ -189,7 +190,7 @@ impl HolderSM {
                     let thread = state_data.thread.clone()
                         .update_received_order(&state_data.connection.data.did_doc.id);
 
-                    HolderState::Finished((state_data, problem_report, thread).into())
+                    HolderState::Finished((state_data, problem_report, thread, Reason::Fail).into())
                 }
                 CredentialIssuanceMessage::CredentialRejectSend((connection_handle, comment)) => {
                     let connection = ::connection::get_completed_connection(connection_handle)?;
@@ -200,7 +201,7 @@ impl HolderSM {
 
                     let problem_report = _reject_credential(&connection, &thread, comment)?;
 
-                    HolderState::Finished((state_data, problem_report, thread).into())
+                    HolderState::Finished((state_data, problem_report, thread, Reason::Reject).into())
                 }
                 _ => {
                     warn!("In this state Credential Issuance can accept only Credential and Problem Report");
@@ -410,7 +411,7 @@ mod test {
 
             match holder_sm.state {
                 HolderState::Finished(state) => {
-                    assert_eq!(2, state.status.code());
+                    assert_eq!(3, state.status.code());
                     Ok(())
                 }
                 other => Err(format!("State expected to be Finished, but: {:?}", other))
@@ -476,7 +477,7 @@ mod test {
 
             match holder_sm.state {
                 HolderState::Finished(state) => {
-                    assert_eq!(2, state.status.code());
+                    assert_eq!(3, state.status.code());
                     Ok(())
                 }
                 other => Err(format!("State expected to be Finished, but: {:?}", other))
