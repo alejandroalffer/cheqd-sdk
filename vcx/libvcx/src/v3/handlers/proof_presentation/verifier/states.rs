@@ -265,6 +265,13 @@ impl VerifierSM {
         }
     }
 
+    pub fn presentation_status(&self) -> u32 {
+        match self.state {
+            VerifierState::Finished(ref state) => state.status.code(),
+            _ => Status::Undefined.code()
+        }
+    }
+
     pub fn has_transitions(&self) -> bool {
         match self.state {
             VerifierState::Initiated(_) => false,

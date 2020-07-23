@@ -44,6 +44,11 @@ impl Verifier {
         self.verifier_sm.state()
     }
 
+    pub fn presentation_status(&self) -> u32 {
+        trace!("Verifier::presentation_state >>>");
+        self.verifier_sm.presentation_status()
+    }
+
     pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
         trace!("Verifier::update_state >>> message: {:?}", message);
 

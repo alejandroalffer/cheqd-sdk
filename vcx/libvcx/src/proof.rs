@@ -533,7 +533,7 @@ pub fn get_proof_state(handle: u32) -> VcxResult<u32> {
         match obj {
             Proofs::Pending(ref obj) => Ok(obj.get_proof_state()),
             Proofs::V1(ref obj) => Ok(obj.get_proof_state()),
-            Proofs::V3(ref obj) => Ok(obj.state())
+            Proofs::V3(ref obj) => Ok(obj.presentation_status())
         }
     })
 }
