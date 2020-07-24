@@ -340,6 +340,24 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                                   withHash:(NSString *)hash
                              withMechanism:(NSString *)mechanism
                              withTimestamp:(long)timestamp;
+
+/**
+ Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+ This function performs two steps:
+     1) Retrieves the list of all credentials stored in the opened wallet.
+     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+        correspondent to received credentials from the connected Ledger.
+
+ This helper function can be used, for instance as a background task, to refresh library cache.
+ This allows us to reduce the time taken for Proof generation by using already cached entities instead of queering the Ledger.
+
+ NOTE: Library must be already initialized (wallet and pool must be opened).
+
+ Returns: void
+*/
+
+- (void)fetchPublicEntities:(void (^)(NSError *error))completion;
+
 - (void) createWalletBackup:(NSString *)sourceID
                   backupKey:(NSString *)backupKey
                  completion:(void (^)(NSError *error, NSInteger walletBackupHandle))completion;

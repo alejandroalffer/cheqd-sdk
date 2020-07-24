@@ -404,3 +404,41 @@ export async function downloadMessage ({ uid }: IDownloadMessage): Promise<strin
     throw new VCXInternalError(err)
   }
 }
+
+export async function fetchPublicEntities (): Promise<void> {
+  /**
+   * Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+   * This function performs two steps:
+   *     1) Retrieves the list of all credentials stored in the opened wallet.
+   *     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+   *        correspondent to received credentials from the connected Ledger.
+   *
+   * This helper function can be used, for instance as a background task, to refresh library cache.
+   * This allows us to reduce the time taken for Proof generation by using already cached entities
+   * instead of queering the Ledger.
+   *
+   * NOTE: Library must be already initialized (wallet and pool must be opened).
+   */
+  try {
+    return await createFFICallbackPromise<void>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_fetch_public_entities(0, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32'],
+        (xhandle: number, err: number) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve()
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}

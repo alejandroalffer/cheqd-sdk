@@ -6,6 +6,7 @@ import {
   downloadMessage,
   downloadMessages,
   endorseTransaction,
+  fetchPublicEntities,
   getLedgerAuthorAgreement,
   getLedgerFees,
   getVersion,
@@ -141,6 +142,12 @@ describe('utils:', () => {
     it('success', async () => {
       const message = await downloadMessage({ uid: 'asdf' })
       assert.ok(message)
+    })
+  })
+
+  describe('fetchPublicEntities:', () => {
+    it('success', async () => {
+      await fetchPublicEntities()
     })
   })
 

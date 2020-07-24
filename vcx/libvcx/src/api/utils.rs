@@ -802,6 +802,55 @@ pub extern fn vcx_endorse_transaction(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+/// This function performs two steps:
+///     1) Retrieves the list of all credentials stored in the opened wallet.
+///     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+///        correspondent to received credentials from the connected Ledger.
+///
+/// This helper function can be used, for instance as a background task, to refresh library cache.
+/// This allows us to reduce the time taken for Proof generation by using already cached entities instead of queering the Ledger.
+///
+/// NOTE: Library must be already initialized (wallet and pool must be opened).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides result code
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_fetch_public_entities(command_handle: CommandHandle,
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                             err: u32)>) -> u32 {
+    info!("vcx_fetch_public_entities >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    trace!("vcx_fetch_public_entities(command_handle: {})", command_handle);
+
+    spawn(move || {
+        match ::utils::libindy::anoncreds::fetch_public_entities() {
+            Ok(()) => {
+                trace!("vcx_fetch_public_entities_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_fetch_public_entities_cb(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

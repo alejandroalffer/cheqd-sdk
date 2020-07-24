@@ -9,6 +9,7 @@ pub mod crypto;
 pub mod payments;
 pub mod cache;
 pub mod logger;
+pub mod types;
 
 pub mod error_codes;
 
