@@ -30,7 +30,7 @@ public class IssuerApi extends VcxJava.API {
     /**
      * Create a IssuerCredential object that provides a credential for an enterprise's user
      *
-     * @param  sourceId             Institution's personal identification for the credential.
+     * @param  sourceId             Enterprise's personal identification for the credential, should be unique.
      * @param  credentialDefHandle  handle pointing to CredentialDefinition to use for issuance. 
      *                              It must be already stored in the wallet and written to the ledger.
      * @param  issuerId             DID corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger

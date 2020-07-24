@@ -32,7 +32,7 @@ public class DisclosedProofApi extends VcxJava.API {
     /**
      *  Create a DisclosedProof object based off of a known message id (containing Proof Request) for a given connection.
      *
-     * @param  sourceId             Institution's personal identification for the credential.
+     * @param  sourceId             Institution's personal identification for the proof, should be unique.
      * @param  connectionHandle     handle pointing to a Connection object to query for Proof Request message.
      * @param  msgId                id of the message on Agency that contains the Proof Request.
      *                              
@@ -414,7 +414,7 @@ public class DisclosedProofApi extends VcxJava.API {
     /**
      * Create a DisclosedProof object for fulfilling a corresponding proof request.
      *
-     * @param  sourceId         Institution's personal identification for the credential.
+     * @param  sourceId         Institution's personal identification for the proof, should be unique.
      * @param  proofRequest     received Proof Request message. The format of Proof Request depends on communication method:
      *                          <pre>
      *                          {@code

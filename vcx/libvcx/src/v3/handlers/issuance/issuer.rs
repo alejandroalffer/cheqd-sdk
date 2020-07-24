@@ -153,10 +153,7 @@ impl IssuerSM {
                 CredentialIssuanceMessage::CredentialInit(connection_handle) => {
                     let cred_offer = libindy_issuer_create_credential_offer(&state_data.cred_def_id)?;
                     let cred_offer_msg = CredentialOffer::create()
-                        .set_comment(Some(format!("{} is offering you a credential: {}",
-                                                  ::settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME)?,
-                                                  state_data.credential_name.clone().unwrap_or_default()
-                        )))
+                        .set_comment(state_data.credential_name.clone())
                         .set_offers_attach(&cred_offer)?;
                     let cred_offer_msg = state_data.append_credential_preview(cred_offer_msg)?;
 

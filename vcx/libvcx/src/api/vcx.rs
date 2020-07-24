@@ -1083,7 +1083,7 @@ mod tests {
         let my_pw_did = ::connection::get_pw_did(connection_handle).unwrap();
         let their_pw_did = ::connection::get_their_pw_did(connection_handle).unwrap();
 
-        let (offer, _) = ::issuer_credential::generate_credential_offer_msg(cred_handle).unwrap();
+        let offer = ::issuer_credential::generate_credential_offer_msg(cred_handle).unwrap();
         let mycred = ::credential::credential_create_with_offer("test1", &offer).unwrap();
         let request = ::credential::generate_credential_request_msg(mycred, &my_pw_did, &their_pw_did).unwrap();
         ::issuer_credential::update_state(cred_handle, Some(request)).unwrap();

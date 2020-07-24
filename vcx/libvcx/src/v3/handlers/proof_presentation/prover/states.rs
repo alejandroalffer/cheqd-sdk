@@ -277,6 +277,7 @@ impl ProverSM {
                         match state.build_presentation(&credentials, &self_attested_attrs) {
                             Ok(presentation) => {
                                 let presentation = Presentation::create()
+                                    .set_comment(state.presentation_request.comment.clone())
                                     .ask_for_ack()
                                     .set_thread(thread.clone())
                                     .set_presentations_attach(presentation)?;

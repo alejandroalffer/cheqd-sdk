@@ -190,7 +190,7 @@ pub extern fn vcx_connection_delete_connection(command_handle: CommandHandle,
 /// # Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: institution's personal identification for the connection
+/// source_id: user personal identification for the connection, should be unique.
 ///
 /// cb: Callback that provides connection handle and error status of request
 ///
@@ -233,7 +233,7 @@ pub extern fn vcx_connection_create(command_handle: CommandHandle,
 /// # Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: institution's personal identification for the connection
+/// source_id: user personal identification for the connection, should be unique.
 ///
 /// invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
 ///
@@ -298,7 +298,7 @@ pub extern fn vcx_connection_create_with_invite(command_handle: CommandHandle,
 /// # Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: institution's personal identification for the Connection. It'll be used as a label in Invitation.
+/// source_id: user personal identification for the connection, should be unique.
 ///
 /// goal_code: Optional<string> - a self-attested code the receiver may want to display to
 ///                               the user or use in automatically deciding what to do with the out-of-band message.
@@ -374,7 +374,7 @@ pub extern fn vcx_connection_create_outofband(command_handle: CommandHandle,
 /// # Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: institution's personal identification for the Connection
+/// source_id: user personal identification for the connection, should be unique.
 ///
 /// invite: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
 ///
@@ -461,7 +461,7 @@ pub extern fn vcx_connection_create_with_outofband_invitation(command_handle: Co
 /// # Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: institution's personal identification for the connection.
+/// source_id: user personal identification for the connection, should be unique.
 ///
 /// invite_details: a string representing a json object which is provided by an entity
 ///     that wishes to make a connection.

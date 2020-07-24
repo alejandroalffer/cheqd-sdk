@@ -17,12 +17,13 @@ use v3::messages::a2a::protocol_registry::ProtocolRegistry;
 use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 use v3::messages::outofband::handshake_reuse::HandshakeReuse;
 use v3::messages::outofband::handshake_reuse_accepted::HandshakeReuseAccepted;
+use v3::handlers::connection::types::{CompletedConnection, OutofbandMeta, Invitations};
 
 use std::collections::HashMap;
 
 use error::prelude::*;
 use messages::thread::Thread;
-use v3::handlers::connection::types::{CompletedConnection, OutofbandMeta, Invitations};
+use settings;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeSM {
@@ -235,13 +236,15 @@ impl From<(CompleteState, Vec<ProtocolDescriptor>)> for CompleteState {
 }
 
 impl InitializedState {
-    fn inviter_handle_connection(self, source_id: &str, agent_info: &AgentInfo) -> VcxResult<ActorDidExchangeState> {
-        trace!("InvitedState:inviter_handle_connection >>> source_id: {:?}", source_id);
+    fn prepare_invitation(self, source_id: &str, agent_info: &AgentInfo) -> VcxResult<ActorDidExchangeState> {
+        trace!("InvitedState:prepare_invitation >>> source_id: {:?}", source_id);
+
+        let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
 
         let state = match self.outofband_meta.clone() {
             None => {
                 let invite: Invitation = Invitation::create()
-                    .set_label(source_id.to_string())
+                    .set_label(label)
                     .set_service_endpoint(agent_info.agency_endpoint()?)
                     .set_recipient_keys(agent_info.recipient_keys())
                     .set_routing_keys(agent_info.routing_keys()?);
@@ -250,7 +253,7 @@ impl InitializedState {
             }
             Some(outofband_meta) => {
                 let invite: OutofbandInvitation = OutofbandInvitation::create()
-                    .set_label(source_id.to_string())
+                    .set_label(label)
                     .set_opt_goal_code(outofband_meta.goal_code)
                     .set_opt_goal(outofband_meta.goal)
                     .set_handshake(outofband_meta.handshake)
@@ -651,7 +654,7 @@ impl DidExchangeSM {
                         match message {
                             DidExchangeMessages::Connect() => {
                                 agent_info = agent_info.create_agent()?;
-                                state.inviter_handle_connection(&source_id, &agent_info)?
+                                state.prepare_invitation(&source_id, &agent_info)?
                             }
                             _ => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Initialized(state))
@@ -788,8 +791,10 @@ impl DidExchangeSM {
                             DidExchangeMessages::Connect() => {
                                 agent_info = agent_info.create_agent()?;
 
+                                let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
+
                                 let request = Request::create()
-                                    .set_label(source_id.to_string())
+                                    .set_label(label)
                                     .set_did(agent_info.pw_did.to_string())
                                     .set_service_endpoint(agent_info.agency_endpoint()?)
                                     .set_keys(agent_info.recipient_keys(), agent_info.routing_keys()?);

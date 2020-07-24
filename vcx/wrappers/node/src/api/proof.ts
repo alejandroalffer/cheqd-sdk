@@ -70,7 +70,7 @@ import { VCXBaseWithState } from './vcx-base-with-state'
  * @interface
  */
 export interface IProofCreateData {
-  // Enterprise's personal identification for the user.
+  // Enterprise's personal identification for the proof, should be unique.
   sourceId: string,
   //  Describes requested attribute
   attrs: IProofAttr[],

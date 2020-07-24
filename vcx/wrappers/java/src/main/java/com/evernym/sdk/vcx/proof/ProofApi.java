@@ -29,7 +29,7 @@ public class ProofApi extends VcxJava.API {
     /**
      * Create a new Proof object that requests a proof for an enterprise
      *
-     * @param  sourceId             Enterprise's personal identification for the user.
+     * @param  sourceId             Enterprise's personal identification for the proof, should be unique.
      * @param  requestedAttrs       Describes the list of requested attribute
      *     [{
      *         "name": Optional(string), // attribute name, (case insensitive and ignore spaces)

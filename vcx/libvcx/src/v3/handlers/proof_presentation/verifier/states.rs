@@ -180,12 +180,9 @@ impl VerifierSM {
                             state.presentation_request_data.clone()
                                 .set_format_version_for_did(&connection.agent.pw_did, &connection.data.did_doc.id)?;
 
-                        let title = format!("{} wants you to share {}",
-                                            ::settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME)?, presentation_request.name);
-
                         let presentation_request =
                             PresentationRequest::create()
-                                .set_comment(title)
+                                .set_comment(presentation_request.name.clone())
                                 .set_request_presentations_attach(&presentation_request)?;
 
                         let thread = Thread::new()
@@ -265,6 +262,13 @@ impl VerifierSM {
                     _ => VcxStateType::VcxStateNone as u32,
                 }
             }
+        }
+    }
+
+    pub fn presentation_status(&self) -> u32 {
+        match self.state {
+            VerifierState::Finished(ref state) => state.status.code(),
+            _ => Status::Undefined.code()
         }
     }
 
