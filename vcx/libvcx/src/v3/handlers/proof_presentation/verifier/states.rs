@@ -5,7 +5,7 @@ use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::{PresentationRequest, PresentationRequestData};
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::proof_presentation::presentation_ack::PresentationAck;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, ProblemReportCodes};
 use v3::messages::status::Status;
 use proof::Proof;
 
@@ -148,7 +148,8 @@ impl VerifierSM {
                                 return Some((uid, A2AMessage::PresentationProposal(proposal)));
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::PresentationReject(problem_report)=> {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
@@ -212,7 +213,8 @@ impl VerifierSM {
 
                                 let problem_report =
                                     ProblemReport::create()
-                                        .set_comment(err.to_string())
+                                        .set_description(ProblemReportCodes::InvalidPresentation)
+                                        .set_comment(format!("error occurred: {:?}", err))
                                         .set_thread(thread.clone());
 
                                 state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
@@ -233,7 +235,8 @@ impl VerifierSM {
 
                         let problem_report =
                             ProblemReport::create()
-                                .set_comment(String::from("PresentationProposal is not supported"))
+                                .set_description(ProblemReportCodes::Unimplemented)
+                                .set_comment(String::from("presentation-proposal message is not supported"))
                                 .set_thread(thread.clone());
 
                         state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
@@ -533,6 +536,19 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
                     "key_2".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
+            }
+
+            // Presentation Reject
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_2".to_string() => A2AMessage::PresentationAck(_ack()),
+                    "key_3".to_string() => A2AMessage::PresentationReject(_problem_report())
                 );
 
                 let (uid, message) = verifier.find_message_to_handle(messages).unwrap();

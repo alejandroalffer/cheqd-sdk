@@ -2,7 +2,7 @@ use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential::Credential;
 use v3::messages::status::Status;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, Reason};
 use v3::handlers::connection::types::CompletedConnection;
 use messages::thread::Thread;
 
@@ -238,27 +238,27 @@ impl From<(RequestSentState, String, Credential, Thread)> for FinishedHolderStat
     }
 }
 
-impl From<(RequestSentState, ProblemReport, Thread)> for FinishedHolderState {
-    fn from((_, problem_report, thread): (RequestSentState, ProblemReport, Thread)) -> Self {
+impl From<(RequestSentState, ProblemReport, Thread, Reason)> for FinishedHolderState {
+    fn from((_, problem_report, thread, reason): (RequestSentState, ProblemReport, Thread, Reason)) -> Self {
         trace!("HolderSM: transit state from RequestSentState to FinishedHolderState with ProblemReport: {:?}", problem_report);
         trace!("Thread: {:?}", thread);
         FinishedHolderState {
             cred_id: None,
             credential: None,
-            status: Status::Failed(problem_report),
+            status: reason.to_status(problem_report),
             thread,
         }
     }
 }
 
-impl From<(OfferReceivedState, ProblemReport, Thread)> for FinishedHolderState {
-    fn from((_state, problem_report, thread): (OfferReceivedState, ProblemReport, Thread)) -> Self {
+impl From<(OfferReceivedState, ProblemReport, Thread, Reason)> for FinishedHolderState {
+    fn from((_state, problem_report, thread, reason): (OfferReceivedState, ProblemReport, Thread, Reason)) -> Self {
         trace!("HolderSM: transit state from OfferReceivedState to FinishedHolderState with ProblemReport: {:?}", problem_report);
         trace!("Thread: {:?}", problem_report.thread);
         FinishedHolderState {
             cred_id: None,
             credential: None,
-            status: Status::Failed(problem_report),
+            status: reason.to_status(problem_report),
             thread,
         }
     }

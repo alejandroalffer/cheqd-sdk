@@ -40,7 +40,8 @@ impl From<A2AMessage> for CredentialIssuanceMessage {
             A2AMessage::Ack(ack) | A2AMessage::CredentialAck(ack) => {
                 CredentialIssuanceMessage::CredentialAck(ack)
             },
-            A2AMessage::CommonProblemReport(report) => {
+            A2AMessage::CommonProblemReport(report) |
+            A2AMessage::CredentialReject(report)  => {
                 CredentialIssuanceMessage::ProblemReport(report)
             },
             _ => {

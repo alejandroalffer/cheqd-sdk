@@ -4,7 +4,7 @@ use v3::handlers::issuance::states::{IssuerState, InitialState, RequestReceivedS
 use v3::messages::a2a::A2AMessage;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential::Credential;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, ProblemReportCodes};
 use v3::messages::mime_type::MimeType;
 use v3::messages::status::Status;
 use messages::thread::Thread;
@@ -94,7 +94,8 @@ impl IssuerSM {
                                 }
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::CredentialReject(problem_report)=> {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
@@ -112,7 +113,8 @@ impl IssuerSM {
                                 return Some((uid, A2AMessage::CredentialAck(ack)));
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::CredentialReject(problem_report) => {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
@@ -184,10 +186,11 @@ impl IssuerSM {
                         .update_received_order(&state_data.connection.data.did_doc.id);
 
                     let problem_report = ProblemReport::create()
-                        .set_comment(String::from("CredentialProposal is not supported"))
+                        .set_description(ProblemReportCodes::Unimplemented)
+                        .set_comment(String::from("credential-proposal message is not supported"))
                         .set_thread(thread.clone());
 
-                    state_data.connection.data.send_message(&problem_report.to_a2a_message(), &state_data.connection.agent)?;
+                    state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &state_data.connection.agent)?;
                     IssuerState::Finished((state_data, problem_report, thread).into())
                 }
                 CredentialIssuanceMessage::ProblemReport(problem_report) => {
@@ -219,10 +222,11 @@ impl IssuerSM {
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
-                                .set_comment(err.to_string())
+                                .set_description(ProblemReportCodes::InvalidCredentialRequest)
+                                .set_comment(format!("error occurred: {:?}", err))
                                 .set_thread(thread.clone());
 
-                            state_data.connection.data.send_message(&problem_report.to_a2a_message(), &connection.agent)?;
+                            state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.agent)?;
                             IssuerState::Finished((state_data, problem_report, thread).into())
                         }
                     }
@@ -593,6 +597,19 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
                     "key_2".to_string() => A2AMessage::CredentialAck(_ack()),
                     "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = issuer.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
+            }
+
+            // Credential Reject
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::CredentialAck(_ack()),
+                    "key_3".to_string() => A2AMessage::CredentialReject(_problem_report())
                 );
 
                 let (uid, message) = issuer.find_message_to_handle(messages).unwrap();

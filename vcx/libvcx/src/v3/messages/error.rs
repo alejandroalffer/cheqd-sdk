@@ -1,6 +1,7 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
 use messages::thread::Thread;
 use std::collections::HashMap;
+use v3::messages::status::Status;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ProblemReport {
@@ -31,7 +32,7 @@ pub struct ProblemReport {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub problem_items: Option<HashMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub comment: Option<String>
+    pub comment: Option<String>,
 }
 
 impl ProblemReport {
@@ -39,10 +40,10 @@ impl ProblemReport {
         ProblemReport::default()
     }
 
-    pub fn set_description(mut self, code: u32) -> Self {
+    pub fn set_description(mut self, code: ProblemReportCodes) -> Self {
         self.description = Some(Description {
-            en: None,
-            code
+            en: code.en(),
+            code: code.code(),
         });
         self
     }
@@ -60,7 +61,50 @@ a2a_message!(ProblemReport, CommonProblemReport);
 pub struct Description {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub en: Option<String>,
-    pub code: u32,
+    pub code: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum ProblemReportCodes {
+    Unimplemented,
+    InvalidCredentialOffer,
+    InvalidCredentialRequest,
+    InvalidCredential,
+    CredentialRejected,
+    InvalidPresentationRequest,
+    InvalidPresentation,
+    PresentationRejected,
+    Other(String)
+}
+
+impl ProblemReportCodes {
+    fn code(&self) -> String {
+        match self {
+            ProblemReportCodes::Unimplemented => String::from("unimplemented"),
+            ProblemReportCodes::InvalidCredentialOffer => String::from("invalid-credential-offer"),
+            ProblemReportCodes::InvalidCredentialRequest => String::from("invalid-credential-request"),
+            ProblemReportCodes::InvalidCredential => String::from("invalid-credential"),
+            ProblemReportCodes::CredentialRejected => String::from("rejection"),
+            ProblemReportCodes::InvalidPresentationRequest => String::from("invalid-request"),
+            ProblemReportCodes::InvalidPresentation => String::from("invalid-presentation"),
+            ProblemReportCodes::PresentationRejected => String::from("rejection"),
+            ProblemReportCodes::Other(error) => error.to_string(),
+        }
+    }
+
+    fn en(&self) -> Option<String> {
+        match self {
+            ProblemReportCodes::Unimplemented => Some(String::from("The protocol for received message is not implemented.")),
+            ProblemReportCodes::InvalidCredentialOffer => Some(String::from("Couldn't create credential-request for received credential-offer.")),
+            ProblemReportCodes::InvalidCredentialRequest => Some(String::from("Couldn't create credential for received credential-request.")),
+            ProblemReportCodes::InvalidCredential => Some(String::from("Couldn't store received credential.")),
+            ProblemReportCodes::CredentialRejected => Some(String::from("credential-offer was rejected.")),
+            ProblemReportCodes::InvalidPresentationRequest => Some(String::from("Couldn't create presentation for received presentation-request.")),
+            ProblemReportCodes::InvalidPresentation => Some(String::from("Couldn't verify presentation.")),
+            ProblemReportCodes::PresentationRejected => Some(String::from("presentation-request was rejected.")),
+            ProblemReportCodes::Other(_) => None
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -73,7 +117,7 @@ pub enum WhoRetries {
     #[serde(rename = "both")]
     Both,
     #[serde(rename = "none")]
-    None
+    None,
 }
 
 impl Default for WhoRetries {
@@ -96,7 +140,21 @@ pub enum Impact {
     #[serde(rename = "thread")]
     Thread,
     #[serde(rename = "connection")]
-    Connection
+    Connection,
+}
+
+pub enum Reason {
+    Fail,
+    Reject,
+}
+
+impl Reason {
+    pub fn to_status(&self, problem_report: ProblemReport) -> Status {
+        match self {
+            Reason::Fail => Status::Failed(problem_report),
+            Reason::Reject => Status::Rejected,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -104,7 +162,7 @@ pub mod tests {
     use super::*;
     use v3::messages::connection::response::tests::*;
 
-    fn _code() -> u32 { 0 }
+    fn _code() -> String { String::from("test") }
 
     fn _comment() -> String {
         String::from("test comment")
@@ -132,7 +190,7 @@ pub mod tests {
         let report: ProblemReport = ProblemReport::default()
             .set_comment(_comment())
             .set_thread_id(&_thread_id())
-            .set_description(_code());
+            .set_description(ProblemReportCodes::Other(_code()));
 
         assert_eq!(_problem_report(), report);
     }

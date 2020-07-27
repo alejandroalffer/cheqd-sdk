@@ -43,14 +43,38 @@ async def main():
         elif answer == '1':
             print("Check agency for a credential offer")
             offers = await Credential.get_offers(connection_to_faber)
+            print("Offer: " + json.dumps(offers[0]))
             credential = await Credential.create('credential', offers[0])
-            await accept_offer(connection_to_faber, credential)
+            accept_offer_answer = input(
+                "Would you like to accept offer? \n "
+                "0 - accept \n "
+                "1 - reject \n "
+                "else finish \n") \
+                .lower().strip()
+            if accept_offer_answer == '0':
+                await accept_offer(connection_to_faber, credential)
+            elif accept_offer_answer == '1':
+                await reject_offer(connection_to_faber, credential)
+            else:
+                break
         elif answer == '2':
             print("Check agency for a proof request")
             requests = await DisclosedProof.get_requests(connection_to_faber)
             print("#23 Create a Disclosed proof object from proof request")
+            print("Proof Request: " + json.dumps(requests[0]))
             proof = await DisclosedProof.create('proof', requests[0])
-            await create_proof(connection_to_faber, proof)
+            accept_proof_answer = input(
+                "Would you like to accept proof? \n "
+                "0 - accept \n "
+                "1 - reject \n "
+                "else finish \n") \
+                .lower().strip()
+            if accept_proof_answer == '0':
+                await create_proof(connection_to_faber, proof)
+            elif accept_proof_answer == '1':
+                await reject_proof(connection_to_faber, proof)
+            else:
+                break
         elif answer == '3':
             request = await handle_challenge()
             print("#23 Create a Disclosed proof object from proof request")
@@ -127,6 +151,15 @@ async def accept_offer(connection_to_faber, credential):
         credential_state = await credential.get_state()
 
 
+async def reject_offer(connection_to_faber, credential):
+    print("#15 Reject credential offer")
+    await credential.reject(connection_to_faber)
+
+    print("#16 Check credential offer state")
+    credential_state = await credential.get_state()
+    assert credential_state == State.Rejected
+
+
 async def create_proof(connection_to_faber, proof):
     print("#24 Query for credentials in the wallet that satisfy the proof request")
     credentials = await proof.get_creds()
@@ -150,6 +183,15 @@ async def create_proof(connection_to_faber, proof):
         proof_state = await proof.get_state()
 
     print("proof is verified!!")
+
+
+async def reject_proof(connection_to_faber, proof):
+    print("#15 Reject proof request")
+    await proof.reject_proof(connection_to_faber)
+
+    print("#16 Check proof request state")
+    proof_state = await proof.get_state()
+    assert proof_state == State.Rejected
 
 
 if __name__ == '__main__':

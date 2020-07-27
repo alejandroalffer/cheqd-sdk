@@ -6,7 +6,7 @@ use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential_ack::CredentialAck;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, ProblemReportCodes, Reason};
 use v3::messages::a2a::A2AMessage;
 use v3::messages::status::Status;
 use v3::handlers::connection::types::CompletedConnection;
@@ -44,6 +44,7 @@ impl HolderSM {
             HolderState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
+                    Status::Rejected => VcxStateType::VcxStateRejected as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
             }
@@ -91,7 +92,8 @@ impl HolderSM {
                                 return Some((uid, A2AMessage::Credential(credential)));
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::CredentialReject(problem_report) => {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
@@ -135,11 +137,12 @@ impl HolderSM {
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
-                                .set_comment(err.to_string())
+                                .set_description(ProblemReportCodes::InvalidCredentialOffer)
+                                .set_comment(format!("error occurred: {:?}", err))
                                 .set_thread(thread.clone());
 
-                            connection.data.send_message(&problem_report.to_a2a_message(), &connection.agent)?;
-                            HolderState::Finished((state_data, problem_report, thread).into())
+                            connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.agent)?;
+                            HolderState::Finished((state_data, problem_report, thread, Reason::Fail).into())
                         }
                     }
                 }
@@ -150,7 +153,7 @@ impl HolderSM {
 
                     let problem_report = _reject_credential(&connection, &thread, comment)?;
 
-                    HolderState::Finished((state_data, problem_report, thread).into())
+                    HolderState::Finished((state_data, problem_report, thread, Reason::Reject).into())
                 }
                 _ => {
                     warn!("Credential Issuance can only start on holder side with Credential Offer");
@@ -174,11 +177,12 @@ impl HolderSM {
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
-                                .set_comment(err.to_string())
+                                .set_description(ProblemReportCodes::InvalidCredential)
+                                .set_comment(format!("error occurred: {:?}", err))
                                 .set_thread(thread.clone());
 
-                            state_data.connection.data.send_message(&problem_report.to_a2a_message(), &state_data.connection.agent)?;
-                            HolderState::Finished((state_data, problem_report, thread).into())
+                            state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &state_data.connection.agent)?;
+                            HolderState::Finished((state_data, problem_report, thread, Reason::Fail).into())
                         }
                     }
                 }
@@ -186,7 +190,7 @@ impl HolderSM {
                     let thread = state_data.thread.clone()
                         .update_received_order(&state_data.connection.data.did_doc.id);
 
-                    HolderState::Finished((state_data, problem_report, thread).into())
+                    HolderState::Finished((state_data, problem_report, thread, Reason::Fail).into())
                 }
                 CredentialIssuanceMessage::CredentialRejectSend((connection_handle, comment)) => {
                     let connection = ::connection::get_completed_connection(connection_handle)?;
@@ -197,7 +201,7 @@ impl HolderSM {
 
                     let problem_report = _reject_credential(&connection, &thread, comment)?;
 
-                    HolderState::Finished((state_data, problem_report, thread).into())
+                    HolderState::Finished((state_data, problem_report, thread, Reason::Reject).into())
                 }
                 _ => {
                     warn!("In this state Credential Issuance can accept only Credential and Problem Report");
@@ -306,10 +310,11 @@ impl OfferReceivedState {
 
 fn _reject_credential(connection: &CompletedConnection, thread: &Thread, comment: Option<String>) -> VcxResult<ProblemReport>{
     let problem_report = ProblemReport::create()
-        .set_comment(comment.unwrap_or(String::from("Credential Offer was rejected.")))
+        .set_description(ProblemReportCodes::CredentialRejected)
+        .set_comment(comment.unwrap_or(String::from("credential-offer was rejected")))
         .set_thread(thread.clone());
 
-    connection.agent.send_message(&problem_report.to_a2a_message(), &connection.data.did_doc)?;
+    connection.agent.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.data.did_doc)?;
     Ok(problem_report)
 }
 
@@ -406,7 +411,7 @@ mod test {
 
             match holder_sm.state {
                 HolderState::Finished(state) => {
-                    assert_eq!(2, state.status.code());
+                    assert_eq!(3, state.status.code());
                     Ok(())
                 }
                 other => Err(format!("State expected to be Finished, but: {:?}", other))
@@ -472,7 +477,7 @@ mod test {
 
             match holder_sm.state {
                 HolderState::Finished(state) => {
-                    assert_eq!(2, state.status.code());
+                    assert_eq!(3, state.status.code());
                     Ok(())
                 }
                 other => Err(format!("State expected to be Finished, but: {:?}", other))
@@ -565,6 +570,21 @@ mod test {
                     "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal()),
                     "key_4".to_string() => A2AMessage::CredentialAck(_ack()),
                     "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = holder.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_5", uid);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
+            }
+
+            // Credential Reject
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request()),
+                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal()),
+                    "key_4".to_string() => A2AMessage::CredentialAck(_ack()),
+                    "key_5".to_string() => A2AMessage::CredentialReject(_problem_report())
                 );
 
                 let (uid, message) = holder.find_message_to_handle(messages).unwrap();
