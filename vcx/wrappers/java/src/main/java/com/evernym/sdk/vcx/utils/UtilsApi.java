@@ -126,7 +126,6 @@ public class UtilsApi extends VcxJava.API {
           id: String,
           value: String,
       }
-      # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
      **/
     public static CompletableFuture<Integer> vcxGetProvisionToken(String config) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(config, "config");

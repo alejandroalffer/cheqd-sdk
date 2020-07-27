@@ -115,9 +115,13 @@ impl UpdateComMethod {
 pub struct ComMethod {
     pub id: String,
     #[serde(rename = "type")]
+    #[serde(default = "default_com_type")]
     pub e_type: i32,
     pub value: String,
 }
+
+fn default_com_type() -> i32 { 1 }
+
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
@@ -397,16 +401,10 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     Ok((response.from_did, response.from_vk))
 }
 
-pub fn update_agent_info(id: &str, value: &str) -> VcxResult<()> {
-    trace!("update_agent_info >>> id: {}, value: {}", id, value);
+pub fn update_agent_info(com_method: ComMethod) -> VcxResult<()> {
+    trace!("update_agent_info >>> com_method: {:?}", com_method);
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
-
-    let com_method = ComMethod {
-        id: id.to_string(),
-        e_type: 1,
-        value: value.to_string(),
-    };
 
     match settings::get_protocol_type() {
         settings::ProtocolTypes::V1 => {
@@ -548,8 +546,12 @@ mod tests {
     #[test]
     fn test_update_agent_info() {
         let _setup = SetupMocks::init();
-
-        update_agent_info("123", "value").unwrap();
+        let com_method = ComMethod {
+            id: "123".to_string(),
+            e_type: 1,
+            value: "value".to_string()
+        };
+        update_agent_info(com_method).unwrap();
     }
 
     #[cfg(feature = "agency")]
@@ -559,6 +561,39 @@ mod tests {
         let _setup = SetupLibraryAgencyV1::init();
 
         ::utils::devsetup::set_consumer();
-        update_agent_info("7b7f97f2", "FCM:Value").unwrap();
+
+        let com_method = ComMethod {
+            id: "7b7f97f2".to_string(),
+            e_type: 1,
+            value: "FCM:Value".to_string()
+        };
+        update_agent_info(com_method).unwrap();
+    }
+
+    #[test]
+    fn test_deserialize_com_method() {
+        let _setup = SetupEmpty::init();
+
+        let id = "7b7f97f2";
+        let value = "FCM:Value";
+        let type_ = 4;
+
+        // no `type` specified. 1 is default
+        let json = json!({"id": id, "value": value}).to_string();
+        let com_method: ComMethod = serde_json::from_str(&json).unwrap();
+        assert_eq!(id, com_method.id);
+        assert_eq!(value, com_method.value);
+        assert_eq!(1, com_method.e_type);
+
+        // passed `type`
+        let json = json!({"id": id, "value": value, "type": type_}).to_string();
+        let com_method: ComMethod = serde_json::from_str(&json).unwrap();
+        assert_eq!(id, com_method.id);
+        assert_eq!(value, com_method.value);
+        assert_eq!(type_, com_method.e_type);
+
+        // passed invalid json. no `value` field
+        let json = json!({"id": id}).to_string();
+        serde_json::from_str::<ComMethod>(&json).unwrap_err();
     }
 }
