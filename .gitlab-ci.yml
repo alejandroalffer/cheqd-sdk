@@ -97,6 +97,7 @@ variables:
   only:
     refs:
       - master
+      - stable
       - /^docker-.*/
 
 dockerbuild-vcx-libindy-ubuntu16:
@@ -131,6 +132,7 @@ dockerbuild-vcx-libindy-centos:
   only:
     refs:
       - master
+      - stable
       - /^docker-.*/
     changes:
       - .gitlab-ci.yml
@@ -149,6 +151,7 @@ dockerbuild-vcx-android:
   only:
     refs:
       - master
+      - stable
       - /^docker-.*/
     changes:
       - .gitlab-ci.yml
@@ -165,6 +168,7 @@ dockerbuild-vcx-android:
   only:
     refs:
       - master
+      - stable
       - /^docker-.*/
     changes:
       - .gitlab-ci.yml
@@ -196,6 +200,7 @@ dockerbuild-vcx-java:
   only:
     refs:
       - master
+      - stable
       - /^docker-.*/
     changes:
       - .gitlab-ci.yml
