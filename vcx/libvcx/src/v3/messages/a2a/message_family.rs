@@ -13,6 +13,8 @@ pub enum MessageFamilies {
     DiscoveryFeatures,
     Basicmessage,
     Outofband,
+    QuestionAnswer,
+    Committedanswer,
     Unknown(String)
 }
 
@@ -32,6 +34,8 @@ impl MessageFamilies {
             MessageFamilies::DiscoveryFeatures => "1.0",
             MessageFamilies::Basicmessage => "1.0",
             MessageFamilies::Outofband => "1.0",
+            MessageFamilies::QuestionAnswer => "1.0",
+            MessageFamilies::Committedanswer => "1.0",
             MessageFamilies::Unknown(_) => "1.0"
         }
     }
@@ -53,6 +57,8 @@ impl MessageFamilies {
             MessageFamilies::DiscoveryFeatures => Some((Some(Actors::Sender), Some(Actors::Receiver))),
             MessageFamilies::Basicmessage => Some((Some(Actors::Sender), Some(Actors::Receiver))),
             MessageFamilies::Outofband => Some((None, Some(Actors::Receiver))),
+            MessageFamilies::QuestionAnswer => Some((None, Some(Actors::Receiver))),
+            MessageFamilies::Committedanswer => Some((None, Some(Actors::Receiver))),
             MessageFamilies::Unknown(_) => None
         }
     }
@@ -72,6 +78,8 @@ impl From<String> for MessageFamilies {
             "discover-features" => MessageFamilies::DiscoveryFeatures,
             "basicmessage" => MessageFamilies::Basicmessage,
             "out-of-band" => MessageFamilies::Outofband,
+            "questionanswer" => MessageFamilies::QuestionAnswer,
+            "committedanswer" => MessageFamilies::Committedanswer,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -91,6 +99,8 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::DiscoveryFeatures => "discover-features".to_string(),
             MessageFamilies::Basicmessage => "basicmessage".to_string(),
             MessageFamilies::Outofband => "out-of-band".to_string(),
+            MessageFamilies::QuestionAnswer => "questionanswer".to_string(),
+            MessageFamilies::Committedanswer => "committedanswer".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }

@@ -35,6 +35,12 @@ use v3::messages::discovery::disclose::Disclose;
 
 use v3::messages::basic_message::message::BasicMessage;
 
+use v3::messages::question::question::Question;
+use v3::messages::question::answer::Answer;
+
+use v3::messages::committedanswer::question::Question as CommitedQuestion;
+use v3::messages::committedanswer::answer::Answer as CommitedAnswer;
+
 #[derive(Debug, PartialEq)]
 pub enum A2AMessage {
     /// routing
@@ -75,6 +81,14 @@ pub enum A2AMessage {
 
     /// basic message
     BasicMessage(BasicMessage),
+
+    /// questionanswer
+    Question(Question),
+    Answer(Answer),
+
+    /// committedanswer
+    CommitedQuestion(CommitedQuestion),
+    CommitedAnswer(CommitedAnswer),
 
     /// Out-of-Band
     OutOfBandInvitation(OutofbandInvitation),
@@ -211,6 +225,26 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::BasicMessage(msg))
                     .map_err(de::Error::custom)
             }
+            (MessageFamilies::QuestionAnswer, A2AMessage::QUESTION) => {
+                Question::deserialize(value)
+                    .map(|msg| A2AMessage::Question(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::QuestionAnswer, A2AMessage::ANSWER) => {
+                Answer::deserialize(value)
+                    .map(|msg| A2AMessage::Answer(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::Committedanswer, A2AMessage::ASK_QUESTION) => {
+                CommitedQuestion::deserialize(value)
+                    .map(|msg| A2AMessage::CommitedQuestion(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::Committedanswer, A2AMessage::ANSWER_GIVER) => {
+                CommitedAnswer::deserialize(value)
+                    .map(|msg| A2AMessage::CommitedAnswer(msg))
+                    .map_err(de::Error::custom)
+            }
             (MessageFamilies::Outofband, A2AMessage::OUTOFBAND_INVITATION) => {
                 OutofbandInvitation::deserialize(value)
                     .map(|msg| A2AMessage::OutOfBandInvitation(msg))
@@ -270,6 +304,10 @@ impl Serialize for A2AMessage {
             A2AMessage::OutOfBandInvitation(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_INVITATION),
             A2AMessage::HandshakeReuse(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE),
             A2AMessage::HandshakeReuseAccepted(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED),
+            A2AMessage::Question(msg) => set_a2a_message_type(msg, MessageFamilies::QuestionAnswer, A2AMessage::QUESTION),
+            A2AMessage::Answer(msg) => set_a2a_message_type(msg, MessageFamilies::QuestionAnswer, A2AMessage::ANSWER),
+            A2AMessage::CommitedQuestion(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ASK_QUESTION),
+            A2AMessage::CommitedAnswer(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ANSWER_GIVER),
             A2AMessage::Generic(msg) => Ok(msg.clone())
         }.map_err(ser::Error::custom)?;
 
@@ -311,28 +349,32 @@ impl Default for MessageId {
 }
 
 impl A2AMessage {
-    const FORWARD: &'static str = "forward";
-    const CONNECTION_INVITATION: &'static str = "invitation";
-    const CONNECTION_REQUEST: &'static str = "request";
-    const CONNECTION_RESPONSE: &'static str = "response";
-    const CONNECTION_PROBLEM_REPORT: &'static str = "problem_report";
-    const PING: &'static str = "ping";
-    const PING_RESPONSE: &'static str = "ping_response";
-    const ACK: &'static str = "ack";
-    const PROBLEM_REPORT: &'static str = "problem-report";
-    const CREDENTIAL_OFFER: &'static str = "offer-credential";
-    const CREDENTIAL: &'static str = "issue-credential";
-    const PROPOSE_CREDENTIAL: &'static str = "propose-credential";
-    const REQUEST_CREDENTIAL: &'static str = "request-credential";
-    const PROPOSE_PRESENTATION: &'static str = "propose-presentation";
-    const REQUEST_PRESENTATION: &'static str = "request-presentation";
-    const PRESENTATION: &'static str = "presentation";
-    const QUERY: &'static str = "query";
-    const DISCLOSE: &'static str = "disclose";
-    const BASIC_MESSAGE: &'static str = "message";
-    const OUTOFBAND_INVITATION: &'static str = "invitation";
-    const OUTOFBAND_HANDSHAKE_REUSE: &'static str = "handshake-reuse";
-    const OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED: &'static str = "handshake-reuse-accepted";
+    pub const FORWARD: &'static str = "forward";
+    pub const CONNECTION_INVITATION: &'static str = "invitation";
+    pub const CONNECTION_REQUEST: &'static str = "request";
+    pub const CONNECTION_RESPONSE: &'static str = "response";
+    pub const CONNECTION_PROBLEM_REPORT: &'static str = "problem_report";
+    pub const PING: &'static str = "ping";
+    pub const PING_RESPONSE: &'static str = "ping_response";
+    pub const ACK: &'static str = "ack";
+    pub const PROBLEM_REPORT: &'static str = "problem-report";
+    pub const CREDENTIAL_OFFER: &'static str = "offer-credential";
+    pub const CREDENTIAL: &'static str = "issue-credential";
+    pub const PROPOSE_CREDENTIAL: &'static str = "propose-credential";
+    pub const REQUEST_CREDENTIAL: &'static str = "request-credential";
+    pub const PROPOSE_PRESENTATION: &'static str = "propose-presentation";
+    pub const REQUEST_PRESENTATION: &'static str = "request-presentation";
+    pub const PRESENTATION: &'static str = "presentation";
+    pub const QUERY: &'static str = "query";
+    pub const DISCLOSE: &'static str = "disclose";
+    pub const BASIC_MESSAGE: &'static str = "message";
+    pub const OUTOFBAND_INVITATION: &'static str = "invitation";
+    pub const OUTOFBAND_HANDSHAKE_REUSE: &'static str = "handshake-reuse";
+    pub const OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED: &'static str = "handshake-reuse-accepted";
+    pub const QUESTION: &'static str = "question";
+    pub const ANSWER: &'static str = "answer";
+    pub const ASK_QUESTION: &'static str = "ask-question";
+    pub const ANSWER_GIVER: &'static str = "answer-given";
 }
 
 #[macro_export]
