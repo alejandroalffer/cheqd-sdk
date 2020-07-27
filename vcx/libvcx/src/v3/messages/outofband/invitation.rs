@@ -92,18 +92,18 @@ impl Invitation {
 
     pub fn validate(&self) -> VcxResult<()> {
         if self.service.is_empty() {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidRedirectDetail,
                                           format!("Invalid Out-of-band Invitation: `service` is empty.`")));
         }
 
         if self.handshake_protocols.is_empty() && self.request_attach.0.is_empty() {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidRedirectDetail,
                                           format!("Invalid Out-of-band Invitation: `handshake_protocols` and `request~attach cannot be empty at the same time.`")));
         }
 
         if !self.handshake_protocols.is_empty() &&
             !self.handshake_protocols.iter().any(|protocol|  protocol.contains(SUPPORTED_HANDSHAKE_PROTOCOL)) {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidRedirectDetail,
                                           format!("Invalid Out-of-band Invitation: Could not find a supported `handshake_protocol`.\
                                           Requested: {:?}, Supported: {:?}`", self.handshake_protocols, SUPPORTED_HANDSHAKE_PROTOCOL)));
         }

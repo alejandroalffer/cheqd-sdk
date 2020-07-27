@@ -118,7 +118,7 @@ impl UpdateMessageStatusByConnectionsBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(_)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateMessageStatusByConnectionsResponse(_)) => Ok(()),
-            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateMessageStatusByConnectionsResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of UpdateMessageStatusByConnectionsResponse"))
         }
     }
 }
@@ -127,12 +127,12 @@ pub fn update_agency_messages(status_code: &str, msg_json: &str) -> VcxResult<()
     trace!("update_agency_messages >>> status_code: {:?}, msg_json: {:?}", status_code, msg_json);
 
     let status_code: MessageStatusCode = ::serde_json::from_str(&format!("\"{}\"", status_code))
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize MessageStatusCode: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize `status_code`: {}", err)))?;
 
     debug!("updating agency messages {} to status code: {:?}", msg_json, status_code);
 
     let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize UIDsByConn: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize list of messages to update: {}", err)))?;
 
     update_messages(status_code, uids_by_conns)
 }

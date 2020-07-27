@@ -60,7 +60,7 @@ impl TryInto<CredentialMessage> for Credential {
         let indy_credential_json = self.credentials_attach.content()?;
 
         let indy_credential: ::serde_json::Value = ::serde_json::from_str(&indy_credential_json)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Indy Credential: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize Indy Credential: {:?}", err)))?;
 
         Ok(CredentialMessage {
             msg_type: PayloadKinds::Cred.name().to_string(),

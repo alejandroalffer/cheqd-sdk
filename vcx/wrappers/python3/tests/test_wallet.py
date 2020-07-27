@@ -105,7 +105,7 @@ async def test_wallet_search():
 async def test_import_wallet_failures(vcx_init_test_mode, cleanup):
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet('Invalid Json')
-    assert ErrorCode.InvalidJson == e.value.error_code
+    assert ErrorCode.InvalidConfiguration == e.value.error_code
     cleanup(True)
 
     config = {'wallet_name': 'IO_ERROR', 'wallet_key': '', 'exported_wallet_path': '', 'backup_key': ''}
@@ -117,25 +117,25 @@ async def test_import_wallet_failures(vcx_init_test_mode, cleanup):
     config = {'wallet_key': '', 'exported_wallet_path': '', 'backup_key': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
-    assert ErrorCode.InvalidJson == e.value.error_code
+    assert ErrorCode.InvalidWalletImportConfig == e.value.error_code
     cleanup(True)
 
     config = {'wallet_name': '', 'exported_wallet_path': '', 'backup_key': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
-    assert ErrorCode.InvalidJson == e.value.error_code
+    assert ErrorCode.InvalidWalletImportConfig == e.value.error_code
     cleanup(True)
 
     config = {'wallet_name': '', 'wallet_key': '', 'backup_key': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
-    assert ErrorCode.InvalidJson == e.value.error_code
+    assert ErrorCode.InvalidWalletImportConfig == e.value.error_code
     cleanup(True)
 
     config = {'wallet_name': '', 'wallet_key': '', 'exported_wallet_path': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
-    assert ErrorCode.InvalidJson == e.value.error_code
+    assert ErrorCode.InvalidWalletImportConfig == e.value.error_code
     cleanup(True)
 
 

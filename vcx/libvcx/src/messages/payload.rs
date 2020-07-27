@@ -70,7 +70,7 @@ impl Payloads {
                     type_: PayloadTypes::build_v2(msg_type),
                     id: String::new(),
                     msg: data.to_string(),
-                    thread,
+                    thread: thread,
                 };
 
                 let message = ::serde_json::to_string(&payload)
@@ -121,7 +121,7 @@ impl Payloads {
                 } else {
                     let vec = to_u8(payload);
                     let json: Value = serde_json::from_slice(&vec[..])
-                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize MessagePayload: {}", err)))?;
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize MessagePayload: {}", err)))?;
 
                     let payload = match Payloads::decrypt_payload_v12(&my_vk, &json)?.msg {
                         serde_json::Value::String(_str) => _str,
@@ -156,7 +156,7 @@ impl Payloads {
         debug!("decrypt_payload_v2 >>>");
 
         let payload = ::serde_json::to_vec(&payload)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot represent JSON object as bytes. Err: {:?}", err)))?;
 
         let unpacked_msg = crypto::unpack_message(&payload)?;
 
@@ -185,7 +185,7 @@ impl Payloads {
         debug!("decrypt_payload_v12 >>>");
 
         let payload = ::serde_json::to_vec(&payload)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot represent JSON object as bytes. Err: {:?}", err)))?;
 
         let unpacked_msg = crypto::unpack_message(&payload)?;
 

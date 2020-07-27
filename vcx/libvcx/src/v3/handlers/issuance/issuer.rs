@@ -288,10 +288,12 @@ impl InitialState {
         trace!("Issuer::InitialState::append_credential_preview >>> cred_offer_msg: {:?}", cred_offer_msg);
 
         let cred_values: serde_json::Value = serde_json::from_str(&self.credential_json)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Credential Preview Json: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure,
+                                              format!("Cannot parse Credential Preview from JSON string. Err: {:?}", err)))?;
 
         let values_map = cred_values.as_object()
-            .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Preview Json".to_string()))?;
+            .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure,
+                                              "Invalid Credential Preview Json".to_string()))?;
 
         let mut new_offer = cred_offer_msg;
         for item in values_map.iter() {
@@ -299,7 +301,8 @@ impl InitialState {
             new_offer = new_offer.add_credential_preview_data(
                 key,
                 value.as_str()
-                    .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Preview Json".to_string()))?,
+                    .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      "Invalid Credential Preview Json".to_string()))?,
                 MimeType::Plain,
             )?;
         }

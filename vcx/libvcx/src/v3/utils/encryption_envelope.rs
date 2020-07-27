@@ -42,7 +42,7 @@ impl EncryptionEnvelope {
 
         let mut to = recipient_keys.get(0)
             .map(String::from)
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConnectionHandle, format!("Recipient Key not found in DIDDoc: {:?}", did_doc)))?;
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, format!("Recipient Key not found in DIDDoc: {:?}", did_doc)))?;
 
         for routing_key in routing_keys.iter() {
             message = EncryptionEnvelope::wrap_into_forward(message, &to, &routing_key)?;
@@ -71,14 +71,14 @@ impl EncryptionEnvelope {
         let unpacked_msg = crypto::unpack_message(&payload)?;
 
         let message: ::serde_json::Value = ::serde_json::from_slice(unpacked_msg.as_slice())
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize message: {}", err)))?;
 
         let message = message["message"].as_str()
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Cannot find `message` field"))?.to_string();
 
         let message: A2AMessage = ::serde_json::from_str(&message)
             .map_err(|err| {
-                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err))
+                VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize A2A message: {}", err))
             })?;
 
         debug!("EncryptionEnvelope::open <<< message: {:?}", message);

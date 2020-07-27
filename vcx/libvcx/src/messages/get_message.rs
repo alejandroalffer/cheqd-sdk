@@ -147,7 +147,7 @@ impl GetMessagesBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesResponse(res)) => Ok(res.msgs),
             A2AMessage::Version2(A2AMessageV2::GetMessagesResponse(res)) => Ok(res.msgs),
-            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of GetMessagesResponse"))
         }
     }
 
@@ -209,7 +209,7 @@ impl GetMessagesBuilder {
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
             A2AMessage::Version2(A2AMessageV2::GetMessagesByConnectionsResponse(res)) => res.msgs,
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesByConnectionsResponse"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of GetMessagesByConnectionsResponse"))
         };
 
         msgs
@@ -304,8 +304,9 @@ impl Message {
     pub fn payload<'a>(&'a self) -> VcxResult<Vec<u8>> {
         match self.payload {
             Some(MessagePayload::V1(ref payload)) => Ok(to_u8(payload)),
-            Some(MessagePayload::V2(ref payload)) => serde_json::to_vec(payload).map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, err)),
-            _ => Err(VcxError::from(VcxErrorKind::InvalidState)),
+            Some(MessagePayload::V2(ref payload)) => serde_json::to_vec(payload)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot represent JSON object as bytes. Err: {:?}", err))),
+            None => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response Message doesn't contain any payload")),
         }
     }
 
@@ -320,7 +321,7 @@ impl Message {
                     } else {
                         warn!("fallback to Payloads::decrypt_payload_v12 in Message:decrypt for MessagePayload::V1");
                         serde_json::from_slice::<serde_json::Value>(&to_u8(payload)[..])
-                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize MessagePayload: {}", err)))
+                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize MessagePayload: {}", err)))
                             .and_then(|json| Payloads::decrypt_payload_v12(&vk, &json))
                             .map(|json| {
                                 (
@@ -461,7 +462,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .status_codes(status_codes)?
         .version(version)?
         .send_secure()
-        .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, "Cannot get messages"))?;
+        .map_err(|err| err.extend("Cannot get messages"))?;
 
     trace!("message returned: {:?}", response);
     Ok(response)
@@ -471,7 +472,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &None)?; // TODO: FIXME version should be param
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &None)?;
     trace!("checking for ref_msg: {:?}", message);
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
@@ -479,7 +480,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
         _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &None)?;  // TODO: FIXME version should be param
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &None)?;
 
     trace!("checking for pending message: {:?}", message);
 
@@ -489,7 +490,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
             // TODO: check returned verkey
             Ok((message[0].uid.clone(), payload.to_owned()))
         }
-        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message"))
+        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Cannot find referent message"))
     }
 }
 
@@ -564,13 +565,13 @@ pub fn download_message(uid: String) -> VcxResult<Message> {
             .collect();
 
     if messages.is_empty() {
-        return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages,
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse,
                                       format!("Message for the given uid:\"{}\" not found.", uid)));
     }
 
     if messages.len() > 1 {
-        return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages,
-                                      format!("More than one message was retrieved for the given uid:\"{}\". \
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse,
+                                      format!("More than one message was received for the given uid:\"{}\". \
                                       Please, use `vcx_messages_download` function to retrieve several messages.", uid)));
     }
 
@@ -709,6 +710,6 @@ mod tests {
         // download unknown message
         let unknown_uid = "unknown";
         let res = download_message(unknown_uid.to_string()).unwrap_err();
-        assert_eq!(VcxErrorKind::InvalidMessages, res.kind())
+        assert_eq!(VcxErrorKind::InvalidAgencyResponse, res.kind())
     }
 }

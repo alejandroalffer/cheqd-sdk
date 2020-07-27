@@ -18,7 +18,7 @@ pub struct WalletRecord {
 impl WalletRecord {
     pub fn to_string(&self) -> VcxResult<String> {
         serde_json::to_string(&self)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize WalletRecord: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize WalletRecord: {:?}", err)))
     }
 
     pub fn from_str(data: &str) -> VcxResult<WalletRecord> {
@@ -40,12 +40,12 @@ pub struct RestoreWalletConfigs {
 impl RestoreWalletConfigs {
     pub fn to_string(&self) -> VcxResult<String> {
         serde_json::to_string(&self)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize RestoreWalletConfigs: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize RestoreWalletConfigs: {:?}", err)))
     }
 
     pub fn from_str(data: &str) -> VcxResult<RestoreWalletConfigs> {
         serde_json::from_str(data)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize RestoreWalletConfigs: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidWalletImportConfig, format!("Cannot deserialize RestoreWalletConfigs: {:?}", err)))
     }
 }
 
@@ -76,8 +76,8 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
                     Ok(())
                 }
                 _ => {
-                    warn!("could not create wallet {}: {:?}", wallet_name, err.message);
-                    Err(VcxError::from_msg(VcxErrorKind::WalletCreate, format!("could not create wallet {}: {:?}", wallet_name, err.message)))
+                    warn!("Could not create wallet {}: {:?}", wallet_name, err.message);
+                    Err(VcxError::from_msg(VcxErrorKind::WalletCreate, format!("Could not create wallet {}: {:?}", wallet_name, err.message)))
                 }
             }
         }
@@ -375,30 +375,30 @@ pub mod tests {
         let _setup = SetupEmpty::init();
 
         // Invalid json
-        let res = import("").unwrap_err();
-        assert_eq!(res.kind(), VcxErrorKind::InvalidJson);
+        let res = import("{}").unwrap_err();
+        assert_eq!(res.kind(), VcxErrorKind::InvalidWalletImportConfig);
         let mut config = json!({});
 
         // Missing wallet_key
         let res = import(&config.to_string()).unwrap_err();
-        assert_eq!(res.kind(), VcxErrorKind::InvalidJson);
+        assert_eq!(res.kind(), VcxErrorKind::InvalidWalletImportConfig);
         config[settings::CONFIG_WALLET_KEY] = serde_json::to_value("wallet_key1").unwrap();
 
         // Missing wallet name
         let res = import(&config.to_string()).unwrap_err();
-        assert_eq!(res.kind(), VcxErrorKind::InvalidJson);
+        assert_eq!(res.kind(), VcxErrorKind::InvalidWalletImportConfig);
         config[settings::CONFIG_WALLET_NAME] = serde_json::to_value("wallet_name1").unwrap();
 
         // Missing exported_wallet_path
         let res = import(&config.to_string()).unwrap_err();
-        assert_eq!(res.kind(), VcxErrorKind::InvalidJson);
+        assert_eq!(res.kind(), VcxErrorKind::InvalidWalletImportConfig);
         config[settings::CONFIG_EXPORTED_WALLET_PATH] = serde_json::to_value(
             get_temp_dir_path(settings::DEFAULT_EXPORTED_WALLET_PATH).to_str().unwrap()
         ).unwrap();
 
         // Missing backup_key
         let res = import(&config.to_string()).unwrap_err();
-        assert_eq!(res.kind(), VcxErrorKind::InvalidJson);
+        assert_eq!(res.kind(), VcxErrorKind::InvalidWalletImportConfig);
     }
 
     #[test]

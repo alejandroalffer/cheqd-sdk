@@ -15,7 +15,7 @@ public class IndySubmitRequestErrorException extends VcxException
 
     public IndySubmitRequestErrorException()
     {
-        super(message, ErrorCode.INDY_SUBMIT_REQUEST_ERR.value());
+        super(message, ErrorCode.INVALID_PREDICATES_STRUCTURE.value());
 
     }
 }

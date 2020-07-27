@@ -43,7 +43,7 @@ pub extern fn vcx_init_with_config(command_handle: CommandHandle,
     } else {
         match settings::process_config_string(&config, true) {
             Err(e) => {
-                error!("Invalid configuration specified: {}", e);
+                error!("Cannot initialize with given config.");
                 return e.into();
             }
             Ok(_) => (),
@@ -88,8 +88,9 @@ pub extern fn vcx_init(command_handle: CommandHandle,
         } else {
             match settings::process_config_file(&config_path) {
                 Ok(_) => (),
-                Err(_) => {
-                    return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot initialize with given config path.").into();
+                Err(err) => {
+                    error!("Cannot initialize with given config path.");
+                    return err.into();
                 }
             };
         }
@@ -368,8 +369,8 @@ pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
 pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const c_char) -> u32 {
     info!("vcx_update_institution_info >>>");
 
-    check_useful_c_str!(name, VcxErrorKind::InvalidConfiguration);
-    check_useful_c_str!(logo_url, VcxErrorKind::InvalidConfiguration);
+    check_useful_c_str!(name, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(logo_url, VcxErrorKind::InvalidOption);
     trace!("vcx_update_institution_info(name: {}, logo_url: {})", name, logo_url);
 
     settings::set_config_value(::settings::CONFIG_INSTITUTION_NAME, &name);
@@ -382,7 +383,7 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
 pub extern fn vcx_update_webhook_url(notification_webhook_url: *const c_char) -> u32 {
     info!("vcx_update_webhook >>>");
 
-    check_useful_c_str!(notification_webhook_url, VcxErrorKind::InvalidConfiguration);
+    check_useful_c_str!(notification_webhook_url, VcxErrorKind::InvalidOption);
     trace!("vcx_update_webhook(webhook_url: {})", notification_webhook_url);
 
     settings::set_config_value(::settings::CONFIG_WEBHOOK_URL, &notification_webhook_url);

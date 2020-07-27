@@ -315,13 +315,13 @@ impl RequestedState {
         trace!("RequestedState:handle_connection_response >>> response: {:?}, agent_info: {:?}", response, agent_info);
 
         let remote_vk: String = self.did_doc.recipient_keys().get(0).cloned()
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot handle Response: Remote Verkey not found"))?;
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, "Cannot handle ConnectionResponse: Recipient Verkey not found in DIDDoc"))?;
 
         let response: Response = response.decode(&remote_vk)?;
 
         if !response.from_thread(&self.request.id.to_string()) {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
-                                          format!("Received Connection Response from different thread: {:?}. Expected Thread: {:?}", response.thread, self.thread)));
+            return Err(VcxError::from_msg(VcxErrorKind::MessageIsOutOfThread,
+                                          format!("Cannot handle Connection Response: thread id does not match. Expected: {:?}, Received: {:?}", response.thread, self.request.id.to_string())));
         }
 
         let thread = self.thread.clone()
@@ -917,13 +917,13 @@ impl DidExchangeSM {
     pub fn remote_did(&self) -> VcxResult<String> {
         self.did_doc()
             .map(|did_doc: DidDoc| did_doc.id.clone())
-            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Remote Connection DID is not set"))
+            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Remote Connection DIDDoc is not received yet"))
     }
 
     pub fn remote_vk(&self) -> VcxResult<String> {
         self.did_doc()
             .and_then(|did_doc| did_doc.recipient_keys().get(0).cloned())
-            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Remote Connection Verkey is not set"))
+            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Remote Connection DIDDoc is not received yet"))
     }
 
     pub fn prev_agent_info(&self) -> Option<&AgentInfo> {

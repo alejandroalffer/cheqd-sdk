@@ -15,6 +15,6 @@ public class InvalidConnectionHandleException extends VcxException
 
     public InvalidConnectionHandleException()
     {
-        super(message, ErrorCode.InvalidConnectionHandle.value());
+        super(message, ErrorCode.INVALID_CONNECTION_HANDLE.value());
     }
 }

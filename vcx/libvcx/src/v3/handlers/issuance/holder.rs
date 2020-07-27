@@ -226,18 +226,22 @@ impl HolderSM {
     pub fn get_credential_offer(&self) -> VcxResult<CredentialOffer> {
         match self.state {
             HolderState::OfferReceived(ref state) => Ok(state.offer.clone()),
-            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot get credential: Credential Issuance is not finished yet"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                        format!("Holder object {} in state {} not ready to get Credential Offer message", self.source_id, self.state())))
         }
     }
 
     pub fn get_credential(&self) -> VcxResult<(String, Credential)> {
         match self.state {
             HolderState::Finished(ref state) => {
-                let cred_id = state.cred_id.clone().ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get credential: Credential Id not found"))?;
-                let credential = state.credential.clone().ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get credential: Credential not found"))?;
+                let cred_id = state.cred_id.clone()
+                    .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Holder object state: `cred_id` not found", self.source_id)))?;
+                let credential = state.credential.clone()
+                    .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Holder object state: `credential` not found", self.source_id)))?;
                 Ok((cred_id, credential))
             }
-            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot get credential: Credential Issuance is not finished yet"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                        format!("Holder object {} in state {} not ready to get Credential message", self.source_id, self.state())))
         }
     }
 
@@ -254,10 +258,10 @@ fn _parse_cred_def_from_cred_offer(cred_offer: &str) -> VcxResult<String> {
     trace!("Holder::_parse_cred_def_from_cred_offer >>> cred_offer: {:?}", cred_offer);
 
     let parsed_offer: serde_json::Value = serde_json::from_str(cred_offer)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Credential Offer Json: {:?}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, format!("Cannot parse Credential Offer from JSON string. Err: {:?}", err)))?;
 
     let cred_def_id = parsed_offer["cred_def_id"].as_str()
-        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Offer Json: cred_def_id not found"))?;
+        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, "Invalid Credential object state: `cred_def_id` not found"))?;
 
     Ok(cred_def_id.to_string())
 }
@@ -266,7 +270,7 @@ fn _parse_rev_reg_id_from_credential(credential: &str) -> VcxResult<Option<Strin
     trace!("Holder::_parse_rev_reg_id_from_credential >>>");
 
     let parsed_credential: serde_json::Value = serde_json::from_str(credential)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Credential Json: {}, err: {:?}", credential, err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot parse Credential from JSON string. Err: {:?}", err)))?;
 
     let rev_reg_id = parsed_credential["rev_reg_id"].as_str().map(String::from);
 

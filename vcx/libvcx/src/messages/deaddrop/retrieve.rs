@@ -69,7 +69,7 @@ impl RetrieveDeadDropBuilder {
         let response = parse_message_from_response(&response)?;
 
         serde_json::from_str(&response)
-            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of DeadDropRetrievedResult"))
+            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Message does not match any variant of DeadDropRetrievedResult"))
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
@@ -201,7 +201,7 @@ mod tests {
 
         assert_eq!(
             err.unwrap_err().to_string(),
-            "Error: Message failed in post\n  Caused by: POST failed with: {\"statusCode\":\"GNR-105\",\"statusMsg\":\"unhandled error\"}\n"
+            "Error: Message failed in post\n  Caused by: Sending POST HTTP request failed with: {\"statusCode\":\"GNR-105\",\"statusMsg\":\"unhandled error\"}\n"
         );
     }
 

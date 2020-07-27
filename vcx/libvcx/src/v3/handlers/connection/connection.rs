@@ -160,8 +160,8 @@ impl Connection {
         trace!("Connection: update_state_with_message: {}", message);
 
         let message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption,
-                                              format!("Cannot updated state with messages: Message deserialization failed: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Cannot updated Connection state with messages: Message deserialization failed with: {:?}", err)))?;
 
         self.handle_message(message.into())?;
 
@@ -187,7 +187,7 @@ impl Connection {
         trace!("Connection::send_message >>> message: {:?}", message);
 
         let did_doc = self.connection_sm.did_doc()
-            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot send message: Remote Connection information is not set"))?;
+            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot send message: Remote Connection DIDDoc is not set"))?;
 
         self.agent_info().send_message(message, &did_doc)
     }
@@ -278,7 +278,7 @@ impl Connection {
     pub fn get_completed_connection(&self) -> VcxResult<CompletedConnection> {
         self.connection_sm.completed_connection()
             .ok_or(VcxError::from_msg(VcxErrorKind::NotReady,
-                                      "Connection is not completed yet. You cannot not use pending Connection for interaction."))
+                                      format!("Connection object {} in state {} not ready to send remote messages", self.connection_sm.source_id(), self.state())))
     }
 }
 

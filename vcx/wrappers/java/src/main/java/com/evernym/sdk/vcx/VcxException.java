@@ -1,68 +1,18 @@
 package com.evernym.sdk.vcx;
 
 
-import com.evernym.sdk.vcx.connection.ConnectionErrorException;
-import com.evernym.sdk.vcx.connection.InvalidConnectionHandleException;
-import com.evernym.sdk.vcx.connection.InvalidInviteDetailsException;
-import com.evernym.sdk.vcx.credential.BuildCredentialDefReqErrorException;
-import com.evernym.sdk.vcx.credential.CreateCredentialDefException;
-import com.evernym.sdk.vcx.credential.CreateCredentialRequestErrorException;
-import com.evernym.sdk.vcx.credential.CredentialDefAlreadyCreatedException;
-import com.evernym.sdk.vcx.credential.InvalidCredentialDefHandle;
-import com.evernym.sdk.vcx.credential.InvalidCredentialDefJsonException;
-import com.evernym.sdk.vcx.credential.InvalidCredentialHandleException;
-import com.evernym.sdk.vcx.credential.InvalidCredentialJsonException;
-import com.evernym.sdk.vcx.credential.InvalidCredentialRequestException;
-import com.evernym.sdk.vcx.credential.InvalidIssuerCredentialHandleException;
-import com.evernym.sdk.vcx.proof.CreateProofErrorException;
-import com.evernym.sdk.vcx.proof.FailedProofComplianceException;
-import com.evernym.sdk.vcx.proof.InvalidDisclosedProofHandleException;
-import com.evernym.sdk.vcx.proof.InvalidProofCredentialDataException;
-import com.evernym.sdk.vcx.proof.InvalidProofException;
-import com.evernym.sdk.vcx.proof.InvalidProofHandleException;
-import com.evernym.sdk.vcx.proof.InvalidSelfAttestedValueException;
+import com.evernym.sdk.vcx.connection.*;
+import com.evernym.sdk.vcx.credential.*;
+import com.evernym.sdk.vcx.proof.*;
+import com.evernym.sdk.vcx.schema.*;
 import com.evernym.sdk.vcx.token.InsufficientTokenAmountException;
+import com.evernym.sdk.vcx.token.InvalidPaymentAddressException;
+import com.evernym.sdk.vcx.token.MissingPaymentMethodException;
+import com.evernym.sdk.vcx.token.NoPaymentInformationException;
 import com.evernym.sdk.vcx.utils.InvalidConfigurationException;
 import com.evernym.sdk.vcx.utils.PostMsgFailureException;
-import com.evernym.sdk.vcx.vcx.AlreadyInitializedException;
-import com.evernym.sdk.vcx.vcx.BigNumberErrorException;
-import com.evernym.sdk.vcx.vcx.CreatePoolConfigException;
-import com.evernym.sdk.vcx.vcx.PoolLedgerConnectException;
-import com.evernym.sdk.vcx.vcx.IndySubmitRequestErrorException;
-import com.evernym.sdk.vcx.vcx.InvalidAttributeStructureException;
-import com.evernym.sdk.vcx.vcx.InvalidDIDException;
-import com.evernym.sdk.vcx.vcx.InvalidGenesisTxnPathException;
-import com.evernym.sdk.vcx.vcx.InvalidHTTPResponseException;
-import com.evernym.sdk.vcx.vcx.InvalidJsonException;
-import com.evernym.sdk.vcx.vcx.InvalidKeyDelegateException;
-import com.evernym.sdk.vcx.vcx.InvalidMasterSecretException;
-import com.evernym.sdk.vcx.vcx.InvalidMessagesException;
-import com.evernym.sdk.vcx.vcx.InvalidMsgPackException;
-import com.evernym.sdk.vcx.vcx.InvalidNonceException;
-import com.evernym.sdk.vcx.vcx.InvalidObjHandleException;
-import com.evernym.sdk.vcx.vcx.InvalidOptionException;
-import com.evernym.sdk.vcx.vcx.InvalidPredicateException;
-import com.evernym.sdk.vcx.schema.InvalidSchemaCreationException;
-import com.evernym.sdk.vcx.schema.InvalidSchemaException;
-import com.evernym.sdk.vcx.schema.InvalidSchemaSeqNoException;
-import com.evernym.sdk.vcx.schema.InvalidSchemahandleException;
-import com.evernym.sdk.vcx.vcx.InvalidUrlException;
-import com.evernym.sdk.vcx.vcx.InvalidVerkeyException;
-import com.evernym.sdk.vcx.vcx.NoEndpointException;
-import com.evernym.sdk.vcx.vcx.NoPoolOpenException;
-import com.evernym.sdk.vcx.vcx.NotBase58Exception;
-import com.evernym.sdk.vcx.vcx.NotReadyException;
-import com.evernym.sdk.vcx.vcx.SerializationErrorException;
-import com.evernym.sdk.vcx.vcx.TimeoutLibindyErrorException;
-import com.evernym.sdk.vcx.vcx.UnknownErrorException;
-import com.evernym.sdk.vcx.vcx.UnknownLibindyErrorException;
-import com.evernym.sdk.vcx.wallet.WalletAleradyOpenException;
-import com.evernym.sdk.vcx.wallet.WalletAlreadyExistsException;
-import com.evernym.sdk.vcx.wallet.WalletItemAlreadyExistsException;
-import com.evernym.sdk.vcx.wallet.WalletItemNotFoundException;
-import com.evernym.sdk.vcx.wallet.WalletCreationException;
-import com.evernym.sdk.vcx.wallet.WalletAccessFailedException;
-import com.evernym.sdk.vcx.NoAgentInfoException;
+import com.evernym.sdk.vcx.vcx.*;
+import com.evernym.sdk.vcx.wallet.*;
 
 import com.sun.jna.ptr.PointerByReference;
 import org.json.JSONObject;
@@ -168,16 +118,12 @@ public class VcxException extends Exception {
         switch (errorCode) {
             case UNKNOWN_ERROR:
                 return new UnknownErrorException();
-            case CONNECTION_ERROR:
-                return new ConnectionErrorException();
-            case InvalidConnectionHandle:
+            case INVALID_CONNECTION_HANDLE:
                 return new InvalidConnectionHandleException();
             case INVALID_CONFIGURATION:
                 return new InvalidConfigurationException();
             case NOT_READY:
                 return new NotReadyException();
-            case NO_ENDPOINT:
-                return new NoEndpointException();
             case INVALID_OPTION:
                 return new InvalidOptionException();
             case INVALID_DID:
@@ -188,8 +134,6 @@ public class VcxException extends Exception {
                 return new PostMsgFailureException();
             case INVALID_NONCE:
                 return new InvalidNonceException();
-            case INVALID_KEY_DELEGATE:
-                return new InvalidKeyDelegateException();
             case INVALID_URL:
                 return new InvalidUrlException();
             case NOT_BASE58:
@@ -204,7 +148,7 @@ public class VcxException extends Exception {
                 return new InvalidCredentialRequestException();
             case INVALID_MSGPACK:
                 return new InvalidMsgPackException();
-            case INVALID_MESSAGES:
+            case INVALID_AGENCY_RESPONSE:
                 return new InvalidMessagesException();
             case INVALID_ATTRIBUTES_STRUCTURE:
                 return new InvalidAttributeStructureException();
@@ -220,23 +164,17 @@ public class VcxException extends Exception {
                 return new CreatePoolConfigException();
             case INVALID_PROOF_CREDENTIAL_DATA:
                 return new InvalidProofCredentialDataException();
-            case INDY_SUBMIT_REQUEST_ERR:
+            case INVALID_PREDICATES_STRUCTURE:
                 return new IndySubmitRequestErrorException();
-            case BUILD_CREDENTIAL_DEF_REQ_ERR:
-                return new BuildCredentialDefReqErrorException();
             case NO_POOL_OPEN:
                 return new NoPoolOpenException();
             case INVALID_SCHEMA:
                 return new InvalidSchemaException();
-            case FAILED_PROOF_COMPLIANCE:
-                return new FailedProofComplianceException();
-            case INVALID_HTTP_RESPONSE:
-                return new InvalidHTTPResponseException();
             case CREATE_CREDENTIAL_DEF_ERR:
                 return new CreateCredentialDefException();
             case UNKNOWN_LIBINDY_ERROR:
                 return new UnknownLibindyErrorException();
-            case INVALID_CREDENTIAL_DEF_JSON:
+            case CREDENTIAL_DEFINITION_NOT_FOUND:
                 return new InvalidCredentialDefJsonException();
             case INVALID_CREDENTIAL_DEF_HANDLE:
                 return new InvalidCredentialDefHandle();
@@ -256,10 +194,6 @@ public class VcxException extends Exception {
                 return new AlreadyInitializedException();
             case INVALID_INVITE_DETAILS:
                 return new InvalidInviteDetailsException();
-            case INVALID_SELF_ATTESTED_VAL:
-                return new InvalidSelfAttestedValueException();
-            case INVALID_PREDICATE:
-                return new InvalidPredicateException();
             case INVALID_OBJ_HANDLE:
                 return new InvalidObjHandleException();
             case INVALID_DISCLOSED_PROOF_HANDLE:
@@ -274,24 +208,96 @@ public class VcxException extends Exception {
                 return new WalletItemNotFoundException();
             case WALLET_ITEM_CANNOT_ADD:
                 return new WalletItemAlreadyExistsException();
+            case INVALID_WALLET_HANDLE:
+                return new InvalidWalletHandleException();
+            case CANNOT_DELETE_CONNECTION:
+                return new CannotDeleteConnectionException();
+            case CREATE_CONNECTION_ERROR:
+                return new CreateConnectionException();
+            case INVALID_WALLET_CREATION:
+                return new WalletCreateException();
             case INVALID_CREDENTIAL_HANDLE:
                 return new InvalidCredentialHandleException();
             case INVALID_CREDENTIAL_JSON:
                 return new InvalidCredentialJsonException();
-            case CREATE_CREDENTIAL_REQUEST_ERROR:
-                return new CreateCredentialRequestErrorException();
             case CREATE_PROOF_ERROR:
                 return new CreateProofErrorException();
             case INSUFFICIENT_TOKEN_AMOUNT:
                 return new InsufficientTokenAmountException();
+            case INVALID_PAYMENT_ADDRESS:
+                return new InvalidPaymentAddressException();
             case ACTION_NOT_SUPPORTED:
                 return new ActionNotSupportedException();
-            case INVALID_WALLET_CREATION:
-                return new WalletCreationException();
             case WALLET_ACCESS_FAILED:
                 return new WalletAccessFailedException();
             case NO_AGENT_INFO:
                 return new NoAgentInfoException();
+            case INVALID_LIBINDY_PARAM:
+                return new InvalidLibindyParamException();
+            case MISSING_WALLET_KEY:
+                return new MissingWalletKeyException();
+            case OBJECT_CACHE_ERROR:
+                return new ObjectCacheException();
+            case NO_PAYMENT_INFORMATION:
+                return new NoPaymentInformationException();
+            case DUPLICATE_WALLET_RECORD:
+                return new DuplicateWalletRecordException();
+            case WALLET_RECORD_NOT_FOUND:
+                return new WalletRecordNotFoundException();
+            case INVALID_WALLET_IMPORT_CONFIG:
+                return new InvalidWalletWalletImportConfigException();
+            case MISSING_BACKUP_KEY:
+                return new MissingBackupKeyException();
+            case WALLET_NOT_FOUND:
+                return new WalletNotFoundException();
+            case LIBINDY_INVALID_STRUCTURE:
+                return new LibindyInvalidStructureException();
+            case INVALID_STATE:
+                return new InvalidStateException();
+            case INVALID_LEDGER_RESPONSE:
+                return new InvalidLedgerResponseException();
+            case DID_ALREADY_EXISTS_IN_WALLET:
+                return new DidAlreadyExistsInWalletException();
+            case DUPLICATE_MASTER_SECRET:
+                return new DuplicateMasterSecretException();
+            case INVALID_PROOF_REQUEST:
+                return new InvalidProofRequestException();
+            case IOERROR:
+                return new IOException();
+            case MISSING_PAYMENT_METHOD:
+                return new MissingPaymentMethodException();
+            case DUPLICATE_SCHEMA:
+                return new DuplicateSchemaException();
+            case LOGGING_ERROR:
+                return new LoggingException();
+            case INVALID_REVOCATION_DETAILS:
+                return new InvalidRevocationDetailsException();
+            case INVALID_REV_ENTRY:
+                return new InvalidRevocationEntryException();
+            case INVALID_REVOCATION_TIMESTAMP:
+                return new InvalidRevocationTimestampException();
+            case UNKNOWN_SCHEMA_REJECTION:
+                return new UnknownSchemaRejectionException();
+            case INVALID_REV_REG_DEF_CREATION:
+                return new InvalidRevRegDefCreationException();
+            case CREATE_WALLET_BACKUP:
+                return new CreateWalletBackupException();
+            case RETRIEVE_EXPORTED_WALLET:
+                return new RetriveExportedWalletException();
+            case RETRIEVE_DEAD_DROP:
+                return new RetriveDeadDropException();
+            case INVALID_ATTACHMENT_ENCODING:
+                return new InvalidAttachementEncodingException();
+            case INVALID_REDIRECT_DETAILS:
+                return new InvalidRedirectDetailsException();
+            case MAX_BACKUP_SIZE:
+                return new MaxBackupSizeException();
+            case INVALID_PROVISION_TOKEN:
+                return new InvalidProvisionTokenException();
+            case INVALID_DID_DOC:
+                return new InvalidDidDocException();
+            case MESSAGE_IS_OUT_OF_THREAD:
+                return new MessageIsOutOfThreadException();
             case UNIDENTIFIED_ERROR_CODE:
                 String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
                 return new VcxException(message, sdkErrorCode);

@@ -76,13 +76,13 @@ describe('utils:', () => {
     it('throws: missing name', async () => {
       const { name, ...data } = updateInstitutionConfigsData
       const error = await shouldThrow(() => updateInstitutionConfigs(data as any))
-      assert.equal(error.vcxCode, VCXCode.INVALID_CONFIGURATION)
+      assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
 
     it('throws: missing logoUrl', async () => {
       const { logoUrl, ...data } = updateInstitutionConfigsData
       const error = await shouldThrow(() => updateInstitutionConfigs(data as any))
-      assert.equal(error.vcxCode, VCXCode.INVALID_CONFIGURATION)
+      assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
   })
 

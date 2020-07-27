@@ -256,11 +256,12 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
 
     validate_optional_config_val(config.get(CONFIG_WEBHOOK_URL), VcxErrorKind::InvalidUrl, Url::parse)?;
 
-    validate_optional_config_val(config.get(CONFIG_ACTORS), VcxErrorKind::InvalidOption, validation::validate_actors)?;
+    validate_optional_config_val(config.get(CONFIG_ACTORS), VcxErrorKind::InvalidConfiguration, validation::validate_actors)?;
 
     Ok(error::SUCCESS.code_num)
 }
 
+#[allow(dead_code)]
 fn validate_mandatory_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKind, closure: F) -> VcxResult<u32>
     where F: Fn(&str) -> Result<S, E> {
     closure(val.as_ref().ok_or(VcxError::from(err))?)
@@ -269,19 +270,16 @@ fn validate_mandatory_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKin
     Ok(error::SUCCESS.code_num)
 }
 
-fn validate_optional_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKind, closure: F) -> VcxResult<u32>
+fn validate_optional_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKind, closure: F) -> VcxResult<()>
     where F: Fn(&str) -> Result<S, E> {
-    if val.is_none() { return Ok(error::SUCCESS.code_num); }
-
-    closure(val.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConfiguration))?)
-        .or(Err(VcxError::from(err)))?;
-
-    Ok(error::SUCCESS.code_num)
-}
-
-pub fn validate_payment_method() -> VcxResult<u32> {
-    validate_mandatory_config_val(get_config_value(CONFIG_PAYMENT_METHOD).ok().as_ref(),
-                                  VcxErrorKind::MissingPaymentMethod, validation::validate_payment_method)
+    match val {
+        Some(val_) => {
+            closure(val_)
+                .or(Err(VcxError::from(err)))?;
+            Ok(())
+        },
+        None => Ok(())
+    }
 }
 
 pub fn log_settings() {
@@ -311,7 +309,7 @@ pub fn process_config_string(config: &str, do_validation: bool) -> VcxResult<u32
     trace!("process_config_string >>> config {}", config);
 
     let configuration: Value = serde_json::from_str(config)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse config: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot parse config from JSON. Err: {}", err)))?;
 
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {
@@ -320,7 +318,7 @@ pub fn process_config_string(config: &str, do_validation: bool) -> VcxResult<u32
                 Value::Array(value_) => set_config_value(key, &json!(value_).to_string()),
                 Value::Object(value_) => set_config_value(key, &json!(value_).to_string()),
                 Value::Bool(value_) => set_config_value(key, &json!(value_).to_string()),
-                _ => return Err(VcxError::from(VcxErrorKind::InvalidJson)),
+                _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Unsupported type of the value {} is used for \"{}\" key.", value, key))),
             }
         }
     }
@@ -339,11 +337,11 @@ pub fn process_config_file(path: &str) -> VcxResult<u32> {
 
     if !Path::new(path).is_file() {
         error!("Configuration path was invalid");
-        Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot find config file"))
-    } else {
-        let config = read_file(path)?;
-        process_config_string(&config, true)
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot find config file by specified path: {:?}", path)))
     }
+
+    let config = read_file(path)?;
+    process_config_string(&config, true)
 }
 
 pub fn get_wallet_name() -> VcxResult<String> {
@@ -400,7 +398,7 @@ pub fn get_config_value(key: &str) -> VcxResult<String> {
     get_opt_config_value(key)
         .ok_or(VcxError::from_msg(
             VcxErrorKind::InvalidConfiguration,
-            format!("Cannot read \"{}\" from settings", key)
+            format!("Cannot read the value for \"{}\" key from library settings", key)
         ))
 }
 
@@ -481,7 +479,7 @@ pub fn get_actors() -> Vec<Actors> {
     get_config_value(CONFIG_ACTORS)
         .and_then(|actors|
             ::serde_json::from_str(&actors)
-                .map_err(|_| VcxError::from(VcxErrorKind::InvalidOption))
+                .map_err(|_| VcxError::from(VcxErrorKind::InvalidConfiguration))
         ).unwrap_or_else(|_| Actors::iter().collect())
 }
 
@@ -702,12 +700,10 @@ pub mod tests {
         config.insert("invalid".to_string(), "invalid_url".to_string());
 
         //Success
-        assert_eq!(validate_optional_config_val(config.get("valid"), VcxErrorKind::InvalidUrl, closure).unwrap(),
-                   error::SUCCESS.code_num);
+        validate_optional_config_val(config.get("valid"), VcxErrorKind::InvalidUrl, closure).unwrap();
 
         // Success with No config
-        assert_eq!(validate_optional_config_val(config.get("unknown"), VcxErrorKind::InvalidUrl, closure).unwrap(),
-                   error::SUCCESS.code_num);
+        validate_optional_config_val(config.get("unknown"), VcxErrorKind::InvalidUrl, closure).unwrap();
 
         // Fail with failed fn call
         assert_eq!(validate_optional_config_val(config.get("invalid"),
@@ -775,6 +771,6 @@ pub mod tests {
 
         // passed invalid actor
         config["actors"] = json!(["wrong"]);
-        assert_eq!(process_config_string(&config.to_string(), true).unwrap_err().kind(), VcxErrorKind::InvalidOption);
+        assert_eq!(process_config_string(&config.to_string(), true).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
     }
 }

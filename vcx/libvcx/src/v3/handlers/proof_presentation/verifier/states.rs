@@ -294,8 +294,10 @@ impl VerifierSM {
     pub fn presentation_request_data(&self) -> VcxResult<&PresentationRequestData> {
         match self.state {
             VerifierState::Initiated(ref state) => Ok(&state.presentation_request_data),
-            VerifierState::PresentationRequestSent(_) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
-            VerifierState::Finished(_) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
+            VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                                format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
+            VerifierState::Finished(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                 format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
         }
     }
 
@@ -311,11 +313,13 @@ impl VerifierSM {
 
     pub fn presentation(&self) -> VcxResult<Presentation> {
         match self.state {
-            VerifierState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not received yet")),
-            VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not received yet")),
+            VerifierState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                  format!("Verifier object {} in state {} not ready to get Presentation message", self.source_id, self.state()))),
+            VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                                format!("Verifier object {} in state {} not ready to get Presentation message", self.source_id, self.state()))),
             VerifierState::Finished(ref state) => {
                 state.presentation.clone()
-                    .ok_or(VcxError::from(VcxErrorKind::InvalidProofHandle))
+                    .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Verifier object state: `presentation` not found", self.source_id)))
             }
         }
     }
@@ -409,7 +413,6 @@ pub mod test {
 
             assert_match!(VerifierState::Finished(_), verifier_sm.state);
             assert_eq!(VcxStateType::VcxStateAccepted as u32, verifier_sm.state());
-
         }
 
         //    #[test]

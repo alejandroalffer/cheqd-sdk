@@ -68,6 +68,14 @@ impl CreateSchema {
     fn get_state(&self) -> u32 { self.state as u32 }
 }
 
+fn handle_err(err: VcxError) -> VcxError {
+    if err.kind() == VcxErrorKind::InvalidHandle {
+        VcxError::from(VcxErrorKind::InvalidSchemaHandle)
+    } else {
+        err
+    }
+}
+
 pub fn create_and_publish_schema(source_id: &str,
                                  issuer_did: String,
                                  name: String,
@@ -161,25 +169,25 @@ pub fn is_valid_handle(handle: u32) -> bool {
 pub fn to_string(handle: u32) -> VcxResult<String> {
     SCHEMA_MAP.get(handle, |s| {
         s.to_string()
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
     SCHEMA_MAP.get(handle, |s| {
         Ok(s.get_source_id().to_string())
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_schema_id(handle: u32) -> VcxResult<String> {
     SCHEMA_MAP.get(handle, |s| {
         Ok(s.get_schema_id().to_string())
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_payment_txn(handle: u32) -> VcxResult<PaymentTxn> {
     SCHEMA_MAP.get(handle, |s| {
         s.get_payment_txn()
-    })
+    }).map_err(handle_err)
 }
 
 pub fn from_string(schema_data: &str) -> VcxResult<u32> {
@@ -188,8 +196,7 @@ pub fn from_string(schema_data: &str) -> VcxResult<u32> {
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
-    SCHEMA_MAP.release(handle)
-        .or(Err(VcxError::from(VcxErrorKind::InvalidSchemaHandle)))
+    SCHEMA_MAP.release(handle).map_err(handle_err)
 }
 
 pub fn release_all() {
@@ -199,13 +206,13 @@ pub fn release_all() {
 pub fn update_state(handle: u32) -> VcxResult<u32> {
     SCHEMA_MAP.get_mut(handle, |s| {
         s.update_state()
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
     SCHEMA_MAP.get_mut(handle, |s| {
         Ok(s.get_state())
-    })
+    }).map_err(handle_err)
 }
 
 #[cfg(test)]
@@ -401,7 +408,7 @@ pub mod tests {
     fn test_handle_errors() {
         let _setup = SetupEmpty::init();
 
-        assert_eq!(to_string(13435178).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
+        assert_eq!(to_string(13435178).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
     }
 
     #[cfg(feature = "pool_tests")]

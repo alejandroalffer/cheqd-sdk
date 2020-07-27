@@ -50,7 +50,8 @@ impl Issuer {
         match msg {
             Some(msg) => {
                 let message: A2AMessage = ::serde_json::from_str(&msg)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      format!("Cannot updated Issuer state with messages: Message deserialization failed with: {:?}", err)))?;
 
                 self.step(message.into())
             }
@@ -95,7 +96,8 @@ impl Holder {
         match msg {
             Some(msg) => {
                 let message: A2AMessage = ::serde_json::from_str(&msg)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state: Message deserialization failed: {:?}", err)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      format!("Cannot updated Holder state with messages: Message deserialization failed with: {:?}", err)))?;
 
                 self.step(message.into())
             }
@@ -133,8 +135,8 @@ impl Holder {
         let credential_offer: CredentialOffer = match message {
             A2AMessage::CredentialOffer(credential_offer) => credential_offer,
             msg => {
-                return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages,
-                                              format!("Message of different type was received: {:?}", msg)));
+                return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse,
+                                              format!("Message of different type has been received. Expected: CredentialOffer. Received: {:?}", msg)));
             }
         };
 
