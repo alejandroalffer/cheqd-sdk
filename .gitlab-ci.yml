@@ -348,7 +348,7 @@ build-android-armv7-from-latest:
 
 build-consistent-vers-ts:
   extends: .tags_micro
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
+  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:${CI_COMMIT_REF_SLUG}
   stage: build-pre
   artifacts:
     expire_in: 1 week
