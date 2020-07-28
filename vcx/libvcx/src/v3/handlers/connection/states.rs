@@ -350,6 +350,7 @@ impl RespondedState {
     fn handle_ack(&self, ack: &Ack) -> VcxResult<Thread> {
         self.thread.check_message_order(&self.did_doc.id, &ack.thread)?;
         let thread = self.thread.clone().update_received_order(&self.did_doc.id);
+        self.prev_agent_info.delete()?;
         Ok(thread)
     }
 
@@ -357,12 +358,14 @@ impl RespondedState {
         self.thread.check_message_order(&self.did_doc.id, &ping.thread.clone().unwrap_or_default())?;
         _handle_ping(ping, agent_info, &self.did_doc)?;
         let thread = self.thread.clone().update_received_order(&self.did_doc.id);
+        self.prev_agent_info.delete()?;
         Ok(thread)
     }
 
     fn handle_ping_response(&self, ping_response: &PingResponse) -> VcxResult<Thread> {
         self.thread.check_message_order(&self.did_doc.id, &ping_response.thread)?;
         let thread = self.thread.clone().update_received_order(&self.did_doc.id);
+        self.prev_agent_info.delete()?;
         Ok(thread)
     }
 
