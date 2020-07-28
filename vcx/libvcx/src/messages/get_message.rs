@@ -566,6 +566,8 @@ mod tests {
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::set_consumer();
 
+        thread::sleep(Duration::from_millis(3000));
+
         let _all_messages = download_messages(None, None, None).unwrap();
 
         let pending = download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
