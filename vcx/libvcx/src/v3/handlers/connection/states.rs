@@ -89,6 +89,8 @@ pub struct InvitedState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RequestedState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    invitation: Option<Invitations>,
     request: Request,
     did_doc: DidDoc,
     #[serde(default)]
@@ -97,6 +99,8 @@ pub struct RequestedState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RespondedState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    invitation: Option<Invitations>,
     response: SignedResponse,
     did_doc: DidDoc,
     prev_agent_info: AgentInfo,
@@ -106,16 +110,18 @@ pub struct RespondedState {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompleteState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invitation: Option<Invitations>,
     pub did_doc: DidDoc,
     pub protocols: Option<Vec<ProtocolDescriptor>>,
     #[serde(default)]
     pub thread: Thread,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub outofband_invite: Option<OutofbandInvitation>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FailedState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invitation: Option<Invitations>,
     error: Option<ProblemReport>,
     #[serde(default)]
     thread: Thread,
@@ -145,16 +151,20 @@ impl From<(InitializedState, OutofbandInvitation)> for CompleteState {
             did_doc: DidDoc::from(invitation.clone()),
             protocols: None,
             thread,
-            outofband_invite: Some(invitation),
+            invitation: Some(Invitations::OutofbandInvitation(invitation)),
         }
     }
 }
 
 impl From<(InvitedState, ProblemReport, Thread)> for FailedState {
-    fn from((_state, error, thread): (InvitedState, ProblemReport, Thread)) -> FailedState {
+    fn from((state, error, thread): (InvitedState, ProblemReport, Thread)) -> FailedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to FailedState with ProblemReport message: {:?}", error);
         trace!("Thread: {:?}", thread);
-        FailedState { error: Some(error), thread }
+        FailedState {
+            invitation: Some(state.invitation),
+            error: Some(error),
+            thread,
+        }
     }
 }
 
@@ -162,15 +172,26 @@ impl From<(InvitedState, Request, Thread)> for RequestedState {
     fn from((state, request, thread): (InvitedState, Request, Thread)) -> RequestedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
         trace!("Thread: {:?}", thread);
-        RequestedState { request, did_doc: DidDoc::from(state.invitation), thread }
+        RequestedState {
+            invitation: Some(state.invitation.clone()),
+            request,
+            did_doc: DidDoc::from(state.invitation),
+            thread,
+        }
     }
 }
 
 impl From<(InvitedState, Request, SignedResponse, AgentInfo, Thread)> for RespondedState {
-    fn from((_state, request, response, prev_agent_info, thread): (InvitedState, Request, SignedResponse, AgentInfo, Thread)) -> RespondedState {
+    fn from((state, request, response, prev_agent_info, thread): (InvitedState, Request, SignedResponse, AgentInfo, Thread)) -> RespondedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
         trace!("Thread: {:?}", thread);
-        RespondedState { response, did_doc: request.connection.did_doc, prev_agent_info, thread }
+        RespondedState {
+            invitation: Some(state.invitation),
+            response,
+            did_doc: request.connection.did_doc,
+            prev_agent_info,
+            thread,
+        }
     }
 }
 
@@ -178,31 +199,51 @@ impl From<(RespondedState, Ping, Thread)> for RespondedState {
     fn from((state, _ping, thread): (RespondedState, Ping, Thread)) -> RespondedState {
         trace!("DidExchangeStateSM: transit state from RespondedState to RespondedState");
         trace!("Thread: {:?}", thread);
-        RespondedState { response: state.response, did_doc: state.did_doc, prev_agent_info: state.prev_agent_info, thread }
+        RespondedState {
+            invitation: state.invitation,
+            response: state.response,
+            did_doc: state.did_doc,
+            prev_agent_info:
+            state.prev_agent_info,
+            thread,
+        }
     }
 }
 
 impl From<(RequestedState, ProblemReport, Thread)> for FailedState {
-    fn from((_state, error, thread): (RequestedState, ProblemReport, Thread)) -> FailedState {
+    fn from((state, error, thread): (RequestedState, ProblemReport, Thread)) -> FailedState {
         trace!("DidExchangeStateSM: transit state from RequestedState to FailedState with ProblemReport: {:?}", error);
         trace!("Thread: {:?}", thread);
-        FailedState { error: Some(error), thread }
+        FailedState {
+            invitation: state.invitation,
+            error: Some(error),
+            thread,
+        }
     }
 }
 
 impl From<(RequestedState, Response, Thread)> for CompleteState {
-    fn from((_state, response, thread): (RequestedState, Response, Thread)) -> CompleteState {
+    fn from((state, response, thread): (RequestedState, Response, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: response.connection.did_doc, protocols: None, thread, outofband_invite: None }
+        CompleteState {
+            did_doc: response.connection.did_doc,
+            protocols: None,
+            thread,
+            invitation: state.invitation,
+        }
     }
 }
 
 impl From<(RespondedState, ProblemReport, Thread)> for FailedState {
-    fn from((_state, error, thread): (RespondedState, ProblemReport, Thread)) -> FailedState {
+    fn from((state, error, thread): (RespondedState, ProblemReport, Thread)) -> FailedState {
         trace!("DidExchangeStateSM: transit state from RespondedState to FailedState with ProblemReport message: {:?}", error);
         trace!("Thread: {:?}", thread);
-        FailedState { error: Some(error), thread }
+        FailedState {
+            invitation: state.invitation,
+            error: Some(error),
+            thread,
+        }
     }
 }
 
@@ -210,7 +251,12 @@ impl From<(RespondedState, Ack, Thread)> for CompleteState {
     fn from((state, _ack, thread): (RespondedState, Ack, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState with Ack");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: state.did_doc, protocols: None, thread, outofband_invite: None }
+        CompleteState {
+            did_doc: state.did_doc,
+            protocols: None,
+            thread,
+            invitation: state.invitation,
+        }
     }
 }
 
@@ -218,7 +264,12 @@ impl From<(RespondedState, Ping, Thread)> for CompleteState {
     fn from((state, _ping, thread): (RespondedState, Ping, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState with Ping");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: state.did_doc, protocols: None, thread, outofband_invite: None }
+        CompleteState {
+            did_doc: state.did_doc,
+            protocols: None,
+            thread,
+            invitation: state.invitation,
+        }
     }
 }
 
@@ -226,14 +277,24 @@ impl From<(RespondedState, PingResponse, Thread)> for CompleteState {
     fn from((state, _ping_response, thread): (RespondedState, PingResponse, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState with PingResponse");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: state.did_doc, protocols: None, thread, outofband_invite: None }
+        CompleteState {
+            did_doc: state.did_doc,
+            protocols: None,
+            thread,
+            invitation: state.invitation,
+        }
     }
 }
 
 impl From<(CompleteState, Vec<ProtocolDescriptor>)> for CompleteState {
     fn from((state, protocols): (CompleteState, Vec<ProtocolDescriptor>)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from CompleteState to CompleteState");
-        CompleteState { did_doc: state.did_doc, protocols: Some(protocols), thread: state.thread, outofband_invite: None }
+        CompleteState {
+            did_doc: state.did_doc,
+            protocols: Some(protocols),
+            thread: state.thread,
+            invitation: state.invitation,
+        }
     }
 }
 
@@ -540,8 +601,11 @@ impl CompleteState {
     }
 
     pub fn warn_if_onetime_connection(&self) {
-        if self.outofband_invite.is_some() {
-            warn!("You are using one-time connection. The other side of communication might have erased it already")
+        match self.invitation.as_ref() {
+            Some(Invitations::OutofbandInvitation(invitation)) if invitation.handshake_protocols.is_empty() => {
+                warn!("You are using one-time connection. The other side of communication might have erased it already")
+            }
+            _ => {}
         }
     }
 }
@@ -976,10 +1040,14 @@ impl DidExchangeSM {
         match self.state {
             ActorDidExchangeState::Inviter(DidExchangeState::Invited(ref state)) |
             ActorDidExchangeState::Invitee(DidExchangeState::Invited(ref state)) => Some(state.invitation.clone()),
+            ActorDidExchangeState::Inviter(DidExchangeState::Requested(ref state)) |
+            ActorDidExchangeState::Invitee(DidExchangeState::Requested(ref state)) => state.invitation.clone(),
+            ActorDidExchangeState::Inviter(DidExchangeState::Responded(ref state)) |
+            ActorDidExchangeState::Invitee(DidExchangeState::Responded(ref state)) => state.invitation.clone(),
             ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref state)) |
-            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref state)) => {
-                state.outofband_invite.as_ref().map(|invite|Invitations::OutofbandInvitation(invite.clone()))
-            }
+            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref state)) => state.invitation.clone(),
+            ActorDidExchangeState::Inviter(DidExchangeState::Failed(ref state)) |
+            ActorDidExchangeState::Invitee(DidExchangeState::Failed(ref state)) => state.invitation.clone(),
             _ => None
         }
     }
@@ -1704,7 +1772,7 @@ pub mod test {
 
                 match did_exchange_sm.state {
                     ActorDidExchangeState::Invitee(DidExchangeState::Completed(state)) => {
-                        assert!(state.outofband_invite.is_some());
+                        assert!(state.invitation.is_some());
                         assert_eq!(invitation.id.to_string(), state.thread.pthid.unwrap());
                         Ok(())
                     }

@@ -135,7 +135,7 @@ pub struct ConnectionRequestRedirect {
     pub thread: Thread,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct KeyDlgProof {
     #[serde(rename = "agentDID")]
@@ -146,7 +146,7 @@ pub struct KeyDlgProof {
     signature: String,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SenderDetail {
     pub name: Option<String>,
@@ -161,7 +161,7 @@ pub struct SenderDetail {
     pub public_did: Option<String>,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SenderAgencyDetail {
     #[serde(rename = "DID")]
@@ -171,7 +171,7 @@ pub struct SenderAgencyDetail {
     pub endpoint: String,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteDetail {
     pub status_code: String,
