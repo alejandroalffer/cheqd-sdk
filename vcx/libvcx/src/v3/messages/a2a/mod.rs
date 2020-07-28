@@ -35,8 +35,8 @@ use v3::messages::discovery::disclose::Disclose;
 
 use v3::messages::basic_message::message::BasicMessage;
 
-use v3::messages::question::question::Question;
-use v3::messages::question::answer::Answer;
+use v3::messages::questionanswer::question::Question;
+use v3::messages::questionanswer::answer::Answer;
 
 use v3::messages::committedanswer::question::Question as CommitedQuestion;
 use v3::messages::committedanswer::answer::Answer as CommitedAnswer;
@@ -87,8 +87,8 @@ pub enum A2AMessage {
     Answer(Answer),
 
     /// committedanswer
-    CommitedQuestion(CommitedQuestion),
-    CommitedAnswer(CommitedAnswer),
+    CommittedQuestion(CommitedQuestion),
+    CommittedAnswer(CommitedAnswer),
 
     /// Out-of-Band
     OutOfBandInvitation(OutofbandInvitation),
@@ -237,12 +237,12 @@ impl<'de> Deserialize<'de> for A2AMessage {
             }
             (MessageFamilies::Committedanswer, A2AMessage::ASK_QUESTION) => {
                 CommitedQuestion::deserialize(value)
-                    .map(|msg| A2AMessage::CommitedQuestion(msg))
+                    .map(|msg| A2AMessage::CommittedQuestion(msg))
                     .map_err(de::Error::custom)
             }
             (MessageFamilies::Committedanswer, A2AMessage::ANSWER_GIVER) => {
                 CommitedAnswer::deserialize(value)
-                    .map(|msg| A2AMessage::CommitedAnswer(msg))
+                    .map(|msg| A2AMessage::CommittedAnswer(msg))
                     .map_err(de::Error::custom)
             }
             (MessageFamilies::Outofband, A2AMessage::OUTOFBAND_INVITATION) => {
@@ -306,8 +306,8 @@ impl Serialize for A2AMessage {
             A2AMessage::HandshakeReuseAccepted(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED),
             A2AMessage::Question(msg) => set_a2a_message_type(msg, MessageFamilies::QuestionAnswer, A2AMessage::QUESTION),
             A2AMessage::Answer(msg) => set_a2a_message_type(msg, MessageFamilies::QuestionAnswer, A2AMessage::ANSWER),
-            A2AMessage::CommitedQuestion(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ASK_QUESTION),
-            A2AMessage::CommitedAnswer(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ANSWER_GIVER),
+            A2AMessage::CommittedQuestion(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ASK_QUESTION),
+            A2AMessage::CommittedAnswer(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ANSWER_GIVER),
             A2AMessage::Generic(msg) => Ok(msg.clone())
         }.map_err(ser::Error::custom)?;
 
@@ -371,9 +371,9 @@ impl A2AMessage {
     pub const OUTOFBAND_INVITATION: &'static str = "invitation";
     pub const OUTOFBAND_HANDSHAKE_REUSE: &'static str = "handshake-reuse";
     pub const OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED: &'static str = "handshake-reuse-accepted";
-    pub const QUESTION: &'static str = "question";
+    pub const QUESTION: &'static str = "questionanswer";
     pub const ANSWER: &'static str = "answer";
-    pub const ASK_QUESTION: &'static str = "ask-question";
+    pub const ASK_QUESTION: &'static str = "ask-questionanswer";
     pub const ANSWER_GIVER: &'static str = "answer-given";
 }
 

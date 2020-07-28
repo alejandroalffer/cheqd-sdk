@@ -11,6 +11,10 @@ use v3::messages::a2a::A2AMessage;
 use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 use v3::messages::outofband::handshake_reuse::HandshakeReuse;
 use v3::messages::outofband::handshake_reuse_accepted::HandshakeReuseAccepted;
+use v3::messages::questionanswer::question::{Question, QuestionResponse};
+use v3::messages::questionanswer::answer::Answer;
+use v3::messages::committedanswer::question::Question as CommitedQuestion;
+use v3::messages::committedanswer::answer::Answer as CommitedAnswer;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +35,11 @@ pub enum DidExchangeMessages {
     HandshakeReuseReceived(HandshakeReuse),
     HandshakeReuseAcceptedReceived(HandshakeReuseAccepted),
     DiscloseReceived(Disclose),
+    QuestionReceived(Question),
+    AnswerReceived(Answer),
+    SendAnswer((Question, QuestionResponse)),
+    CommittedQuestionReceived(CommitedQuestion),
+    CommittedAnswerReceived(CommitedAnswer),
     Unknown
 }
 
@@ -69,6 +78,18 @@ impl From<A2AMessage> for DidExchangeMessages {
             }
             A2AMessage::ConnectionProblemReport(report) => {
                 DidExchangeMessages::ProblemReportReceived(report)
+            }
+            A2AMessage::Question(question) => {
+                DidExchangeMessages::QuestionReceived(question)
+            }
+            A2AMessage::Answer(answer) => {
+                DidExchangeMessages::AnswerReceived(answer)
+            }
+            A2AMessage::CommittedQuestion(question) => {
+                DidExchangeMessages::CommittedQuestionReceived(question)
+            }
+            A2AMessage::CommittedAnswer(answer) => {
+                DidExchangeMessages::CommittedAnswerReceived(answer)
             }
             _ => {
                 DidExchangeMessages::Unknown

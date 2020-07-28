@@ -43,7 +43,7 @@ impl Question {
     }
 
     pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::CommitedQuestion(self.clone())
+        A2AMessage::CommittedQuestion(self.clone())
     }
 }
 

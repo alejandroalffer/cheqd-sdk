@@ -33,7 +33,7 @@ impl Answer {
     }
     
     pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::CommitedAnswer(self.clone())
+        A2AMessage::CommittedAnswer(self.clone())
     }
 }
 

@@ -1502,6 +1502,82 @@ pub extern fn vcx_connection_send_reuse(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Send answer on received question message according to Aries question-answer protocol.
+///
+/// The related protocol can be found here: https://github.com/hyperledger/aries-rfcs/tree/master/features/0113-question-answer
+///
+/// Note that this function works in case `aries` communication method is used.
+///     In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: handle pointing to Connection to use for sending answer message.
+///
+/// question: A JSON string representing Question received via pairwise connection.
+///
+/// answer: An answer to use which is a JSON string representing chosen `valid_response` option from Question message.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// # Examples
+/// question ->
+///     {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+///         "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+///         "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+///         "question_detail": "This is optional fine-print giving context to the question and its various answers.",
+///         "nonce": "<valid_nonce>",
+///         "signature_required": true,
+///         "valid_responses" : [
+///             {"text": "Yes, it's me"},
+///             {"text": "No, that's not me!"}],
+///         "~timing": {
+///             "expires_time": "2018-12-13T17:29:06+0000"
+///         }
+///     }
+/// answer ->
+///     {"text": "Yes, it's me"}
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_send_answer(command_handle: u32,
+                                         connection_handle: u32,
+                                         question: *const c_char,
+                                         answer: *const c_char,
+                                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_connection_send_answer >>>");
+
+    check_useful_c_str!(question, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(answer, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_send_answer(command_handle: {}, connection_handle: {})",
+           command_handle, connection_handle);
+
+    spawn(move || {
+        match send_answer(connection_handle, question, answer) {
+            Ok(()) => {
+                trace!("vcx_connection_send_answer_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_connection_send_answer_cb(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Get the information about the connection state.
 ///
 /// Note: This method can be used for `aries` communication method only.

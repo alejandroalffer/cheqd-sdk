@@ -1356,6 +1356,18 @@ pub fn send_reuse(connection_handle: u32, invitation: String) -> VcxResult<()> {
     })
 }
 
+pub fn send_answer(connection_handle: u32, question: String, answer: String) -> VcxResult<()> {
+    CONNECTION_MAP.get_mut(connection_handle, |connection| {
+        match connection {
+            Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported,
+                                                         "Proprietary Connection type doesn't support this action: `send_answer`.")),
+            Connections::V3(ref mut connection) => {
+                connection.send_answer(question.clone(), answer.clone())
+            }
+        }
+    })
+}
+
 pub fn get_connection_info(handle: u32) -> VcxResult<String> {
     CONNECTION_MAP.get(handle, |cxn| {
         match cxn {

@@ -10,6 +10,7 @@ use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::basic_message::message::BasicMessage;
 use v3::handlers::connection::types::{SideConnectionInfo, PairwiseConnectionInfo, CompletedConnection, OutofbandMeta, Invitations};
 use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
+use v3::messages::questionanswer::question::{Question, QuestionResponse};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
@@ -240,6 +241,20 @@ impl Connection {
     pub fn send_reuse(&mut self, invitation: OutofbandInvitation) -> VcxResult<()> {
         trace!("Connection::send_reuse >>> invitation: {:?}", invitation);
         self.handle_message(DidExchangeMessages::SendHandshakeReuse(invitation))
+    }
+
+    pub fn send_answer(&mut self, question: String, response: String) -> VcxResult<()> {
+        trace!("Connection::send_answer >>> question: {:?}, response: {:?}", question, response);
+
+        let question: Question = ::serde_json::from_str(&question)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Could not parse Aries Question from message: {:?}. Err: {:?}", question, err)))?;
+
+        let response: QuestionResponse = ::serde_json::from_str(&response)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Could not parse Aries Valid Question Response from message: {:?}. Err: {:?}", response, err)))?;
+
+        self.handle_message(DidExchangeMessages::SendAnswer((question, response)))
     }
 
     pub fn get_connection_info(&self) -> VcxResult<String> {
