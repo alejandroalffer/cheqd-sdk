@@ -78,7 +78,7 @@ pub mod tests {
     }
 
     fn _question_detail() -> String {
-        String::from("This is optional fine-print giving context to the questionanswer and its various answers.")
+        String::from("This is optional fine-print giving context to the question and its various answers.")
     }
 
     fn _nonce() -> String {

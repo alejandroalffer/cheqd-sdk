@@ -1143,4 +1143,53 @@ public class ConnectionApi extends VcxJava.API {
 
 		return future;
 	}
+
+	/**
+	 * Send answer on received question message according to Aries question-answer protocol.
+	 * <p>
+	 * Note that this function works in case `aries` communication method is used.
+	 * In other cases it returns ActionNotSupported error.
+	 *
+	 * @param  connectionHandle handle pointing to a Connection object to send answer message.
+	 * @param  question         A JSON string representing Question received via pairwise connection.
+	 *                          {
+	 *                              "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+	 *                              "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+	 *                              "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+	 *                              "question_detail": "This is optional fine-print giving context to the question and its various answers.",
+	 *                              "nonce": "<valid_nonce>",
+	 *                              "signature_required": true,
+	 *                              "valid_responses" : [
+	 *                                  {"text": "Yes, it's me"},
+	 *                                  {"text": "No, that's not me!"}],
+	 *                              "~timing": {
+	 *                                  "expires_time": "2018-12-13T17:29:06+0000"
+	 *                              }
+	 *                          }
+	 * @param  answer           An answer to use which is a JSON string representing chosen `valid_response` option from Question message.
+	 *                          {
+	 *                              "text": "Yes, it's me"
+	 *                          }
+	 *
+	 * @return                  void
+	 *
+	 * @throws VcxException     If an exception occurred in Libvcx library.
+	 */
+	public static CompletableFuture<Void> connectionSendAnswer(
+			int connectionHandle,
+			String question,
+			String answer
+	) throws VcxException {
+		ParamGuard.notNull(question, "question");
+		ParamGuard.notNull(answer, "answer");
+
+		logger.debug("connectionSendAnswer() called with: connectionHandle = [" + connectionHandle + "],  question = [" + question + "],  answer = [" + answer + "]");
+		CompletableFuture<Void> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_send_answer(commandHandle, connectionHandle, question, answer, voidCb);
+		checkResult(result);
+
+		return future;
+	}
 }

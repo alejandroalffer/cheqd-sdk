@@ -459,10 +459,10 @@ impl Message {
                 (PayloadKinds::Other(String::from(AriesA2AMessage::ANSWER)), json!(&answer).to_string())
             }
             AriesA2AMessage::CommittedQuestion(question) => {
-                (PayloadKinds::Other(String::from(AriesA2AMessage::ASK_QUESTION)), json!(&question).to_string())
+                (PayloadKinds::Other(String::from(AriesA2AMessage::QUESTION)), json!(&question).to_string())
             }
             AriesA2AMessage::CommittedAnswer(answer) => {
-                (PayloadKinds::Other(String::from(AriesA2AMessage::ANSWER_GIVER)), json!(&answer).to_string())
+                (PayloadKinds::Other(String::from(AriesA2AMessage::ANSWER)), json!(&answer).to_string())
             }
             AriesA2AMessage::BasicMessage(message) => {
                 (PayloadKinds::Other(String::from(AriesA2AMessage::BASIC_MESSAGE)), json!(&message).to_string())

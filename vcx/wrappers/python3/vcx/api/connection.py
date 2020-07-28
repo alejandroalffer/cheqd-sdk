@@ -768,6 +768,48 @@ class Connection(VcxStateful):
                       c_invite,
                       Connection.send_reuse.cb)
 
+
+    async def send_answer(self, question: str, answer: str,):
+        """
+        Send answer on received question message according to Aries question-answer protocol.
+    
+        Note that this function works in case `aries` communication method is used.
+            In other cases it returns ActionNotSupported error.
+
+        :param question: A JSON string representing Question received via pairwise connection.
+        {
+            "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+            "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+            "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+            "question_detail": "This is optional fine-print giving context to the question and its various answers.",
+            "nonce": "<valid_nonce>",
+            "signature_required": true,
+            "valid_responses" : [
+                {"text": "Yes, it's me"},
+                {"text": "No, that's not me!"}],
+            "~timing": {
+                "expires_time": "2018-12-13T17:29:06+0000"
+            }
+        }
+        :param answer: An answer to use which is a JSON string representing chosen `valid_response` option from Question message.
+            {"text": "Yes, it's me"}
+
+        :return: no value
+        """
+        if not hasattr(Connection.send_answer, "cb"):
+            self.logger.debug("vcx_connection_send_answer: Creating callback")
+            Connection.send_answer.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_connection_handle = c_uint32(self.handle)
+        c_question = c_char_p(question.encode('utf-8'))
+        c_answer = c_char_p(answer.encode('utf-8'))
+
+        await do_call('vcx_connection_send_answer',
+                      c_connection_handle,
+                      c_question,
+                      c_answer,
+                      Connection.send_answer.cb)
+
     async def get_my_pw_did(self) -> str:
         if not hasattr(Connection.get_my_pw_did, "cb"):
             self.logger.debug("get_my_pw_did: Creating callback")

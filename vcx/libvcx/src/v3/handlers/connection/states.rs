@@ -518,7 +518,7 @@ impl CompleteState {
 
         match answer.verify(&remote_vk) {
             Ok(()) => {},
-            Err(err) => {
+            Err(_) => {
                 let thread = answer.thread.clone()
                     .increment_sender_order()
                     .update_received_order(&self.did_doc.id);

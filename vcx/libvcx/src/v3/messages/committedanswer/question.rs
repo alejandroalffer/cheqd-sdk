@@ -98,7 +98,7 @@ pub mod tests {
             .set_valid_responses(_valid_responses());
         assert_eq!(_question(), question);
 
-        let expected = r#"{"@id":"testid","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/committedanswer/1.0/ask-question","external_links":[],"question_detail":"This is optional fine-print giving context to the question and its various answers.","question_text":"Alice, are you on the phone with Bob from Faber Bank right now?","valid_responses":[{"nonce":"n1","text":"Yes, it's me"},{"nonce":"n1","text":"No, that's not me!"}]}"#;
+        let expected = r#"{"@id":"testid","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/committedanswer/1.0/question","external_links":[],"question_detail":"This is optional fine-print giving context to the question and its various answers.","question_text":"Alice, are you on the phone with Bob from Faber Bank right now?","valid_responses":[{"nonce":"n1","text":"Yes, it's me"},{"nonce":"n1","text":"No, that's not me!"}]}"#;
         assert_eq!(expected, json!(question.to_a2a_message()).to_string());
     }
 }

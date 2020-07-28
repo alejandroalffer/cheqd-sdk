@@ -148,6 +148,11 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                      invite:(NSString *)invite
              withCompletion:(void (^)(NSError *error))completion;
 
+- (void)connectionSendAnswer:(VcxHandle)connectionHandle
+                    question:(NSString *)question
+                      answer:(NSString *)answer
+             withCompletion:(void (^)(NSError *error))completion;
+
 - (void)connectionSignData:(VcxHandle)connectionHandle
                   withData:(NSData *)dataRaw
             withCompletion:(void (^)(NSError *error, NSData *signature_raw, vcx_u32_t signature_len))completion;

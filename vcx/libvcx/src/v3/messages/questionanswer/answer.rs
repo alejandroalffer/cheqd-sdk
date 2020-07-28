@@ -6,6 +6,7 @@ use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::questionanswer::question::Question;
 use utils::libindy::crypto;
 use error::prelude::*;
+use sha2::{Sha512, Digest};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Answer {
@@ -27,7 +28,7 @@ pub struct ResponseSignature {
     pub msg_type: MessageType,
     pub signature: String,
     pub sig_data: String,
-    pub signer: String,
+    pub signers: Vec<String>,
 }
 
 impl Default for ResponseSignature {
@@ -36,7 +37,7 @@ impl Default for ResponseSignature {
             msg_type: MessageType::build(MessageFamilies::QuestionAnswer, "ed25519Sha512_single"),
             signature: String::new(),
             sig_data: String::new(),
-            signer: String::new(),
+            signers: Vec::new(),
         }
     }
 }
@@ -69,7 +70,9 @@ impl Answer {
         sig_data.extend(self.response.as_bytes());
         sig_data.extend(question.nonce.as_bytes());
 
-        // TODO: HASH(sign_data)???
+        let mut hasher = Sha512::new();
+        hasher.update(&sig_data);
+        let sig_data = hasher.finalize();
 
         let signature = crypto::sign(key, &sig_data)?;
 
@@ -80,7 +83,7 @@ impl Answer {
         self.response_sig = Some(ResponseSignature {
             signature,
             sig_data,
-            signer: key.to_string(),
+            signers: vec![key.to_string()],
             ..Default::default()
         });
 
@@ -164,9 +167,9 @@ pub mod tests {
             .set_thread(_thread());
 
         let expected_data = ResponseSignature {
-            signature: "Al1On_w2dXMGLoKpTeM6uBuddbIwpRtHmfwc22P1Qu4EDfMVN_cmmBrA5jw-ln72WOUbZok-HmMAdICGzMYbDg==".to_string(),
-            sig_data: "QWxpY2UsIGFyZSB5b3Ugb24gdGhlIHBob25lIHdpdGggQm9iIGZyb20gRmFiZXIgQmFuayByaWdodCBub3c_WWVzLCBpdCdzIG1lMTAwMDAwMA==".to_string(),
-            signer: "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL".to_string(),
+            signature: "Zy6vheir8mzbijd5mWSB0NdCEcgt2GofOO3mdjDgA5RtYpgZ6NebGXJzAW9H6kAaOZbhpMjqFsbrFVRh-7P_Ag==".to_string(),
+            sig_data: "hiyukYrnayWc6rT3exzsNub_ms8uk55KbKfePSPa6N5vLTEWOv1EyarEQ9ghE4hWVOr6de6liCO-pMJMd67NKA==".to_string(),
+            signers: vec!["GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL".to_string()],
             ..ResponseSignature::default()
         };
 

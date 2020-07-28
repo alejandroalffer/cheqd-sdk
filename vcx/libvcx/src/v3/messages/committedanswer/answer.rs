@@ -67,7 +67,7 @@ pub mod tests {
 
         assert_eq!(_answer(), answer);
 
-        let expected = r#"{"@id":"testid","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/committedanswer/1.0/answer-given","response.@sig":{"sig_data":"","signature":"","timestamp":""},"~thread":{"received_orders":{},"sender_order":0,"thid":"test_id"}}"#;
+        let expected = r#"{"@id":"testid","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/committedanswer/1.0/answer","response.@sig":{"sig_data":"","signature":"","timestamp":""},"~thread":{"received_orders":{},"sender_order":0,"thid":"test_id"}}"#;
         assert_eq!(expected, json!(answer.to_a2a_message()).to_string());
     }
 }

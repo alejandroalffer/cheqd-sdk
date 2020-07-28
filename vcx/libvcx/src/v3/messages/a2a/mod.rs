@@ -235,12 +235,12 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::Answer(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Committedanswer, A2AMessage::ASK_QUESTION) => {
+            (MessageFamilies::Committedanswer, A2AMessage::QUESTION) => {
                 CommitedQuestion::deserialize(value)
                     .map(|msg| A2AMessage::CommittedQuestion(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Committedanswer, A2AMessage::ANSWER_GIVER) => {
+            (MessageFamilies::Committedanswer, A2AMessage::ANSWER) => {
                 CommitedAnswer::deserialize(value)
                     .map(|msg| A2AMessage::CommittedAnswer(msg))
                     .map_err(de::Error::custom)
@@ -306,8 +306,8 @@ impl Serialize for A2AMessage {
             A2AMessage::HandshakeReuseAccepted(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED),
             A2AMessage::Question(msg) => set_a2a_message_type(msg, MessageFamilies::QuestionAnswer, A2AMessage::QUESTION),
             A2AMessage::Answer(msg) => set_a2a_message_type(msg, MessageFamilies::QuestionAnswer, A2AMessage::ANSWER),
-            A2AMessage::CommittedQuestion(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ASK_QUESTION),
-            A2AMessage::CommittedAnswer(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ANSWER_GIVER),
+            A2AMessage::CommittedQuestion(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::QUESTION),
+            A2AMessage::CommittedAnswer(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ANSWER),
             A2AMessage::Generic(msg) => Ok(msg.clone())
         }.map_err(ser::Error::custom)?;
 
@@ -371,10 +371,8 @@ impl A2AMessage {
     pub const OUTOFBAND_INVITATION: &'static str = "invitation";
     pub const OUTOFBAND_HANDSHAKE_REUSE: &'static str = "handshake-reuse";
     pub const OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED: &'static str = "handshake-reuse-accepted";
-    pub const QUESTION: &'static str = "questionanswer";
+    pub const QUESTION: &'static str = "question";
     pub const ANSWER: &'static str = "answer";
-    pub const ASK_QUESTION: &'static str = "ask-questionanswer";
-    pub const ANSWER_GIVER: &'static str = "answer-given";
 }
 
 #[macro_export]
