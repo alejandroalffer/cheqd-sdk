@@ -24,7 +24,8 @@ impl From<A2AMessage> for ProverMessages {
             A2AMessage::Ack(ack) | A2AMessage::PresentationAck(ack) => {
                 ProverMessages::PresentationAckReceived(ack)
             }
-            A2AMessage::CommonProblemReport(report) => {
+            A2AMessage::CommonProblemReport(report) |
+            A2AMessage::PresentationReject(report) => {
                 ProverMessages::PresentationRejectReceived(report)
             }
             _ => {

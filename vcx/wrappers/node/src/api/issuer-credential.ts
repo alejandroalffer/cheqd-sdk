@@ -80,7 +80,7 @@ import { PaymentManager } from './vcx-payment-txn'
  * @interface
  */
 export interface IIssuerCredentialCreateData {
-  // Enterprise's personal identification for the user.
+  // Enterprise's personal identification for the credential, should be unique.
   sourceId: string,
   // Handle of the correspondent credential definition object
   credDefHandle: number,

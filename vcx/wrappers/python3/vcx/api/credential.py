@@ -2,6 +2,7 @@ from ctypes import *
 from vcx.common import do_call, create_cb
 from vcx.api.connection import Connection
 from vcx.api.vcx_stateful import VcxStateful
+from typing import Optional
 
 import json
 
@@ -30,8 +31,9 @@ class Credential(VcxStateful):
         VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `CredentialRequest` message) is called.
 
         VcxStateType::VcxStateAccepted - once `Credential` messages is received.
-        VcxStateType::None - once `ProblemReport` messages is received.
-                                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+        VcxStateType::None - 1) once `ProblemReport` messages is received.
+                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+                             2) once `vcx_credential_reject` is called.
 
     # Transitions
 
@@ -46,9 +48,11 @@ class Credential(VcxStateful):
         VcxStateType::None - `vcx_credential_create_with_offer` - VcxStateType::VcxStateRequestReceived
 
         VcxStateType::VcxStateRequestReceived - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+        VcxStateType::VcxStateRequestReceived - `vcx_credential_reject` - VcxStateType::None
 
         VcxStateType::VcxStateOfferSent - received `Credential` - VcxStateType::VcxStateAccepted
         VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+        VcxStateType::VcxStateOfferSent - `vcx_credential_reject` - VcxStateType::None
 
     # Messages
 
@@ -87,7 +91,7 @@ class Credential(VcxStateful):
     async def create(source_id: str, credential_offer: str):
         """
         Creates a credential with an offer.
-        :param source_id: user defined id of object.
+        :param source_id: Institution's personal identification for the credential, should be unique.
         :param credential_offer: JSON string representing the offer used as the basis of creation.
         :return: A created credential
         Example:
@@ -154,7 +158,7 @@ class Credential(VcxStateful):
     async def create_with_msgid(source_id: str, connection: Connection, msg_id: str):
         """
         Create a credential based off of a known message id for a given connection.
-        :param source_id: user defined id of object.
+        :param source_id: Institution's personal identification for the credential, should be unique.
         :param connection: connection to receive offer from
         :param msg_id: id of the message that contains the credential offer
         :return: A created credential
@@ -178,6 +182,91 @@ class Credential(VcxStateful):
                                                       Credential.create_with_msgid.cb)
 
         credential.cred_offer = json.loads(cred_offer.decode())
+
+        return credential
+
+    @staticmethod
+    async def accept_offer(source_id: str, credential_offer: str, connection: Connection):
+        """
+        Accept credential for the given offer.
+
+        This function performs the following actions:
+        1. Creates Credential state object that requests and receives a credential for an institution.
+            (equal to `vcx_credential_create_with_offer` function).
+        2. Prepares Credential Request and replies to the issuer.
+            (equal to `vcx_credential_send_request` function).
+
+        :param source_id: Institution's personal identification for the credential, should be unique.
+        :param credential_offer: JSON string representing the offer used as the basis of creation.
+        :param connection: A pairwise connection with the issuer.
+        :return: credential object
+
+        Example:
+        offer depends on communication method:
+         proprietary:
+            [{
+               "msg_type": "CLAIM_OFFER",
+               "version": "0.1",
+               "to_did": "8XFh8yBzrpJQmNyZzgoTqB",
+               "from_did": "8XFh8yBzrpJQmNyZzgoTqB",
+               "libindy_offer": '{}',
+               "credential_attrs": {
+                  "address1": [
+                     "101 Tela Lane"
+                  ],
+                  "address2": [
+                     "101 Wilson Lane"
+                  ],
+                  "city": [
+                     "SLC"
+                  ],
+                  "state": [
+                     "UT"
+                  ],
+                  "zip": [
+                     "87121"
+                  ]
+               },
+               "schema_seq_no": 1487,
+               "cred_def_id": "id1",
+               "claim_name": "Credential",
+               "claim_id": "defaultCredentialId",
+               "msg_ref_id": None,
+            }]
+          aries:
+            {
+                "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential",
+                "@id": "<uuid-of-offer-message>",
+                "comment": "some comment",
+                "credential_preview": <json-ld object>,
+                "offers~attach": [
+                    {
+                        "@id": "libindy-cred-offer-0",
+                        "mime-type": "application/json",
+                        "data": {
+                            "base64": "<bytes for base64>"
+                        }
+                    }
+                ]
+            }
+        credential = await Credential.accept_offer(source_id, offer, connection)
+        """
+        if not hasattr(Credential.accept_offer, "cb"):
+            Credential.accept_offer.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32, c_char_p))
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_credential_offer = c_char_p(json.dumps(credential_offer).encode('utf-8'))
+        c_connection_handle = c_uint32(connection.handle)
+
+        credential_handle, credential_serialized = await do_call('vcx_credential_accept_credential_offer',
+                                                                c_source_id,
+                                                                c_credential_offer,
+                                                                c_connection_handle,
+                                                                Credential.accept_offer.cb)
+
+        credential = Credential(source_id)
+        credential.handle = credential_handle
+        credential.serialized = json.loads(credential_serialized.decode())
 
         return credential
 
@@ -389,6 +478,37 @@ class Credential(VcxStateful):
 
         return json.loads(payment_txn.decode())
 
+    async def reject(self, connection: Connection, comment: Optional[str] = None):
+        """
+        Send a Credential rejection to the connection.
+        It can be called once Credential Offer or Credential messages are received.
+
+        Note that this function can be used for `aries` communication protocol.
+        In other cases it returns ActionNotSupported error.
+
+        :param connection: connection to submit credential reject
+        :param comment: (Optional) human-friendly message to insert into Reject message.
+        :return:
+
+        Example:
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        credential = await Credential.create(source_id, offer)
+        await credential.reject(connection, None)
+        """
+        if not hasattr(Credential.reject, "cb"):
+            self.logger.debug("vcx_credential_reject: Creating callback")
+            Credential.reject.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_credential_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+        c_comment = c_char_p(comment.encode('utf-8')) if comment is not None else None
+
+        await do_call('vcx_credential_reject',
+                      c_credential_handle,
+                      c_connection_handle,
+                      c_comment,
+                      Credential.reject.cb)
 
 
 

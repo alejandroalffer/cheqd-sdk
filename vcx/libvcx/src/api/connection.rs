@@ -38,7 +38,8 @@ use indy_sys::CommandHandle;
 
     aries:
         Inviter:
-            VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+            VcxStateType::VcxStateInitialized - 1) once `vcx_connection_create` (create Connection object) is called.
+                                                2) once `vcx_connection_create_with_outofband_invitation` (create OutofbandConnection object) is called with `handshake:true`.
 
             VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (prepared Connection invite) is called.
 
@@ -46,21 +47,26 @@ use indy_sys::CommandHandle;
                                                     accept `ConnectionRequest` and send `ConnectionResponse` message.
                                                     use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
 
-            VcxStateType::VcxStateAccepted - once `Ack` messages is received.
-                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+            VcxStateType::VcxStateAccepted - 1) once `Ack` messages is received.
+                                                use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+                                             2) once `vcx_connection_connect` is called for Outoband Connection created with `handshake:false`.
 
             VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
                                             OR
                                         `ConnectionProblemReport` messages is received on state updates.
 
         Invitee:
-            VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+            VcxStateType::VcxStateOfferSent - 1) once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+                                              2) once `vcx_connection_create_with_outofband_invitation`
+                                                 (create Connection object with Out-of-Band Invitation containing `handshake_protocols`) is called.
 
             VcxStateType::VcxStateRequestReceived - once `vcx_connection_connect` (accept `ConnectionInvite` and send `ConnectionRequest` message) is called.
 
-            VcxStateType::VcxStateAccepted - once `ConnectionResponse` messages is received.
-                                             send `Ack` message if requested.
-                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+            VcxStateType::VcxStateAccepted - 1) once `ConnectionResponse` messages is received.
+                                                send `Ack` message if requested.
+                                                use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+                                             2) once `vcx_connection_create_with_outofband_invitation`
+                                                (create one-time Connection object with Out-of-Band Invitation does not containing `handshake_protocols`) is called.
 
             VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
                                             OR
@@ -83,8 +89,10 @@ use indy_sys::CommandHandle;
     aries - RFC: https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
         Inviter:
             VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` - VcxStateType::VcxStateInitialized
 
             VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+            VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateAccepted (Out-ob-Band Connection created with `handshake:false`)
 
             VcxStateType::VcxStateOfferSent - received `ConnectionRequest` - VcxStateType::VcxStateRequestReceived
             VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
@@ -99,6 +107,8 @@ use indy_sys::CommandHandle;
 
         Invitee:
             VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateOfferSent
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` (invite contains `handshake_protocols`) - VcxStateType::VcxStateOfferSent
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` (no `handshake_protocols`) - VcxStateType::VcxStateAccepted
 
             VcxStateType::VcxStateOfferSent - `vcx_connection_connect` - VcxStateType::VcxStateRequestReceived
             VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
@@ -126,6 +136,7 @@ use indy_sys::CommandHandle;
         PingResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
         Query - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#query-message-type
         Disclose - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#disclose-message-type
+        Out-of-Band Invitation - https://github.com/hyperledger/aries-rfcs/tree/master/features/0434-outofband#message-type-httpsdidcommorgout-of-bandverinvitation
 */
 
 /// Delete a Connection object from the agency and release its handle.
@@ -179,7 +190,7 @@ pub extern fn vcx_connection_delete_connection(command_handle: CommandHandle,
 /// # Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: institution's personal identification for the connection
+/// source_id: user personal identification for the connection, should be unique.
 ///
 /// cb: Callback that provides connection handle and error status of request
 ///
@@ -222,7 +233,7 @@ pub extern fn vcx_connection_create(command_handle: CommandHandle,
 /// # Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: institution's personal identification for the connection
+/// source_id: user personal identification for the connection, should be unique.
 ///
 /// invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
 ///
@@ -265,6 +276,283 @@ pub extern fn vcx_connection_create_with_invite(command_handle: CommandHandle,
                 warn!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, x, 0, source_id);
                 cb(command_handle, x.into(), 0);
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Create a Connection object that provides an Out-of-Band Connection for an institution's user.
+///
+/// NOTE: this method can be used when `aries` protocol is set.
+///
+/// NOTE: this method is EXPERIMENTAL
+///
+/// WARN: `request_attach` field is not fully supported in the current library state.
+///        You can use simple messages like Question but it cannot be used
+///         for Credential Issuance and Credential Presentation.
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: user personal identification for the connection, should be unique.
+///
+/// goal_code: Optional<string> - a self-attested code the receiver may want to display to
+///                               the user or use in automatically deciding what to do with the out-of-band message.
+///
+/// goal:  Optional<string> - a self-attested string that the receiver may want to display to the user about
+///                           the context-specific goal of the out-of-band message.
+///
+/// handshake: whether Inviter wants to establish regular connection using `connections` handshake protocol.
+///            if false, one-time connection channel will be created.
+///
+/// request_attach: Optional<string> - An additional message as JSON that will be put into attachment decorator
+///                                    that the receiver can using in responding to the message (for example Question message).
+///
+/// cb: Callback that provides
+///     - error status of function
+///     - connection handle that should be used to perform actions with the Connection object.
+///
+/// # Returns
+/// Error code as a u32
+#[no_mangle]
+#[allow(unused_assignments)]
+pub extern fn vcx_connection_create_outofband(command_handle: CommandHandle,
+                                              source_id: *const c_char,
+                                              goal_code: *const c_char,
+                                              goal: *const c_char,
+                                              handshake: bool,
+                                              request_attach: *const c_char,
+                                              cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, connection_handle: u32)>) -> u32 {
+    info!("vcx_connection_create_outofband >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(goal_code, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(goal, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(request_attach, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_create_outofband(command_handle: {}, source_id: {}, goal_code: {:?}, goal: {:?}, handshake: {}, request_attach: {:?})",
+           command_handle, source_id, goal_code, goal, handshake, request_attach);
+
+    spawn(move || {
+        match create_outofband_connection(&source_id, goal_code, goal, handshake, request_attach) {
+            Ok(handle) => {
+                trace!("vcx_connection_create_outofband_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, handle, source_id);
+                cb(command_handle, error::SUCCESS.code_num, handle);
+            }
+            Err(x) => {
+                warn!("vcx_connection_create_outofband_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, x, 0, source_id);
+                cb(command_handle, x.into(), 0);
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Create a Connection object from the given Out-of-Band Invitation.
+/// Depending on the format of Invitation there are two way of follow interaction:
+///     * Invitation contains `handshake_protocols`: regular Connection process will be ran.
+///         Follow steps as for regular Connection establishment.
+///     * Invitation does not contain `handshake_protocols`: one-time completed Connection object will be created.
+///         You can use `vcx_connection_send_message` or specific function to send a response message.
+///         Note that on repeated message sending an error will be thrown.
+///
+/// NOTE: this method can be used when `aries` protocol is set.
+///
+/// WARN: The user has to analyze the value of "request~attach" field yourself and
+///       create/handle the correspondent state object or send a reply once the connection is established.
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: user personal identification for the connection, should be unique.
+///
+/// invite: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
+///
+/// cb: Callback that provides connection handle and error status of request
+///
+/// # Examples
+/// invite ->
+///     {
+///         "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+///         "@id": "<id used for context as pthid>", -  the unique ID of the message.
+///         "label": Optional<string>, - a string that the receiver may want to display to the user,
+///                                      likely about who sent the out-of-band message.
+///         "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+///                                          the user or use in automatically deciding what to do with the out-of-band message.
+///         "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+///                                     about the context-specific goal of the out-of-band message.
+///         "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+///                                                     that the receiver can use in responding to the message in order to create or reuse a connection with the sender.
+///                                                     One or both of handshake_protocols and request~attach MUST be included in the message.
+///         "request~attach": Optional<[
+///             {
+///                 "@id": "request-0",
+///                 "mime-type": "application/json",
+///                 "data": {
+///                     "json": "<json of protocol message>"
+///                 }
+///             }
+///         ]>, - an attachment decorator containing an array of request messages in order of preference that the receiver can using in responding to the message.
+///               One or both of handshake_protocols and request~attach MUST be included in the message.
+///         "service": [
+///             {
+///                 "id": string
+///                 "type": string,
+///                 "recipientKeys": [string],
+///                 "routingKeys": [string],
+///                 "serviceEndpoint": string
+///             }
+///         ] - an item that is the equivalent of the service block of a DIDDoc that the receiver is to use in responding to the message.
+///     }
+///
+/// # Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_create_with_outofband_invitation(command_handle: CommandHandle,
+                                                              source_id: *const c_char,
+                                                              invite: *const c_char,
+                                                              cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                                                   err: u32,
+                                                                                   connection_handle: u32)>) -> u32 {
+    info!("vcx_connection_create_with_outofband_invitation >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(invite, VcxErrorKind::InvalidOption);
+    trace!("vcx_connection_create_with_outofband_invitation(command_handle: {}, source_id: {})", command_handle, source_id);
+    spawn(move || {
+        match create_connection_with_outofband_invite(&source_id, &invite) {
+            Ok(handle) => {
+                trace!("vcx_connection_create_with_outofband_invitation_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, handle, source_id);
+                cb(command_handle, error::SUCCESS.code_num, handle);
+            }
+            Err(x) => {
+                warn!("vcx_connection_create_with_outofband_invitation_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, x, 0, source_id);
+                cb(command_handle, x.into(), 0);
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Accept connection for the given invitation.
+///
+/// This function performs the following actions:
+/// 1. Creates Connection state object from the given invitation
+///     (equal to `vcx_connection_create_with_invite` function).
+/// 2. Replies to the inviting side
+///     (equal to `vcx_connection_connect` function).
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: user personal identification for the connection, should be unique.
+///
+/// invite_details: a string representing a json object which is provided by an entity
+///     that wishes to make a connection.
+///
+/// connection_options: provides details indicating if the connection will be established
+///     by text or QR Code.
+///
+/// cb: Callback that provides connection handle and error status of request.
+///
+/// # Examples
+/// invite_details -> two formats are allowed depending on communication protocol:
+///     proprietary:
+///         {
+///             "targetName":"",
+///             "statusMsg":"message created",
+///             "connReqId":"mugIkrWeMr",
+///             "statusCode":"MS-101",
+///             "threadId":null,
+///             "senderAgencyDetail":{
+///                 "endpoint":"http://localhost:8080",
+///                 "verKey":"key",
+///                 "DID":"did"
+///             },
+///             "senderDetail":{
+///                 "agentKeyDlgProof":{
+///                     "agentDID":"8f6gqnT13GGMNPWDa2TRQ7",
+///                     "agentDelegatedKey":"5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1",
+///                     "signature":"TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/+D8ZDg=="
+///                  },
+///                 "publicDID":"7YLxxEfHRiZkCMVNii1RCy",
+///                 "name":"Faber",
+///                 "logoUrl":"http://robohash.org/234",
+///                 "verKey":"CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx",
+///                 "DID":"Ney2FxHT4rdEyy6EDCCtxZ"
+///                 }
+///             }
+///     aries: https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+///      {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
+///         "label": "Alice",
+///         "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+///         "serviceEndpoint": "https://example.com/endpoint",
+///         "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
+///      }
+///
+/// connection_options ->
+/// "{"connection_type":"SMS","phone":"123","use_public_did":true}"
+///     OR:
+/// "{"connection_type":"QR","phone":"","use_public_did":false}"
+///
+/// # Returns
+/// err: the result code as a u32
+/// connection_handle: the handle associated with the created Connection object.
+/// connection_serialized: the json string representing the created Connection object.
+#[no_mangle]
+pub extern fn vcx_connection_accept_connection_invite(command_handle: CommandHandle,
+                                                      source_id: *const c_char,
+                                                      invite_details: *const c_char,
+                                                      connection_options: *const c_char,
+                                                      cb: Option<extern fn(
+                                                          xcommand_handle: CommandHandle,
+                                                          err: u32,
+                                                          connection_handle: u32,
+                                                          connection_serialized: *const c_char)>) -> u32 {
+    info!("vcx_connection_accept_connection_invite >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(invite_details, VcxErrorKind::InvalidOption);
+
+    let connection_options_ = if !connection_options.is_null() {
+        check_useful_opt_c_str!(connection_options, VcxErrorKind::InvalidOption);
+        connection_options.to_owned()
+    } else {
+        None
+    };
+
+    trace!("vcx_connection_accept_connection_invite(command_handle: {}, source_id: {}, invite_details: {}, connection_options: {:?})",
+           command_handle, source_id, invite_details, connection_options_);
+    spawn(move || {
+        match accept_connection_invite(&source_id, &invite_details, connection_options_) {
+            Ok((connection_handle, connection_serialized)) => {
+                trace!("vcx_connection_accept_connection_invite(command_handle: {}, rc: {}, connection_handle: {}, connection_serialized: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, connection_handle, connection_serialized, source_id);
+                let connection_serialized_ = CStringUtils::string_to_cstring(connection_serialized);
+                cb(command_handle, error::SUCCESS.code_num, connection_handle, connection_serialized_.as_ptr());
+            }
+            Err(x) => {
+                warn!("vcx_connection_accept_connection_invite(command_handle: {}, rc: {}) source_id: {}",
+                      command_handle, x, source_id);
+                cb(command_handle, x.into(), 0, ptr::null_mut());
             }
         };
 
@@ -358,28 +646,28 @@ pub extern fn vcx_connection_redirect(command_handle: CommandHandle,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_redirect - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     if !is_valid_handle(redirect_connection_handle) {
         error!("vcx_connection_redirect - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     trace!("vcx_connection_redirect(command_handle: {}, connection_handle: {}, redirect_connection_handle: {}), source_id: {:?}",
            command_handle, connection_handle, redirect_connection_handle, source_id);
 
-    spawn(move|| {
+    spawn(move || {
         match redirect(connection_handle, redirect_connection_handle) {
             Ok(_) => {
                 trace!("vcx_connection_redirect_cb(command_handle: {}, rc: {})", command_handle, error::SUCCESS.message);
                 cb(command_handle, error::SUCCESS.code_num);
-            },
+            }
             Err(e) => {
                 trace!("vcx_connection_redirect_cb(command_handle: {}, rc: {})", command_handle, e);
                 cb(command_handle, e.into());
-            },
+            }
         };
 
         Ok(())
@@ -402,17 +690,17 @@ pub extern fn vcx_connection_get_redirect_details(command_handle: CommandHandle,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_redirect_details - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
-    spawn(move|| {
-        match get_redirect_details(connection_handle){
+    spawn(move || {
+        match get_redirect_details(connection_handle) {
             Ok(str) => {
                 trace!("vcx_connection_get_redirect_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
                        command_handle, connection_handle, error::SUCCESS.message, str, source_id);
                 let msg = CStringUtils::string_to_cstring(str);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_get_redirect_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {:?})",
                       command_handle, connection_handle, x, "null", source_id);
@@ -613,7 +901,7 @@ pub extern fn vcx_connection_update_state_with_message(command_handle: CommandHa
         Err(_) => return VcxError::from(VcxErrorKind::InvalidJson).into(),
     };
 
-    spawn(move|| {
+    spawn(move || {
         let result = update_state_with_message(connection_handle, message);
 
         let rc = match result {
@@ -1127,6 +1415,93 @@ pub extern fn vcx_connection_send_discovery_features(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Send a message to reuse existing Connection instead of setting up a new one
+/// as response on received Out-of-Band Invitation.
+///
+/// Note that this function works in case `aries` communication method is used.
+///     In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: handle pointing to Connection to awaken and send reuse message.
+///
+/// invite: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// # Examples
+/// invite ->
+///     {
+///         "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+///         "@id": "<id used for context as pthid>", -  the unique ID of the message.
+///         "label": Optional<string>, - a string that the receiver may want to display to the user,
+///                                      likely about who sent the out-of-band message.
+///         "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+///                                          the user or use in automatically deciding what to do with the out-of-band message.
+///         "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+///                                     about the context-specific goal of the out-of-band message.
+///         "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+///                                                     that the receiver can use in responding to the message in order to create or reuse a connection with the sender.
+///                                                     One or both of handshake_protocols and request~attach MUST be included in the message.
+///         "request~attach": Optional<[
+///             {
+///                 "@id": "request-0",
+///                 "mime-type": "application/json",
+///                 "data": {
+///                     "json": "<json of protocol message>"
+///                 }
+///             }
+///         ]>, - an attachment decorator containing an array of request messages in order of preference that the receiver can using in responding to the message.
+///               One or both of handshake_protocols and request~attach MUST be included in the message.
+///         "service": [
+///             {
+///                 "id": string
+///                 "type": string,
+///                 "recipientKeys": [string],
+///                 "routingKeys": [string],
+///                 "serviceEndpoint": string
+///             }
+///         ] - an item that is the equivalent of the service block of a DIDDoc that the receiver is to use in responding to the message.
+///     }
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_send_reuse(command_handle: u32,
+                                        connection_handle: u32,
+                                        invite: *const c_char,
+                                        cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_connection_send_reuse >>>");
+
+    check_useful_c_str!(invite, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_send_reuse(command_handle: {}, connection_handle: {})",
+           command_handle, connection_handle);
+
+    spawn(move || {
+        match send_reuse(connection_handle, invite) {
+            Ok(()) => {
+                trace!("vvcx_connection_send_reuse_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vvcx_connection_send_reuse_cb(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Get the information about the connection state.
 ///
 /// Note: This method can be used for `aries` communication method only.
@@ -1223,22 +1598,22 @@ pub extern fn vcx_connection_get_pw_did(command_handle: u32,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
-    spawn(move|| {
+    spawn(move || {
         match get_pw_did(connection_handle) {
             Ok(json) => {
                 trace!("vcx_connection_get_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, pw_did: {}), source_id: {:?}",
                        command_handle, connection_handle, error::SUCCESS.message, json, source_id);
                 let msg = CStringUtils::string_to_cstring(json);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_get_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, pw_did: {}), source_id: {:?}",
                       command_handle, connection_handle, x, "null", source_id);
                 cb(command_handle, x.into(), ptr::null_mut());
-            },
+            }
         };
 
         Ok(())
@@ -1272,22 +1647,22 @@ pub extern fn vcx_connection_get_their_pw_did(command_handle: u32,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
-    spawn(move|| {
+    spawn(move || {
         match get_their_pw_did(connection_handle) {
             Ok(json) => {
                 trace!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {}), source_id: {:?}",
                        command_handle, connection_handle, error::SUCCESS.message, json, source_id);
                 let msg = CStringUtils::string_to_cstring(json);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {}), source_id: {:?}",
                       command_handle, connection_handle, x, "null", source_id);
                 cb(command_handle, x.into(), ptr::null_mut());
-            },
+            }
         };
 
         Ok(())
@@ -1316,8 +1691,8 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let _rc = vcx_connection_create(cb.command_handle,
-                                       CString::new("test_create").unwrap().into_raw(),
-                                       Some(cb.get_callback()));
+                                        CString::new("test_create").unwrap().into_raw(),
+                                        Some(cb.get_callback()));
 
         assert!(cb.receive(TimeoutUtils::some_medium()).unwrap() > 0);
     }
@@ -1358,14 +1733,14 @@ mod tests {
         let _setup = SetupMocks::init();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
-        let rc = vcx_connection_redirect(cb.command_handle, 0, 0,Some(cb.get_callback()));
+        let rc = vcx_connection_redirect(cb.command_handle, 0, 0, Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
 
         let handle = build_test_connection();
         assert!(handle > 0);
 
         let cb = return_types_u32::Return_U32::new().unwrap();
-        let rc = vcx_connection_redirect(cb.command_handle,handle, 0,Some(cb.get_callback()));
+        let rc = vcx_connection_redirect(cb.command_handle, handle, 0, Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
 
         let handle2 = create_connection("alice2").unwrap();
@@ -1373,7 +1748,7 @@ mod tests {
         assert!(handle2 > 0);
 
         let cb = return_types_u32::Return_U32::new().unwrap();
-        let rc = vcx_connection_redirect(cb.command_handle,handle, handle2,Some(cb.get_callback()));
+        let rc = vcx_connection_redirect(cb.command_handle, handle, handle2, Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
     }
 

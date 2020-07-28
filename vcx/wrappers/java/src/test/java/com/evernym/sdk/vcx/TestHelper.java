@@ -23,7 +23,7 @@ class TestHelper {
     }
 
     static final String address1InOffer = "101 Tela Lane";
-    private static String offer = "[{\n" +
+    public static String offer = "[{\n" +
             "        'msg_type': 'CLAIM_OFFER',\n" +
             "                'version': '0.1',\n" +
             "                'to_did': '8XFh8yBzrpJQmNyZzgoTqB',\n" +

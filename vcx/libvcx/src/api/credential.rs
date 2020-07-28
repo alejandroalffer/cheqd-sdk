@@ -33,8 +33,10 @@ use indy_sys::CommandHandle;
         VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `CredentialRequest` message) is called.
 
         VcxStateType::VcxStateAccepted - once `Credential` messages is received.
-        VcxStateType::None - once `ProblemReport` messages is received.
-                                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+
+        VcxStateType::None - 1) once `ProblemReport` messages is received.
+                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+                             2) once `vcx_credential_reject` is called.
 
     # Transitions
 
@@ -49,9 +51,11 @@ use indy_sys::CommandHandle;
         VcxStateType::None - `vcx_credential_create_with_offer` - VcxStateType::VcxStateRequestReceived
 
         VcxStateType::VcxStateRequestReceived - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+        VcxStateType::VcxStateRequestReceived - `vcx_credential_reject` - VcxStateType::None
 
         VcxStateType::VcxStateOfferSent - received `Credential` - VcxStateType::VcxStateAccepted
         VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+        VcxStateType::VcxStateOfferSent - `vcx_credential_reject` - VcxStateType::None
 
     # Messages
 
@@ -184,6 +188,113 @@ pub extern fn vcx_credential_create_with_offer(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Accept credential for the given offer.
+///
+/// This function performs the following actions:
+/// 1. Creates Credential state object that requests and receives a credential for an institution.
+///     (equal to `vcx_credential_create_with_offer` function).
+/// 2. Prepares Credential Request and replies to the issuer.
+///     (equal to `vcx_credential_send_request` function).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the credential, should be unique.
+///
+/// offer: credential offer received from the issuer.
+///
+/// connection_handle: handle that identifies pairwise connection object with the issuer.
+///
+/// # Example
+/// offer -> depends on communication method:
+///     proprietary:
+///         [
+///             {
+///                 "msg_type":"CREDENTIAL_OFFER",
+///                 "version":"0.1",
+///                 "to_did":"...",
+///                 "from_did":"...",
+///                 "credential":{
+///                     "account_num":[
+///                         "...."
+///                     ],
+///                     "name_on_account":[
+///                         "Alice"
+///                      ]
+///                 },
+///                 "schema_seq_no":48,
+///                 "issuer_did":"...",
+///                 "credential_name":"Account Certificate",
+///                 "credential_id":"3675417066",
+///                 "msg_ref_id":"ymy5nth"
+///             }
+///         ]
+///     aries:
+///         {
+///             "@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential",
+///             "@id":"<uuid-of-offer-message>",
+///             "comment":"somecomment",
+///             "credential_preview":"<json-ldobject>",
+///             "offers~attach":[
+///                 {
+///                     "@id":"libindy-cred-offer-0",
+///                     "mime-type":"application/json",
+///                     "data":{
+///                         "base64":"<bytesforbase64>"
+///                     }
+///                 }
+///             ]
+///         }
+///
+/// cb: Callback that provides credential handle or error status
+///
+/// # Returns
+/// err: the result code as a u32
+/// credential_handle: the handle associated with the created Credential state object.
+/// credential_serialized: the json string representing the created Credential state object.
+#[no_mangle]
+#[allow(unused_variables, unused_mut)]
+pub extern fn vcx_credential_accept_credential_offer(command_handle: CommandHandle,
+                                                     source_id: *const c_char,
+                                                     offer: *const c_char,
+                                                     connection_handle: u32,
+                                                     cb: Option<extern fn(
+                                                         xcommand_handle: CommandHandle,
+                                                         err: u32,
+                                                         credential_handle: u32,
+                                                         credential_serialized: *const c_char)>) -> u32 {
+    info!("vcx_credential_accept_credential_offer >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(offer, VcxErrorKind::InvalidOption);
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
+    }
+
+    trace!("vcx_credential_accept_credential_offer(command_handle: {}, source_id: {}, offer: {}, connection_handle: {:?})",
+           command_handle, source_id, offer, connection_handle);
+    spawn(move || {
+        match credential::accept_credential_offer(&source_id, &offer, connection_handle) {
+            Ok((credential_handle, credential_serialized)) => {
+                trace!("vcx_credential_accept_credential_offer(command_handle: {}, rc: {}, credential_handle: {}, credential_serialized: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, credential_handle, credential_serialized, source_id);
+                let credential_serialized_ = CStringUtils::string_to_cstring(credential_serialized);
+                cb(command_handle, error::SUCCESS.code_num, credential_handle, credential_serialized_.as_ptr());
+            }
+            Err(x) => {
+                warn!("vcx_credential_accept_credential_offer(command_handle: {}, rc: {}) source_id: {}",
+                      command_handle, x, source_id);
+                cb(command_handle, x.into(), 0, ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
 
 /// Retrieve information about a stored credential in user's wallet, including credential id and the credential itself.
 ///
@@ -212,7 +323,7 @@ pub extern fn vcx_get_credential(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -321,11 +432,11 @@ pub extern fn vcx_credential_send_request(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     if !connection::is_valid_handle(connection_handle) {
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -381,7 +492,7 @@ pub extern fn vcx_credential_get_request_msg(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -431,7 +542,7 @@ pub extern fn vcx_credential_get_offers(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !connection::is_valid_handle(connection_handle) {
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     trace!("vcx_credential_get_offers(command_handle: {}, connection_handle: {})",
@@ -480,7 +591,7 @@ pub extern fn vcx_credential_update_state(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -540,7 +651,7 @@ pub extern fn vcx_credential_update_state_with_message(command_handle: CommandHa
     check_useful_c_str!(message, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -599,7 +710,7 @@ pub extern fn vcx_credential_get_state(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(handle).unwrap_or_default();
@@ -647,7 +758,7 @@ pub extern fn vcx_credential_serialize(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(handle).unwrap_or_default();
@@ -808,6 +919,68 @@ pub extern fn vcx_credential_get_payment_txn(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Send a Credential rejection to the connection.
+/// It can be called once Credential Offer or Credential messages are received.
+///
+/// Note that this function can be used for `aries` communication protocol.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+/// command_handle: command handle to map callback to user context
+///
+/// credential_handle: handle pointing to created Credential object.
+///
+/// connection_handle:  handle pointing to Connection object identifying pairwise connection.
+///
+/// comment: (Optional) human-friendly message to insert into Reject message.
+///
+/// cb: Callback that provides error status
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_credential_reject(command_handle: CommandHandle,
+                                    credential_handle: u32,
+                                    connection_handle: u32,
+                                    comment: *const c_char,
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
+    info!("vcx_credential_reject >>>");
+
+    check_useful_opt_c_str!(comment, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !credential::is_valid_handle(credential_handle) {
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
+    }
+
+    let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
+    trace!("vcx_credential_reject(command_handle: {}, credential_handle: {}, connection_handle: {}, comment: {:?}), source_id: {:?}",
+           command_handle, credential_handle, connection_handle, comment, source_id);
+
+    spawn(move || {
+        match credential::reject(credential_handle, connection_handle, comment) {
+            Ok(()) => {
+                trace!("vcx_credential_reject_cb(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, error::SUCCESS.code_num, source_id);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_credential_reject_cb(command_handle: {}, rc: {}) source_id: {}",
+                      command_handle, e, source_id);
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 mod tests {
     extern crate serde_json;
@@ -825,7 +998,7 @@ mod tests {
 
     use ::credential::tests::BAD_CREDENTIAL_OFFER;
     use utils::constants;
-    use credential_request::CredentialRequest;
+    use messages::issuance::credential_request::CredentialRequest;
 
     fn _vcx_credential_create_with_offer_c_closure(offer: &str) -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();

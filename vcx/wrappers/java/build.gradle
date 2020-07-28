@@ -31,17 +31,31 @@ test {
     useJUnitPlatform()
 }
 
-static def versionMajor() {
-    return '0.9.3'
-}
+// Disabled until fix
+// task("buildJavadoc", type: Javadoc) {
+//    title = "VCX SDK ${version()}"
+//    failOnError = false
+//    source = sourceSets.main.java.srcDirs
+//    classpath += files(sourceSets.main.runtimeClasspath)
+//    destinationDir = file("${project.docsDir}/javadoc-${version()}")
+//}
+//
+//task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
+//    baseName = fullVersionName()
+//    classifier = 'javadoc'
+//    from tasks["buildJavadoc"].destinationDir
+//}
+//
+//build.finalizedBy(buildJavadocJar)
 
 static def version() {
-    String version = System.getenv("PACKAGE_VERSION")
-    if (version != null) {
-        return version
-    } else {
-        return versionMajor()
+    String version = "0.9.3"
+    String suffix = System.getenv("CI_PIPELINE_IID")
+    String branch = System.getenv("CI_COMMIT_REF_SLUG")
+    if (suffix != null && !branch.equals("stable")) {
+        version += "." + suffix
     }
+    return version
 }
 
 version = "${version()}"

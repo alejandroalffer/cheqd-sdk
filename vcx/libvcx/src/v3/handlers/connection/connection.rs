@@ -1,17 +1,15 @@
-use messages::get_message::Message;
 use error::prelude::*;
+use std::collections::HashMap;
 
 use v3::handlers::connection::states::{DidExchangeSM, Actor, ActorDidExchangeState};
 use v3::handlers::connection::messages::DidExchangeMessages;
 use v3::handlers::connection::agent::AgentInfo;
-use v3::messages::a2a::{A2AMessage, MessageId};
+use v3::messages::a2a::A2AMessage;
 use v3::messages::connection::invite::Invitation;
-
-use std::collections::HashMap;
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::basic_message::message::BasicMessage;
-use v3::messages::discovery::disclose::ProtocolDescriptor;
-
+use v3::handlers::connection::types::{SideConnectionInfo, PairwiseConnectionInfo, CompletedConnection, OutofbandMeta, Invitations};
+use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
@@ -23,7 +21,19 @@ impl Connection {
         trace!("Connection::create >>> source_id: {}", source_id);
 
         Connection {
-            connection_sm: DidExchangeSM::new(Actor::Inviter, source_id),
+            connection_sm: DidExchangeSM::new(Actor::Inviter, source_id, None),
+        }
+    }
+
+    pub fn create_outofband(source_id: &str, goal_code: Option<String>, goal: Option<String>,
+                            handshake: bool, request_attach: Option<String>) -> Connection {
+        trace!("create_outofband_connection >>> source_id: {}, goal_code: {:?}, goal: {:?}, handshake: {}, request_attach: {:?}",
+               source_id, goal_code, goal, handshake, request_attach);
+
+        let meta = OutofbandMeta::new(goal_code, goal, handshake, request_attach);
+
+        Connection {
+            connection_sm: DidExchangeSM::new(Actor::Inviter, source_id, Some(meta)),
         }
     }
 
@@ -35,10 +45,24 @@ impl Connection {
         trace!("Connection::create_with_invite >>> source_id: {}", source_id);
 
         let mut connection = Connection {
-            connection_sm: DidExchangeSM::new(Actor::Invitee, source_id),
+            connection_sm: DidExchangeSM::new(Actor::Invitee, source_id, None),
         };
 
         connection.process_invite(invitation)?;
+
+        Ok(connection)
+    }
+
+    pub fn create_with_outofband_invite(source_id: &str, invitation: OutofbandInvitation) -> VcxResult<Connection> {
+        trace!("Connection::create_with_outofband_invite >>> source_id: {}", source_id);
+
+        invitation.validate()?;
+
+        let mut connection = Connection {
+            connection_sm: DidExchangeSM::new(Actor::Invitee, source_id, None),
+        };
+
+        connection.process_outofband_invite(invitation)?;
 
         Ok(connection)
     }
@@ -70,20 +94,30 @@ impl Connection {
         self.step(DidExchangeMessages::InvitationReceived(invitation))
     }
 
+    pub fn process_outofband_invite(&mut self, invitation: OutofbandInvitation) -> VcxResult<()> {
+        trace!("Connection::process_outofband_invite >>> invitation: {:?}", invitation);
+        self.step(DidExchangeMessages::OutofbandInvitationReceived(invitation))
+    }
+
     pub fn get_invite_details(&self) -> VcxResult<String> {
         trace!("Connection::get_invite_details >>>");
         if let Some(invitation) = self.connection_sm.get_invitation() {
-            return Ok(json!(invitation.to_a2a_message()).to_string());
-        } else if let Some(did_doc) = self.connection_sm.did_doc() {
+            return match invitation {
+                Invitations::ConnectionInvitation(invitation_) => {
+                    Ok(json!(invitation_.to_a2a_message()).to_string())
+                },
+                Invitations::OutofbandInvitation(invitation_) => {
+                    Ok(json!(invitation_.to_a2a_message()).to_string())
+                }
+            }
+        }
+
+        if let Some(did_doc) = self.connection_sm.did_doc() {
             let info = json!(Invitation::from(did_doc));
             return Ok(info.to_string());
-        } else {
-            Ok(json!({}).to_string())
         }
-    }
 
-    pub fn actor(&self) -> Actor {
-        self.connection_sm.actor()
+        return Ok(json!({}).to_string())
     }
 
     pub fn connect(&mut self) -> VcxResult<()> {
@@ -99,11 +133,10 @@ impl Connection {
         }
 
         let messages = self.get_messages()?;
-        let agent_info = self.agent_info().clone();
 
         if let Some((uid, message)) = self.connection_sm.find_message_to_handle(messages) {
             self.handle_message(message.into())?;
-            agent_info.update_message_status(uid)?;
+            self.agent_info().update_message_status(uid)?;
         };
 
         if let Some(prev_agent_info) = self.connection_sm.prev_agent_info().cloned() {
@@ -126,16 +159,11 @@ impl Connection {
     pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
         trace!("Connection: update_state_with_message: {}", message);
 
-        let agent_info = self.agent_info().clone();
-
-        let message: Message = ::serde_json::from_str(&message)
+        let message: A2AMessage = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption,
                                               format!("Cannot updated state with messages: Message deserialization failed: {:?}", err)))?;
 
-        let a2a_message = self.decode_message(&message)?;
-        self.handle_message(a2a_message.into())?;
-
-        agent_info.update_message_status(message.uid)?;
+        self.handle_message(message.into())?;
 
         Ok(())
     }
@@ -153,19 +181,6 @@ impl Connection {
     pub fn handle_message(&mut self, message: DidExchangeMessages) -> VcxResult<()> {
         trace!("Connection: handle_message >>> {:?}", message);
         self.step(message)
-    }
-
-    pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
-        match message.decrypted_payload {
-            Some(ref payload) => {
-                let message: ::messages::payload::PayloadV1 = ::serde_json::from_str(&payload)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
-
-                ::serde_json::from_str::<A2AMessage>(&message.msg)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))
-            }
-            None => self.agent_info().decode_message(message)
-        }
     }
 
     pub fn send_message(&self, message: &A2AMessage) -> VcxResult<()> {
@@ -217,19 +232,14 @@ impl Connection {
         Ok(())
     }
 
-    pub fn add_pending_messages(&self, messages: HashMap<MessageId, String>) -> VcxResult<()> {
-        trace!("Connection::add_pending_messages >>> messages: {:?}", messages);
-        self.connection_sm.add_pending_messages(messages)
-    }
-
-    pub fn remove_pending_message(&self, id: MessageId) -> VcxResult<()> {
-        trace!("Connection::remove_pending_message >>> id: {:?}", id);
-        self.connection_sm.remove_pending_message(id)
-    }
-
     pub fn send_discovery_features(&mut self, query: Option<String>, comment: Option<String>) -> VcxResult<()> {
         trace!("Connection::send_discovery_features_query >>> query: {:?}, comment: {:?}", query, comment);
         self.handle_message(DidExchangeMessages::DiscoverFeatures((query, comment)))
+    }
+
+    pub fn send_reuse(&mut self, invitation: OutofbandInvitation) -> VcxResult<()> {
+        trace!("Connection::send_reuse >>> invitation: {:?}", invitation);
+        self.handle_message(DidExchangeMessages::SendHandshakeReuse(invitation))
     }
 
     pub fn get_connection_info(&self) -> VcxResult<String> {
@@ -257,30 +267,19 @@ impl Connection {
             None => None
         };
 
-        let connection_info = ConnectionInfo { my: current, their: remote };
+        let connection_info = PairwiseConnectionInfo {
+            my: current,
+            their: remote,
+        };
 
-        let connection_info_json = serde_json::to_string(&connection_info)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("Cannot serialize ConnectionInfo: {:?}", err)))?;
-
-        return Ok(connection_info_json);
+        return Ok(json!(connection_info).to_string());
     }
-}
 
-#[derive(Debug, Serialize)]
-struct ConnectionInfo {
-    my: SideConnectionInfo,
-    their: Option<SideConnectionInfo>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct SideConnectionInfo {
-    did: String,
-    recipient_keys: Vec<String>,
-    routing_keys: Vec<String>,
-    service_endpoint: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    protocols: Option<Vec<ProtocolDescriptor>>,
+    pub fn get_completed_connection(&self) -> VcxResult<CompletedConnection> {
+        self.connection_sm.completed_connection()
+            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady,
+                                      "Connection is not completed yet. You cannot not use pending Connection for interaction."))
+    }
 }
 
 #[cfg(test)]

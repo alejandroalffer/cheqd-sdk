@@ -27,6 +27,26 @@ public class CredentialDefApi extends VcxJava.API {
         }
     };
 
+	/**
+	 * Create a new CredentialDefinition object and publish correspondent record on the ledger
+	 *
+	 * @param  sourceId             enterprise's personal identification for the CredentialDefinition.
+	 * @param  credentialName       name of credential definition
+	 * @param  schemaId             id of a Schema to use for creating Credential Definition.
+	 * @param  issuerId             did corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
+	 * @param  tag                  way to create a unique credential def with the same schema and issuer did.
+	 * @param  config               type-specific configuration of credential definition revocation
+	 *                              {
+	 *                                  support_revocation: true|false - Optional, by default its false
+	 *                                  tails_file: path to tails file - Optional if support_revocation is false
+	 *                                  max_creds: size of tails file - Optional if support_revocation is false
+	 *                              }
+	 * @param  paymentHandle        unused parameter (pass 0)
+	 *
+	 * @return                      handle that should be used to perform actions with the CredentialDefinition object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<Integer> credentialDefCreate(String sourceId,
                                                                  String credentialName,
                                                                  String schemaId,
@@ -71,6 +91,23 @@ public class CredentialDefApi extends VcxJava.API {
         }
     };
 
+	/**
+	 * Create a new CredentialDefinition object from the given credDefId
+	 *
+	 * @param  sourceId             enterprise's personal identification for the CredentialDefinition.
+	 * @param  credDefId            reference to already created cred def
+	 * @param  issuerDid            did corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
+	 * @param  revocationConfig     type-specific configuration of credential definition revocation
+	 *                              {
+	 *                                  support_revocation: true|false - Optional, by default its false
+	 *                                  tails_file: path to tails file - Optional if support_revocation is false
+	 *                                  max_creds: size of tails file - Optional if support_revocation is false
+	 *                              }
+	 *
+	 * @return                      handle that should be used to perform actions with the CredentialDefinition object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<Integer> credentialDefCreateWithId(String sourceId,
                                                                        String credDefId,
                                                                        String issuerDid,
@@ -101,17 +138,20 @@ public class CredentialDefApi extends VcxJava.API {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], serializedData = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            // TODO complete with exception if we find error
-//            if (err != 0) {
-//                future.completeExceptionally();
-//            } else {
-//
-//            }
             String result = serializedData;
             future.complete(result);
         }
     };
 
+	/**
+	 * Get JSON string representation of CredentialDefinition object.
+	 *
+	 * @param  credentialDefHandle     handle pointing to a CredentialDefinition object.
+	 *
+	 * @return                         CredentialDefinition object as JSON string.
+	 *
+	 * @throws VcxException            If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<String> credentialDefSerialize(int credentialDefHandle) throws VcxException {
         ParamGuard.notNull(credentialDefHandle, "credentialDefHandle");
         logger.debug("credentialDefSerialize() called with: credentialDefHandle = [" + credentialDefHandle + "]");
@@ -133,17 +173,20 @@ public class CredentialDefApi extends VcxJava.API {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], credntialDefHandle = [" + credntialDefHandle + "]");
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            // TODO complete with exception if we find error
-//            if (err != 0) {
-//                future.completeExceptionally();
-//            } else {
-//
-//            }
             Integer result = credntialDefHandle;
             future.complete(result);
         }
     };
 
+	/**
+	 * Takes a json string representing a CredentialDefinition object and recreates an object matching the JSON.
+	 *
+	 * @param  credentialDefData    JSON string representing a CredentialDefinition object.
+	 *
+	 * @return                      handle that should be used to perform actions with the CredentialDefinition object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<Integer> credentialDefDeserialize(String credentialDefData) throws VcxException {
         ParamGuard.notNull(credentialDefData, "credentialDefData");
         logger.debug("credentialDefSerialize() called with: credentialDefData = [****]");
@@ -170,6 +213,15 @@ public class CredentialDefApi extends VcxJava.API {
         }
     };
 
+	/**
+	 * Retrieves credential definition's id
+	 *
+	 * @param  credDefHandle     handle pointing to a CredentialDefinition object.
+	 *
+	 * @return                   id of the CredentialDefinition object.
+	 *
+	 * @throws VcxException      If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<String> credentialDefGetCredentialDefId(int credDefHandle) throws VcxException {
         ParamGuard.notNull(credDefHandle, "credDefHandle");
         logger.debug("credentialDefGetCredentialDefId() called with: credDefHandle = [" + credDefHandle + "]");
@@ -180,6 +232,15 @@ public class CredentialDefApi extends VcxJava.API {
         return future;
     }
 
+	/**
+	 * Releases the CredentialDefinition object by de-allocating memory
+	 *
+	 * @param  handle               handle pointing to a CredentialDefinition object.
+	 *
+	 * @return                      void
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
     public static int credentialDefRelease(int handle) throws VcxException {
         ParamGuard.notNull(handle, "handle");
         logger.debug("credentialDefRelease() called with: handle = [" + handle + "]");
@@ -201,6 +262,28 @@ public class CredentialDefApi extends VcxJava.API {
         }
     };
 
+	/**
+	 * Create a new CredentialDef object that will be published by Endorser later.
+	 * <p>
+	 * Note that CredentialDef can't be used for credential issuing until it will be published on the ledger.
+	 *
+	 * @param  sourceId             enterprise's personal identification for the CredentialDefinition.
+	 * @param  credentialName       name of credential definition
+	 * @param  schemaId             id of a Schema to use for creating Credential Definition.
+	 * @param  issuerId             did corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
+	 * @param  tag                  way to create a unique credential def with the same schema and issuer did.
+	 * @param  config               type-specific configuration of credential definition revocation
+	 *                              {
+	 *                                  support_revocation: true|false - Optional, by default its false
+	 *                                  tails_file: path to tails file - Optional if support_revocation is false
+	 *                                  max_creds: size of tails file - Optional if support_revocation is false
+	 *                              }
+	 * @param  endorser             DID of the Endorser that will submit the transaction.
+	 *
+	 * @return                      handle that should be used to perform actions with the CredentialDefinition object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
 	public static CompletableFuture<CredentialDefPrepareForEndorserResult> credentialDefPrepareForEndorser(String sourceId,
 	                                                                                                       String credentialName,
 	                                                                                                       String schemaId,
@@ -243,6 +326,15 @@ public class CredentialDefApi extends VcxJava.API {
 		}
 	};
 
+	/**
+	 * Checks if CredentialDefinition is published on the Ledger and updates the state.
+	 *
+	 * @param  handle               handle pointing to a CredentialDefinition object.
+	 *
+	 * @return                      the most current state of CredentialDefinition object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
 	public static CompletableFuture<Integer> credentialDefUpdateState(int handle) throws VcxException {
 		logger.debug("vcxSchemaUpdateState() called with: handle = [" + handle + "]");
 		CompletableFuture<Integer> future = new CompletableFuture<>();
@@ -257,6 +349,18 @@ public class CredentialDefApi extends VcxJava.API {
 		return future;
 	}
 
+	/**
+	 * Get the current state of the CredentialDefinition object
+	 * Schema states:
+	 *     0 - Built
+	 *     1 - Published
+	 *
+	 * @param  handle               handle pointing to a CredentialDefinition object.
+	 *
+	 * @return                      the most current state of the CredentialDefinition object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
 	public static CompletableFuture<Integer> credentialDefGetState(int handle) throws VcxException {
 		logger.debug("schemaGetState() called with: handle = [" + handle + "]");
 		CompletableFuture<Integer> future = new CompletableFuture<>();

@@ -93,6 +93,8 @@ impl VcxStateType {
             5 => VcxStateType::VcxStateUnfulfilled,
             6 => VcxStateType::VcxStateExpired,
             7 => VcxStateType::VcxStateRevoked,
+            8 => VcxStateType::VcxStateRedirected,
+            9 => VcxStateType::VcxStateRejected,
             _ => VcxStateType::VcxStateNone,
         }
     }

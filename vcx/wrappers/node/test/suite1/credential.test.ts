@@ -225,4 +225,20 @@ describe('Credential:', () => {
     })
   })
 
+  describe('acceptOffer:', () => {
+    it('success: accept credential offer', async () => {
+      const data = await dataCredentialCreateWithOffer()
+      const credential = await Credential.acceptOffer(data)
+      assert.equal(await credential.getState(), StateType.OfferSent)
+    })
+  })
+
+  describe('rejectCredentail:', () => {
+    it('success: reject credential offer', async () => {
+      const data = await dataCredentialCreateWithOffer()
+      const credential = await credentialCreateWithOffer(data)
+      const error = await shouldThrow(() => credential.reject({ connection: data.connection }))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+    })
+  })
 })

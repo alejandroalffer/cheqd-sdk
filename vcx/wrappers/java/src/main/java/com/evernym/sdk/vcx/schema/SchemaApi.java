@@ -14,6 +14,7 @@ import java9.util.concurrent.CompletableFuture;
 
 public class SchemaApi extends VcxJava.API {
     private static final Logger logger = LoggerFactory.getLogger("SchemaApi");
+
     private static Callback schemaCreateCB = new Callback() {
         // TODO: This callback and jna definition needs to be fixed for this API
         // it should accept connection handle as well
@@ -27,6 +28,22 @@ public class SchemaApi extends VcxJava.API {
         }
     };
 
+	/**
+	 * Create a new Schema object and publish corresponding record on the ledger
+	 *
+	 * @param  sourceId             Enterprise's personal identification for the Schema.
+	 * @param  schemaName           Name of schema
+	 * @param  version              Version of schema. A semver-compatible value like "1.0" is encouraged.
+	 * @param  data                 A list of attributes that will make up the schema, represented as a string containing a JSON array.
+	 *                              The number of attributes should be less or equal to 125, because larger arrays cause various downstream problems.
+	 *                              This limitation is an annoyance that we'd like to remove.
+	 *                              "["attr1", "attr2", "attr3"]"
+	 * @param  paymentHandle        unused parameter (pass 0)
+	 *
+	 * @return                      handle that should be used to perform actions with the Schema object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<Integer> schemaCreate(String sourceId,
                                                           String schemaName,
                                                           String version,
@@ -59,17 +76,20 @@ public class SchemaApi extends VcxJava.API {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], serializedData = [" + serializedData + "]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            // TODO complete with exception if we find error
-//            if (err != 0) {
-//                future.completeExceptionally();
-//            } else {
-//
-//            }
             String result = serializedData;
             future.complete(result);
         }
     };
 
+	/**
+	 * Get JSON string representation of Schema object.
+	 *
+	 * @param  schemaHandle     handle pointing to a Schema object.
+	 *
+	 * @return                  Schema object as JSON string.
+	 *
+	 * @throws VcxException     If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<String> schemaSerialize(int schemaHandle) throws VcxException {
         ParamGuard.notNull(schemaHandle, "schemaHandle");
         logger.debug("schemaSerialize() called with: schemaHandle = [" + schemaHandle + "]");
@@ -91,17 +111,20 @@ public class SchemaApi extends VcxJava.API {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], schemaHandle = [" + schemaHandle + "]");
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            // TODO complete with exception if we find error
-//            if (err != 0) {
-//                future.completeExceptionally();
-//            } else {
-//
-//            }
             Integer result = schemaHandle;
             future.complete(result);
         }
     };
 
+	/**
+	 * Takes a json string representing a Schema object and recreates an object matching the JSON.
+	 *
+	 * @param  schemaData           JSON string representing a Schema object.
+	 *
+	 * @return                      handle that should be used to perform actions with the Schema object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<Integer> schemaDeserialize(String schemaData) throws VcxException {
         ParamGuard.notNull(schemaData, "schemaData");
         logger.debug("schemaDeserialize() called with: schemaData = [" + schemaData + "]");
@@ -127,6 +150,16 @@ public class SchemaApi extends VcxJava.API {
         }
     };
 
+	/**
+	 * Retrieves all of the data associated with a schema on the ledger.
+	 *
+	 * @param  sourceId         Enterprise's personal identification for the user.
+	 * @param  schemaId         id of schema to get the list of attributes
+	 *
+	 * @return                  JSON string representing all of the data of a schema already on the ledger
+	 *
+	 * @throws VcxException     If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<String> schemaGetAttributes( String sourceId, String schemaId) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
         logger.debug("schemaGetAttributes() called with: sourceId = [" + sourceId + "], schemaHandle = [" + schemaId + "]");
@@ -147,6 +180,15 @@ public class SchemaApi extends VcxJava.API {
         }
     };
 
+	/**
+	 * Retrieves id of Schema object
+	 *
+	 * @param  schemaHandle     handle pointing to a Schema object.
+	 *
+	 * @return                  if of Schema object
+	 *
+	 * @throws VcxException     If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<String> schemaGetSchemaId( int schemaHandle) throws VcxException {
         ParamGuard.notNull(schemaHandle, "SchemaHandle");
         logger.debug("schemaGetSchemaId() called with: schemaHandle = [" + schemaHandle + "]");
@@ -157,6 +199,15 @@ public class SchemaApi extends VcxJava.API {
         return future;
     }
 
+	/**
+	 * Releases the Schema object by de-allocating memory
+	 *
+	 * @param  schemaHandle         handle pointing to a Schema object.
+	 *
+	 * @return                      void
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
     public static int schemaRelease(
             int schemaHandle
     ) throws VcxException {
@@ -180,6 +231,24 @@ public class SchemaApi extends VcxJava.API {
         }
     };
 
+	/**
+	 * Create a new Schema object that will be published by Endorser later.
+	 * <p>
+	 * Note that Schema can't be used for credential issuing until it will be published on the ledger.
+	 *
+	 * @param  sourceId             Enterprise's personal identification for the user.
+	 * @param  schemaName           Name of schema
+	 * @param  version              Version of schema. A semver-compatible value like "1.0" is encouraged.
+	 * @param  data                 A list of attributes that will make up the schema, represented as a string containing a JSON array.
+	 *                              The number of attributes should be less or equal to 125, because larger arrays cause various downstream problems.
+	 *                              This limitation is an annoyance that we'd like to remove.
+	 *                              "["attr1", "attr2", "attr3"]"
+	 * @param  endorser             DID of the Endorser that will submit the transaction.
+	 *
+	 * @return                      handle that should be used to perform actions with the Schema object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
     public static CompletableFuture<SchemaPrepareForEndorserResult> schemaPrepareForEndorser(String sourceId,
                                                                                              String schemaName,
                                                                                              String version,
@@ -218,6 +287,15 @@ public class SchemaApi extends VcxJava.API {
 		}
 	};
 
+	/**
+	 * Checks if schema is published on the Ledger and updates the state.
+	 *
+	 * @param  schemaHandle         handle pointing to a Schema object.
+	 *
+	 * @return                      the most current state of Schema object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
 	public static CompletableFuture<Integer> schemaUpdateState(int schemaHandle) throws VcxException {
 		logger.debug("vcxSchemaUpdateState() called with: schemaHandle = [" + schemaHandle + "]");
 		CompletableFuture<Integer> future = new CompletableFuture<>();
@@ -232,6 +310,18 @@ public class SchemaApi extends VcxJava.API {
 		return future;
 	}
 
+	/**
+	 * Get the current state of the Schema object
+	 * Schema states:
+	 *     0 - Built
+	 *     1 - Published
+	 *
+	 * @param  schemaHandle         handle pointing to a Schema object.
+	 *
+	 * @return                      the most current state of the Schema object.
+	 *
+	 * @throws VcxException         If an exception occurred in Libvcx library.
+	 */
 	public static CompletableFuture<Integer> schemaGetState(int schemaHandle) throws VcxException {
 		logger.debug("schemaGetState() called with: schemaHandle = [" + schemaHandle + "]");
 		CompletableFuture<Integer> future = new CompletableFuture<>();

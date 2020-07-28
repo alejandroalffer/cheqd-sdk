@@ -13,12 +13,7 @@ use messages::{
     self,
     GeneralMessage,
     RemoteMessageType,
-    payload::{
-        Payloads,
-        PayloadKinds,
-    },
     thread::Thread,
-    get_message::Message,
 };
 use messages::proofs::{
     proof_message::ProofMessage,
@@ -42,6 +37,8 @@ use v3::{
 
 use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
+use messages::proofs::proof_request::parse_proof_req_message;
+use messages::payload::PayloadKinds;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<DisclosedProofs>  = Default::default();
@@ -874,7 +871,7 @@ fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> 
                                                                  &agent_info.version()?)?;
 
     if message[0].msg_type == RemoteMessageType::ProofReq {
-        let request = _parse_proof_req_message(&message[0], &agent_info.my_pw_vk()?)?;
+        let request = parse_proof_req_message(&message[0], &agent_info.my_pw_vk()?)?;
 
         serde_json::to_string_pretty(&request)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize message: {}", err)))
@@ -919,7 +916,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
         if msg.sender_did.eq(&agent_info.my_pw_did()?) { continue; }
 
         if msg.msg_type == RemoteMessageType::ProofReq {
-            let req = _parse_proof_req_message(&msg, &agent_info.my_pw_vk()?)?;
+            let req = parse_proof_req_message(&msg, &agent_info.my_pw_vk()?)?;
             messages.push(req);
         }
     }
@@ -930,21 +927,6 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
         ))
 }
 
-fn _parse_proof_req_message(message: &Message, my_vk: &str) -> VcxResult<ProofRequestMessage> {
-    let payload = message.payload.as_ref()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot get payload"))?;
-
-    let (request, thread) = Payloads::decrypt(&my_vk, payload)?;
-
-    let mut request: ProofRequestMessage = serde_json::from_str(&request)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, format!("Cannot deserialize proof request: {}", err)))?;
-
-    request.msg_ref_id = Some(message.uid.to_owned());
-    request.thread_id = thread.and_then(|tr| tr.thid.clone());
-
-    Ok(request)
-}
-
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get(handle, |obj| {
         match obj {
@@ -953,16 +935,6 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
             DisclosedProofs::V3(ref obj) => Ok(obj.get_source_id())
         }
     }).map_err(handle_err)
-}
-
-pub fn get_presentation_status(handle: u32) -> VcxResult<u32> {
-    HANDLE_MAP.get(handle, |obj| {
-        match obj {
-            DisclosedProofs::Pending(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidDisclosedProofHandle, "Cannot get presentation status for V1 DisclosedProof object")),
-            DisclosedProofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidDisclosedProofHandle, "Cannot get presentation status for V1 DisclosedProof object")),
-            DisclosedProofs::V3(ref obj) => Ok(obj.presentation_status())
-        }
-    })
 }
 
 #[cfg(test)]

@@ -583,6 +583,57 @@ pub extern fn vcx_messages_download(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Retrieves single message from the agency by the given uid.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// uid: id of the message to query.
+///
+/// cb: Callback that provides retrieved message
+///
+/// # Example message -> "{"statusCode":"MS-106","payload":null,"senderDID":"","uid":"6BDkgc3z0E","type":"aries","refMsgId":null,"deliveryDetails":[],"decryptedPayload":"{"@msg":".....","@type":{"fmt":"json","name":"aries","ver":"1.0"}}"
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_download_message(command_handle: CommandHandle,
+                                   uid: *const c_char,
+                                   cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                        err: u32,
+                                                        message: *const c_char)>) -> u32 {
+    info!("vcx_download_message >>>");
+
+    check_useful_c_str!(uid, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_download_message(command_handle: {}, uid: {:?})",
+           command_handle, uid);
+
+    spawn(move || {
+        match ::messages::get_message::download_message(uid) {
+            Ok(message) => {
+                trace!("vcx_download_message_cb(command_handle: {}, rc: {}, message: {:?})",
+                       command_handle, error::SUCCESS.message, message);
+
+                let message_json = json!(message).to_string();
+                let msg = CStringUtils::string_to_cstring(message_json);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            }
+            Err(e) => {
+                warn!("vcx_download_message_cb(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Update the status of messages from the specified connection
 ///
 /// #params
@@ -751,6 +802,55 @@ pub extern fn vcx_endorse_transaction(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+/// This function performs two steps:
+///     1) Retrieves the list of all credentials stored in the opened wallet.
+///     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+///        correspondent to received credentials from the connected Ledger.
+///
+/// This helper function can be used, for instance as a background task, to refresh library cache.
+/// This allows us to reduce the time taken for Proof generation by using already cached entities instead of queering the Ledger.
+///
+/// NOTE: Library must be already initialized (wallet and pool must be opened).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides result code
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_fetch_public_entities(command_handle: CommandHandle,
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                             err: u32)>) -> u32 {
+    info!("vcx_fetch_public_entities >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    trace!("vcx_fetch_public_entities(command_handle: {})", command_handle);
+
+    spawn(move || {
+        match ::utils::libindy::anoncreds::fetch_public_entities() {
+            Ok(()) => {
+                trace!("vcx_fetch_public_entities_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_fetch_public_entities_cb(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -766,8 +866,8 @@ mod tests {
     fn _vcx_agent_provision_async_c_closure(config: &str) -> Result<Option<String>, u32> {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let rc = vcx_agent_provision_async(cb.command_handle,
-                                               CString::new(config).unwrap().into_raw(),
-        Some(cb.get_callback()));
+                                           CString::new(config).unwrap().into_raw(),
+                                           Some(cb.get_callback()));
         if rc != error::SUCCESS.code_num {
             return Err(rc);
         }

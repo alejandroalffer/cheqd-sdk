@@ -5,7 +5,6 @@ use messages::update_connection::send_delete_connection_message;
 
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::a2a::A2AMessage;
-
 use v3::utils::encryption_envelope::EncryptionEnvelope;
 
 use std::collections::HashMap;
@@ -17,7 +16,7 @@ use settings;
 use error::prelude::*;
 use settings::ProtocolTypes;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AgentInfo {
     pub pw_did: String,
     pub pw_vk: String,
@@ -49,7 +48,10 @@ impl AgentInfo {
         */
         let (agent_did, agent_vk) = create_agent_keys("", &pw_did, &pw_vk)?;
 
-        Ok(AgentInfo { pw_did, pw_vk, agent_did, agent_vk })
+        let agent = AgentInfo { pw_did, pw_vk, agent_did, agent_vk };
+
+        trace!("Agent::create_agent <<< pairwise_agent: {:?}", agent);
+        Ok(agent)
     }
 
     pub fn agency_endpoint(&self) -> VcxResult<String> {
@@ -67,14 +69,18 @@ impl AgentInfo {
     }
 
     pub fn update_message_status(&self, uid: String) -> VcxResult<()> {
-        trace!("Agent::update_message_status >>> uid: {:?}", uid);
+        trace!("Agent::update_message_status_as_reviewed >>> uid: {:?}", uid);
 
         let messages_to_update = vec![UIDsByConn {
             pairwise_did: self.pw_did.clone(),
             uids: vec![uid],
         }];
 
-        update_messages_status(MessageStatusCode::Reviewed, messages_to_update)
+        update_messages_status(MessageStatusCode::Reviewed, messages_to_update)?;
+
+        trace!("Agent::update_message_status_as_reviewed <<<");
+
+        Ok(())
     }
 
     pub fn get_messages(&self) -> VcxResult<HashMap<String, A2AMessage>> {
@@ -92,8 +98,10 @@ impl AgentInfo {
         let mut a2a_messages: HashMap<String, A2AMessage> = HashMap::new();
 
         for message in messages {
-            a2a_messages.insert(message.uid.clone(), self.decode_message(&message)?);
+            a2a_messages.insert(message.uid.clone(), Self::decode_message(&message)?);
         }
+
+        trace!("Agent::get_messages <<< a2a_messages: {:?}", a2a_messages);
 
         Ok(a2a_messages)
     }
@@ -114,21 +122,40 @@ impl AgentInfo {
                 .pop()
                 .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessages, format!("Message not found for id: {:?}", msg_id)))?;
 
-        let message = self.decode_message(&message)?;
+        let message = Self::decode_message(&message)?;
+
+        trace!("Agent::get_message_by_id <<< message: {:?}", message);
 
         Ok(message)
     }
 
-    pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
-        trace!("Agent::decode_message >>>");
+    pub fn decode_message(message: &Message) -> VcxResult<A2AMessage> {
+        trace!("Agent::decode_message >>> message: {:?}", message);
 
-        EncryptionEnvelope::open(message.payload()?)
+        let message = match message.decrypted_payload {
+            Some(ref payload) => {
+                debug!("Agent: Message Payload is already decoded");
+
+                let message: ::messages::payload::PayloadV1 = ::serde_json::from_str(&payload)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
+
+                ::serde_json::from_str::<A2AMessage>(&message.msg)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))
+            }
+            None => EncryptionEnvelope::open(message.payload()?)
+        }?;
+
+        trace!("Agent::decode_message <<< message: {:?}", message);
+
+        Ok(message)
     }
 
-    pub fn send_message(&self, message: &A2AMessage, did_dod: &DidDoc) -> VcxResult<()> {
-        trace!("Agent::send_message >>> message: {:?}, did_doc: {:?}", message, did_dod);
-        let envelope = EncryptionEnvelope::create(&message, Some(&self.pw_vk), &did_dod)?;
-        httpclient::post_message(&envelope.0, &did_dod.get_endpoint())?;
+    pub fn send_message(&self, message: &A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
+        trace!("Agent::send_message >>> message: {:?}, did_doc: {:?}", message, did_doc);
+        let pw_key = if self.pw_vk.is_empty() { None} else {Some(self.pw_vk.clone())};
+        let envelope = EncryptionEnvelope::create(&message, pw_key.as_ref().map(String::as_str), &did_doc)?;
+        httpclient::post_message(&envelope.0, &did_doc.get_endpoint())?;
+        trace!("Agent::send_message <<<");
         Ok(())
     }
 
@@ -136,11 +163,14 @@ impl AgentInfo {
         trace!("Agent::send_message_anonymously >>> message: {:?}, did_doc: {:?}", message, did_dod);
         let envelope = EncryptionEnvelope::create(&message, None, &did_dod)?;
         httpclient::post_message(&envelope.0, &did_dod.get_endpoint())?;
+        trace!("Agent::send_message_anonymously <<<");
         Ok(())
     }
 
     pub fn delete(&self) -> VcxResult<()> {
         trace!("Agent::delete >>>");
-        send_delete_connection_message(&self.pw_did, &self.pw_vk, &self.agent_did, &self.agent_vk)
+        send_delete_connection_message(&self.pw_did, &self.pw_vk, &self.agent_did, &self.agent_vk)?;
+        trace!("Agent::delete <<<");
+        Ok(())
     }
 }

@@ -9,6 +9,7 @@ use utils::threadpool::spawn;
 use error::prelude::*;
 use indy::{INVALID_WALLET_HANDLE, CommandHandle};
 use utils::libindy::pool::init_pool;
+use std::thread;
 
 /// Initializes VCX with config settings
 ///
@@ -86,14 +87,9 @@ pub extern fn vcx_init(command_handle: CommandHandle,
             settings::set_defaults();
         } else {
             match settings::process_config_file(&config_path) {
+                Ok(_) => (),
                 Err(_) => {
                     return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot initialize with given config path.").into();
-                }
-                Ok(_) => {
-                    match settings::validate_payment_method() {
-                        Ok(_) => (),
-                        Err(e) => return e.into()
-                    }
                 }
             };
         }
@@ -118,7 +114,7 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
     let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
         Ok(x) => x,
         Err(_) => {
-            trace!("Using default wallet: {}", settings::DEFAULT_WALLET_NAME.to_string());
+            debug!("No `wallet_name` parameter specified in the config JSON. Using default: {}", settings::DEFAULT_WALLET_NAME.to_string());
             settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
             settings::DEFAULT_WALLET_NAME.to_string()
         }
@@ -131,28 +127,47 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
     trace!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
     spawn(move || {
-        if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
-            match init_pool() {
-                Ok(()) => (),
-                Err(e) => {
-                    error!("Init Pool Error {}.", e);
-                    cb(command_handle, e.into());
-                    return Ok(());
-                }
+        let pool_open_thread = thread::spawn(|| {
+            if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_err() {
+                return Ok(());
+            }
+
+            init_pool()
+                .map(|res| {
+                    info!("Init Pool Successful.");
+                    res
+                })
+        });
+
+        match wallet::open_wallet(&wallet_name,
+                                  wallet_type.as_ref().map(String::as_str),
+                                  storage_config.as_ref().map(String::as_str),
+                                  storage_creds.as_ref().map(String::as_str)) {
+            Ok(_) => {
+                debug!("Init Wallet Successful.");
+            }
+            Err(e) => {
+                error!("Init Wallet Error {}..", e);
+                cb(command_handle, e.into());
+                return Ok(());
             }
         }
 
-        match wallet::open_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str),
-                                  storage_config.as_ref().map(String::as_str), storage_creds.as_ref().map(String::as_str)) {
-            Ok(_) => {
-                debug!("Init Wallet Successful");
+        match pool_open_thread.join() {
+            Ok(Ok(())) => {
                 cb(command_handle, error::SUCCESS.code_num);
             }
-            Err(e) => {
-                error!("Init Wallet Error {}.", e);
+            Ok(Err(e)) => {
+                error!("Init Pool Error {}.", e);
                 cb(command_handle, e.into());
             }
+            Err(e) => {
+                error!("Init Pool Error {:?}.", e);
+                let error = VcxError::from_msg(VcxErrorKind::IOError, format!("Could not join thread: {:?}.", e));
+                cb(command_handle, error.into());
+            }
         }
+
         Ok(())
     });
 
@@ -201,6 +216,61 @@ pub extern fn vcx_init_minimal(config: *const c_char) -> u32 {
     settings::log_settings();
 
     trace!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
+
+    error::SUCCESS.code_num
+}
+
+/// Connect to a Pool Ledger
+///
+/// You can deffer connecting to the Pool Ledger during library initialization (vcx_init or vcx_init_with_config)
+/// to decrease the taken time by omitting `genesis_path` field in config JSON.
+/// Next, you can use this function (for instance as a background task) to perform a connection to the Pool Ledger.
+///
+/// Note: Pool must be already initialized before sending any request to the Ledger.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// genesis_path: string - path to pool ledger genesis transactions.
+///
+/// cb: Callback that provides no value
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+pub extern fn vcx_init_pool(command_handle: CommandHandle,
+                            genesis_path: *const c_char,
+                            cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                 err: u32)>) -> u32 {
+    info!("vcx_init_pool >>>");
+
+    check_useful_c_str!(genesis_path, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_init_pool(command_handle: {}, genesis_path: {:?})",
+           command_handle, genesis_path);
+
+    settings::set_config_value(settings::CONFIG_GENESIS_PATH, &genesis_path);
+
+    spawn(move || {
+        match init_pool() {
+            Ok(()) => {
+                trace!("vcx_init_pool_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                error!("vcx_init_pool_cb(command_handle: {}, rc: {})",
+                       command_handle, e);
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
 
     error::SUCCESS.code_num
 }
@@ -532,7 +602,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_file_no_payment_method() {
-        let _setup = SetupEmpty::init();
+        let _setup = SetupWalletAndPool::init();
 
         let config = json!({
             "wallet_name": settings::DEFAULT_WALLET_NAME,
@@ -542,8 +612,7 @@ mod tests {
 
         let config = TempFile::create_with_data("test_init.json", &config);
 
-        let rc = _vcx_init_c_closure(&config.path).unwrap_err();
-        assert_eq!(rc, error::MISSING_PAYMENT_METHOD.code_num);
+        _vcx_init_c_closure(&config.path).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -569,7 +638,6 @@ mod tests {
         assert_eq!(err, error::POOL_LEDGER_CONNECT.code_num);
 
         assert_eq!(get_pool_handle().unwrap_err().kind(), VcxErrorKind::NoPoolOpen);
-        assert_eq!(get_wallet_handle(), INVALID_WALLET_HANDLE);
 
         delete_test_pool();
     }
@@ -1015,7 +1083,7 @@ mod tests {
         let my_pw_did = ::connection::get_pw_did(connection_handle).unwrap();
         let their_pw_did = ::connection::get_their_pw_did(connection_handle).unwrap();
 
-        let (offer, _) = ::issuer_credential::generate_credential_offer_msg(cred_handle).unwrap();
+        let offer = ::issuer_credential::generate_credential_offer_msg(cred_handle).unwrap();
         let mycred = ::credential::credential_create_with_offer("test1", &offer).unwrap();
         let request = ::credential::generate_credential_request_msg(mycred, &my_pw_did, &their_pw_did).unwrap();
         ::issuer_credential::update_state(cred_handle, Some(request)).unwrap();

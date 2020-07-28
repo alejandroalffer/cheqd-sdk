@@ -86,6 +86,7 @@ public class VcxException extends Exception {
      * Initializes a new VcxException with the specified message.
      *
      * @param message The message for the exception.
+     * @param sdkErrorCode The error code for the exception.
      */
     protected VcxException(String message, int sdkErrorCode) {
         super(message);
