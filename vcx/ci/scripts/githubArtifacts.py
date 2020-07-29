@@ -43,7 +43,8 @@ def main(file_list):
     post_data = {
         "tag_name": release_tag,
         "name": release_tag,
-        "target_commitish": "master"
+        "target_commitish": "master",
+        prerelease: os.environ['CI_COMMIT_REF_NAME'] == 'master'
     }
 
     print("Creating release '{}' on github repo '{}'".format(release_tag, github_repo))
