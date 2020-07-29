@@ -116,7 +116,12 @@ async def vcx_get_provision_token(config: str) -> None:
 async def vcx_agent_update_info(config: str) -> None:
     """
     Update information on the agent (ie, comm method and type)
-    :param config:
+    :param config: updated configuration
+                   {
+                       "id": "string", 1 means push notifications, its the only one registered
+                       "type": Optional(int), notifications type (1 is used by default).
+                       "value": "string",
+                   }
     :return:
     """
     logger = logging.getLogger(__name__)
