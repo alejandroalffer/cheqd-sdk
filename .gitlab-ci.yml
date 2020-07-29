@@ -20,8 +20,8 @@ variables:
   libsovtokenVersionExtra: "15"
   indyBranch: 'master'
   indySimpleVersion: "1.15.0"
-  indyFullVersion: "1.15.0-1542"
-  indyFullDebVersion: "1.15.0~1542"
+  indyFullVersion: "1.15.0-1560"
+  indyFullDebVersion: "1.15.0~1560"
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
 
@@ -48,7 +48,7 @@ variables:
     name: gcr.io/kaniko-project/executor:debug-v0.16.0
     entrypoint: [""]
   script:
-    - if [ "$CI_COMMIT_REF_SLUG" == 'master' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
+    - if [ "$CI_COMMIT_REF_SLUG" == 'master' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
     - echo "${KANIKO_ARGS}"
     - |
         echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" \
@@ -97,6 +97,7 @@ variables:
   only:
     refs:
       - master
+      - stable
       - /^docker-.*/
 
 dockerbuild-vcx-libindy-ubuntu16:
@@ -131,6 +132,7 @@ dockerbuild-vcx-libindy-centos:
   only:
     refs:
       - master
+      - stable
       - /^docker-.*/
     changes:
       - .gitlab-ci.yml
@@ -149,6 +151,7 @@ dockerbuild-vcx-android:
   only:
     refs:
       - master
+      - stable
       - /^docker-.*/
     changes:
       - .gitlab-ci.yml
@@ -165,6 +168,7 @@ dockerbuild-vcx-android:
   only:
     refs:
       - master
+      - stable
       - /^docker-.*/
     changes:
       - .gitlab-ci.yml
@@ -196,6 +200,7 @@ dockerbuild-vcx-java:
   only:
     refs:
       - master
+      - stable
       - /^docker-.*/
     changes:
       - .gitlab-ci.yml
@@ -343,7 +348,7 @@ build-android-armv7-from-latest:
 
 build-consistent-vers-ts:
   extends: .tags_micro
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
+  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18
   stage: build-pre
   artifacts:
     expire_in: 1 week
@@ -681,7 +686,7 @@ publish-ios:
     - build-ios
   script:
     #https://gitlab.com/gitlab-org/gitlab-ce/issues/27436
-    - export KRAKEN_CREDENTIALS=$(echo ${KRAKEN_CREDENTIALS_B64} | base64 -d)
+    - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
     - find ./IOSBuilds/libvcxpartial/ -type f -name 'vcx.libvcxpartial_*_universal.zip' -exec curl -u "${KRAKEN_CREDENTIALS}" -X POST https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \;
     - find ./IOSBuilds/libvcxpartial/ -type f -name 'libvcx.a.libvcxpartial_*_universal.tar.gz' -exec curl -u "${KRAKEN_CREDENTIALS}" -X POST https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \;
     - find ./IOSBuilds/libvcxall/ -type f -name 'vcx.libvcxall_*_universal.zip' -exec curl -u "${KRAKEN_CREDENTIALS}" -X POST https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \;
@@ -712,7 +717,7 @@ publish-packages:
   script:
     - ls -al ${CI_PROJECT_DIR}/output
     #https://gitlab.com/gitlab-org/gitlab-ce/issues/27436
-    - export KRAKEN_CREDENTIALS=$(echo ${KRAKEN_CREDENTIALS_B64} | base64 -d)
+    - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*xenial*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvcx*bionic*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload
@@ -726,7 +731,7 @@ publish-packages:
 
 publish-mobile-sdk:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-python-ubuntu18:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/vcx-python-ubuntu18:latest
   extends: .tags_micro
   only:
     refs:

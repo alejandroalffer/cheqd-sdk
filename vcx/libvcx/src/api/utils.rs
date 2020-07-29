@@ -13,11 +13,6 @@ use utils::httpclient::AgencyMock;
 use utils::constants::*;
 use messages::agent_utils::{ComMethod, Config};
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct UpdateAgentInfo {
-    id: String,
-    value: String,
-}
 /// Provision an agent in the agency, populate configuration and wallet for this agent.
 ///
 /// #Params
@@ -291,6 +286,11 @@ pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
 /// command_handle: command handle to map callback to user context.
 ///
 /// json: updated configuration
+///     {
+///         "id": "string", 1 means push notifications, its the only one registered
+///         "type": Optional(int), notifications type (1 is used by default).
+///         "value": "string",
+///     }
 ///
 /// cb: Callback that provides configuration or error status
 ///
@@ -310,15 +310,15 @@ pub extern fn vcx_agent_update_info(command_handle: CommandHandle,
     trace!("vcx_agent_update_info(command_handle: {}, json: {})",
            command_handle, json);
 
-    let agent_info: UpdateAgentInfo = match serde_json::from_str(&json) {
+    let com_method: ComMethod = match serde_json::from_str(&json) {
         Ok(x) => x,
         Err(e) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize agent info: {}", e)).into();
+            return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ComMethod: {}", e)).into();
         }
     };
 
     spawn(move || {
-        match messages::agent_utils::update_agent_info(&agent_info.id, &agent_info.value) {
+        match messages::agent_utils::update_agent_info(com_method) {
             Ok(()) => {
                 trace!("vcx_agent_update_info_cb(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
@@ -962,6 +962,18 @@ mod tests {
         let _setup = SetupMocks::init();
 
         let json_string = r#"{"id":"123","value":"value"}"#;
+        let c_json = CString::new(json_string).unwrap().into_raw();
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        let _result = vcx_agent_update_info(cb.command_handle, c_json, Some(cb.get_callback()));
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
+    }
+
+    #[test]
+    fn test_update_agent_info_with_type() {
+        let _setup = SetupMocks::init();
+
+        let json_string = r#"{"id":"123","value":"value", "type":1}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
