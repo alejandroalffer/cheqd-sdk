@@ -73,7 +73,7 @@ serde_derive = "1.0"
 [package.metadata.deb]
 maintainer = "Evernym, Inc."
 copyright = "2018, Evernym Inc."
-depends = "$auto, libindy (=1.15.0~1542)"
+depends = "$auto, libindy (=1.15.0~1560)"
 extended-description = """\
 This is the official SDK for Hyperledger Indy, which provides a\
   distributed-ledger-based foundation for self-sovereign identity.\
