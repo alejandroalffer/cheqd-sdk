@@ -70,7 +70,7 @@ vcx_error_t vcx_agent_update_info(vcx_command_handle_t handle, const char *json,
 
 vcx_error_t vcx_init_with_config(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 
-vcx_error_t vcx_init_pool(vcx_command_handle_t command_handle, const char *genesis_path, void (*cb)(vcx_command_handle_t, vcx_error_t));
+vcx_error_t vcx_init_pool(vcx_command_handle_t command_handle, const char *pool_config, void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 vcx_error_t vcx_init(vcx_command_handle_t handle, const char *config_path, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 //pub extern fn vcx_init (command_handle: u32, config_path:*const c_char, cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32
@@ -220,6 +220,13 @@ vcx_error_t vcx_connection_send_ping(vcx_command_handle_t command_handle,
 vcx_error_t vcx_connection_send_reuse(vcx_command_handle_t command_handle,
                                       vcx_connection_handle_t connection_handle,
                                       const char *invite,
+                                      void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+
+/** Send answer on received question message according to Aries question-answer protocol. */
+vcx_error_t vcx_connection_send_answer(vcx_command_handle_t command_handle,
+                                      vcx_connection_handle_t connection_handle,
+                                      const char *question,
+                                      const char *answer,
                                       void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
 /**

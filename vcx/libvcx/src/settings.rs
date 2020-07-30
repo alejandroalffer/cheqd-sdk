@@ -344,6 +344,23 @@ pub fn process_config_file(path: &str) -> VcxResult<u32> {
     process_config_string(&config, true)
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+struct PoolConfig {
+    genesis_path: String,
+    pool_name: Option<String>,
+    pool_config: Option<serde_json::Value>,
+}
+
+pub fn process_pool_config_string(config: &str) -> VcxResult<u32> {
+    trace!("process_pool_config_string >>> config {}", config);
+
+    let _config: PoolConfig = serde_json::from_str(config)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Invalid Pool configuration JSON. Err: {:?}", err)))?;
+
+    process_config_string(config, false)
+}
+
 pub fn get_wallet_name() -> VcxResult<String> {
     get_config_value(CONFIG_WALLET_NAME)
         .map_err(|_|VcxError::from(VcxErrorKind::MissingWalletKey))
@@ -772,5 +789,47 @@ pub mod tests {
         // passed invalid actor
         config["actors"] = json!(["wrong"]);
         assert_eq!(process_config_string(&config.to_string(), true).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
+    }
+
+    #[test]
+    fn test_process_pool_config() {
+        let _setup = SetupDefaults::init();
+
+        let path = "path/test/";
+        let name = "pool1";
+
+        // Only required field
+        let config = json!({
+            "genesis_path": path
+        }).to_string();
+
+        process_pool_config_string(&config.to_string()).unwrap();
+
+        assert_eq!(get_config_value(CONFIG_GENESIS_PATH).unwrap(), path.to_string());
+
+        // With optional fields
+        let config = json!({
+            "genesis_path": path,
+            "pool_name": name,
+            "pool_config": {
+                 "number_read_nodes": 2
+            }
+        }).to_string();
+
+        process_pool_config_string(&config.to_string()).unwrap();
+
+        assert_eq!(get_config_value(CONFIG_GENESIS_PATH).unwrap(), path.to_string());
+        assert_eq!(get_config_value(CONFIG_POOL_NAME).unwrap(), name.to_string());
+
+        // Empty
+        let config = json!({}).to_string();
+        assert_eq!(process_pool_config_string(&config.to_string()).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
+
+        // Unexpected fields
+        let config = json!({
+            "genesis_path": "path/test/",
+            "other_field": "pool1",
+        }).to_string();
+        assert_eq!(process_pool_config_string(&config.to_string()).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
     }
 }

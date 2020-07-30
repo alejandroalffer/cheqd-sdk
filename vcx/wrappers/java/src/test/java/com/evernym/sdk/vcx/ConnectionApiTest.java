@@ -316,4 +316,15 @@ class ConnectionApiTest {
 					ConnectionApi.vcxConnectionCreateOutofband("Foo", null, "Foo Goal", true, null));
 		});
 	}
+
+	@Test
+	@DisplayName("send answer")
+	void sendAnswer() {
+		Assertions.assertThrows(ExecutionException.class, () -> {
+			int connectionHandle = _createConnection();
+			String question = "{\"@type\": \"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question\",\"@id\": \"518be002-de8e-456e-b3d5-8fe472477a86\",\"question_text\": \"Alice, are you on the phone with Bob from Faber Bank right now?\",}";
+			String answer = "{\"text\": \"Yes, it's me\"}";
+			TestHelper.getResultFromFuture(ConnectionApi.connectionSendAnswer(connectionHandle, question, answer));
+		});
+	}
 }

@@ -337,12 +337,12 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 }
 
-- (void)initPool:(NSString *)genesisPath
+- (void)initPool:(NSString *)poolConfig
             completion:(void (^)(NSError *error))completion
 {
-    const char *genesisPath_char = [genesisPath cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *poolConfig_char = [poolConfig cStringUsingEncoding:NSUTF8StringEncoding];
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
-    vcx_error_t ret = vcx_init_pool(handle, genesisPath_char, VcxWrapperCommonCallback);
+    vcx_error_t ret = vcx_init_pool(handle, poolConfig_char, VcxWrapperCommonCallback);
     if( ret != 0 )
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -641,6 +641,29 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     vcx_error_t ret = vcx_connection_send_reuse(handle,
                                                 connectionHandle,
                                                 invite_ctype,
+                                                VcxWrapperCommonCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
+- (void)connectionSendAnswer:(VcxHandle)connectionHandle
+                    question:(NSString *)question
+                      answer:(NSString *)answer
+             withCompletion:(void (^)(NSError *error))completion
+{
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char *question_ctype = [question cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *answer_ctype = [answer cStringUsingEncoding:NSUTF8StringEncoding];
+    vcx_error_t ret = vcx_connection_send_answer(handle,
+                                                connectionHandle,
+                                                question_ctype,
+                                                answer_ctype,
                                                 VcxWrapperCommonCallback);
     if( ret != 0 )
     {

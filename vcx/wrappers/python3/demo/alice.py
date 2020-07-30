@@ -2,6 +2,7 @@ import asyncio
 import json
 from time import sleep
 
+from demo.demo_utils import download_message, update_message_as_read
 from vcx.api.connection import Connection
 from vcx.api.credential import Credential
 from vcx.api.disclosed_proof import DisclosedProof
@@ -35,6 +36,7 @@ async def main():
             "1 - check for credential offer \n "
             "2 - check for proof request \n "
             "3 - pass vc_auth_oidc-challenge \n "
+            "4 - check for questions \n "
             "5 - establish out-of-band connection \n "
             "else finish \n") \
             .lower().strip()
@@ -80,6 +82,14 @@ async def main():
             print("#23 Create a Disclosed proof object from proof request")
             proof = await DisclosedProof.create('proof', request)
             await create_proof(None, proof)
+        elif answer == '4':
+            print("Check agency for a questions")
+            pw_did = await connection_to_faber.get_my_pw_did()
+            uid, question, _ = await download_message(pw_did, 'question')
+            question = json.loads(question)
+            answer = question['valid_responses'][0]
+            await connection_to_faber.send_answer(json.dumps(question), json.dumps(answer))
+            await update_message_as_read(pw_did, uid)
         elif answer == '5':
             connection_to_faber = await outofband_connect()
         else:

@@ -23,7 +23,7 @@ public abstract class LibVcx {
         public int vcx_init_with_config(int command_handle, String config, Callback cb);
         public int vcx_init(int command_handle, String config_path, Callback cb);
         public int vcx_init_minimal(String config);
-        public int vcx_init_pool(int command_handle, String genesis_path, Callback cb);
+        public int vcx_init_pool(int command_handle, String pool_config, Callback cb);
 
         public String vcx_error_c_message(int error_code);
         public String vcx_version();
@@ -236,6 +236,11 @@ public abstract class LibVcx {
          * Send a message to reuse existing Connection instead of setting up a new one as response on received Out-of-Band Invitation.
          */
         public int vcx_connection_send_reuse(int command_handle, int connection_handle, String invite, Callback cb);
+
+        /**
+         * Send answer on received question message according to Aries question-answer protocol.
+         */
+        public int vcx_connection_send_answer(int command_handle, int connection_handle, String question, String answer, Callback cb);
 
         /**
          * The API represents an Issuer side in credential issuance process.

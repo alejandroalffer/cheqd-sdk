@@ -584,6 +584,52 @@ vcx_error_t vcx_connection_send_reuse(vcx_u32_t command_handle,
                                       const char* invite,
                                       void (*cb)(vcx_command_handle_t, vcx_error_t));
 
+/// Send answer on received question message according to Aries question-answer protocol.
+///
+/// The related protocol can be found here: https://github.com/hyperledger/aries-rfcs/tree/master/features/0113-question-answer
+///
+/// Note that this function works in case `aries` communication method is used.
+///     In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: handle pointing to Connection to use for sending answer message.
+///
+/// question: A JSON string representing Question received via pairwise connection.
+///
+/// answer: An answer to use which is a JSON string representing chosen `valid_response` option from Question message.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// # Examples
+/// question ->
+///     {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+///         "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+///         "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+///         "question_detail": "This is optional fine-print giving context to the question and its various answers.",
+///         "nonce": "<valid_nonce>",
+///         "signature_required": true,
+///         "valid_responses" : [
+///             {"text": "Yes, it's me"},
+///             {"text": "No, that's not me!"}],
+///         "~timing": {
+///             "expires_time": "2018-12-13T17:29:06+0000"
+///         }
+///     }
+/// answer ->
+///     {"text": "Yes, it's me"}
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_send_answer(vcx_u32_t command_handle,
+                                       vcx_connection_handle_t connection_handle,
+                                       const char* question,
+                                       const char* answer,
+                                       void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 // Takes the Connection object and returns callers pw_did associated with this connection
 //
 // #Params
@@ -1552,14 +1598,33 @@ vcx_error_t vcx_init_with_config(vcx_command_handle_t command_handle,
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// genesis_path: string - path to pool ledger genesis transactions.
+/// pool_config: string - the configuration JSON containing pool related settings:
+///                 {
+///                     genesis_path: string - path to pool ledger genesis transactions,
+///                     pool_name: Optional[string] - name of the pool ledger configuration will be created.
+///                                                   If no value specified, the default pool name pool_name will be used.
+///                     pool_config: Optional[string] - runtime pool configuration json:
+///                             {
+///                                 "timeout": int (optional), timeout for network request (in sec).
+///                                 "extended_timeout": int (optional), extended timeout for network request (in sec).
+///                                 "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
+///                                         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+///                                         This can be useful if a user prefers querying specific nodes.
+///                                         Assume that `Node1` and `Node2` nodes reply faster.
+///                                         If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
+///                                         Note: Nodes not specified will be placed randomly.
+///                                 "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+///                                         By default Libindy sends a read requests to 2 nodes in the pool.
+///                             }
+///                 }
+///
 ///
 /// cb: Callback that provides no value
 ///
 /// #Returns
 /// Error code as u32
 vcx_error_t vcx_init_pool(vcx_command_handle_t command_handle,
-                          const char *genesis_path,
+                          const char *pool_config,
                           void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 // Create a Issuer Credential object that provides a credential for an enterprise's user

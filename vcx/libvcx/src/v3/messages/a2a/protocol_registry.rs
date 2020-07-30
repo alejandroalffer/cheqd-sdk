@@ -25,6 +25,8 @@ impl ProtocolRegistry {
                 family @ MessageFamilies::TrustPing |
                 family @ MessageFamilies::Basicmessage |
                 family @ MessageFamilies::Outofband |
+                family @ MessageFamilies::QuestionAnswer |
+                family @ MessageFamilies::Committedanswer |
                 family @ MessageFamilies::DiscoveryFeatures => registry.add_protocol(&actors, family),
                 MessageFamilies::Signature => {}
                 MessageFamilies::Unknown(_) => {}

@@ -82,7 +82,7 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)initWithConfig:(NSString *)config
             completion:(void (^)(NSError *error))completion;
 
-- (void)initPool:(NSString *)genesisPath
+- (void)initPool:(NSString *)poolConfig
             completion:(void (^)(NSError *error))completion;
 
 - (void)agentProvisionAsync:(NSString *)config
@@ -146,6 +146,11 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 
 - (void)connectionSendReuse:(VcxHandle)connectionHandle
                      invite:(NSString *)invite
+             withCompletion:(void (^)(NSError *error))completion;
+
+- (void)connectionSendAnswer:(VcxHandle)connectionHandle
+                    question:(NSString *)question
+                      answer:(NSString *)answer
              withCompletion:(void (^)(NSError *error))completion;
 
 - (void)connectionSignData:(VcxHandle)connectionHandle

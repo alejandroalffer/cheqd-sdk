@@ -24,6 +24,8 @@ use std::collections::HashMap;
 use error::prelude::*;
 use messages::thread::Thread;
 use settings;
+use v3::messages::questionanswer::question::{Question, QuestionResponse};
+use v3::messages::questionanswer::answer::Answer;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeSM {
@@ -412,6 +414,23 @@ impl CompleteState {
                 self.handle_reuse(handshake_reuse, agent_info)?;
                 DidExchangeState::Completed(self)
             }
+            DidExchangeMessages::QuestionReceived(_) => {
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::AnswerReceived(answer) => {
+                self.handle_answer(answer,  agent_info)?;
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::CommittedQuestionReceived(_) => {
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::CommittedAnswerReceived(_) => {
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::SendAnswer((question, response)) => {
+                self.handle_send_answer(question, response, agent_info)?;
+                DidExchangeState::Completed(self)
+            }
             _ => {
                 DidExchangeState::Completed(self)
             }
@@ -473,6 +492,45 @@ impl CompleteState {
             .set_thread(thread);
 
         agent_info.send_message(&handshake_reuse_accepted.to_a2a_message(), &self.did_doc).ok();
+        Ok(())
+    }
+
+    fn handle_send_answer(&self, question: Question, response: QuestionResponse, agent_info: &AgentInfo) -> VcxResult<()> {
+        let thread = Thread::new()
+            .set_thid(question.id.to_string())
+            .update_received_order(&self.did_doc.id);
+
+        let mut answer = Answer::create()
+            .set_response(response.text)
+            .set_thread(thread);
+
+        if question.signature_required {
+            answer = answer.sign(&question, &agent_info.pw_vk)?;
+        }
+
+        agent_info.send_message(&answer.to_a2a_message(), &self.did_doc).ok();
+        Ok(())
+    }
+
+    fn handle_answer(&self, answer: Answer, agent_info: &AgentInfo) -> VcxResult<()> {
+        let remote_vk: String = self.did_doc.recipient_keys().get(0).cloned()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot handle Response: Remote Verkey not found"))?;
+
+        match answer.verify(&remote_vk) {
+            Ok(()) => {},
+            Err(_) => {
+                let thread = answer.thread.clone()
+                    .increment_sender_order()
+                    .update_received_order(&self.did_doc.id);
+
+                let problem_report = ProblemReport::create()
+                    .set_explain(format!("Answer signature verification failed for pairwise verkey {:?}", remote_vk))
+                    .set_thread(thread.clone());
+
+                agent_info.send_message(&problem_report.to_a2a_message(), &self.did_doc).ok();
+            }
+        }
+
         Ok(())
     }
 
@@ -627,6 +685,22 @@ impl DidExchangeSM {
                         disclose @ A2AMessage::Disclose(_) => {
                             debug!("Disclose message received");
                             return Some((uid, disclose));
+                        }
+                        question @ A2AMessage::Question(_) => {
+                            debug!("Question message received");
+                            return Some((uid, question));
+                        }
+                        answer @ A2AMessage::Answer(_) => {
+                            debug!("Answer message received");
+                            return Some((uid, answer));
+                        }
+                        question @ A2AMessage::CommittedQuestion(_) => {
+                            debug!("CommittedQuestion message received");
+                            return Some((uid, question));
+                        }
+                        answer @ A2AMessage::CommittedAnswer(_) => {
+                            debug!("CommittedAnswer message received");
+                            return Some((uid, answer));
                         }
                         message @ _ => {
                             debug!("Unexpected message received in Completed state: {:?}", message);
@@ -1283,6 +1357,8 @@ pub mod test {
 
         mod find_message_to_handle {
             use super::*;
+            use v3::messages::questionanswer::question::tests::_question;
+            use v3::messages::questionanswer::answer::tests::_answer;
 
             #[test]
             fn test_find_message_to_handle_from_null_state() {
@@ -1462,6 +1538,32 @@ pub mod test {
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_3", uid);
                     assert_match!(A2AMessage::Disclose(_), message);
+                }
+
+                // Question
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Question(_question())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Question(_), message);
+                }
+
+                // Answer
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Answer(_answer())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Answer(_), message);
                 }
             }
         }
@@ -1766,6 +1868,8 @@ pub mod test {
 
         mod find_message_to_handle {
             use super::*;
+            use v3::messages::questionanswer::question::tests::_question;
+            use v3::messages::questionanswer::answer::tests::_answer;
 
             #[test]
             fn test_find_message_to_handle_from_invited_state() {
@@ -1890,6 +1994,32 @@ pub mod test {
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_3", uid);
                     assert_match!(A2AMessage::Disclose(_), message);
+                }
+
+                // Question
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Question(_question())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Question(_), message);
+                }
+
+                // Answer
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Answer(_answer())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Answer(_), message);
                 }
             }
         }
