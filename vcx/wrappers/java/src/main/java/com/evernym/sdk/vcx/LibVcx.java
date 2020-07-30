@@ -23,7 +23,7 @@ public abstract class LibVcx {
         public int vcx_init_with_config(int command_handle, String config, Callback cb);
         public int vcx_init(int command_handle, String config_path, Callback cb);
         public int vcx_init_minimal(String config);
-        public int vcx_init_pool(int command_handle, String genesis_path, Callback cb);
+        public int vcx_init_pool(int command_handle, String pool_config, Callback cb);
 
         public String vcx_error_c_message(int error_code);
         public String vcx_version();

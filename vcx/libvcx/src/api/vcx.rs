@@ -234,7 +234,26 @@ pub extern fn vcx_init_minimal(config: *const c_char) -> u32 {
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// genesis_path: string - path to pool ledger genesis transactions.
+/// pool_config: string - the configuration JSON containing pool related settings:
+///                 {
+///                     genesis_path: string - path to pool ledger genesis transactions,
+///                     pool_name: Optional[string] - name of the pool ledger configuration will be created.
+///                                                   If no value specified, the default pool name pool_name will be used.
+///                     pool_config: Optional[string] - runtime pool configuration json:
+///                             {
+///                                 "timeout": int (optional), timeout for network request (in sec).
+///                                 "extended_timeout": int (optional), extended timeout for network request (in sec).
+///                                 "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
+///                                         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+///                                         This can be useful if a user prefers querying specific nodes.
+///                                         Assume that `Node1` and `Node2` nodes reply faster.
+///                                         If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
+///                                         Note: Nodes not specified will be placed randomly.
+///                                 "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+///                                         By default Libindy sends a read requests to 2 nodes in the pool.
+///    }
+///                 }
+///
 ///
 /// cb: Callback that provides no value
 ///
@@ -242,18 +261,24 @@ pub extern fn vcx_init_minimal(config: *const c_char) -> u32 {
 /// Error code as u32
 #[no_mangle]
 pub extern fn vcx_init_pool(command_handle: CommandHandle,
-                            genesis_path: *const c_char,
+                            pool_config: *const c_char,
                             cb: Option<extern fn(xcommand_handle: CommandHandle,
                                                  err: u32)>) -> u32 {
     info!("vcx_init_pool >>>");
 
-    check_useful_c_str!(genesis_path, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(pool_config, VcxErrorKind::InvalidOption);
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_init_pool(command_handle: {}, genesis_path: {:?})",
-           command_handle, genesis_path);
+    trace!("vcx_init_pool(command_handle: {}, pool_config: {:?})",
+           command_handle, pool_config);
 
-    settings::set_config_value(settings::CONFIG_GENESIS_PATH, &genesis_path);
+    match settings::process_pool_config_string(&pool_config) {
+        Err(e) => {
+            error!("Invalid pool configuration specified: {}", e);
+            return e.into();
+        }
+        Ok(_) => (),
+    }
 
     spawn(move || {
         match init_pool() {
