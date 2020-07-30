@@ -1552,14 +1552,33 @@ vcx_error_t vcx_init_with_config(vcx_command_handle_t command_handle,
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// genesis_path: string - path to pool ledger genesis transactions.
+/// pool_config: string - the configuration JSON containing pool related settings:
+///                 {
+///                     genesis_path: string - path to pool ledger genesis transactions,
+///                     pool_name: Optional[string] - name of the pool ledger configuration will be created.
+///                                                   If no value specified, the default pool name pool_name will be used.
+///                     pool_config: Optional[string] - runtime pool configuration json:
+///                             {
+///                                 "timeout": int (optional), timeout for network request (in sec).
+///                                 "extended_timeout": int (optional), extended timeout for network request (in sec).
+///                                 "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
+///                                         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+///                                         This can be useful if a user prefers querying specific nodes.
+///                                         Assume that `Node1` and `Node2` nodes reply faster.
+///                                         If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
+///                                         Note: Nodes not specified will be placed randomly.
+///                                 "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+///                                         By default Libindy sends a read requests to 2 nodes in the pool.
+///                             }
+///                 }
+///
 ///
 /// cb: Callback that provides no value
 ///
 /// #Returns
 /// Error code as u32
 vcx_error_t vcx_init_pool(vcx_command_handle_t command_handle,
-                          const char *genesis_path,
+                          const char *pool_config,
                           void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 // Create a Issuer Credential object that provides a credential for an enterprise's user

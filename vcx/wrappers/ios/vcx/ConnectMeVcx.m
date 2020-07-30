@@ -337,12 +337,12 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 }
 
-- (void)initPool:(NSString *)genesisPath
+- (void)initPool:(NSString *)poolConfig
             completion:(void (^)(NSError *error))completion
 {
-    const char *genesisPath_char = [genesisPath cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *poolConfig_char = [poolConfig cStringUsingEncoding:NSUTF8StringEncoding];
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
-    vcx_error_t ret = vcx_init_pool(handle, genesisPath_char, VcxWrapperCommonCallback);
+    vcx_error_t ret = vcx_init_pool(handle, poolConfig_char, VcxWrapperCommonCallback);
     if( ret != 0 )
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];

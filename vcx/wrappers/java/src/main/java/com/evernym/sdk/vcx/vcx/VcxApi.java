@@ -150,21 +150,39 @@ public class VcxApi extends VcxJava.API {
      *
      * EXPERIMENTAL
      *
-     * @param  genesisPath     string path to pool ledger genesis transactions.
+     * @param  poolConfig       the configuration JSON containing pool related settings:
+     *                          {
+     *                              genesis_path: string - path to pool ledger genesis transactions,
+     *                              pool_name: Optional[string] - name of the pool ledger configuration will be created.
+     *                                                   If no value specified, the default pool name pool_name will be used.
+     *                              pool_config: Optional[string] - runtime pool configuration json:
+     *                                  {
+     *                                      "timeout": int (optional), timeout for network request (in sec).
+     *                                      "extended_timeout": int (optional), extended timeout for network request (in sec).
+     *                                      "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
+     *                                         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+     *                                         This can be useful if a user prefers querying specific nodes.
+     *                                         Assume that `Node1` and `Node2` nodes reply faster.
+     *                                         If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
+     *                                         Note: Nodes not specified will be placed randomly.
+     *                                      "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+     *                                         By default Libindy sends a read requests to 2 nodes in the pool.
+     *                                  }
+     *                          }
      *
      * @return                  void
      *
      * @throws VcxException   If an exception occurred in Libvcx library.
      */
-    public static CompletableFuture<Void> vcxInitPool(String genesisPath) throws VcxException {
-        logger.debug("vcxInitPool() called with: genesisPath = [{}]", genesisPath);
-        ParamGuard.notNull(genesisPath, "genesisPath");
+    public static CompletableFuture<Void> vcxInitPool(String poolConfig) throws VcxException {
+        logger.debug("vcxInitPool() called with: poolConfig = [{}]", poolConfig);
+        ParamGuard.notNull(poolConfig, "poolConfig");
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_init_pool(
                 commandHandle,
-                genesisPath,
+                poolConfig,
                 vcxInitPoolCB);
         checkResult(result);
 
