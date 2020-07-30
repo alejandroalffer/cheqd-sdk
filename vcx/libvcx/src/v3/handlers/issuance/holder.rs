@@ -226,8 +226,10 @@ impl HolderSM {
     pub fn get_credential_offer(&self) -> VcxResult<CredentialOffer> {
         match self.state {
             HolderState::OfferReceived(ref state) => Ok(state.offer.clone()),
-            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady,
-                                        format!("Holder object {} in state {} not ready to get Credential Offer message", self.source_id, self.state())))
+            HolderState::RequestSent(ref state) => state.offer.clone().ok_or(
+                VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Holder object state: `offer` not found", self.source_id))),
+            HolderState::Finished(ref state) => state.offer.clone().ok_or(
+                VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Holder object state: `offer` not found", self.source_id))),
         }
     }
 
