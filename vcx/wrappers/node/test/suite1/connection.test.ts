@@ -256,4 +256,29 @@ describe('Connection:', () => {
 
     })
   })
+
+  describe('sendAnswer:', () => {
+    it('success: send answer', async () => {
+      const connection = await connectionCreate()
+      const data = {
+        answer: {
+          text: 'Yes, it\'s me'
+        },
+        question: {
+          '@id': '518be002-de8e-456e-b3d5-8fe472477a86',
+          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question',
+          'question_text': 'Alice, are you on the phone with Bob from Faber Bank right now?',
+          'valid_responses' : [
+                  { text: 'Yes, it\'s me' },
+                  { text: 'No, that\'s not me!' }
+          ],
+          '~timing': {
+            expires_time: '2018-12-13T17:29:06+0000'
+          }
+        }
+      }
+      const error = await shouldThrow(() => connection.sendAnswer(data))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+    })
+  })
 })

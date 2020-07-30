@@ -238,6 +238,11 @@ public abstract class LibVcx {
         public int vcx_connection_send_reuse(int command_handle, int connection_handle, String invite, Callback cb);
 
         /**
+         * Send answer on received question message according to Aries question-answer protocol.
+         */
+        public int vcx_connection_send_answer(int command_handle, int connection_handle, String question, String answer, Callback cb);
+
+        /**
          * The API represents an Issuer side in credential issuance process.
          * Assumes that pairwise connection between Issuer and Holder is already established.
          */

@@ -222,6 +222,13 @@ vcx_error_t vcx_connection_send_reuse(vcx_command_handle_t command_handle,
                                       const char *invite,
                                       void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
+/** Send answer on received question message according to Aries question-answer protocol. */
+vcx_error_t vcx_connection_send_answer(vcx_command_handle_t command_handle,
+                                      vcx_connection_handle_t connection_handle,
+                                      const char *question,
+                                      const char *answer,
+                                      void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+
 /**
  * credential issuer object
  *
