@@ -41,7 +41,7 @@ pub fn set_cred_offer_ref_message(offer: &str, thread: Option<Thread>, msg_id: &
 
 pub fn parse_json_offer(offer: &str) -> VcxResult<(CredentialOffer, Option<PaymentInfo>)> {
     let paid_offer: Value = serde_json::from_str(offer)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize offer: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, format!("Cannot deserialize Credential Offer: {}", err)))?;
 
     let mut payment: Option<PaymentInfo> = None;
     let mut offer: Option<CredentialOffer> = None;
@@ -50,7 +50,7 @@ pub fn parse_json_offer(offer: &str) -> VcxResult<(CredentialOffer, Option<Payme
         for entry in i.iter() {
             if entry.get("libindy_offer").is_some() {
                 offer = Some(serde_json::from_value(entry.clone())
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize offer: {}", err)))?);
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, format!("Cannot deserialize offer: {}", err)))?);
             }
 
             if entry.get("payment_addr").is_some() {

@@ -86,7 +86,7 @@ async def test_call_to_connect_state_not_initialized():
         data['data']['handle'] = random.randint(900, 99999)
         connection2 = await Connection.deserialize(data)
         await connection2.connect(connection_options)
-    assert ErrorCode.ConnectionError == e.value.error_code
+    assert ErrorCode.NotReady == e.value.error_code
 
 
 @pytest.mark.asyncio

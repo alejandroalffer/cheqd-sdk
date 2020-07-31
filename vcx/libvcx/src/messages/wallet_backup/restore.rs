@@ -55,7 +55,7 @@ impl BackupRestoreBuilder {
         let response = parse_message_from_response(&response)?;
 
         serde_json::from_str(&response)
-            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of BackupRestored"))
+            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of BackupRestored"))
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {

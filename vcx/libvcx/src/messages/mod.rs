@@ -586,7 +586,8 @@ impl Forward {
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 => {
                 let msg = serde_json::from_slice(msg.as_slice())
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      format!("Could not parse JSON object from bytes. Err: {:?}", err)))?;
 
                 Ok(A2AMessage::Version2(A2AMessageV2::Forward(
                     ForwardV2 {
@@ -740,7 +741,7 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
             Some("WALLET_BACKUP_RESTORED") => Ok(RemoteMessageType::WalletBackupRestored),
             Some("DEAD_DROP_RETRIEVE_RESULT") => Ok(RemoteMessageType::RetrievedDeadDropResult),
             Some(_type) => Ok(RemoteMessageType::Other(_type.to_string())),
-            _ => Err(de::Error::custom("Unexpected message type."))
+            value => Err(de::Error::custom(format!("Unexpected message type: {:?}", value)))
         }
     }
 }
@@ -802,7 +803,7 @@ impl<'de> Deserialize<'de> for MessageStatusCode {
             Some("MS-105") => Ok(MessageStatusCode::Rejected),
             Some("MS-106") => Ok(MessageStatusCode::Reviewed),
             Some("MS-107") => Ok(MessageStatusCode::Redirected),
-            _ => Err(de::Error::custom("Unexpected message type."))
+            value => Err(de::Error::custom(format!("Unexpected message status code: {:?}", value)))
         }
     }
 }
@@ -956,7 +957,7 @@ fn bundle_for_agency_v1(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
     let message = rmp_serde::to_vec_named(&message)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::UnknownError, format!("Cannot encode message: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot encode message: {}", err)))?;
 
     let message = Bundled::create(message).encode()?;
 
@@ -995,7 +996,7 @@ fn parse_response_from_agency_v1(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage
     bundle.bundled
         .iter()
         .map(|msg| rmp_serde::from_slice(msg)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err))))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize response from bytes. Error: {}", err))))
         .collect::<VcxResult<Vec<A2AMessage>>>()
 }
 
@@ -1003,17 +1004,17 @@ pub fn parse_message_from_response(response: &Vec<u8>) -> VcxResult<String> {
     let unpacked_msg = crypto::unpack_message(&response[..])?;
 
     let message: Value = ::serde_json::from_slice(unpacked_msg.as_slice())
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize JSON object from bytes. Err: {}", err)))?;
 
     Ok(message["message"].as_str()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field on response"))?.to_string())
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Cannot find `message` field on response"))?.to_string())
 }
 
 fn parse_response_from_agency_v2(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage>> {
     let message = parse_message_from_response(response)?;
 
     let message: A2AMessage = serde_json::from_str(&message)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize A2A message: {}", err)))?;
 
     Ok(vec![message])
 }
@@ -1083,13 +1084,13 @@ fn prepare_forward_message(message: Vec<u8>, did: &str, version: ProtocolTypes) 
     match message {
         A2AMessage::Version1(A2AMessageV1::Forward(msg)) => prepare_forward_message_for_agency_v1(&msg, &agency_vk),
         A2AMessage::Version2(A2AMessageV2::Forward(msg)) => prepare_forward_message_for_agency_v2(&msg, &agency_vk),
-        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Invalid message type"))
+        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Unexpected message type. The message expected to be of Forward type"))
     }
 }
 
 fn prepare_forward_message_for_agency_v1(message: &Forward, agency_vk: &str) -> VcxResult<Vec<u8>> {
     let message = rmp_serde::to_vec_named(message)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::UnknownError, format!("Cannot serialize Forward message: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot serialize Forward message: {}", err)))?;
     let message = Bundled::create(message).encode()?;
     crypto::prep_anonymous_msg(agency_vk, &message[..])
 }
@@ -1133,7 +1134,7 @@ fn prepare_message_for_agent_v1(messages: Vec<A2AMessage>, pw_vk: &str, agent_di
 
 fn prepare_message_for_agent_v2(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> VcxResult<Vec<u8>> {
     let message = messages.get(0)
-        .ok_or(VcxError::from_msg(VcxErrorKind::SerializationError, "Cannot get message"))?;
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get message"))?;
 
     let message = serde_json::to_string(message)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize A2A message: {}", err)))?;
@@ -1201,7 +1202,7 @@ impl<'a, 'de, T> ObjectWithVersion<'a, T> where T: ::serde::Serialize + ::serde:
 
     pub fn serialize(&self) -> VcxResult<String> {
         ::serde_json::to_string(self)
-            .to_vcx(VcxErrorKind::InvalidState, "Cannot serialize object")
+            .to_vcx(VcxErrorKind::SerializationError, "Cannot serialize object")
     }
 
     pub fn deserialize(data: &str) -> VcxResult<ObjectWithVersion<T>> where T: ::serde::de::DeserializeOwned {

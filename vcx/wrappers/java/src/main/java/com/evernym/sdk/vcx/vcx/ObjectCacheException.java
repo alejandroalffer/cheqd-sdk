@@ -7,14 +7,14 @@ import com.evernym.sdk.vcx.VcxException;
  * Created by abdussami on 05/06/18.
  */
 
-public class InvalidKeyDelegateException extends VcxException
+public class ObjectCacheException extends VcxException
 {
     private static final long serialVersionUID = 3294831240096535507L;
-    private final static String message = "VCX Exception";
+    private final static String message = "Object cache error";
 
 
-    public InvalidKeyDelegateException()
+    public ObjectCacheException()
     {
-        super(message, ErrorCode.INVALID_KEY_DELEGATE.value());
+        super(message, ErrorCode.OBJECT_CACHE_ERROR.value());
     }
 }

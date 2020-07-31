@@ -146,7 +146,7 @@ impl DidDoc {
 
     pub fn validate(&self) -> VcxResult<()> {
         if self.context != CONTEXT {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)));
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)));
         }
 
 //        if self.id.is_empty() {
@@ -155,7 +155,7 @@ impl DidDoc {
 
         for service in self.service.iter() {
             Url::parse(&service.service_endpoint)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Invalid endpoint \"{:?}\", err: {:?}", service.service_endpoint, err)))?;
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, format!("DIDDoc validation failed: Invalid endpoint \"{:?}\", err: {:?}", service.service_endpoint, err)))?;
 
             service.recipient_keys
                 .iter()
@@ -189,10 +189,10 @@ impl DidDoc {
         let id = DidDoc::_parse_key_reference(target_key);
 
         let key = self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string() || key_.id == target_key.to_string())
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Cannot find PublicKey definition for key: {:?}", id)))?;
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, format!("DIDDoc validation failed: Cannot find PublicKey definition for key: {:?}", id)))?;
 
         if key.type_ != KEY_TYPE {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported PublicKey type: {:?}", key.type_)));
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, format!("DIDDoc validation failed: Unsupported PublicKey type: {:?}", key.type_)));
         }
 
         validate_verkey(&key.public_key_base_58)?;
@@ -208,10 +208,10 @@ impl DidDoc {
         let key = self.authentication.iter().find(|key_|
             key_.public_key == target_key.to_string() ||
                 DidDoc::_parse_key_reference(&key_.public_key) == target_key.to_string())
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Cannot find Authentication section for key: {:?}", target_key)))?;
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, format!("DIDDoc validation failed: Cannot find Authentication section for key: {:?}", target_key)))?;
 
         if key.type_ != KEY_AUTHENTICATION_TYPE && key.type_ != KEY_TYPE {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported Authentication type: {:?}", key.type_)));
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, format!("DIDDoc validation failed: Unsupported Authentication type: {:?}", key.type_)));
         }
 
         Ok(())

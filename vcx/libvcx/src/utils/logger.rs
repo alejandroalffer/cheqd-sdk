@@ -67,8 +67,9 @@ impl LibvcxLogger {
         log::set_boxed_logger(Box::new(logger))
             .map_err(|err| VcxError::from_msg(VcxErrorKind::LoggingError, format!("Setting logger failed with: {}", err)))?;
         log::set_max_level(LevelFilter::Trace);
+
         libindy::logger::set_logger(log::logger())
-            .map_err(|err| err.map(VcxErrorKind::LoggingError, "Setting logger failed"))?;
+            .map_err(|err|  VcxError::from_msg(VcxErrorKind::LoggingError, format!("Setting logger failed with: {}", err)))?;
 
         let max_lvl = match max_lvl {
             Some(max_lvl) => LibvcxLogger::map_u32_lvl_to_filter(max_lvl)?,
@@ -95,7 +96,7 @@ impl LibvcxLogger {
             3 => LevelFilter::Info,
             4 => LevelFilter::Debug,
             5 => LevelFilter::Trace,
-            _ => return Err(VcxError::from(VcxErrorKind::LoggingError)),
+            val => return Err(VcxError::from_msg(VcxErrorKind::LoggingError, format!("Unexpected log_level has been passed: {:?}", val))),
         };
         Ok(max_level)
     }
@@ -213,7 +214,7 @@ impl LibvcxDefaultLogger {
                 Ok(()) => {}
                 Err(e) => {
                     error!("Error in logging init: {:?}", e);
-                    return Err(VcxError::from_msg(VcxErrorKind::LoggingError, format!("Cannot init logger: {:?}", e)))
+                    return Err(VcxError::from_msg(VcxErrorKind::LoggingError, format!("Defaul Logger initialization failed with: {:?}", e)))
                 }
             }
         }

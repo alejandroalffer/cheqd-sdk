@@ -279,9 +279,9 @@ pub fn send_transaction(req: &str, txn_action: (&str, &str, &str, Option<&str>, 
 
 fn _serialize_inputs_and_outputs(inputs: &Vec<String>, outputs: &Vec<Output>) -> VcxResult<(String, String)> {
     let inputs = ::serde_json::to_string(inputs)
-        .to_vcx(VcxErrorKind::InvalidJson, "Cannot serialize inputs")?;
+        .to_vcx(VcxErrorKind::SerializationError, "Cannot serialize inputs")?;
     let outputs = ::serde_json::to_string(outputs)
-        .to_vcx(VcxErrorKind::InvalidJson, "Cannot serialize outputs")?;
+        .to_vcx(VcxErrorKind::SerializationError, "Cannot serialize outputs")?;
     Ok((inputs, outputs))
 }
 

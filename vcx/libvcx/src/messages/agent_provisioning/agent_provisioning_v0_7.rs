@@ -105,7 +105,7 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
             A2AMessage::Version2(A2AMessageV2::ProblemReport(resp)) => {
                 return Err(VcxError::from_msg(VcxErrorKind::InvalidProvisioningToken, format!("provisioning failed: {:?}", resp)))
             },
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of AgentCreated"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of AgentCreated"))
         };
 
     Ok((response.self_did, response.agent_vk))

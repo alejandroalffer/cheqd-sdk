@@ -83,7 +83,7 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
     fn try_into(self) -> Result<CredentialOfferV1, Self::Error> {
         let indy_cred_offer_json = self.offers_attach.content()?;
         let indy_cred_offer: ::serde_json::Value = ::serde_json::from_str(&indy_cred_offer_json)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Indy Offer: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, format!("Cannot deserialize Indy Offer: {:?}", err)))?;
 
         let mut credential_attrs: ::serde_json::Map<String, ::serde_json::Value> = ::serde_json::Map::new();
 

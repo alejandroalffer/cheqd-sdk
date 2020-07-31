@@ -146,7 +146,7 @@ class CredentialDef(VcxStateful):
             credentialdef.transaction = transaction
             return credentialdef
         except KeyError:
-            raise VcxError(ErrorCode.InvalidCredentialDef)
+            raise VcxError(ErrorCode.CredentialDefNotFound)
 
     @staticmethod
     async def create_with_id(source_id: str, cred_def_id: str):
@@ -216,7 +216,7 @@ class CredentialDef(VcxStateful):
                                                               data['data']['id'])
             return credential_def
         except KeyError:
-            raise VcxError(ErrorCode.InvalidCredentialDef)
+            raise VcxError(ErrorCode.CredentialDefNotFound)
 
 
     async def get_cred_def_id(self):

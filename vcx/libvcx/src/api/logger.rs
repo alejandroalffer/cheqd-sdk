@@ -21,7 +21,7 @@ use error::prelude::*;
 pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
     info!("vcx_set_default_logger >>>");
 
-    check_useful_opt_c_str!(pattern, VcxErrorKind::InvalidConfiguration);
+    check_useful_opt_c_str!(pattern, VcxErrorKind::InvalidOption);
 
     trace!("vcx_set_default_logger(pattern: {:?})", pattern);
 

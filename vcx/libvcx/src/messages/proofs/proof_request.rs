@@ -191,7 +191,7 @@ impl ProofRequestMessage {
         let proof_attrs: Vec<AttrInfo> = serde_json::from_str(attrs)
             .map_err(|err| {
                 debug!("Cannot parse attributes: {}", err);
-                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse attributes: {}", err))
+                VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, format!("Cannot parse attributes: {}", err))
             })?;
 
         let mut index = 1;
@@ -200,17 +200,17 @@ impl ProofRequestMessage {
                 (Some(name), None) => { name.clone() }
                 (None, Some(names)) => {
                     if names.is_empty(){
-                        return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest, "Proof Request validation failed: there is empty request attribute names"))
+                        return Err(VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, "Requested Attributes validation failed: there is empty request attribute names"))
                     }
                     names.join(",")
                 }
                 (Some(_), Some(_)) => {
-                    return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest,
-                                                  format!("Proof Request validation failed: there is empty requested attribute: {:?}", attrs)));
+                    return Err(VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure,
+                                                  format!("Requested Attributes validation failed: there is empty requested attribute: {:?}", attrs)));
                 }
                 (None, None) => {
-                    return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest,
-                                                  format!("Proof request validation failed: there is a requested attribute with both name and names: {:?}", attrs)));
+                    return Err(VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure,
+                                                  format!("Requested Attributes validation failed: there is a requested attribute with both name and names: {:?}", attrs)));
                 }
             };
 
@@ -232,7 +232,7 @@ impl ProofRequestMessage {
         let attr_values: Vec<PredicateInfo> = serde_json::from_str(predicates)
             .map_err(|err| {
                 debug!("Cannot parse predicates: {}", err);
-                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse predicates: {}", err))
+                VcxError::from_msg(VcxErrorKind::InvalidPredicatesStructure, format!("Cannot parse predicates: {}", err))
             })?;
 
         let mut index = 1;
@@ -301,24 +301,19 @@ impl ProofRequestMessage {
         Ok(self)
     }
 
-    pub fn serialize_message(&mut self) -> VcxResult<String> {
-        serde_json::to_string(self)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))
-    }
-
     pub fn get_proof_request_data(&self) -> String {
         json!(self)[PROOF_DATA].to_string()
     }
 
     pub fn to_string(&self) -> VcxResult<String> {
         serde_json::to_string(&self)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize proof request: {}", err)))
     }
 }
 
 pub fn set_proof_req_ref_message(request: &str, thread: Option<Thread>, msg_id: &str) -> VcxResult<ProofRequestMessage> {
     let mut request: ProofRequestMessage = serde_json::from_str(&request)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, format!("Cannot deserialize proof request: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProofRequest, format!("Cannot deserialize proof request: {}", err)))?;
 
     request.msg_ref_id = Some(msg_id.to_owned());
     request.thread_id = thread.and_then(|tr| tr.thid.clone());
@@ -328,12 +323,12 @@ pub fn set_proof_req_ref_message(request: &str, thread: Option<Thread>, msg_id: 
 
 pub fn parse_proof_req_message(message: &Message, my_vk: &str) -> VcxResult<ProofRequestMessage> {
     let payload = message.payload.as_ref()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot get payload"))?;
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidProofRequest, "Message does not contain payload"))?;
 
     let (request, thread) = Payloads::decrypt(&my_vk, payload)?;
 
     let mut request: ProofRequestMessage = serde_json::from_str(&request)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, format!("Cannot deserialize proof request: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProofRequest, format!("Cannot deserialize proof request: {}", err)))?;
 
     request.msg_ref_id = Some(message.uid.to_owned());
     request.thread_id = thread.and_then(|tr| tr.thid.clone());
@@ -370,7 +365,7 @@ impl ProofRequestData {
 
     pub fn set_requested_attributes(mut self, requested_attrs: String) -> VcxResult<ProofRequestData> {
         let requested_attributes: Vec<AttrInfo> = ::serde_json::from_str(&requested_attrs)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}, err: {:?}", requested_attrs, err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, format!("Invalid Requested Attributes: {:?}. Err: {:?}", requested_attrs, err)))?;
 
         self.requested_attributes = requested_attributes
             .into_iter()
@@ -382,7 +377,7 @@ impl ProofRequestData {
 
     pub fn set_requested_predicates(mut self, requested_predicates: String) -> VcxResult<ProofRequestData> {
         let requested_predicates: Vec<PredicateInfo> = ::serde_json::from_str(&requested_predicates)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}, err: {:?}", requested_predicates, err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidPredicatesStructure, format!("Invalid Requested Predicates: {:?}, err: {:?}", requested_predicates, err)))?;
 
         self.requested_predicates = requested_predicates
             .into_iter()
@@ -409,12 +404,12 @@ impl ProofRequestData {
             self.ver = Some(ProofRequestVersion::V2)
         } else {
             let proof_request_json = serde_json::to_string(&self)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequestData: {:?}", err)))?;
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize ProofRequestData: {:?}", err)))?;
 
             let proof_request_json = anoncreds::libindy_to_unqualified(&proof_request_json)?;
 
             self = serde_json::from_str(&proof_request_json)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ProofRequestData: {:?}", err)))?;
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProofRequest, format!("Cannot deserialize ProofRequestData: {:?}", err)))?;
 
             self.ver = Some(ProofRequestVersion::V1)
         }
@@ -486,7 +481,7 @@ mod tests {
         let tid = 89;
         let mid = 98;
 
-        let mut request = proof_request()
+        let request = proof_request()
             .type_version(version).unwrap()
             .tid(tid).unwrap()
             .mid(mid).unwrap()
@@ -500,7 +495,7 @@ mod tests {
             .from_timestamp(Some(1)).unwrap()
             .clone();
 
-        let serialized_msg = request.serialize_message().unwrap();
+        let serialized_msg = request.to_string().unwrap();
         assert!(serialized_msg.contains(r#""@type":{"name":"PROOF_REQUEST","version":"1.3"}"#));
         assert!(serialized_msg.contains(r#"@topic":{"mid":98,"tid":89}"#));
         assert!(serialized_msg.contains(r#"proof_request_data":{"nonce":"123432421212","name":"Test","version":"3.75","requested_attributes""#));
@@ -565,7 +560,7 @@ mod tests {
         let requested_attrs = json!([ attr_info ]).to_string();
 
         let err = proof_request().requested_attrs(&requested_attrs).unwrap_err();
-        assert_eq!(VcxErrorKind::InvalidProofRequest, err.kind());
+        assert_eq!(VcxErrorKind::InvalidAttributesStructure, err.kind());
     }
 
     #[test]

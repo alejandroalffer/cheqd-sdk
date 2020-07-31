@@ -120,7 +120,7 @@ impl AgentInfo {
         let message =
             messages
                 .pop()
-                .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessages, format!("Message not found for id: {:?}", msg_id)))?;
+                .ok_or(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Message not found for id: {:?}", msg_id)))?;
 
         let message = Self::decode_message(&message)?;
 
@@ -137,10 +137,10 @@ impl AgentInfo {
                 debug!("Agent: Message Payload is already decoded");
 
                 let message: ::messages::payload::PayloadV1 = ::serde_json::from_str(&payload)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize message: {}", err)))?;
 
                 ::serde_json::from_str::<A2AMessage>(&message.msg)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize A2A message: {}", err)))
             }
             None => EncryptionEnvelope::open(message.payload()?)
         }?;

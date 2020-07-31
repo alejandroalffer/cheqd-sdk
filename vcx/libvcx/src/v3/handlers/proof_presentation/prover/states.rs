@@ -446,7 +446,7 @@ impl ProverSM {
                         ProverState::Finished((state, problem_report, thread, Reason::Fail).into())
                     }
                     ProverMessages::RejectPresentationRequest(_) => {
-                        return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Presentation is already sent"));
+                        return Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Presentation is already sent"));
                     }
                     _ => {
                         ProverState::PresentationSent(state)
@@ -493,7 +493,7 @@ impl ProverSM {
             ProverState::Initiated(_) => VcxStateType::VcxStateRequestReceived as u32,
             ProverState::PresentationPrepared(_) => VcxStateType::VcxStateRequestReceived as u32,
             ProverState::PresentationPreparationFailed(_) => VcxStateType::VcxStateRequestReceived as u32,
-            ProverState::PresentationSent(_) => VcxStateType::VcxStateOfferSent as u32, // TODO: maybe VcxStateType::VcxStateAccepted
+            ProverState::PresentationSent(_) => VcxStateType::VcxStateOfferSent as u32,
             ProverState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
@@ -536,9 +536,10 @@ impl ProverSM {
 
     pub fn presentation(&self) -> VcxResult<&Presentation> {
         match self.state {
-            ProverState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not created yet")),
+            ProverState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                format!("Prover object {} in state {} not ready to get Presentation message", self.source_id, self.state()))),
             ProverState::PresentationPrepared(ref state) => Ok(&state.presentation),
-            ProverState::PresentationPreparationFailed(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not created yet")),
+            ProverState::PresentationPreparationFailed(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation preparation failed")),
             ProverState::PresentationSent(ref state) => Ok(&state.presentation),
             ProverState::Finished(ref state) => Ok(&state.presentation),
         }
@@ -795,7 +796,7 @@ pub mod test {
 
             let prover_sm = _prover_sm().to_presentation_sent_state();
             let err = prover_sm.step(ProverMessages::RejectPresentationRequest((mock_connection(), String::from("reject")))).unwrap_err();
-            assert_eq!(VcxErrorKind::ActionNotSupported, err.kind());
+            assert_eq!(VcxErrorKind::InvalidState, err.kind());
         }
 
         #[test]

@@ -899,7 +899,7 @@ pub extern fn vcx_credential_get_payment_txn(command_handle: CommandHandle,
                         cb(command_handle, 0, msg.as_ptr());
                     }
                     Err(e) => {
-                        let err = VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payment txn: {:?}", e));
+                        let err = VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize payment txn as JSON. Error: {:?}", e));
                         error!("vcx_credential_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {}",
                                command_handle, err, "null", credential::get_source_id(handle).unwrap_or_default());
                         cb(command_handle, err.into(), ptr::null_mut());
@@ -1168,7 +1168,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_credential(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert_eq!(cb.receive(TimeoutUtils::some_medium()).err(), Some(error::INVALID_STATE.code_num));
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).err(), Some(error::NOT_READY.code_num));
     }
 
     #[test]

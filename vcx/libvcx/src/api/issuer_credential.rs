@@ -724,7 +724,7 @@ pub extern fn vcx_issuer_credential_get_payment_txn(command_handle: CommandHandl
                         cb(command_handle, 0, msg.as_ptr());
                     }
                     Err(e) => {
-                        let err = VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payment txn: {}", e));
+                        let err = VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize payment txn as JSON. Error: {}", e));
                         error!("vcx_issuer_credential_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}) source_id: {}",
                                command_handle, err, "null", source_id);
                         cb(command_handle, err.into(), ptr::null_mut());

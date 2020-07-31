@@ -7,14 +7,14 @@ import com.evernym.sdk.vcx.VcxException;
  * Created by abdussami on 13/06/18.
  */
 
-public class InvalidHTTPResponseException extends VcxException
+public class MessageIsOutOfThreadException extends VcxException
 {
     private static final long serialVersionUID = 3294831240096535507L;
-    private final static String message = "VCX Exception";
+    private final static String message = "Message is out of thread";
 
 
-    public InvalidHTTPResponseException()
+    public MessageIsOutOfThreadException()
     {
-        super(message, ErrorCode.INVALID_HTTP_RESPONSE.value());
+        super(message, ErrorCode.MESSAGE_IS_OUT_OF_THREAD.value());
     }
 }

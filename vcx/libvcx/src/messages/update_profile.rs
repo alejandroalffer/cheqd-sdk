@@ -5,6 +5,7 @@ use utils::httpclient;
 use utils::constants::*;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
+use settings::ProtocolTypes;
 
 #[derive(Debug)]
 pub struct UpdateProfileDataBuilder {
@@ -136,7 +137,7 @@ impl UpdateProfileDataBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(_)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateConfigsResponse(_)) => Ok(()),
-            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConfigsResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of UpdateConfigsResponse"))
         }
     }
 }

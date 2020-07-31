@@ -50,7 +50,7 @@ async def test_deserialize_with_invalid_data():
     with pytest.raises(VcxError) as e:
         data = {'invalid': -99}
         await CredentialDef.deserialize(data)
-    assert ErrorCode.InvalidCredentialDef == e.value.error_code
+    assert ErrorCode.CredentialDefNotFound == e.value.error_code
     assert 'Credential Def not in valid json' == e.value.error_msg
 
 @pytest.mark.asyncio

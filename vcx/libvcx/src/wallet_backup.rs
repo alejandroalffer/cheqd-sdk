@@ -255,7 +255,7 @@ fn _read_exported_wallet(backup_key: &str, exported_wallet_path: &str) -> VcxRes
     let tmp_dir = _unique_tmp_dir(exported_wallet_path)?;
 
     let tmp_dir = tmp_dir.to_str()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot create path"))?;
+        .ok_or(VcxError::from_msg(VcxErrorKind::IOError, "Cannot create path"))?;
 
     export(get_wallet_handle(), tmp_dir, backup_key)?;
 
@@ -375,7 +375,7 @@ pub fn get_state(handle: u32) -> u32 {
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
     WALLET_BACKUP_MAP.get(handle, |wb| {
         Ok(wb.get_source_id().clone())
-    }).or(Err(VcxError::from(VcxErrorKind::InvalidHandle)))
+    })
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
@@ -767,7 +767,7 @@ pub mod tests {
             let rc = restore_wallet(&restore_config(None, Some(wb.encryption_key)).to_string().unwrap());
             assert_eq!(
                 rc.unwrap_err().to_string(),
-                "Error: Message failed in post\n  Caused by: POST failed with: {\"statusCode\":\"GNR-111\",\"statusMsg\":\"No Wallet Backup available to download\"}\n"
+                "Error: Message failed in post\n  Caused by: Sending POST HTTP request failed with: {\"statusCode\":\"GNR-111\",\"statusMsg\":\"No Wallet Backup available to download\"}\n"
             );
         }
 

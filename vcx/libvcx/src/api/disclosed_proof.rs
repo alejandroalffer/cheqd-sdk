@@ -966,7 +966,7 @@ mod tests {
         let _setup = SetupMocks::init();
 
         let err = _vcx_disclosed_proof_create_with_request_c_closure(BAD_PROOF_REQUEST).unwrap_err();
-        assert_eq!(err, error::INVALID_JSON.code_num);
+        assert_eq!(err, error::INVALID_PROOF_REQUEST.code_num);
     }
 
     #[test]

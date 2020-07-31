@@ -15,6 +15,6 @@ public class InvalidMessagesException extends VcxException
 
     public InvalidMessagesException()
     {
-        super(message, ErrorCode.INVALID_MESSAGES.value());
+        super(message, ErrorCode.INVALID_AGENCY_RESPONSE.value());
     }
 }

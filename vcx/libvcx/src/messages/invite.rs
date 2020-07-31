@@ -303,7 +303,6 @@ impl SendInviteBuilder {
     }
 
     pub fn key_delegate(&mut self, key: &str) -> VcxResult<&mut Self> {
-        validation::validate_key_delegate(key)?;
         self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
         Ok(self)
     }
@@ -317,8 +316,7 @@ impl SendInviteBuilder {
     }
 
     pub fn phone_number(&mut self, phone_number: Option<&str>) -> VcxResult<&mut Self> {
-        if let Some(ref p_num) = phone_number {
-            validation::validate_phone_number(p_num)?;
+        if let Some(_) = phone_number {
             self.payload.phone_no = phone_number.map(String::from);
         }
         Ok(self)
@@ -380,7 +378,7 @@ impl SendInviteBuilder {
                 Ok((res.invite_detail, res.url_to_invite_detail)),
             A2AMessage::Version2(A2AMessageV2::ConnectionRequestResponse(res)) =>
                 Ok((res.invite_detail, res.url_to_invite_detail)),
-            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionRequestResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of ConnectionRequestResponse"))
         }
     }
 }
@@ -420,7 +418,6 @@ impl AcceptInviteBuilder {
     }
 
     pub fn key_delegate(&mut self, key: &str) -> VcxResult<&mut Self> {
-        validation::validate_key_delegate(key)?;
         self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
         Ok(self)
     }
@@ -490,7 +487,7 @@ impl AcceptInviteBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
             A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(res)) => Ok(res.id),
-            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionAnswerResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of ConnectionAnswerResponse"))
         }
     }
 }
@@ -531,7 +528,6 @@ impl RedirectConnectionBuilder {
     }
 
     pub fn key_delegate(&mut self, key: &str) -> VcxResult<&mut Self> {
-        validation::validate_key_delegate(key)?;
         self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
         Ok(self)
     }
@@ -607,7 +603,7 @@ impl RedirectConnectionBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
             A2AMessage::Version2(A2AMessageV2::ConnectionRequestRedirectResponse(res)) => Ok(res.id),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionRequestRedirectResponse"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of ConnectionRequestRedirectResponse"))
         }
     }
 }

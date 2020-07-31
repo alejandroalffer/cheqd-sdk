@@ -45,7 +45,7 @@ impl Prover {
         let proof: ProofMessage = self.prover_sm.presentation()?.clone().try_into()?;
 
         ::serde_json::to_string(&proof)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize ProofMessage. Err: {:?}", err)))
     }
 
     pub fn set_presentation(&mut self, presentation: Presentation) -> VcxResult<()> {
@@ -88,7 +88,8 @@ impl Prover {
         trace!("Prover::update_state_with_message >>> message: {:?}", message);
 
         let a2a_message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot updated state with message: Message deserialization failed: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Cannot updated Prover state with messages: Message deserialization failed with: {:?}", err)))?;
 
         self.handle_message(a2a_message.into())?;
 
@@ -108,8 +109,8 @@ impl Prover {
         let presentation_request: PresentationRequest = match message {
             A2AMessage::PresentationRequest(presentation_request) => presentation_request,
             msg => {
-                return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages,
-                                              format!("Message of different type was received: {:?}", msg)));
+                return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse,
+                                              format!("Message of different type has been received. Expected: PresentationRequest. Received: {:?}", msg)));
             }
         };
 
@@ -150,7 +151,7 @@ impl Prover {
             }
             (None, Some(proposal)) => {
                 let presentation_preview: PresentationPreview = serde_json::from_str(&proposal)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize Presentation Preview: {:?}", err)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse Presentation Preview from JSON string. Err: {:?}", err)))?;
 
                 self.step(ProverMessages::ProposePresentation((connection_handle, presentation_preview)))
             }

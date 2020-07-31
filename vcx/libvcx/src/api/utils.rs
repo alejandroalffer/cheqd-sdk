@@ -228,35 +228,35 @@ pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
     let configs: serde_json::Value = match serde_json::from_str(&config) {
         Ok(x) => x,
         Err(e) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Config: {}", e)).into();
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot parse Config from JSON string. Err: {}", e)).into();
         }
     };
 
     let vcx_config: Config = match serde_json::from_value(configs["vcx_config"].clone()) {
         Ok(x) => x,
         Err(_) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing vcx_config").into();
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "missing vcx_config").into();
         }
     };
 
     let com_method: ComMethod = match serde_json::from_value(configs["com_method"].clone()) {
         Ok(x) => x,
         Err(e) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ComMethod: {}", e)).into();
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot parse ComMethod from JSON string. Err: {}", e)).into();
         }
     };
 
     let sponsee_id: String = match serde_json::from_value(configs["sponsee_id"].clone()) {
         Ok(x) => x,
         Err(_) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing sponsee_id").into();
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "missing sponsee_id").into();
         }
     };
 
     let sponsor_id: String = match serde_json::from_value(configs["sponsor_id"].clone()) {
         Ok(x) => x,
         Err(_) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing sponsor_id").into();
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "missing sponsor_id").into();
         }
     };
 
@@ -313,7 +313,7 @@ pub extern fn vcx_agent_update_info(command_handle: CommandHandle,
     let com_method: ComMethod = match serde_json::from_str(&json) {
         Ok(x) => x,
         Err(e) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ComMethod: {}", e)).into();
+            return VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse AgentInfo from JSON string. Err: {}", e)).into();
         }
     };
 
@@ -456,7 +456,7 @@ pub extern fn vcx_download_agent_messages(command_handle: u32,
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
                     }
                     Err(e) => {
-                        let err = VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize messages: {}", e));
+                        let err = VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize downloaded messages as JSON. Error: {}", e));
                         warn!("vcx_download_agent_messages(command_handle: {}, rc: {}, messages: {})",
                               command_handle, err, "null");
 
@@ -561,7 +561,7 @@ pub extern fn vcx_messages_download(command_handle: CommandHandle,
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
                     }
                     Err(e) => {
-                        let err = VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize messages: {}", e));
+                        let err = VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize downloaded messages as JSON. Error: {}", e));
                         warn!("vcx_messages_download_cb(command_handle: {}, rc: {}, messages: {})",
                               command_handle, err, "null");
 
@@ -900,7 +900,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         let rc = vcx_get_provision_token(cb.command_handle, c_json, Some(cb.get_callback()));
-        assert_eq!(rc, error::INVALID_OPTION.code_num)
+        assert_eq!(rc, error::INVALID_CONFIGURATION.code_num)
     }
 
     #[test]
@@ -994,7 +994,7 @@ mod tests {
         assert_eq!(vcx_agent_update_info(cb.command_handle,
                                          c_json,
                                          Some(cb.get_callback())),
-                   error::INVALID_OPTION.code_num);
+                   error::INVALID_JSON.code_num);
     }
 
     #[test]

@@ -129,10 +129,8 @@ fn fetch_credentials(search_handle: i32, requested_attributes: Map<String, Value
     for item_referent in requested_attributes.keys().into_iter() {
         v[ATTRS][item_referent] =
             serde_json::from_str(&anoncreds::prover_fetch_credentials_for_proof_req(search_handle, item_referent, 100).wait()?)
-                .map_err(|_| {
-                    error!("Invalid Json Parsing of Object Returned from Libindy. Did Libindy change its structure?");
-                    VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Invalid Json Parsing of Object Returned from Libindy. Did Libindy change its structure?")
-                })?
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                  format!("Cannot parse object from JSON string. Err: {:?}", err)))?
     }
 
     Ok(v.to_string())
@@ -168,7 +166,7 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> VcxResul
 
     // handle special case of "empty because json is bad" vs "empty because no attributes sepected"
     if requested_attributes == None && requested_predicates == None {
-        return Err(VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, "Invalid Json Parsing of Requested Attributes Retrieved From Libindy"));
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest, "Proof Request neither contains `requested_attributes` nor `requested_predicates`"));
     }
 
     let mut fetch_attrs: Map<String, Value> = match requested_attributes {
@@ -388,9 +386,9 @@ pub fn publish_schema(schema: &str) -> VcxResult<Option<PaymentTxn>> {
 pub fn get_schema_json(schema_id: &str) -> VcxResult<(String, String)> {
     if settings::indy_mocks_enabled() { return Ok((SCHEMA_ID.to_string(), SCHEMA_JSON.to_string())); }
 
-    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
-
-    let schema_json = libindy_get_schema(&submitter_did, schema_id)?;
+    let schema_json = libindy_get_schema(schema_id)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidSchema,
+                                          format!("Could not get Schema from the Ledger. Err: {:?}", err)))?;
 
     Ok((schema_id.to_string(), schema_json))
 }
@@ -418,7 +416,7 @@ pub fn build_cred_def_request(issuer_did: &str, cred_def_json: &str) -> VcxResul
         return Ok(CRED_DEF_REQ.to_string());
     }
 
-    let cred_def_req = libindy_build_create_credential_def_txn(issuer_did, &cred_def_json)?;
+    let cred_def_req = libindy_build_create_credential_def_request(issuer_did, &cred_def_json)?;
 
     let cred_def_req = append_txn_author_agreement_to_request(&cred_def_req)?;
 
@@ -442,7 +440,9 @@ pub fn publish_cred_def(issuer_did: &str, cred_def_json: &str) -> VcxResult<Opti
 pub fn get_cred_def_json(cred_def_id: &str) -> VcxResult<(String, String)> {
     if settings::indy_mocks_enabled() { return Ok((CRED_DEF_ID.to_string(), CRED_DEF_JSON.to_string())); }
 
-    let cred_def_json = libindy_get_cred_def(cred_def_id)?;
+    let cred_def_json = libindy_get_cred_def(cred_def_id)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::CredentialDefinitionNotFound,
+                                          format!("Could not get CredentialDefinition from the Ledger. Err: {:?}", err)))?;
 
     Ok((cred_def_id.to_string(), cred_def_json))
 }
@@ -931,7 +931,7 @@ pub mod tests {
         let _result = libindy_prover_get_credentials_for_proof_req(&proof_req).unwrap();
 
         let result_malformed_json = libindy_prover_get_credentials_for_proof_req("{}").unwrap_err();
-        assert_eq!(result_malformed_json.kind(), VcxErrorKind::InvalidAttributesStructure);
+        assert_eq!(result_malformed_json.kind(), VcxErrorKind::InvalidProofRequest);
     }
 
     #[cfg(feature = "pool_tests")]

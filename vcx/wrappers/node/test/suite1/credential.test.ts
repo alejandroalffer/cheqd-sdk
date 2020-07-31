@@ -43,7 +43,7 @@ describe('Credential:', () => {
     it('throws: invalid offer', async () => {
       const { offer, ...data } = await dataCredentialCreateWithOffer()
       const error = await shouldThrow(() => Credential.create({ offer: 'invalid', ...data }))
-      assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
+      assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_OFFER)
     })
   })
 

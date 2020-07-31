@@ -115,9 +115,7 @@ pub fn init_pool() -> VcxResult<()> {
 pub fn close() -> VcxResult<()> {
     let handle = get_pool_handle()?;
 
-    //TODO there was timeout here (before future-based Rust wrapper)
     pool::close_pool_ledger(handle).wait()?;
-
     reset_pool_handle();
 
     Ok(())

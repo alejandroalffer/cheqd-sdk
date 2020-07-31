@@ -80,7 +80,8 @@ impl Verifier {
         trace!("Verifier::update_state_with_message >>> message: {:?}", message);
 
         let message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state with message: Message deserialization failed: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Cannot updated Prover state with messages: Message deserialization failed with: {:?}", err)))?;
 
         self.handle_message(message.into())?;
 
@@ -108,7 +109,8 @@ impl Verifier {
         let proof_request: ProofRequestMessage = self.verifier_sm.presentation_request()?.try_into()?;
 
         ::serde_json::to_string(&proof_request)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
+                                              format!("Cannot serialize ProofMessage. Err: {:?}", err)))
     }
 
     pub fn get_presentation(&self) -> VcxResult<String> {
@@ -117,7 +119,8 @@ impl Verifier {
         let proof: ProofMessage = self.verifier_sm.presentation()?.try_into()?;
 
         ::serde_json::to_string(&proof)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
+                                              format!("Cannot serialize ProofMessage. Err: {:?}", err)))
     }
 
     pub fn step(&mut self, message: VerifierMessages) -> VcxResult<()> {
