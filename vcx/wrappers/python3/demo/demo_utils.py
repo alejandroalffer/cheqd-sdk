@@ -273,7 +273,12 @@ async def download_message(pw_did: str, msg_type: str):
     messages = await vcx_messages_download("MS-103", None, pw_did)
     messages = json.loads(messages.decode())[0]['msgs']
     print(messages)
-    message = [message for message in messages if json.loads(message["decryptedPayload"])["@type"]["name"] == msg_type][0]
+
+    messages = [message for message in messages if json.loads(message["decryptedPayload"])["@type"]["name"] == msg_type]
+    if len(messages) == 0:
+        return None, None, None
+
+    message = messages[0]
     decryptedPayload = message["decryptedPayload"]
     return message["uid"], json.loads(decryptedPayload)["@msg"], json.dumps(message)
 

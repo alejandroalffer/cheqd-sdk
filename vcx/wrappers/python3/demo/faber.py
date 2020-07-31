@@ -6,7 +6,7 @@ import time
 from ctypes import cdll
 from time import sleep
 
-from demo_utils import file_ext
+from demo_utils import file_ext, download_message, update_message_as_read
 from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
@@ -65,6 +65,7 @@ async def main():
             "3 - send ping \n "
             "4 - update connection state \n "
             "5 - establish out-of-band connection \n "
+            "6 - download messages \n "
             "else finish \n") \
             .lower().strip()
         if answer == '0':
@@ -85,6 +86,9 @@ async def main():
             await connection_to_alice.update_state()
         elif answer == '5':
             connection_to_alice = await outofband_connect()
+        elif answer == '6':
+            pw_did = await connection_to_alice.get_my_pw_did()
+            uid, offer, _ = await download_message(pw_did, 'handshake-reuse')
         else:
             break
 
