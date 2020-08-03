@@ -702,6 +702,14 @@ impl DidExchangeSM {
                             debug!("CommittedAnswer message received");
                             return Some((uid, answer));
                         }
+                        reuse @ A2AMessage::HandshakeReuse(_) => {
+                            debug!("HandshakeReuse message received");
+                            return Some((uid, reuse));
+                        }
+                        reuse_accepted @ A2AMessage::HandshakeReuseAccepted(_) => {
+                            debug!("HandshakeReuseAccepted message received");
+                            return Some((uid, reuse_accepted));
+                        }
                         message @ _ => {
                             debug!("Unexpected message received in Completed state: {:?}", message);
                         }
