@@ -143,6 +143,58 @@ class Proof(VcxStateful):
                                    c_params)
 
     @staticmethod
+    async def create_with_proposal(source_id: str, presentation_proposal: str, name: str):
+        """
+         Create a new Proof object based on the given Presentation Proposal message
+
+        :param source_id: Enterprise's personal identification for the proof, should be unique.
+        :param name: Name of the Proof
+        :param presentation_proposal: Message sent by the Prover to the verifier to initiate a proof presentation process:
+        {
+            "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/propose-presentation",
+            "@id": "<uuid-propose-presentation>",
+            "comment": "some comment",
+            "presentation_proposal": {
+                "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview",
+                "attributes": [
+                    {
+                        "name": "<attribute_name>", - name of the attribute.
+                        "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+                        "mime-type": Optional"<type>", - optional type of value. if mime-type is missing (null), then value is a string.
+                        "value": "<value>", - value of the attribute to reveal in presentation
+                    },
+                    // more attributes
+                  ],
+                 "predicates": [
+                    {
+                        "name": "<attribute_name>", - name of the attribute.
+                        "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+                        "predicate": "<predicate>", - predicate operator: "<", "<=", ">=", ">"
+                        "threshold": <threshold> - threshold value for the predicate.
+                    },
+                    // more predicates
+                ]
+            }
+        }
+
+        Example:
+        name = "proof name"
+        presentation_proposal = {"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation", "@id": "<uuid-presentation>", "comment": "somecomment", "presentation_proposal": {"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview", "attributes":[{"name": "account", "cred_def_id": "BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag", "value": "12345678","referent": "0"}, {"name": "streetAddress", "cred_def_id": "BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag","value": "123MainStreet", "referent": "0"},], "predicates": []}}
+        proof = await Proof.create_with_proposal(source_id, json.dumps(presentation_proposal), name)
+        :return: Proof Object
+        """
+        constructor_params = (source_id,)
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_name = c_char_p(name.encode('utf-8'))
+        c_presentation_proposal = c_char_p(presentation_proposal.encode('utf-8'))
+        c_params = (c_source_id, c_presentation_proposal, c_name)
+
+        return await Proof._create("vcx_proof_create_with_proposal",
+                                   constructor_params,
+                                   c_params)
+
+    @staticmethod
     async def deserialize(data: dict):
         """
         Builds a Proof object with defined attributes.

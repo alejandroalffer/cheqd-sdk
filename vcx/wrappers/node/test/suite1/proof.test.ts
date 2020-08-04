@@ -50,6 +50,27 @@ describe('Proof:', () => {
     })
   })
 
+  describe('create with proposal:', () => {
+    it('success', async () => {
+      const data = {
+        presentationProposal: {
+          "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation",
+          "@id": "<uuid-presentation>",
+          "comment": "somecomment",
+          "presentation_proposal": {
+             "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview",
+             "attributes":[{"name": "account", "cred_def_id": "BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag", "value": "12345678"}],
+             "predicates": []
+          }
+        },
+        name: 'Proof',
+        sourceId: 'testProofSourceId',
+      }
+      const proof = await Proof.createWithProposal(data)
+      assert.notEqual(proof.handle, undefined)
+    })
+  })
+
   describe('serialize:', () => {
     it('success', async () => {
       const proof = await proofCreate()

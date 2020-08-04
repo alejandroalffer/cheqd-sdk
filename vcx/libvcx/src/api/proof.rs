@@ -151,18 +151,94 @@ pub extern fn vcx_proof_create(command_handle: CommandHandle,
     trace!("vcx_proof_create(command_handle: {}, source_id: {}, requested_attrs: {}, requested_predicates: {}, revocation_interval: {}, name: {})",
           command_handle, source_id, secret!(requested_attrs), secret!(requested_predicates), secret!(revocation_interval), secret!(name));
 
-    spawn(move|| {
-        let ( rc, handle) = match proof::create_proof(source_id, requested_attrs, requested_predicates, revocation_interval, name) {
+    spawn(move || {
+        let (rc, handle) = match proof::create_proof(source_id, requested_attrs, requested_predicates, revocation_interval, name) {
             Ok(x) => {
                 trace!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                      command_handle, error::SUCCESS.message, x, proof::get_source_id(x).unwrap_or_default());
+                       command_handle, error::SUCCESS.message, x, proof::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
-            },
+            }
             Err(x) => {
                 warn!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                      command_handle, x, 0,x);
+                      command_handle, x, 0, x);
                 (x.into(), 0)
-            },
+            }
+        };
+        cb(command_handle, rc, handle);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Create a new Proof object based on the given Presentation Proposal message
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the proof, should be unique..
+///
+/// presentation_proposal: Message sent by the Prover to the verifier to initiate a proof presentation process:
+///     {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/propose-presentation",
+///         "@id": "<uuid-propose-presentation>",
+///         "comment": "some comment",
+///         "presentation_proposal": {
+///             "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview",
+///             "attributes": [
+///                 {
+///                     "name": "<attribute_name>", - name of the attribute.
+///                     "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+///                     "mime-type": Optional"<type>", - optional type of value. if mime-type is missing (null), then value is a string.
+///                     "value": "<value>", - value of the attribute to reveal in presentation
+///                 },
+///                 // more attributes
+///               ],
+///              "predicates": [
+///                 {
+///                     "name": "<attribute_name>", - name of the attribute.
+///                     "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+///                     "predicate": "<predicate>", - predicate operator: "<", "<=", ">=", ">"
+///                     "threshold": <threshold> - threshold value for the predicate.
+///                 },
+///                 // more predicates
+///             ]
+///         }
+///     }
+///
+/// cb: Callback that provides proof handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_proof_create_with_proposal(command_handle: CommandHandle,
+                                             source_id: *const c_char,
+                                             presentation_proposal: *const c_char,
+                                             name: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_handle: u32)>) -> u32 {
+    info!("vcx_proof_create_with_proposal >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(name, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(presentation_proposal, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_proof_create_with_proposal(command_handle: {}, source_id: {}, name: {}, presentation_proposal: {})",
+           command_handle, source_id, secret!(name), secret!(presentation_proposal));
+
+    spawn(move || {
+        let (rc, handle) = match proof::create_proof_with_proposal(source_id, name, presentation_proposal) {
+            Ok(x) => {
+                trace!("vcx_proof_create_with_proposal_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, x, proof::get_source_id(x).unwrap_or_default());
+                (error::SUCCESS.code_num, x)
+            }
+            Err(x) => {
+                warn!("vcx_proof_create_with_proposal_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, x, 0, x);
+                (x.into(), 0)
+            }
         };
         cb(command_handle, rc, handle);
 
@@ -574,8 +650,8 @@ pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
 /// #Returns
 /// Error code as a u32
 #[deprecated(
-    since = "1.15.0",
-    note = "Use vcx_get_proof_msg() instead. This api is similar, but requires an extra parameter (connection_handle) which is unnecessary and unused in the internals."
+since = "1.15.0",
+note = "Use vcx_get_proof_msg() instead. This api is similar, but requires an extra parameter (connection_handle) which is unnecessary and unused in the internals."
 )]
 #[no_mangle]
 pub extern fn vcx_get_proof(command_handle: CommandHandle,

@@ -3,6 +3,7 @@ use v3::messages::a2a::message_type::MessageType;
 use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::mime_type::MimeType;
 use messages::thread::Thread;
+use messages::proofs::proof_request::{AttrInfo, Restrictions, PredicateInfo};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct PresentationProposal {
@@ -12,7 +13,7 @@ pub struct PresentationProposal {
     pub comment: Option<String>,
     pub presentation_proposal: PresentationPreview,
     #[serde(rename = "~thread")]
-    pub thread: Thread,
+    pub thread: Option<Thread>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
@@ -60,9 +61,51 @@ impl PresentationProposal {
         self.presentation_proposal = presentation_preview;
         self
     }
+
+    pub fn set_thread_id(mut self, id: &str) -> Self {
+        self.thread = Some(Thread::new().set_thid(id.to_string()));
+        self
+    }
+
+    pub fn to_proof_request_requested_attributes(&self) -> Vec<AttrInfo> {
+        self.presentation_proposal.attributes
+            .iter()
+            .map(|attribute| AttrInfo {
+                name: Some(attribute.name.clone()),
+                names: None,
+                restrictions: attribute.cred_def_id
+                    .as_ref()
+                    .map(|cred_def_id|
+                        Restrictions::V2(json!({
+                        "cred_def_id": cred_def_id
+                    }))
+                    ),
+                non_revoked: None,
+                self_attest_allowed: None,
+            })
+            .collect()
+    }
+
+    pub fn to_proof_request_requested_predicates(&self) -> Vec<PredicateInfo> {
+        self.presentation_proposal.predicates
+            .iter()
+            .map(|predicate| PredicateInfo {
+                name: predicate.name.clone(),
+                p_type: predicate.predicate.clone(),
+                p_value: predicate.threshold as i32,
+                restrictions: predicate.cred_def_id
+                    .as_ref()
+                    .map(|cred_def_id|
+                        Restrictions::V2(json!({
+                        "cred_def_id": cred_def_id
+                    }))
+                ),
+                non_revoked: None,
+            })
+            .collect()
+    }
 }
 
-threadlike!(PresentationProposal);
 a2a_message!(PresentationProposal);
 
 #[cfg(test)]
@@ -96,7 +139,7 @@ pub mod tests {
         PresentationProposal {
             id: MessageId::id(),
             comment: Some(_comment()),
-            thread: thread(),
+            thread: Some(thread()),
             presentation_proposal: _presentation_preview(),
         }
     }

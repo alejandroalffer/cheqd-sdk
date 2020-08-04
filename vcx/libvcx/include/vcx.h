@@ -1982,6 +1982,50 @@ vcx_error_t vcx_proof_create(vcx_command_handle_t command_handle,
                           const char *name,
                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_proof_handle_t));
 
+/// Create a new Proof object based on the given Presentation Proposal message
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the proof, should be unique..
+///
+/// presentation_proposal: Message sent by the Prover to the verifier to initiate a proof presentation process:
+///     {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/propose-presentation",
+///         "@id": "<uuid-propose-presentation>",
+///         "comment": "some comment",
+///         "presentation_proposal": {
+///             "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview",
+///             "attributes": [
+///                 {
+///                     "name": "<attribute_name>", - name of the attribute.
+///                     "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+///                     "mime-type": Optional"<type>", - optional type of value. if mime-type is missing (null), then value is a string.
+///                     "value": "<value>", - value of the attribute to reveal in presentation
+///                 },
+///                 // more attributes
+///               ],
+///              "predicates": [
+///                 {
+///                     "name": "<attribute_name>", - name of the attribute.
+///                     "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+///                     "predicate": "<predicate>", - predicate operator: "<", "<=", ">=", ">"
+///                     "threshold": <threshold> - threshold value for the predicate.
+///                 },
+///                 // more predicates
+///             ]
+///         }
+///     }
+///
+/// cb: Callback that provides proof handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_proof_create_with_proposal(vcx_command_handle_t command_handle,
+                                           const char *source_id,
+                                           const char *presentation_proposal,
+                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_proof_handle_t));
+
 // Takes a json string representing a proof object and recreates an object matching the json
 //
 // #Params

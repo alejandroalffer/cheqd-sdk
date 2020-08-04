@@ -150,13 +150,16 @@ impl VerifierSM {
                             }
                         }
                         A2AMessage::PresentationProposal(proposal) => {
-                            if proposal.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
-                                debug!("Verifier: PresentationProposal message received");
-                                return Some((uid, A2AMessage::PresentationProposal(proposal)));
+                            match proposal.thread.as_ref() {
+                                Some(thread) if thread.is_reply(&state.thread.thid.clone().unwrap_or_default()) => {
+                                    debug!("Verifier: PresentationProposal message received");
+                                    return Some((uid, A2AMessage::PresentationProposal(proposal)));
+                                }
+                                _ => return None
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) |
-                        A2AMessage::PresentationReject(problem_report)=> {
+                        A2AMessage::PresentationReject(problem_report) => {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 debug!("Verifier: PresentationReject message received");
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));

@@ -498,7 +498,7 @@ impl ProverSM {
 
         let proposal = PresentationProposal::create()
             .set_presentation_preview(preview)
-            .set_thread(thread.clone());
+            .set_thread_id(&thread.thid.clone().unwrap_or(presentation_request.id.to_string()));
 
         match presentation_request.service.clone() {
             None => connection.data.send_message(&proposal.to_a2a_message(), &connection.agent)?,

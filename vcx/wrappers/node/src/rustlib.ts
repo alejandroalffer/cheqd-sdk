@@ -166,6 +166,8 @@ export interface IFFIEntryPoint {
   // proof
   vcx_proof_create: (commandId: number, sourceId: string, attrs: string, predicates: string,
                      revocationInterval: string, name: string, cb: any) => number,
+  vcx_proof_create_with_proposal: (commandId: number, sourceId: string, presentation_proposal: string,
+                                   name: string, cb: any) => number,
   vcx_proof_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_get_proof: (commandId: number, proofHandle: number, connectionHandle: number, cb: any) => number,
   vcx_proof_release: (handle: number) => number,
@@ -397,6 +399,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   // proof
   vcx_proof_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_proof_create_with_proposal: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
+    FFI_CALLBACK_PTR]],
   vcx_proof_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_get_proof: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],// tslint:disable-line

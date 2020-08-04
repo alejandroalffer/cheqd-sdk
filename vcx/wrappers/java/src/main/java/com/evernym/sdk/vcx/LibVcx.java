@@ -302,6 +302,12 @@ public abstract class LibVcx {
          */
         public int vcx_proof_create(int command_handle, String source_id, String requested_attrs, String requested_predicates, String revocationInterval, String name, Callback cb);
 
+
+        /**
+         * Create a new Proof object based on the given Presentation Proposal message
+         */
+        public int vcx_proof_create_with_proposal(int command_handle, String source_id, String presentation_proposal, String name, Callback cb);
+
         /**
          * Sends a proof request to pairwise connection.
          */
