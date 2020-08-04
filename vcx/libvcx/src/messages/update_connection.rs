@@ -5,6 +5,7 @@ use utils::httpclient;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
 use utils::constants::DELETE_CONNECTION_RESPONSE;
+use settings::ProtocolTypes;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -73,7 +74,7 @@ impl DeleteConnectionBuilder {
             status_code: ConnectionStatus::Deleted,
             agent_did: String::new(),
             agent_vk: String::new(),
-            version: settings::get_protocol_type(),
+            version: ProtocolTypes::V1,
         }
     }
 
