@@ -100,25 +100,26 @@ impl Connection {
         self.step(DidExchangeMessages::OutofbandInvitationReceived(invitation))
     }
 
+    pub fn get_invitation(&self) -> Option<Invitations> {
+        trace!("Connection::get_invite >>>");
+        return self.connection_sm.get_invitation()
+    }
+
     pub fn get_invite_details(&self) -> VcxResult<String> {
         trace!("Connection::get_invite_details >>>");
-        if let Some(invitation) = self.connection_sm.get_invitation() {
-            return match invitation {
+        let invitation = match self.get_invitation() {
+            Some(invitation) => match invitation {
                 Invitations::ConnectionInvitation(invitation_) => {
-                    Ok(json!(invitation_.to_a2a_message()).to_string())
+                    json!(invitation_.to_a2a_message()).to_string()
                 },
                 Invitations::OutofbandInvitation(invitation_) => {
-                    Ok(json!(invitation_.to_a2a_message()).to_string())
+                    json!(invitation_.to_a2a_message()).to_string()
                 }
-            }
-        }
+            },
+            None => json!({}).to_string()
+        };
 
-        if let Some(did_doc) = self.connection_sm.did_doc() {
-            let info = json!(Invitation::from(did_doc));
-            return Ok(info.to_string());
-        }
-
-        return Ok(json!({}).to_string())
+        return Ok(invitation)
     }
 
     pub fn connect(&mut self) -> VcxResult<()> {
@@ -285,6 +286,7 @@ impl Connection {
         let connection_info = PairwiseConnectionInfo {
             my: current,
             their: remote,
+            invitation: self.get_invitation(),
         };
 
         return Ok(json!(connection_info).to_string());

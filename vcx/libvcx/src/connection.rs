@@ -1172,6 +1172,7 @@ fn unabbrv_event_detail(val: Value) -> VcxResult<Value> {
 
 impl Into<(Connection, ActorDidExchangeState)> for ConnectionV3 {
     fn into(self) -> (Connection, ActorDidExchangeState) {
+        let invitation = self.get_invitation();
         let data = Connection {
             source_id: self.source_id().clone(),
             pw_did: self.agent_info().pw_did.clone(),
@@ -1179,7 +1180,13 @@ impl Into<(Connection, ActorDidExchangeState)> for ConnectionV3 {
             state: VcxStateType::from_u32(self.state()),
             uuid: String::new(),
             endpoint: String::new(),
-            invite_detail: None,
+            invite_detail: Some(InviteDetail{
+                sender_detail: SenderDetail {
+                    verkey: invitation.and_then(|invitation_| invitation_.recipient_key()).unwrap_or_default(),
+                    ..SenderDetail::default()
+                },
+                ..InviteDetail::default()
+            }),
             redirect_detail: None,
             invite_url: None,
             agent_did: self.agent_info().agent_did.clone(),

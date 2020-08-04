@@ -13,6 +13,7 @@ use v3::messages::connection::did_doc::DidDoc;
 pub struct PairwiseConnectionInfo {
     pub my: SideConnectionInfo,
     pub their: Option<SideConnectionInfo>,
+    pub invitation: Option<Invitations>,
 }
 
 #[derive(Debug, Serialize)]
@@ -63,7 +64,7 @@ impl OutofbandMeta {
 /*
     Connection can be created with either Invitation of `connections` or `out-of-band` protocols
 */
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Invitations {
     ConnectionInvitation(Invitation),
     OutofbandInvitation(OutofbandInvitation),
@@ -79,6 +80,15 @@ impl From<Invitations> for DidDoc {
 }
 
 impl Invitations {
+    pub fn recipient_key(&self) -> Option<String> {
+        match self {
+            Invitations::ConnectionInvitation(invitation_)=>
+                invitation_.recipient_keys.get(0).cloned(),
+            Invitations::OutofbandInvitation(invitation_)=>
+                invitation_.service.get(0).and_then(|service| service.recipient_keys.get(0).cloned()),
+        }
+    }
+
     pub fn pthid(&self) -> Option<String>{
         match self {
             Invitations::ConnectionInvitation(_)=> None,

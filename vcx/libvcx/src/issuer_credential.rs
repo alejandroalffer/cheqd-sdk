@@ -17,6 +17,7 @@ use utils::libindy::payments::PaymentTxn;
 use utils::qualifier;
 use object_cache::ObjectCache;
 use error::prelude::*;
+use std::convert::TryInto;
 
 use v3::handlers::issuance::Issuer;
 use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
@@ -684,7 +685,12 @@ pub fn generate_credential_offer_msg(handle: u32) -> VcxResult<String> {
         match obj {
             IssuerCredentials::Pending(ref mut obj) => obj.generate_credential_offer_msg(),
             IssuerCredentials::V1(ref mut obj) => obj.generate_credential_offer_msg(),
-            IssuerCredentials::V3(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries IssuerCredential type doesn't support this action: `generate_credential_offer_msg`.")) // TODO: implement
+            IssuerCredentials::V3(ref obj) =>  {
+                let cred_offer = obj.get_credential_offer()?;
+                let cred_offer: CredentialOffer = cred_offer.try_into()?;
+                let cred_offer = json!(vec![cred_offer]).to_string();
+                return Ok(cred_offer);
+            },
         }
     }).map_err(handle_err)
 }

@@ -45,7 +45,7 @@ pub struct InitialState {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OfferSentState {
-    pub offer: String,
+    pub offer: CredentialOffer,
     pub cred_data: String,
     pub rev_reg_id: Option<String>,
     pub tails_file: Option<String>,
@@ -56,7 +56,7 @@ pub struct OfferSentState {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequestReceivedState {
-    pub offer: String,
+    pub offer: CredentialOffer,
     pub cred_data: String,
     pub rev_reg_id: Option<String>,
     pub tails_file: Option<String>,
@@ -68,6 +68,7 @@ pub struct RequestReceivedState {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CredentialSentState {
+    pub offer: CredentialOffer,
     pub connection: CompletedConnection,
     #[serde(default)]
     pub thread: Thread,
@@ -75,14 +76,15 @@ pub struct CredentialSentState {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FinishedState {
+    pub offer: Option<CredentialOffer>,
     pub cred_id: Option<String>,
     pub status: Status,
     #[serde(default)]
     pub thread: Thread,
 }
 
-impl From<(InitialState, String, CompletedConnection, Thread)> for OfferSentState {
-    fn from((state, offer, connection, thread): (InitialState, String, CompletedConnection, Thread)) -> Self {
+impl From<(InitialState, CredentialOffer, CompletedConnection, Thread)> for OfferSentState {
+    fn from((state, offer, connection, thread): (InitialState, CredentialOffer, CompletedConnection, Thread)) -> Self {
         trace!("IssuerSM: transit state from InitialState to OfferSentState");
         trace!("Thread: {:?}", thread);
         OfferSentState {
@@ -117,6 +119,7 @@ impl From<(RequestReceivedState, Thread)> for CredentialSentState {
         trace!("IssuerSM: transit state from RequestReceivedState to CredentialSentState");
         trace!("Thread: {:?}", thread);
         CredentialSentState {
+            offer: state.offer,
             connection: state.connection,
             thread,
         }
@@ -124,11 +127,12 @@ impl From<(RequestReceivedState, Thread)> for CredentialSentState {
 }
 
 impl From<(OfferSentState, ProblemReport, Thread)> for FinishedState {
-    fn from((_state, err, thread): (OfferSentState, ProblemReport, Thread)) -> Self {
+    fn from((state, err, thread): (OfferSentState, ProblemReport, Thread)) -> Self {
         trace!("IssuerSM: transit state from OfferSentState to FinishedState with ProblemReport: {:?}", err);
         trace!("Thread: {:?}", thread);
         FinishedState {
             cred_id: None,
+            offer: Some(state.offer),
             status: Status::Failed(err),
             thread,
         }
@@ -136,11 +140,12 @@ impl From<(OfferSentState, ProblemReport, Thread)> for FinishedState {
 }
 
 impl From<(RequestReceivedState, Thread)> for FinishedState {
-    fn from((_state, thread): (RequestReceivedState, Thread)) -> Self {
+    fn from((state, thread): (RequestReceivedState, Thread)) -> Self {
         trace!("IssuerSM: transit state from RequestReceivedState to FinishedState");
         trace!("Thread: {:?}", thread);
         FinishedState {
             cred_id: None,
+            offer: Some(state.offer),
             status: Status::Success,
             thread,
         }
@@ -148,11 +153,12 @@ impl From<(RequestReceivedState, Thread)> for FinishedState {
 }
 
 impl From<(RequestReceivedState, ProblemReport, Thread)> for FinishedState {
-    fn from((_state, err, thread): (RequestReceivedState, ProblemReport, Thread)) -> Self {
+    fn from((state, err, thread): (RequestReceivedState, ProblemReport, Thread)) -> Self {
         trace!("IssuerSM: transit state from RequestReceivedState to FinishedState with ProblemReport: {:?}", err);
         trace!("Thread: {:?}", err.thread);
         FinishedState {
             cred_id: None,
+            offer: Some(state.offer),
             status: Status::Failed(err),
             thread,
         }
@@ -160,11 +166,12 @@ impl From<(RequestReceivedState, ProblemReport, Thread)> for FinishedState {
 }
 
 impl From<(CredentialSentState, Thread)> for FinishedState {
-    fn from((_state, thread): (CredentialSentState, Thread)) -> Self {
+    fn from((state, thread): (CredentialSentState, Thread)) -> Self {
         trace!("IssuerSM: transit state from CredentialSentState to FinishedState");
         trace!("Thread: {:?}", thread);
         FinishedState {
             cred_id: None,
+            offer: Some(state.offer),
             status: Status::Success,
             thread,
         }
@@ -180,6 +187,7 @@ pub enum HolderState {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequestSentState {
+    pub offer: Option<CredentialOffer>,
     pub req_meta: String,
     pub cred_def_json: String,
     pub connection: CompletedConnection,
@@ -205,6 +213,7 @@ impl OfferReceivedState {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FinishedHolderState {
+    pub offer: Option<CredentialOffer>,
     pub cred_id: Option<String>,
     pub credential: Option<Credential>,
     pub status: Status,
@@ -217,6 +226,7 @@ impl From<(OfferReceivedState, String, String, CompletedConnection, Thread)> for
         trace!("HolderSM: transit state from OfferReceivedState to RequestSentState");
         trace!("Thread: {:?}", state.thread);
         RequestSentState {
+            offer: Some(state.offer),
             req_meta,
             cred_def_json,
             connection,
@@ -226,10 +236,11 @@ impl From<(OfferReceivedState, String, String, CompletedConnection, Thread)> for
 }
 
 impl From<(RequestSentState, String, Credential, Thread)> for FinishedHolderState {
-    fn from((_, cred_id, credential, thread): (RequestSentState, String, Credential, Thread)) -> Self {
+    fn from((state, cred_id, credential, thread): (RequestSentState, String, Credential, Thread)) -> Self {
         trace!("HolderSM: transit state from RequestSentState to FinishedHolderState");
         trace!("Thread: {:?}", thread);
         FinishedHolderState {
+            offer: state.offer,
             cred_id: Some(cred_id),
             credential: Some(credential),
             status: Status::Success,
@@ -239,10 +250,11 @@ impl From<(RequestSentState, String, Credential, Thread)> for FinishedHolderStat
 }
 
 impl From<(RequestSentState, ProblemReport, Thread, Reason)> for FinishedHolderState {
-    fn from((_, problem_report, thread, reason): (RequestSentState, ProblemReport, Thread, Reason)) -> Self {
+    fn from((state, problem_report, thread, reason): (RequestSentState, ProblemReport, Thread, Reason)) -> Self {
         trace!("HolderSM: transit state from RequestSentState to FinishedHolderState with ProblemReport: {:?}", problem_report);
         trace!("Thread: {:?}", thread);
         FinishedHolderState {
+            offer: state.offer,
             cred_id: None,
             credential: None,
             status: reason.to_status(problem_report),
@@ -252,10 +264,11 @@ impl From<(RequestSentState, ProblemReport, Thread, Reason)> for FinishedHolderS
 }
 
 impl From<(OfferReceivedState, ProblemReport, Thread, Reason)> for FinishedHolderState {
-    fn from((_state, problem_report, thread, reason): (OfferReceivedState, ProblemReport, Thread, Reason)) -> Self {
+    fn from((state, problem_report, thread, reason): (OfferReceivedState, ProblemReport, Thread, Reason)) -> Self {
         trace!("HolderSM: transit state from OfferReceivedState to FinishedHolderState with ProblemReport: {:?}", problem_report);
         trace!("Thread: {:?}", problem_report.thread);
         FinishedHolderState {
+            offer: Some(state.offer),
             cred_id: None,
             credential: None,
             status: reason.to_status(problem_report),

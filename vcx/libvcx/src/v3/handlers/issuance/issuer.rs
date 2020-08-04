@@ -166,7 +166,7 @@ impl IssuerSM {
                         .set_opt_pthid(connection.data.thread.pthid.clone());
 
                     connection.data.send_message(&cred_offer_msg.to_a2a_message(), &connection.agent)?;
-                    IssuerState::OfferSent((state_data, cred_offer, connection, thread).into())
+                    IssuerState::OfferSent((state_data, cred_offer_msg, connection, thread).into())
                 }
                 _ => {
                     warn!("Credential Issuance can only start on issuer side with init");
@@ -281,6 +281,16 @@ impl IssuerSM {
             IssuerState::Finished(_) => None,
         }
     }
+
+    pub fn get_credential_offer(&self) -> Option<CredentialOffer> {
+        match self.state {
+            IssuerState::Initial(_) => None,
+            IssuerState::OfferSent(ref state) => Some(state.offer.clone()),
+            IssuerState::RequestReceived(ref state) => Some(state.offer.clone()),
+            IssuerState::CredentialSent(ref state) => Some(state.offer.clone()),
+            IssuerState::Finished(ref state) => state.offer.clone(),
+        }
+    }
 }
 
 impl InitialState {
@@ -320,7 +330,7 @@ impl RequestReceivedState {
 
         let cred_data = encode_attributes(&self.cred_data)?;
 
-        let (credential, _, _) = anoncreds::libindy_issuer_create_credential(&self.offer,
+        let (credential, _, _) = anoncreds::libindy_issuer_create_credential(&self.offer.offers_attach.content()?,
                                                                              &request,
                                                                              &cred_data,
                                                                              self.rev_reg_id.clone(),
