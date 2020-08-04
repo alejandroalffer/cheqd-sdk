@@ -21,7 +21,7 @@ public class UtilsApi extends VcxJava.API {
     private static Callback provAsyncCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String config) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], config = [" + config + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], config = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
 
@@ -565,7 +565,7 @@ public class UtilsApi extends VcxJava.API {
      */
     public static CompletableFuture<Void> vcxEndorseTransaction(String transactionJson) throws VcxException {
         ParamGuard.notNull(transactionJson, "transactionJson");
-        logger.debug("vcxEndorseTransaction() called with: transactionJson = [" + transactionJson + "]");
+        logger.debug("vcxEndorseTransaction() called with: transactionJson = [****]");
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 

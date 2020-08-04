@@ -415,6 +415,8 @@ pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
 }
 
 pub fn endorse_transaction(transaction_json: &str) -> VcxResult<()> {
+    debug!("Ledger endorsing transaction");
+
     //TODO Potentially VCX should handle case when endorser would like to pay fee
     if settings::indy_mocks_enabled() { return Ok(()); }
 

@@ -126,7 +126,7 @@ impl GetMessagesBuilder {
     }
 
     pub fn send_secure(&mut self) -> VcxResult<Vec<Message>> {
-        trace!("GetMessages::send >>>");
+        trace!("GetMessagesBuilder::send_secure >>>");
 
         let data = self.prepare_request()?;
 
@@ -140,7 +140,7 @@ impl GetMessagesBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<Vec<Message>> {
-        trace!("parse_get_messages_response >>>");
+        trace!("GetMessagesBuilder::parse_response >>>");
 
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
@@ -152,7 +152,7 @@ impl GetMessagesBuilder {
     }
 
     pub fn download_messages(&mut self) -> VcxResult<Vec<MessageByConnection>> {
-        trace!("GetMessages::download >>>");
+        trace!("GetMessagesBuilder::download >>>");
 
         let data = self.prepare_download_request()?;
 
@@ -168,6 +168,8 @@ impl GetMessagesBuilder {
     }
 
     fn prepare_download_request(&self) -> VcxResult<Vec<u8>> {
+        trace!("GetMessagesBuilder::prepare_download_request >>>");
+
         let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -196,13 +198,15 @@ impl GetMessagesBuilder {
                 ),
         };
 
+        trace!("GetMessagesBuilder::prepare_request >>> message: {:?}", secret!(message));
+
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
         prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_download_messages_response(&self, response: Vec<u8>) -> VcxResult<Vec<MessageByConnection>> {
-        trace!("parse_download_messages_response >>>");
+        trace!("GetMessagesBuilder::parse_download_messages_response >>>");
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         trace!("parse_download_messages_response: parsed response {:?}", response);
@@ -235,6 +239,8 @@ impl GeneralMessage for GetMessagesBuilder {
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("GetMessagesBuilder::prepare_request >>>");
+
         let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -262,6 +268,8 @@ impl GeneralMessage for GetMessagesBuilder {
                     )
                 ),
         };
+
+        trace!("GetMessagesBuilder::prepare_request >>> message: {:?}", secret!(message));
 
         prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
@@ -302,6 +310,7 @@ pub struct Message {
 
 impl Message {
     pub fn payload<'a>(&'a self) -> VcxResult<Vec<u8>> {
+        trace!("Message::payload >>>");
         match self.payload {
             Some(MessagePayload::V1(ref payload)) => Ok(to_u8(payload)),
             Some(MessagePayload::V2(ref payload)) => serde_json::to_vec(payload)
@@ -311,6 +320,8 @@ impl Message {
     }
 
     pub fn decrypt(&self, vk: &str) -> Message {
+        trace!("Message::decrypt >>> vk: {:?}", secret!(vk));
+
         // TODO: must be Result
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
@@ -342,8 +353,10 @@ impl Message {
                             )
                     }
                 }
-                MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
-                    .map(Payloads::PayloadV2)
+                MessagePayload::V2(payload) => {
+                    Payloads::decrypt_payload_v2(&vk, &payload)
+                        .map(Payloads::PayloadV2)
+                }
             };
 
             if let Ok(mut decrypted_payload) = decrypted_payload {
@@ -359,15 +372,18 @@ impl Message {
             }
         }
         new_message.payload = None;
+
+        trace!("Message::decrypt <<< message: {:?}", secret!(new_message));
+
         new_message
     }
 
     fn _set_ref_msg_id(decrypted_payload: &mut Payloads, msg_id: &str) -> VcxResult<()> {
-        trace!("_set_ref_msg_id >>>");
+        trace!("_set_ref_msg_id >>> decrypted_payload: {:?}, msg_id: {:?}", secret!(decrypted_payload), msg_id);
         match decrypted_payload {
             Payloads::PayloadV1(ref mut payload) => {
                 let type_ = payload.type_.name.as_str();
-                trace!("_set_ref_msg_id >>> message type: {:?}", type_);
+                trace!("_set_ref_msg_id >>> message type: {:?}", secret!(type_));
 
                 match type_ {
                     "CRED_OFFER" => {
@@ -389,7 +405,7 @@ impl Message {
                 let message_type: MessageTypeV2 = serde_json::from_value(json!(payload.type_))
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse message type: {:?}", err)))?;
                 let type_ = message_type.type_.as_str();
-                trace!("_set_ref_msg_id >>> message type: {:?}", type_);
+                trace!("_set_ref_msg_id >>> message type: {:?}", secret!(type_));
 
                 match type_ {
                     "credential-offer" => {
@@ -460,10 +476,10 @@ impl Message {
                 (PayloadKinds::Other(String::from(AriesA2AMessage::ANSWER)), json!(&answer).to_string())
             }
             AriesA2AMessage::CommittedQuestion(question) => {
-                (PayloadKinds::Other(String::from(AriesA2AMessage::QUESTION)), json!(&question).to_string())
+                (PayloadKinds::Other(String::from("committed-question")), json!(&question).to_string())
             }
             AriesA2AMessage::CommittedAnswer(answer) => {
-                (PayloadKinds::Other(String::from(AriesA2AMessage::ANSWER)), json!(&answer).to_string())
+                (PayloadKinds::Other(String::from("committed-answer")), json!(&answer).to_string())
             }
             AriesA2AMessage::BasicMessage(message) => {
                 (PayloadKinds::Other(String::from(AriesA2AMessage::BASIC_MESSAGE)), json!(&message).to_string())
@@ -474,7 +490,7 @@ impl Message {
             }
         };
 
-        trace!("_decrypt_v3_message <<< kind: {:?}, msg: {:?}", kind, msg);
+        trace!("_decrypt_v3_message <<< kind: {:?}, msg: {:?}", secret!(kind), secret!(msg));
 
         let payload = PayloadV1 {
             type_: PayloadTypes::build_v1(kind, "json"),
@@ -487,7 +503,7 @@ impl Message {
 
 pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>, status_codes: Option<Vec<MessageStatusCode>>, version: &Option<ProtocolTypes>) -> VcxResult<Vec<Message>> {
     trace!("get_connection_messages >>> pw_did: {}, pw_vk: {}, agent_vk: {}, msg_uid: {:?}",
-           pw_did, pw_vk, agent_vk, msg_uid);
+           secret!(pw_did), secret!(pw_vk), secret!(agent_vk), secret!(msg_uid));
 
     let response = get_messages()
         .to(&pw_did)?
@@ -500,16 +516,16 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .send_secure()
         .map_err(|err| err.extend("Cannot get messages"))?;
 
-    trace!("message returned: {:?}", response);
+    trace!("message returned: {:?}", secret!(response));
     Ok(response)
 }
 
 pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> VcxResult<(String, MessagePayload)> {
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
-           msg_id, pw_did, pw_vk, agent_did, agent_vk);
+           msg_id, secret!(pw_did), secret!(pw_vk), secret!(agent_did), secret!(agent_vk));
 
     let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &None)?;
-    trace!("checking for ref_msg: {:?}", message);
+    trace!("checking for referent for message: {:?}", secret!(message));
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
         Some(ref ref_msg_id) if message[0].status_code == MessageStatusCode::Accepted => ref_msg_id.to_string(),
@@ -518,7 +534,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
 
     let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &None)?;
 
-    trace!("checking for pending message: {:?}", message);
+    trace!("receivedpending messages: {:?}", secret!(message));
 
     // this will work for both credReq and proof types
     match message.get(0).as_ref().and_then(|message| message.payload.as_ref()) {
@@ -547,7 +563,8 @@ fn _parse_status_code(status_codes: Option<Vec<String>>) -> VcxResult<Option<Vec
 
 pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> VcxResult<Vec<MessageByConnection>> {
     trace!("download_messages >>> pairwise_dids: {:?}, status_codes: {:?}, uids: {:?}",
-           pairwise_dids, status_codes, uids);
+           secret!(pairwise_dids), status_codes, uids);
+    debug!("Agency: Downloading messages");
 
     AgencyMock::set_next_response(constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
 
@@ -561,12 +578,14 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
             .version(&Some(::settings::get_protocol_type()))?
             .download_messages()?;
 
-    trace!("message returned: {:?}", response);
+    debug!("Agency: received messages: {:?}", secret!(response));
+    trace!("download_messages <<< messages: {:?}", secret!(response));
     Ok(response)
 }
 
 pub fn download_agent_messages(status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> VcxResult<Vec<Message>> {
-    trace!("download_messages >>> status_codes: {:?}, uids: {:?}", status_codes, uids);
+    trace!("download_agent_messages >>> status_codes: {:?}, uids: {:?}", status_codes, secret!(uids));
+    debug!("Agency: Downloading Agent messages");
 
     AgencyMock::set_next_response(constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
 
@@ -582,12 +601,14 @@ pub fn download_agent_messages(status_codes: Option<Vec<String>>, uids: Option<V
             .status_codes(status_codes)?
             .send_secure()?;
 
-    trace!("message returned: {:?}", response);
+    debug!("Agency: received Agent messages: {:?}", secret!(response));
+    trace!("download_agent_messages <<< messages: {:?}", secret!(response));
     Ok(response)
 }
 
 pub fn download_message(uid: String) -> VcxResult<Message> {
     trace!("download_message >>> uid: {:?}", uid);
+    debug!("Agency: Downloading message {:?}", uid);
 
     AgencyMock::set_next_response(constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
 
@@ -613,7 +634,8 @@ pub fn download_message(uid: String) -> VcxResult<Message> {
 
     let message = messages.remove(0);
 
-    trace!("download_message <<< message: {:?}", message);
+    debug!("Agency: received message: {:?}", secret!(message));
+    trace!("download_message <<< message: {:?}", secret!(message));
     Ok(message)
 }
 

@@ -364,6 +364,8 @@ impl SendInviteBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<(InviteDetail, String)> {
+        trace!("SendInvite::parse_response >>>");
+
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         let index = match self.version {
@@ -482,6 +484,8 @@ impl AcceptInviteBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<String> {
+        trace!("AcceptInvite::parse_response >>>");
+
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
@@ -598,6 +602,8 @@ impl RedirectConnectionBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<String> {
+        trace!("RedirectConnection::parse_response >>>");
+
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
@@ -628,6 +634,8 @@ impl GeneralMessage for SendInviteBuilder {
     }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("SendInvite::prepare_request >>>");
+
         self.generate_signature()?;
 
         let messages =
@@ -664,6 +672,8 @@ impl GeneralMessage for SendInviteBuilder {
                 }
             };
 
+        trace!("SendInvite::prepare_request >>> messages: {:?}", secret!(messages));
+
         prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
 }
@@ -685,6 +695,8 @@ impl GeneralMessage for AcceptInviteBuilder {
     }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("AcceptInvite::prepare_request >>>");
+
         self.generate_signature()?;
 
         let messages =
@@ -719,6 +731,8 @@ impl GeneralMessage for AcceptInviteBuilder {
                 }
             };
 
+        trace!("AcceptInvite::prepare_request >>> messages: {:?}", secret!(messages));
+
         prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
 }
@@ -740,6 +754,8 @@ impl GeneralMessage for RedirectConnectionBuilder {
     }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("RedirectConnection::prepare_request >>>");
+
         self.generate_signature()?;
 
         let messages =
@@ -774,6 +790,8 @@ impl GeneralMessage for RedirectConnectionBuilder {
                     vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestRedirect(msg))]
                 }
             };
+
+        trace!("RedirectConnection::prepare_request >>> messages: {:?}", secret!(messages));
 
         prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }

@@ -66,7 +66,7 @@ impl CreateKeyBuilder {
     }
 
     pub fn send_secure(&self) -> VcxResult<(String, String)> {
-        trace!("CreateKeyMsg::send >>>");
+        trace!("CreateKeyBuilder::send_secure >>>");
 
         if settings::agency_mocks_enabled() {
             match self.version {
@@ -84,6 +84,8 @@ impl CreateKeyBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
+        trace!("CreateKeyBuilder::prepare_request >>>");
+
         let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -104,13 +106,15 @@ impl CreateKeyBuilder {
                 ),
         };
 
+        trace!("CreateKeyBuilder::prepare_request >>> message: {:?}", secret!(message));
+
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
         prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<(String, String)> {
-        trace!("parse_response >>>");
+        trace!("CreateKeyBuilder::parse_response >>>");
 
         let mut response = parse_response_from_agency(response, &self.version)?;
 

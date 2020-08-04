@@ -248,6 +248,8 @@ impl InitialState {
 
 impl PresentationSentState {
     fn handle_ack(&self, ack: &Ack) -> VcxResult<()> {
+        trace!("PresentationSentState::handle_ack >>> ack: {:?}", secret!(ack));
+        debug!("prover handling received presentation ack message");
         self.thread.check_message_order(&self.connection.data.did_doc.id, &ack.thread)?;
         Ok(())
     }
@@ -256,7 +258,8 @@ impl PresentationSentState {
 
 impl ProverSM {
     pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
-        trace!("Prover::find_message_to_handle >>> messages: {:?}", messages);
+        trace!("Prover::find_message_to_handle >>> messages: {:?}", secret!(messages));
+        debug!("Prover: Finding message to update state");
 
         for (uid, message) in messages {
             match self.state {
@@ -265,7 +268,9 @@ impl ProverSM {
                         A2AMessage::PresentationRequest(_) => {
                             // ignore it here??
                         }
-                        _ => {}
+                        message => {
+                            warn!("Prover: Unexpected message received in Initiated state: {:?}", message);
+                        }
                     }
                 }
                 ProverState::PresentationPrepared(_) => {
@@ -278,16 +283,20 @@ impl ProverSM {
                     match message {
                         A2AMessage::Ack(ack) | A2AMessage::PresentationAck(ack) => {
                             if ack.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Prover: Ack message received");
                                 return Some((uid, A2AMessage::PresentationAck(ack)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) |
                         A2AMessage::PresentationReject(problem_report) => {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Prover: PresentationReject message received");
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
-                        _ => {}
+                        message => {
+                            warn!("Prover: Unexpected message received in PresentationSent state: {:?}", message);
+                        }
                     }
                 }
                 ProverState::Finished(_) => {
@@ -295,12 +304,13 @@ impl ProverSM {
                 }
             };
         }
-
+        debug!("Prover: no message to update state");
         None
     }
 
     pub fn step(self, message: ProverMessages) -> VcxResult<ProverSM> {
-        trace!("ProverSM::step >>> message: {:?}", message);
+        trace!("ProverSM::step >>> message: {:?}", secret!(message));
+        debug!("Prover: Updating state");
 
         let ProverSM { source_id, state } = self;
 
@@ -345,7 +355,8 @@ impl ProverSM {
                         let presentation_proposal = Self::_handle_presentation_proposal(&connection, preview, &state.presentation_request, &thread)?;
                         ProverState::Finished((state, thread, presentation_proposal, Reason::Reject).into())
                     }
-                    _ => {
+                    message_ => {
+                        warn!("Prover: Unexpected action to update state {:?}", message_);
                         ProverState::Initiated(state)
                     }
                 }
@@ -384,7 +395,8 @@ impl ProverSM {
                         let presentation_proposal = Self::_handle_presentation_proposal(&connection, preview, &state.presentation_request, &thread)?;
                         ProverState::Finished((state, thread, presentation_proposal, Reason::Reject).into())
                     }
-                    _ => {
+                    message_ => {
+                        warn!("Prover: Unexpected action to update state {:?}", message_);
                         ProverState::PresentationPrepared(state)
                     }
                 }
@@ -411,7 +423,8 @@ impl ProverSM {
                         }
                         ProverState::Finished((state, thread).into())
                     }
-                    _ => {
+                    message_ => {
+                        warn!("Prover: Unexpected action to update state {:?}", message_);
                         ProverState::PresentationPreparationFailed(state)
                     }
                 }
@@ -448,7 +461,8 @@ impl ProverSM {
                     ProverMessages::RejectPresentationRequest(_) => {
                         return Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Presentation is already sent"));
                     }
-                    _ => {
+                    message_ => {
+                        warn!("Prover: Unexpected action to update state {:?}", message_);
                         ProverState::PresentationSent(state)
                     }
                 }
@@ -456,10 +470,14 @@ impl ProverSM {
             ProverState::Finished(state) => ProverState::Finished(state)
         };
 
+        trace!("Prover::step <<< state: {:?}", secret!(state));
         Ok(ProverSM { source_id, state })
     }
 
     fn _handle_reject_presentation_request(connection: &CompletedConnection, reason: &str, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<ProblemReport> {
+        trace!("ProverSM::_handle_reject_presentation_request >>> reason: {:?}, presentation_request: {:?}", secret!(reason), secret!(presentation_request));
+        debug!("Prover: Rejecting presentation request");
+
         let problem_report = ProblemReport::create()
             .set_description(ProblemReportCodes::PresentationRejected)
             .set_comment(reason.to_string())
@@ -470,10 +488,14 @@ impl ProverSM {
             Some(service) => Connection::send_message_to_self_endpoint(&A2AMessage::PresentationReject(problem_report.clone()), &service.into())?
         }
 
+        trace!("ProverSM::_handle_reject_presentation_request <<<");
         Ok(problem_report)
     }
 
     fn _handle_presentation_proposal(connection: &CompletedConnection, preview: PresentationPreview, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<PresentationProposal> {
+        trace!("ProverSM::_handle_presentation_proposal >>> preview: {:?}, presentation_request: {:?}", secret!(preview), secret!(presentation_request));
+        debug!("Prover: Preparing presentation proposal");
+
         let proposal = PresentationProposal::create()
             .set_presentation_preview(preview)
             .set_thread(thread.clone());
@@ -483,6 +505,7 @@ impl ProverSM {
             Some(service) => Connection::send_message_to_self_endpoint(&proposal.to_a2a_message(), &service.into())?
         }
 
+        trace!("ProverSM::_handle_presentation_proposal <<<");
         Ok(proposal)
     }
 

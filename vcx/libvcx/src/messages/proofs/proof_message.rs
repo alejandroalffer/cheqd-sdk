@@ -61,6 +61,9 @@ impl ProofMessage {
 }
 
 pub fn get_credential_info(proof: &str) -> VcxResult<Vec<CredInfo>> {
+    trace!("get_credential_info >>> proof: {:?}", secret!(proof));
+    debug!("getting identifiers of public entities needed for proof verification");
+
     let mut rtn = Vec::new();
 
     let credentials: Value = serde_json::from_str(&proof)
@@ -86,6 +89,8 @@ pub fn get_credential_info(proof: &str) -> VcxResult<Vec<CredInfo>> {
             } else { return Err(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, "Cannot get the list of Public Identifiers from the Proof")); }
         }
     }
+
+    trace!("get_credential_info >>> credentials: {:?}", secret!(rtn));
 
     Ok(rtn)
 }

@@ -25,6 +25,8 @@ pub struct CredentialOffer {
 }
 
 pub fn set_cred_offer_ref_message(offer: &str, thread: Option<Thread>, msg_id: &str) -> VcxResult<Vec<Value>> {
+    trace!("set_cred_offer_ref_message >>> offer: {:?}, id: {:?}", secret!(offer), msg_id);
+
     let (mut offer, payment_info) = parse_json_offer(&offer)?;
 
     offer.msg_ref_id = Some(msg_id.to_owned());
@@ -40,6 +42,8 @@ pub fn set_cred_offer_ref_message(offer: &str, thread: Option<Thread>, msg_id: &
 }
 
 pub fn parse_json_offer(offer: &str) -> VcxResult<(CredentialOffer, Option<PaymentInfo>)> {
+    trace!("parse_json_offer >>> offer: {:?}", secret!(offer));
+
     let paid_offer: Value = serde_json::from_str(offer)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, format!("Cannot deserialize Credential Offer: {}", err)))?;
 
@@ -59,5 +63,11 @@ pub fn parse_json_offer(offer: &str) -> VcxResult<(CredentialOffer, Option<Payme
             }
         }
     }
-    Ok((offer.ok_or(VcxError::from(VcxErrorKind::InvalidJson))?, payment))
+
+    let offer = offer
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, "Message does not contain offer"))?;
+
+    trace!("parse_json_offer <<< offer: {:?}", secret!(offer));
+
+    Ok((offer, payment))
 }

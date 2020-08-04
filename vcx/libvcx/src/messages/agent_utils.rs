@@ -271,16 +271,16 @@ pub fn parse_config(config: &str) -> VcxResult<Config> {
 }
 
 pub fn connect_register_provision(config: &str) -> VcxResult<String> {
-    trace!("connect_register_provision >>> config: {:?}", config);
+    trace!("connect_register_provision >>> config: {:?}", secret!(config));
     let my_config = parse_config(config)?;
 
-    trace!("***Configuring Library");
+    debug!("***Configuring Library");
     set_config_values(&my_config);
 
-    trace!("***Configuring Wallet");
+    debug!("***Configuring Wallet");
     let (my_did, my_vk, wallet_name) = configure_wallet(&my_config)?;
 
-    trace!("Connecting to Agency");
+    debug!("Connecting to Agency");
     let (agent_did, agent_vk) = match my_config.protocol_type {
         settings::ProtocolTypes::V1 => onboarding_v1(&my_did, &my_vk, &my_config.agency_did)?,
         settings::ProtocolTypes::V2 |
@@ -295,7 +295,10 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
 }
 
 fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
+    trace!("Running Onboarding V1");
+
     /* STEP 1 - CONNECT */
+    trace!("Sending CONNECT message");
     AgencyMock::set_next_response(constants::CONNECTED_RESPONSE.to_vec());
 
     let message = A2AMessage::Version1(
@@ -313,6 +316,7 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agency_pw_vk);
 
     /* STEP 2 - REGISTER */
+    trace!("Sending REGISTER message");
     AgencyMock::set_next_response(constants::REGISTER_RESPONSE.to_vec());
 
     let message = A2AMessage::Version1(
@@ -328,6 +332,7 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
         };
 
     /* STEP 3 - CREATE AGENT */
+    trace!("Sending CREATE_AGENT message");
     AgencyMock::set_next_response(constants::AGENT_CREATED.to_vec());
 
     let message = A2AMessage::Version1(
@@ -347,6 +352,7 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
 
 pub fn connect_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
     /* STEP 1 - CONNECT */
+    trace!("Sending CONNECT message");
     let message = A2AMessage::Version2(
         A2AMessageV2::Connect(Connect::build(my_did, my_vk))
     );
@@ -370,9 +376,12 @@ pub fn connect_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Str
 
 // it will be changed next
 fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
+    trace!("Running Onboarding V2");
+
     let (agency_pw_did, _) = connect_v2(my_did, my_vk, agency_did)?;
 
     /* STEP 2 - REGISTER */
+    trace!("Sending REGISTER message");
     let message = A2AMessage::Version2(
         A2AMessageV2::SignUp(SignUp::build())
     );
@@ -386,6 +395,7 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
         };
 
     /* STEP 3 - CREATE AGENT */
+    trace!("Sending CREATE AGENT message");
     let message = A2AMessage::Version2(
         A2AMessageV2::CreateAgent(CreateAgent::build())
     );
@@ -402,7 +412,8 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
 }
 
 pub fn update_agent_info(com_method: ComMethod) -> VcxResult<()> {
-    trace!("update_agent_info >>> com_method: {:?}", com_method);
+    trace!("update_agent_info >>> com_method: {:?}", secret!(com_method));
+    debug!("Updating agent information");
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
@@ -418,6 +429,8 @@ pub fn update_agent_info(com_method: ComMethod) -> VcxResult<()> {
 }
 
 fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
+    trace!("Updating agent information V1");
+
     AgencyMock::set_next_response(constants::REGISTER_RESPONSE.to_vec());
 
     let message = A2AMessage::Version1(
@@ -428,6 +441,8 @@ fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
 }
 
 fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
+    trace!("Updating agent information V2");
+
     let message = A2AMessage::Version2(
         A2AMessageV2::UpdateComMethod(UpdateComMethod::build(com_method))
     );

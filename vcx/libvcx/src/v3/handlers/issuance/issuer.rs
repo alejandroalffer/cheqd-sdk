@@ -73,7 +73,8 @@ impl IssuerSM {
     }
 
     fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
-        trace!("Issuer::find_message_to_handle >>> messages: {:?}", messages);
+        trace!("Issuer::find_message_to_handle >>> messages: {:?}", secret!(messages));
+        debug!("Issuer: Finding message to update state");
 
         for (uid, message) in messages {
             match self.state {
@@ -84,11 +85,13 @@ impl IssuerSM {
                     match message {
                         A2AMessage::CredentialRequest(credential) => {
                             if credential.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Issuer: CredentialRequest message received");
                                 return Some((uid, A2AMessage::CredentialRequest(credential)));
                             }
                         }
                         A2AMessage::CredentialProposal(credential_proposal) => {
                             if let Some(ref thread) = credential_proposal.thread {
+                                debug!("Issuer: CredentialProposal message received");
                                 if thread.is_reply(&state.thread.thid.clone().unwrap_or_default()) {
                                     return Some((uid, A2AMessage::CredentialProposal(credential_proposal)));
                                 }
@@ -97,10 +100,13 @@ impl IssuerSM {
                         A2AMessage::CommonProblemReport(problem_report) |
                         A2AMessage::CredentialReject(problem_report)=> {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Issuer: CredentialReject message received");
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
-                        _ => {}
+                        message => {
+                            warn!("Issuer: Unexpected message received in OfferSent state: {:?}", message);
+                        }
                     }
                 }
                 IssuerState::RequestReceived(_) => {
@@ -119,7 +125,9 @@ impl IssuerSM {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
-                        _ => {}
+                        message => {
+                            warn!("Issuer: Unexpected message received in CredentialSent state: {:?}", message);
+                        }
                     }
                 }
                 IssuerState::Finished(_) => {
@@ -127,7 +135,7 @@ impl IssuerSM {
                 }
             };
         }
-
+        debug!("Issuer: no message to update state");
         None
     }
 
@@ -147,7 +155,8 @@ impl IssuerSM {
     }
 
     pub fn handle_message(self, cim: CredentialIssuanceMessage) -> VcxResult<IssuerSM> {
-        trace!("IssuerSM::handle_message >>> cim: {:?}", cim);
+        trace!("Issuer::handle_message >>> cim: {:?}", secret!(cim));
+        debug!("Issuer: Updating state");
 
         let IssuerSM { state, source_id } = self;
         let state = match state {
@@ -262,6 +271,7 @@ impl IssuerSM {
             }
         };
 
+        trace!("Issuer::handle_message <<< state: {:?}", secret!(state));
         Ok(IssuerSM::step(state, source_id))
     }
 
@@ -295,7 +305,7 @@ impl IssuerSM {
 
 impl InitialState {
     fn append_credential_preview(&self, cred_offer_msg: CredentialOffer) -> VcxResult<CredentialOffer> {
-        trace!("Issuer::InitialState::append_credential_preview >>> cred_offer_msg: {:?}", cred_offer_msg);
+        trace!("Issuer::InitialState::append_credential_preview >>> cred_offer_msg: {:?}", secret!(cred_offer_msg));
 
         let cred_values: serde_json::Value = serde_json::from_str(&self.credential_json)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure,
@@ -316,6 +326,8 @@ impl InitialState {
                 MimeType::Plain,
             )?;
         }
+
+        trace!("Issuer::InitialState::append_credential_preview <<<");
         Ok(new_offer)
     }
 }
@@ -335,8 +347,11 @@ impl RequestReceivedState {
                                                                              &cred_data,
                                                                              self.rev_reg_id.clone(),
                                                                              self.tails_file.clone())?;
-        Credential::create()
-            .set_credential(credential)
+        let credential = Credential::create()
+            .set_credential(credential)?;
+
+        trace!("Issuer::RequestReceivedState::create_credential <<<");
+        Ok(credential)
     }
 }
 

@@ -215,7 +215,7 @@ pub fn update_record_value(xtype: &str, id: &str, value: &str) -> VcxResult<()> 
 }
 
 pub fn export(wallet_handle: WalletHandle, path: &str, backup_key: &str) -> VcxResult<()> {
-    trace!("export >>> wallet_handle: {:?}, path: {:?}, backup_key: ****", wallet_handle, path);
+    trace!("export >>> wallet_handle: {:?}, path: {:?}, backup_key: {}", wallet_handle, secret!(path), secret!(backup_key));
 
     let export_config = json!({ "key": backup_key, "path": &path}).to_string();
     wallet::export_wallet(wallet_handle, &export_config)
@@ -224,7 +224,7 @@ pub fn export(wallet_handle: WalletHandle, path: &str, backup_key: &str) -> VcxR
 }
 
 pub fn import(config: &str) -> VcxResult<()> {
-    trace!("import >>> config {}", config);
+    trace!("import >>> config {}", secret!(config));
 
     ::settings::process_config_string(config, false)?;
 

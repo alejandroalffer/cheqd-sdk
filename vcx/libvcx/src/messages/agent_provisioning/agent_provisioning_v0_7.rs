@@ -63,23 +63,24 @@ impl ProvisionAgent {
     }
 }
 pub fn provision(config: &str, token: &str) -> VcxResult<String> {
-    trace!("connect_register_provision >>> config: {:?}", config);
+    trace!("connect_register_provision >>> config: {:?}", secret!(config));
     let my_config = parse_config(config)?;
     let token: ProvisionToken = from_str(token).map_err(|err| VcxError::from_msg(
         VcxErrorKind::InvalidProvisioningToken,
         format!("Cannot parse config: {}", err)
     ))?;
 
-    trace!("***Configuring Library");
+    debug!("***Configuring Library");
     set_config_values(&my_config);
 
-    trace!("***Configuring Wallet");
+    debug!("***Configuring Wallet");
     let (my_did, my_vk, wallet_name) = configure_wallet(&my_config)?;
 
-    trace!("Connecting to Agency");
+    debug!("Connecting to Agency");
     let (agent_did, agent_vk) = create_agent(&my_did, &my_vk, &my_config.agency_did, token)?;
     wallet::close_wallet()?;
 
+    debug!("Building config");
     get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)
 }
 

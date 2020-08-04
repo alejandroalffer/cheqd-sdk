@@ -53,7 +53,7 @@ public class IssuerApi extends VcxJava.API {
         ParamGuard.notNullOrWhiteSpace(credentialData, "credentialData");
         ParamGuard.notNullOrWhiteSpace(credentialName, "credentialName");
 
-        logger.debug("issuerCreateCredential() called with: sourceId = [" + sourceId + "], credentialDefHandle = [" + credentialDefHandle + "], issuerId = [" + issuerId + "], credentialData = [" + credentialData + "], credentialName = [" + credentialName + "], price = [" + price + "]");
+        logger.debug("issuerCreateCredential() called with: sourceId = [" + sourceId + "], credentialDefHandle = [" + credentialDefHandle + "], issuerId = [****, credentialData = [****], credentialName = [****], price = [****]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
@@ -286,7 +286,7 @@ public class IssuerApi extends VcxJava.API {
     private static Callback issuerCredentialStringCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String stringData) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], string = [" + stringData + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], string = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             String result = stringData;

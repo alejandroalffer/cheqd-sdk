@@ -35,7 +35,7 @@ pub extern fn vcx_init_with_config(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_init(command_handle: {}, config: {:?})",
-           command_handle, config);
+           command_handle, secret!(config));
 
     if config == "ENABLE_TEST_MODE" {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
@@ -76,7 +76,7 @@ pub extern fn vcx_init(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_init(command_handle: {}, config_path: {:?})",
-           command_handle, config_path);
+           command_handle, secret!(config_path));
 
 
     if !config_path.is_null() {
@@ -145,7 +145,7 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
                                   storage_config.as_ref().map(String::as_str),
                                   storage_creds.as_ref().map(String::as_str)) {
             Ok(_) => {
-                debug!("Init Wallet Successful.");
+                info!("Init Wallet Successful.");
             }
             Err(e) => {
                 error!("Init Wallet Error {}..", e);
@@ -192,7 +192,7 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
 pub extern fn vcx_init_minimal(config: *const c_char) -> u32 {
     check_useful_c_str!(config,VcxErrorKind::InvalidOption);
 
-    trace!("vcx_init_minimal(config: {:?})", config);
+    trace!("vcx_init_minimal(config: {:?})", secret!(config));
 
     if config == "ENABLE_TEST_MODE" {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
@@ -396,7 +396,8 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
 
     check_useful_c_str!(name, VcxErrorKind::InvalidOption);
     check_useful_c_str!(logo_url, VcxErrorKind::InvalidOption);
-    trace!("vcx_update_institution_info(name: {}, logo_url: {})", name, logo_url);
+
+    trace!("vcx_update_institution_info(name: {}, logo_url: {})", secret!(name), secret!(logo_url));
 
     settings::set_config_value(::settings::CONFIG_INSTITUTION_NAME, &name);
     settings::set_config_value(::settings::CONFIG_INSTITUTION_LOGO_URL, &logo_url);
@@ -409,7 +410,7 @@ pub extern fn vcx_update_webhook_url(notification_webhook_url: *const c_char) ->
     info!("vcx_update_webhook >>>");
 
     check_useful_c_str!(notification_webhook_url, VcxErrorKind::InvalidOption);
-    trace!("vcx_update_webhook(webhook_url: {})", notification_webhook_url);
+    trace!("vcx_update_webhook(webhook_url: {})", secret!(notification_webhook_url));
 
     settings::set_config_value(::settings::CONFIG_WEBHOOK_URL, &notification_webhook_url);
 
@@ -518,7 +519,7 @@ pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
     } else {
         None
     };
-    trace!("vcx_mint_tokens(seed: {:?}, fees: {:?})", seed, fees);
+    trace!("vcx_mint_tokens(seed: {:?}, fees: {:?})", secret!(seed), fees);
 
     ::utils::libindy::payments::mint_tokens_and_set_fees(None, None, fees, seed).unwrap_or_default();
 }

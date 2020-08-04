@@ -105,6 +105,9 @@ impl From<(PresentationRequestSentState, ProblemReport, Thread)> for FinishedSta
 
 impl PresentationRequestSentState {
     fn verify_presentation(&self, presentation: &Presentation, thread: &Thread) -> VcxResult<Thread> {
+        trace!("PresentationRequestSentState::verify_presentation >>> presentation: {:?}", secret!(presentation));
+        debug!("verifier verifying received presentation");
+
         let mut thread = thread.clone();
 
         let valid = Proof::validate_indy_proof(&presentation.presentations_attach.content()?,
@@ -123,13 +126,15 @@ impl PresentationRequestSentState {
             self.connection.data.send_message(&A2AMessage::PresentationAck(ack), &self.connection.agent)?;
         }
 
+        trace!("PresentationRequestSentState::verify_presentation <<<");
         Ok(thread)
     }
 }
 
 impl VerifierSM {
     pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
-        trace!("VerifierSM::find_message_to_handle >>> messages: {:?}", messages);
+        trace!("VerifierSM::find_message_to_handle >>> messages: {:?}", secret!(messages));
+        debug!("Verifier: Finding message to update state");
 
         for (uid, message) in messages {
             match self.state {
@@ -140,17 +145,20 @@ impl VerifierSM {
                     match message {
                         A2AMessage::Presentation(presentation) => {
                             if presentation.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Verifier: Presentation message received");
                                 return Some((uid, A2AMessage::Presentation(presentation)));
                             }
                         }
                         A2AMessage::PresentationProposal(proposal) => {
                             if proposal.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Verifier: PresentationProposal message received");
                                 return Some((uid, A2AMessage::PresentationProposal(proposal)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) |
                         A2AMessage::PresentationReject(problem_report)=> {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Verifier: PresentationReject message received");
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -162,12 +170,13 @@ impl VerifierSM {
                 }
             };
         }
-
+        debug!("verifier: no message to update state");
         None
     }
 
     pub fn step(self, message: VerifierMessages) -> VcxResult<VerifierSM> {
-        trace!("VerifierSM::step >>> message: {:?}", message);
+        trace!("VerifierSM::step >>> message: {:?}", secret!(message));
+        debug!("verifier updating state");
 
         let VerifierSM { source_id, state } = self;
 

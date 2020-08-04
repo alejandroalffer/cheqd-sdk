@@ -30,7 +30,7 @@ impl BackupBuilder {
     }
 
     pub fn send_secure(&mut self) -> VcxResult<()> {
-        trace!("WalletBackup::send >>>");
+        trace!("BackupBuilder::send >>>");
 
         let data = self.prepare_request()?;
 
@@ -40,6 +40,8 @@ impl BackupBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
+        trace!("BackupBuilder::prepare_request >>>");
+
         let message = A2AMessage::Version2( A2AMessageV2::Backup(
             Backup {
                 msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(
@@ -52,6 +54,8 @@ impl BackupBuilder {
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
         let agency_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?;
         let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
+
+        trace!("BackupBuilder::prepare_request >>> message: {:?}", secret!(message));
 
         prepare_message_for_agent_v2(vec![message], &my_vk, &agency_did, &agency_vk)
     }

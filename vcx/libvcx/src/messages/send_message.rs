@@ -110,6 +110,8 @@ impl SendMessageBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<SendResponse> {
+        trace!("SendMessage::parse_response >>>");
+
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         let index = match self.version {
@@ -144,6 +146,8 @@ impl GeneralMessage for SendMessageBuilder {
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("SendMessage::prepare_request >>>");
+
         let messages =
             match self.version {
                 settings::ProtocolTypes::V1 => {
@@ -182,6 +186,8 @@ impl GeneralMessage for SendMessageBuilder {
                     vec![A2AMessage::Version2(A2AMessageV2::SendRemoteMessage(message))]
                 }
             };
+
+        trace!("SendMessage::prepare_request >>> messages: {:?}", secret!(messages));
 
         prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
