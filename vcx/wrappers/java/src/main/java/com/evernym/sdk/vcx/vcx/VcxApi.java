@@ -96,7 +96,7 @@ public class VcxApi extends VcxJava.API {
      */
     public static CompletableFuture<Integer> vcxInit(String configPath) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(configPath, "configPath");
-        logger.debug("vcxInit() called with: configPath = [" + configPath + "]");
+        logger.debug("vcxInit() called with: configPath = [****]");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
@@ -118,7 +118,7 @@ public class VcxApi extends VcxJava.API {
      */
     public static int vcxInitMinimal(String configJson) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(configJson, "config");
-        logger.debug("vcxInitMinimal() called with: configJson = [" + configJson + "]");
+        logger.debug("vcxInitMinimal() called with: configJson = [****]");
 
         int result = LibVcx.api.vcx_init_minimal(
                 configJson);

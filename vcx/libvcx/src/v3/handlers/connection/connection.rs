@@ -20,6 +20,7 @@ pub struct Connection {
 impl Connection {
     pub fn create(source_id: &str) -> Connection {
         trace!("Connection::create >>> source_id: {}", source_id);
+        debug!("Connection {}: Creating Connection state object", source_id);
 
         Connection {
             connection_sm: DidExchangeSM::new(Actor::Inviter, source_id, None),
@@ -29,7 +30,8 @@ impl Connection {
     pub fn create_outofband(source_id: &str, goal_code: Option<String>, goal: Option<String>,
                             handshake: bool, request_attach: Option<String>) -> Connection {
         trace!("create_outofband_connection >>> source_id: {}, goal_code: {:?}, goal: {:?}, handshake: {}, request_attach: {:?}",
-               source_id, goal_code, goal, handshake, request_attach);
+               source_id, secret!(goal_code), secret!(goal), secret!(handshake), secret!(request_attach));
+        debug!("Connection {}: Creating out-of-band Connection state object", source_id);
 
         let meta = OutofbandMeta::new(goal_code, goal, handshake, request_attach);
 
@@ -43,7 +45,8 @@ impl Connection {
     }
 
     pub fn create_with_invite(source_id: &str, invitation: Invitation) -> VcxResult<Connection> {
-        trace!("Connection::create_with_invite >>> source_id: {}", source_id);
+        trace!("Connection::create_with_invite >>> source_id: {}, invitation: {:?}", source_id, secret!(invitation));
+        debug!("Connection {}: Creating Connection state object with invite", source_id);
 
         let mut connection = Connection {
             connection_sm: DidExchangeSM::new(Actor::Invitee, source_id, None),
@@ -55,7 +58,8 @@ impl Connection {
     }
 
     pub fn create_with_outofband_invite(source_id: &str, invitation: OutofbandInvitation) -> VcxResult<Connection> {
-        trace!("Connection::create_with_outofband_invite >>> source_id: {}", source_id);
+        trace!("Connection::create_with_outofband_invite >>> source_id: {}, invitation: {:?}", source_id, secret!(invitation));
+        debug!("Connection {}: Creating Connection state object with out-of-band invite", source_id);
 
         invitation.validate()?;
 
@@ -91,12 +95,12 @@ impl Connection {
     }
 
     pub fn process_invite(&mut self, invitation: Invitation) -> VcxResult<()> {
-        trace!("Connection::process_invite >>> invitation: {:?}", invitation);
+        trace!("Connection::process_invite >>> invitation: {:?}", secret!(invitation));
         self.step(DidExchangeMessages::InvitationReceived(invitation))
     }
 
     pub fn process_outofband_invite(&mut self, invitation: OutofbandInvitation) -> VcxResult<()> {
-        trace!("Connection::process_outofband_invite >>> invitation: {:?}", invitation);
+        trace!("Connection::process_outofband_invite >>> invitation: {:?}", secret!(invitation));
         self.step(DidExchangeMessages::OutofbandInvitationReceived(invitation))
     }
 
@@ -107,6 +111,8 @@ impl Connection {
 
     pub fn get_invite_details(&self) -> VcxResult<String> {
         trace!("Connection::get_invite_details >>>");
+        debug!("Connection {}: Getting invitation", self.source_id());
+
         let invitation = match self.get_invitation() {
             Some(invitation) => match invitation {
                 Invitations::ConnectionInvitation(invitation_) => {
@@ -124,11 +130,14 @@ impl Connection {
 
     pub fn connect(&mut self) -> VcxResult<()> {
         trace!("Connection::connect >>> source_id: {}", self.connection_sm.source_id());
+        debug!("Connection {}: Starting connection establishing process", self.source_id());
+
         self.step(DidExchangeMessages::Connect())
     }
 
-    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
-        trace!("Connection::update_state >>> message: {:?}", message);
+    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<u32> {
+        trace!("Connection::update_state >>> message: {:?}", secret!(message));
+        debug!("Connection {}: Updating state", self.source_id());
 
         if let Some(message_) = message {
             return self.update_state_with_message(message_);
@@ -150,16 +159,22 @@ impl Connection {
             }
         }
 
-        Ok(())
+        let state = self.state();
+
+        trace!("Connection::update_state <<< state: {:?}", state);
+        Ok(state)
     }
 
     pub fn update_message_status(&self, uid: String) -> VcxResult<()> {
         trace!("Connection::update_message_status >>> uid: {:?}", uid);
+        debug!("Connection {}: Updating message status as reviewed", self.source_id());
+
         self.connection_sm.agent_info().update_message_status(uid)
     }
 
-    pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
-        trace!("Connection: update_state_with_message: {}", message);
+    pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<u32> {
+        trace!("Connection: update_state_with_message: {}", secret!(message));
+        debug!("Connection {}: Updating state with message", self.source_id());
 
         let message: A2AMessage = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
@@ -167,26 +182,34 @@ impl Connection {
 
         self.handle_message(message.into())?;
 
-        Ok(())
+        let state = self.state();
+
+        trace!("Connection: update_state_with_message: <<< state: {}", state);
+
+        Ok(state)
     }
 
     pub fn get_messages(&self) -> VcxResult<HashMap<String, A2AMessage>> {
         trace!("Connection: get_messages >>>");
+        debug!("Connection {}: Getting messages", self.source_id());
         self.agent_info().get_messages()
     }
 
     pub fn get_message_by_id(&self, msg_id: &str) -> VcxResult<A2AMessage> {
         trace!("Connection: get_message_by_id >>>");
+        debug!("Connection {}: Getting message by id {:?}", self.source_id(), msg_id);
+
         self.agent_info().get_message_by_id(msg_id)
     }
 
     pub fn handle_message(&mut self, message: DidExchangeMessages) -> VcxResult<()> {
-        trace!("Connection: handle_message >>> {:?}", message);
+        trace!("Connection: handle_message >>> {:?}",  secret!(message));
         self.step(message)
     }
 
     pub fn send_message(&self, message: &A2AMessage) -> VcxResult<()> {
-        trace!("Connection::send_message >>> message: {:?}", message);
+        trace!("Connection::send_message >>> message: {:?}", secret!(message));
+        debug!("Connection {}: Sending message", self.source_id());
 
         let did_doc = self.connection_sm.did_doc()
             .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot send message: Remote Connection DIDDoc is not set"))?;
@@ -195,7 +218,7 @@ impl Connection {
     }
 
     pub fn send_message_to_self_endpoint(message: &A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
-        trace!("Connection::send_message_to_self_endpoint >>> message: {:?}, did_doc: {:?}", message, did_doc);
+        trace!("Connection::send_message_to_self_endpoint >>> message: {:?}, did_doc: {:?}", secret!(message), secret!(did_doc));
 
         AgentInfo::send_message_anonymously(message, did_doc)
     }
@@ -213,14 +236,17 @@ impl Connection {
     }
 
     pub fn send_generic_message(&self, message: &str, _message_options: &str) -> VcxResult<String> {
-        trace!("Connection::send_generic_message >>> message: {:?}", message);
+        trace!("Connection::send_generic_message >>> message: {:?}", secret!(message));
+        debug!("Connection {}: Sending generic message", self.source_id());
 
         let message = Connection::parse_generic_message(message, _message_options);
         self.send_message(&message).map(|_| String::new())
     }
 
     pub fn send_ping(&mut self, comment: Option<String>) -> VcxResult<()> {
-        trace!("Connection::send_ping >>> comment: {:?}", comment);
+        trace!("Connection::send_ping >>> comment: {:?}", secret!(comment));
+        debug!("Connection {}: Sending ping message", self.source_id());
+
         self.handle_message(DidExchangeMessages::SendPing(comment))
     }
 
@@ -235,17 +261,22 @@ impl Connection {
     }
 
     pub fn send_discovery_features(&mut self, query: Option<String>, comment: Option<String>) -> VcxResult<()> {
-        trace!("Connection::send_discovery_features_query >>> query: {:?}, comment: {:?}", query, comment);
+        trace!("Connection::send_discovery_features_query >>> query: {:?}, comment: {:?}", secret!(query), secret!(comment));
+        debug!("Connection {}: Sending discovery features message", self.source_id());
+
         self.handle_message(DidExchangeMessages::DiscoverFeatures((query, comment)))
     }
 
     pub fn send_reuse(&mut self, invitation: OutofbandInvitation) -> VcxResult<()> {
-        trace!("Connection::send_reuse >>> invitation: {:?}", invitation);
+        trace!("Connection::send_reuse >>> invitation: {:?}", secret!(invitation));
+        debug!("Connection {}: Sending reuse message", self.source_id());
+
         self.handle_message(DidExchangeMessages::SendHandshakeReuse(invitation))
     }
 
     pub fn send_answer(&mut self, question: String, response: String) -> VcxResult<()> {
-        trace!("Connection::send_answer >>> question: {:?}, response: {:?}", question, response);
+        trace!("Connection::send_answer >>> question: {:?}, response: {:?}", secret!(question), secret!(response));
+        debug!("Connection {}: Sending question answer message", self.source_id());
 
         let question: Question = ::serde_json::from_str(&question)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
@@ -260,6 +291,7 @@ impl Connection {
 
     pub fn get_connection_info(&self) -> VcxResult<String> {
         trace!("Connection::get_connection_info >>>");
+        debug!("Connection {}: Getting information", self.source_id());
 
         let agent_info = self.agent_info().clone();
 

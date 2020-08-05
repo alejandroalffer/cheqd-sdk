@@ -78,7 +78,8 @@ impl HolderSM {
     }
 
     fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
-        trace!("Holder::find_message_to_handle >>> messages: {:?}", messages);
+        trace!("Holder::find_message_to_handle >>> messages: {:?}", secret!(messages));
+        debug!("Holder: Finding message to update state");
 
         for (uid, message) in messages {
             match self.state {
@@ -89,16 +90,20 @@ impl HolderSM {
                     match message {
                         A2AMessage::Credential(credential) => {
                             if credential.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Holder: Credential message received");
                                 return Some((uid, A2AMessage::Credential(credential)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) |
                         A2AMessage::CredentialReject(problem_report) => {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Holder: CredentialReject message received");
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
-                        _ => {}
+                        message => {
+                            warn!("Holder: Unexpected message received in RequestSent state: {:?}", message);
+                        }
                     }
                 }
                 HolderState::Finished(_) => {
@@ -106,7 +111,7 @@ impl HolderSM {
                 }
             };
         }
-
+        debug!("Holder: no message to update state");
         None
     }
 
@@ -115,7 +120,8 @@ impl HolderSM {
     }
 
     pub fn handle_message(self, cim: CredentialIssuanceMessage) -> VcxResult<HolderSM> {
-        trace!("Holder::handle_message >>> cim: {:?}", cim);
+        trace!("Holder::handle_message >>> cim: {:?}", secret!(cim));
+        debug!("Holder: Updating state");
 
         let HolderSM { state, source_id} = self;
         let state = match state {
@@ -213,6 +219,8 @@ impl HolderSM {
                 HolderState::Finished(state_data)
             }
         };
+
+        trace!("Holder::handle_message <<< state: {:?}", secret!(state));
         Ok(HolderSM::step(state, source_id))
     }
 
@@ -271,7 +279,7 @@ impl HolderSM {
 }
 
 fn _parse_cred_def_from_cred_offer(cred_offer: &str) -> VcxResult<String> {
-    trace!("Holder::_parse_cred_def_from_cred_offer >>> cred_offer: {:?}", cred_offer);
+    trace!("Holder::_parse_cred_def_from_cred_offer >>> cred_offer: {:?}", secret!(cred_offer));
 
     let parsed_offer: serde_json::Value = serde_json::from_str(cred_offer)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, format!("Cannot parse Credential Offer from JSON string. Err: {:?}", err)))?;
@@ -296,6 +304,7 @@ fn _parse_rev_reg_id_from_credential(credential: &str) -> VcxResult<Option<Strin
 impl RequestSentState {
     fn store_credential(&self, credential: &Credential) -> VcxResult<String> {
         trace!("Holder::_store_credential >>>");
+        debug!("holder storing received credential");
 
         self.thread.check_message_order(&self.connection.data.did_doc.id, &credential.thread)?;
 
@@ -308,22 +317,29 @@ impl RequestSentState {
             None
         };
 
-        libindy_prover_store_credential(None,
+        let cred_id = libindy_prover_store_credential(None,
                                         &self.req_meta,
                                         &credential_json,
                                         &self.cred_def_json,
-                                        rev_reg_def_json.as_ref().map(String::as_str))
+                                        rev_reg_def_json.as_ref().map(String::as_str))?;
+
+        trace!("Holder::_store_credential <<<");
+        Ok(cred_id)
     }
 }
 impl OfferReceivedState {
     fn make_credential_request(&self, connection: &CompletedConnection) -> VcxResult<(CredentialRequest, String, String)> {
-        trace!("Holder::OfferReceivedState::make_credential_request >>> offer: {:?}", self.offer);
+        trace!("Holder::OfferReceivedState::make_credential_request >>> offer: {:?}", secret!(self.offer));
+        debug!("holder preparing credential request");
 
         let cred_offer = self.offer.offers_attach.content()?;
         let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
         let (req, req_meta, _cred_def_id, cred_def_json) =
             credential::Credential::create_credential_request(&cred_def_id, &connection.agent.pw_did, &cred_offer)?;
-        Ok((CredentialRequest::create().set_requests_attach(req)?, req_meta, cred_def_json))
+        let cred_req = CredentialRequest::create().set_requests_attach(req)?;
+
+        trace!("Holder::make_credential_request <<<");
+        Ok((cred_req, req_meta, cred_def_json))
     }
 }
 
@@ -335,12 +351,17 @@ impl FinishedHolderState {
 }
 
 fn _reject_credential(connection: &CompletedConnection, thread: &Thread, comment: Option<String>) -> VcxResult<ProblemReport>{
+    trace!("Holder::_reject_credential >>> comment: {:?}", secret!(comment));
+    debug!("holder preparing credential reject");
+
     let problem_report = ProblemReport::create()
         .set_description(ProblemReportCodes::CredentialRejected)
         .set_comment(comment.unwrap_or(String::from("credential-offer was rejected")))
         .set_thread(thread.clone());
 
     connection.agent.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.data.did_doc)?;
+
+    trace!("Holder::_reject_credential <<<");
     Ok(problem_report)
 }
 

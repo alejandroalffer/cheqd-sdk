@@ -82,6 +82,8 @@ impl UpdateMessageStatusByConnectionsBuilder {
     }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("UpdateMessageStatusByConnections::prepare_request >>>");
+
         let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -106,12 +108,14 @@ impl UpdateMessageStatusByConnectionsBuilder {
                 ),
         };
 
+        trace!("UpdateMessageStatusByConnections::prepare_request >>> messages: {:?}", secret!(message));
+
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
         prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
-        trace!("parse_create_keys_response >>>");
+        trace!("UpdateMessageStatusByConnections::parse_response >>>");
 
         let mut response = parse_response_from_agency(response, &self.version)?;
 
@@ -124,20 +128,25 @@ impl UpdateMessageStatusByConnectionsBuilder {
 }
 
 pub fn update_agency_messages(status_code: &str, msg_json: &str) -> VcxResult<()> {
-    trace!("update_agency_messages >>> status_code: {:?}, msg_json: {:?}", status_code, msg_json);
+    trace!("update_agency_messages >>> status_code: {:?}, msg_json: {:?}", status_code, secret!(msg_json));
+    debug!("Agency: Updating messages {:?} status", secret!(msg_json));
 
     let status_code: MessageStatusCode = ::serde_json::from_str(&format!("\"{}\"", status_code))
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize `status_code`: {}", err)))?;
 
-    debug!("updating agency messages {} to status code: {:?}", msg_json, status_code);
-
     let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize list of messages to update: {}", err)))?;
 
-    update_messages(status_code, uids_by_conns)
+    update_messages(status_code, uids_by_conns)?;
+
+    debug!("Agency: Messages updated");
+    trace!("update_agency_messages <<<");
+    Ok(())
 }
 
 pub fn update_messages(status_code: MessageStatusCode, uids_by_conns: Vec<UIDsByConn>) -> VcxResult<()> {
+    trace!("update_messages >>> status_code {:?}, uids_by_conns {:?}", status_code, secret!(uids_by_conns));
+
     UpdateMessageStatusByConnectionsBuilder::create()
         .uids_by_conns(uids_by_conns)?
         .status_code(status_code)?

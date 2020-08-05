@@ -187,6 +187,8 @@ impl ProofRequestMessage {
 
 
     pub fn requested_attrs(&mut self, attrs: &str) -> VcxResult<&mut Self> {
+        trace!("ProofRequestMessage::requested_attrs >>> attrs: {:?}", secret!(attrs));
+
         let mut check_req_attrs: HashMap<String, AttrInfo> = HashMap::new();
         let proof_attrs: Vec<AttrInfo> = serde_json::from_str(attrs)
             .map_err(|err| {
@@ -228,6 +230,8 @@ impl ProofRequestMessage {
     }
 
     pub fn requested_predicates(&mut self, predicates: &str) -> VcxResult<&mut Self> {
+        trace!("ProofRequestMessage::requested_predicates >>> predicates: {:?}", secret!(predicates));
+
         let mut check_predicates: HashMap<String, PredicateInfo> = HashMap::new();
         let attr_values: Vec<PredicateInfo> = serde_json::from_str(predicates)
             .map_err(|err| {
@@ -312,16 +316,22 @@ impl ProofRequestMessage {
 }
 
 pub fn set_proof_req_ref_message(request: &str, thread: Option<Thread>, msg_id: &str) -> VcxResult<ProofRequestMessage> {
+    trace!("set_proof_req_ref_message >>> request: {:?}, msg_id: {:?}", secret!(request), msg_id);
+
     let mut request: ProofRequestMessage = serde_json::from_str(&request)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProofRequest, format!("Cannot deserialize proof request: {}", err)))?;
 
     request.msg_ref_id = Some(msg_id.to_owned());
     request.thread_id = thread.and_then(|tr| tr.thid.clone());
 
+    trace!("set_proof_req_ref_message <<< request: {:?}", secret!(request));
+
     Ok(request)
 }
 
 pub fn parse_proof_req_message(message: &Message, my_vk: &str) -> VcxResult<ProofRequestMessage> {
+    trace!("parse_proof_req_message >>> message: {:?}, my_vk: {:?}", secret!(message), secret!(my_vk));
+
     let payload = message.payload.as_ref()
         .ok_or(VcxError::from_msg(VcxErrorKind::InvalidProofRequest, "Message does not contain payload"))?;
 
@@ -332,6 +342,8 @@ pub fn parse_proof_req_message(message: &Message, my_vk: &str) -> VcxResult<Proo
 
     request.msg_ref_id = Some(message.uid.to_owned());
     request.thread_id = thread.and_then(|tr| tr.thid.clone());
+
+    trace!("set_proof_req_ref_message <<< request: {:?}", secret!(request));
 
     Ok(request)
 }
@@ -364,6 +376,8 @@ impl ProofRequestData {
     }
 
     pub fn set_requested_attributes(mut self, requested_attrs: String) -> VcxResult<ProofRequestData> {
+        trace!("parse_proof_req_message >>> requested_attrs: {:?}", secret!(requested_attrs));
+
         let requested_attributes: Vec<AttrInfo> = ::serde_json::from_str(&requested_attrs)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, format!("Invalid Requested Attributes: {:?}. Err: {:?}", requested_attrs, err)))?;
 
@@ -376,6 +390,8 @@ impl ProofRequestData {
     }
 
     pub fn set_requested_predicates(mut self, requested_predicates: String) -> VcxResult<ProofRequestData> {
+        trace!("set_requested_predicates >>> requested_predicates: {:?}", secret!(requested_predicates));
+
         let requested_predicates: Vec<PredicateInfo> = ::serde_json::from_str(&requested_predicates)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidPredicatesStructure, format!("Invalid Requested Predicates: {:?}, err: {:?}", requested_predicates, err)))?;
 
@@ -388,6 +404,8 @@ impl ProofRequestData {
     }
 
     pub fn set_not_revoked_interval(mut self, non_revoc_interval: String) -> VcxResult<ProofRequestData> {
+        trace!("set_not_revoked_interval >>> non_revoc_interval: {:?}", secret!(non_revoc_interval));
+
         let non_revoc_interval: NonRevokedInterval = ::serde_json::from_str(&non_revoc_interval)
             .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Revocation Interval: {:?}", non_revoc_interval)))?;
 

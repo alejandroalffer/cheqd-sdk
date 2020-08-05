@@ -109,8 +109,9 @@ impl IssuerCredential {
                   credential_name: String,
                   credential_data: String,
                   price: u64) -> VcxResult<IssuerCredential> {
-        trace!("create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
-               cred_def_handle, source_id, issuer_did, credential_name, secret!( & credential_data), price);
+        trace!("IssuerCredential::create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
+               cred_def_handle, source_id, secret!(issuer_did), secret!(credential_name), secret!(credential_data), price);
+        debug!("IssuerCredential {}: Creating state object", source_id);
 
         let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
         let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle)?;
@@ -151,12 +152,17 @@ impl IssuerCredential {
 
         issuer_credential.state = VcxStateType::VcxStateInitialized;
 
+        trace!("IssuerCredential::create <<<");
+
         Ok(issuer_credential)
     }
 
     pub fn generate_credential_offer_msg(&mut self) -> VcxResult<String> {
+        trace!("IssuerCredential::generate_credential_offer_msg >>>");
+        debug!("IssuerCredential {}: Generating credential offer", self.source_id);
+
         let mut payload = Vec::new();
-        
+
         if let Some(payment_info) = self.generate_payment_info()? {
             payload.push(json!(payment_info));
         };
@@ -170,13 +176,15 @@ impl IssuerCredential {
 
         self.credential_offer = Some(credential_offer);
 
+        trace!("IssuerCredential::generate_credential_offer_msg <<< payload: {:?}", secret!(payload));
+
         Ok(payload)
     }
 
     fn send_credential_offer(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("IssuerCredential::send_credential_offer >>> connection_handle: {}", connection_handle);
+        debug!("IssuerCredential {}: Sending credential offer", self.source_id);
 
-        debug!("sending credential offer for issuer_credential {} to connection {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("credential {} has invalid state {} for sending credentialOffer", self.source_id, self.state as u32);
             return Err(VcxError::from_msg(VcxErrorKind::NotReady,
@@ -187,8 +195,6 @@ impl IssuerCredential {
         apply_agent_info(self, &agent_info);
 
         let payload = self.generate_credential_offer_msg()?;
-
-        debug!("credential offer data: {}", secret!(&payload));
 
         let response =
             messages::send_message()
@@ -213,11 +219,16 @@ impl IssuerCredential {
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateOfferSent;
 
-        debug!("sent credential offer for: {}", self.source_id);
+        debug!("IssuerCredential {}: Sent credential offer", self.source_id);
+        trace!("IssuerCredential::send_credential_offer <<<");
+
         Ok(error::SUCCESS.code_num)
     }
 
     fn generate_credential_msg(&mut self, my_pw_did: &str) -> VcxResult<String> {
+        trace!("IssuerCredential::generate_credential_msg >>>");
+        debug!("IssuerCredential {}: Generating credential offer", self.source_id);
+
         let attrs_with_encodings = self.create_attributes_encodings()?;
 
         let data = if settings::indy_mocks_enabled() {
@@ -227,13 +238,15 @@ impl IssuerCredential {
             json!(cred).to_string()
         };
 
+        trace!("IssuerCredential::generate_credential_msg <<< credential: {:?}", secret!(data));
+
         Ok(data)
     }
 
     fn send_credential(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("IssuerCredential::send_credential >>> connection_handle: {}", connection_handle);
+        debug!("IssuerCredential {}: Sending credential", self.source_id);
 
-        debug!("sending credential for issuer_credential {} to connection {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         if self.state != VcxStateType::VcxStateRequestReceived {
             warn!("credential {} has invalid state {} for sending credential", self.source_id, self.state as u32);
             return Err(VcxError::from_msg(VcxErrorKind::NotReady,
@@ -277,7 +290,9 @@ impl IssuerCredential {
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateAccepted;
 
-        debug!("issued credential: {}", self.source_id);
+        debug!("IssuerCredential {}: Sent credential", self.source_id);
+        trace!("IssuerCredential::send_credential <<<");
+
         Ok(error::SUCCESS.code_num)
     }
 
@@ -287,8 +302,10 @@ impl IssuerCredential {
 
     // TODO: The error arm of this Result is never used in any calling functions.
     // So currently there is no way to test the error status.
-    fn get_credential_offer_status(&mut self, message: Option<String>) -> VcxResult<u32> {
-        debug!("updating state for credential offer: {} msg_uid: {:?}", self.source_id, self.msg_uid);
+    fn update_credential_offer_status(&mut self, message: Option<String>) -> VcxResult<u32> {
+        trace!("IssuerCredential::update_credential_offer_status >>> message: {:?}", secret!(message));
+        debug!("IssuerCredential {}: Updating state", self.source_id);
+
         if self.state == VcxStateType::VcxStateRequestReceived {
             return Ok(self.get_state());
         }
@@ -328,29 +345,42 @@ impl IssuerCredential {
         cred_req.msg_ref_id = offer_uid;
 
         self.credential_request = Some(cred_req);
-        debug!("received credential request for credential offer: {}", self.source_id);
+        debug!("IssuerCredential {}: Received credential request for credential offer", self.source_id);
         self.state = VcxStateType::VcxStateRequestReceived;
-        Ok(self.get_state())
+
+        let state = self.get_state();
+
+        trace!("IssuerCredential::update_credential_offer_status >>> state: {:?}", state);
+
+        Ok(state)
     }
 
     fn update_state(&mut self, message: Option<String>) -> VcxResult<u32> {
         trace!("IssuerCredential::update_state >>>");
-        let result = self.get_credential_offer_status(message);
-        debug!("result: {:?}", result);
+        let result = self.update_credential_offer_status(message);
         result
         //There will probably be more things here once we do other things with the credential
     }
 
     fn get_state(&self) -> u32 {
         trace!("IssuerCredential::get_state >>>");
-        self.state as u32
+
+        let state = self.state as u32;
+
+        debug!("IssuerCredential {} is in state {}", self.source_id, self.state as u32);
+        trace!("IssuerCredential::get_state <<< state: {:?}", state);
+        state
     }
+
     fn get_offer_uid(&self) -> &String { &self.msg_uid }
 
     fn get_credential_attributes(&self) -> &String { &self.credential_attributes }
     fn get_source_id(&self) -> &String { &self.source_id }
 
     fn generate_credential(&mut self, credential_data: &str, did: &str) -> VcxResult<CredentialMessage> {
+        trace!("IssuerCredential::generate_credential >>> credential_data: {:?}, did: {:?}", secret!(credential_data), secret!(did));
+        debug!("IssuerCredential {}: Generating credential message", self.source_id);
+
         let indy_cred_offer = self.credential_offer
             .as_ref()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState,
@@ -379,7 +409,7 @@ impl IssuerCredential {
                 self.cred_def_id.clone()
             };
 
-        Ok(CredentialMessage {
+        let credential = CredentialMessage {
             claim_offer_id: self.msg_uid.clone(),
             from_did: String::from(did),
             version: String::from("0.1"),
@@ -389,17 +419,21 @@ impl IssuerCredential {
             cred_def_id,
             cred_revoc_id,
             revoc_reg_delta_json,
-        })
+        };
+
+        trace!("IssuerCredential::generate_credential >>> credential: {:?}", secret!(credential));
+        Ok(credential)
     }
 
     fn generate_credential_offer(&self) -> VcxResult<CredentialOffer> {
+        trace!("IssuerCredential::generate_credential_offer >>>");
+        debug!("IssuerCredential {}: Generating credential offer message", self.source_id);
+
         let attr_map = convert_to_map(&self.credential_attributes)?;
         let libindy_offer = anoncreds::libindy_issuer_create_credential_offer(&self.cred_def_id)?;
 
         let my_did = self.my_did.clone().unwrap_or_default();
         let their_did = self.their_did.clone().unwrap_or_default();
-
-        debug!("generate_credential_offer remote_did {}", their_did);
 
         let (libindy_offer, cred_def_id) =
             if !qualifier::is_fully_qualified(&their_did) {
@@ -409,7 +443,7 @@ impl IssuerCredential {
                 (libindy_offer, self.cred_def_id.clone())
             };
 
-        Ok(CredentialOffer {
+        let credential_offer = CredentialOffer {
             msg_type: PayloadKinds::CredOffer.name().to_string(),
             version: String::from("0.1"),
             to_did: their_did,
@@ -422,10 +456,16 @@ impl IssuerCredential {
             cred_def_id,
             libindy_offer,
             thread_id: None,
-        })
+        };
+
+        trace!("IssuerCredential::generate_credential >>> credential_offer: {:?}", secret!(credential_offer));
+        Ok(credential_offer)
     }
 
     fn revoke_cred(&mut self) -> VcxResult<()> {
+        trace!("IssuerCredential::revoke_cred >>>");
+        debug!("IssuerCredential {}: Revoking credential", self.source_id);
+
         let tails_file = self.tails_file
             .as_ref()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidRevocationDetails, "Invalid RevocationInfo: `tails_file` not found"))?;
@@ -441,6 +481,9 @@ impl IssuerCredential {
         let (payment, _) = anoncreds::revoke_credential(tails_file, rev_reg_id, cred_rev_id)?;
 
         self.rev_cred_payment_txn = payment;
+
+        trace!("IssuerCredential::revoke_cred <<<");
+
         Ok(())
     }
 
@@ -523,6 +566,8 @@ fn apply_agent_info(cred: &mut IssuerCredential, agent_info: &MyAgentInfo) {
 */
 
 pub fn encode_attributes(attributes: &str) -> VcxResult<String> {
+    trace!("encode_attributes >>> attributes: {:?}", secret!(attributes));
+
     let mut attributes: HashMap<String, serde_json::Value> = serde_json::from_str(attributes)
         .map_err(|err| {
             warn!("Invalid Json for Attribute data");
@@ -565,11 +610,14 @@ pub fn encode_attributes(attributes: &str) -> VcxResult<String> {
         dictionary.insert(attr, attrib_values);
     }
 
-    serde_json::to_string_pretty(&dictionary)
+    let attributes = serde_json::to_string_pretty(&dictionary)
         .map_err(|err| {
             warn!("Invalid Json for Attribute data");
             VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize CredentialAttributes. Err: {}", err))
-        })
+        })?;
+
+    trace!("encode_attributes <<< attributes: {:?}", secret!(attributes));
+    Ok(attributes)
 }
 
 pub fn get_encoded_attributes(handle: u32) -> VcxResult<String> {
@@ -577,7 +625,7 @@ pub fn get_encoded_attributes(handle: u32) -> VcxResult<String> {
         match obj {
             IssuerCredentials::Pending(ref obj) => obj.create_attributes_encodings(),
             IssuerCredentials::V1(ref obj) => obj.create_attributes_encodings(),
-            IssuerCredentials::V3(_) =>  Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries IssuerCredential type doesn't support this action: `get_encoded_attributes`."))
+            IssuerCredentials::V3(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries IssuerCredential type doesn't support this action: `get_encoded_attributes`."))
         }
     }).map_err(handle_err)
 }
@@ -609,7 +657,8 @@ pub fn issuer_credential_create(cred_def_handle: u32,
                                 credential_data: String,
                                 price: u64) -> VcxResult<u32> {
     trace!("issuer_credential_create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
-           cred_def_handle, source_id, issuer_did, credential_name, secret!(&credential_data), price);
+           cred_def_handle, source_id, secret!(issuer_did), secret!(credential_name), secret!(&credential_data), price);
+    debug!("creating issuer credential {} state object", source_id);
 
 //    // Initiate connection of new format -- redirect to v3 folder
 //    if settings::is_aries_protocol_set() {
@@ -620,7 +669,8 @@ pub fn issuer_credential_create(cred_def_handle: u32,
     let issuer_credential = IssuerCredential::create(cred_def_handle, source_id, issuer_did, credential_name, credential_data, price)?;
 
     let handle = ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::Pending(issuer_credential))?;
-    debug!("creating issuer_credential {} with handle {}", get_source_id(handle).unwrap_or_default(), handle);
+    debug!("created issuer_credential {} with handle {}", get_source_id(handle).unwrap_or_default(), handle);
+    trace!("issuer_credential_create <<< handle: {:?}", handle);
 
     Ok(handle)
 }
@@ -637,8 +687,7 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
                     .or_else(|_| Ok(obj.get_state()))
             }
             IssuerCredentials::V3(ref mut obj) => {
-                obj.update_status(message.clone())?;
-                obj.get_state()
+                obj.update_status(message.clone())
             }
         }
     }).map_err(handle_err)
@@ -701,6 +750,7 @@ pub fn send_credential_offer(handle: u32, connection_handle: u32) -> VcxResult<u
             IssuerCredentials::Pending(ref mut obj) => {
                 // if Aries connection is established --> Convert Pending object to Aries credential
                 if ::connection::is_v3_connection(connection_handle)? {
+                    debug!("converting pending issuer credential into aries object");
                     let mut issuer = Issuer::create(obj.cred_def_handle, &obj.credential_attributes, &obj.source_id, &obj.credential_name)?;
                     issuer.send_credential_offer(connection_handle)?;
 

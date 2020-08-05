@@ -104,6 +104,8 @@ impl UpdateProfileDataBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
+        trace!("UpdateProfileData::prepare_request >>>");
+
         let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -126,12 +128,16 @@ impl UpdateProfileDataBuilder {
                 )
         };
 
+        trace!("UpdateProfileData::prepare_request >>> messages: {:?}", secret!(message));
+
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
         prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<()> {
+        trace!("UpdateProfileData::parse_response >>>");
+
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {

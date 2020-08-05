@@ -33,7 +33,7 @@ pub fn libindy_verifier_verify_proof(proof_req_json: &str,
 }
 
 pub fn libindy_create_and_store_revoc_reg(issuer_did: &str, cred_def_id: &str, tails_path: &str, max_creds: u32) -> VcxResult<(String, String, String)> {
-    trace!("creating revocation: {}, {}, {}", cred_def_id, tails_path, max_creds);
+    trace!("creating revocation: {}, {}, {}", secret!(cred_def_id), secret!(tails_path), secret!(max_creds));
 
     let tails_config = json!({"base_dir": tails_path,"uri_pattern": ""}).to_string();
 

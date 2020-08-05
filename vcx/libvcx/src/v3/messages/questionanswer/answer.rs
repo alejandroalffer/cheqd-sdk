@@ -66,6 +66,8 @@ impl Answer {
     }
 
     pub fn sign(mut self, question: &Question, key: &str) -> VcxResult<Self> {
+        trace!("Answer::sign >>> question: {:?}", secret!(question));
+
         let mut sig_data = question.question_text.as_bytes().to_vec();
         sig_data.extend(self.response.as_bytes());
         sig_data.extend(question.nonce.as_bytes());
@@ -87,10 +89,13 @@ impl Answer {
             ..Default::default()
         });
 
+        trace!("Answer::sign <<<");
         Ok(self)
     }
 
     pub fn verify(&self, key: &str) -> VcxResult<()>{
+        trace!("Answer::verify >>> self: {:?}", secret!(self));
+
         if let Some(ref response_sig) = self.response_sig.as_ref() {
             let signature = base64::decode_config(&response_sig.signature.as_bytes(), base64::URL_SAFE)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot decode AnswerSignature: {:?}", err)))?;
@@ -102,6 +107,8 @@ impl Answer {
                 return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "Answer signature is invalid for pairwise key"));
             }
         }
+
+        trace!("Answer::verify <<<");
         Ok(())
     }
 

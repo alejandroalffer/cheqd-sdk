@@ -80,7 +80,8 @@ impl Proof {
                   requested_predicates: String,
                   revocation_details: String,
                   name: String) -> VcxResult<Proof> {
-        trace!("create >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}", source_id, requested_attrs, requested_predicates, name);
+        trace!("Proof::create >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}",
+               source_id, secret!(requested_attrs), secret!(requested_predicates), secret!(name));
 
         // TODO: Get this to actually validate as json, not just check length.
         if requested_attrs.len() <= 0 { return Err(VcxError::from(VcxErrorKind::InvalidAttributesStructure)); }
@@ -88,7 +89,7 @@ impl Proof {
         let revocation_details: RevocationInterval = serde_json::from_str(&revocation_details)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse RevocationInterval from JSON string. Err: {:?}", err)))?;
 
-        debug!("creating proof with source_id: {}, name: {}, requested_attrs: {}, requested_predicates: {}", source_id, name, requested_attrs, requested_predicates);
+        debug!("Proof {}: Creating state object", source_id);
 
         let mut new_proof = Proof {
             source_id,
@@ -117,6 +118,8 @@ impl Proof {
 
         new_proof.state = VcxStateType::VcxStateInitialized;
 
+        trace!("Proof::create <<<");
+
         Ok(new_proof)
     }
 
@@ -129,6 +132,9 @@ impl Proof {
 
 
     pub fn validate_proof_revealed_attributes(proof_json: &str) -> VcxResult<()> {
+        trace!("Proof::validate_proof_revealed_attributes >>> proof_json: {}", secret!(proof_json));
+        debug!("Proof: Validating proof revealed attributes");
+
         if settings::indy_mocks_enabled() { return Ok(()); }
 
         let proof: Value = serde_json::from_str(proof_json)
@@ -150,11 +156,14 @@ impl Proof {
             }
         }
 
+        trace!("Proof::validate_proof_revealed_attributes <<<");
+
         Ok(())
     }
 
     pub fn build_credential_defs_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("building credential_def_json for proof validation");
+        trace!("Proof::build_credential_defs_json >>> credential_data: {:?}", secret!(credential_data));
+        debug!("Proof: Building credential definitions for proof validation");
         let mut credential_json = json!({});
 
         for ref cred_info in credential_data.iter() {
@@ -168,11 +177,14 @@ impl Proof {
             }
         }
 
+        trace!("Proof::build_credential_defs_json >>> cred_defs: {}", secret!(credential_json));
+
         Ok(credential_json.to_string())
     }
 
     pub fn build_schemas_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("building schemas json for proof validation");
+        trace!("Proof::build_schemas_json >>> credential_data: {:?}", secret!(credential_data));
+        debug!("Proof: Building schemas for proof validation");
 
         let mut schemas_json = json!({});
 
@@ -187,11 +199,14 @@ impl Proof {
             }
         }
 
+        trace!("Proof::build_schemas_json >>> schemas_json: {}", secret!(schemas_json));
+
         Ok(schemas_json.to_string())
     }
 
     pub fn build_rev_reg_defs_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("building rev_reg_def_json for proof validation");
+        trace!("Proof::build_rev_reg_defs_json >>> credential_data: {:?}", secret!(credential_data));
+        debug!("Proof: Building revocation registry definitions for proof validation");
 
         let mut rev_reg_defs_json = json!({});
 
@@ -213,11 +228,14 @@ impl Proof {
             }
         }
 
+        trace!("Proof::build_rev_reg_defs_json >>> rev_reg_defs_json: {}", secret!(rev_reg_defs_json));
+
         Ok(rev_reg_defs_json.to_string())
     }
 
     pub fn build_rev_reg_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("building rev_reg_json for proof validation");
+        trace!("Proof::build_rev_reg_json >>> credential_data: {:?}", secret!(credential_data));
+        debug!("Proof: building revocation registries for proof validation");
 
         let mut rev_regs_json = json!({});
 
@@ -245,11 +263,13 @@ impl Proof {
             }
         }
 
+        trace!("Proof::build_rev_reg_defs_json >>> rev_regs_json: {}", secret!(rev_regs_json));
+
         Ok(rev_regs_json.to_string())
     }
 
     fn build_proof_json(&self) -> VcxResult<String> {
-        debug!("{} building proof json for proof validation", self.source_id);
+        debug!("Proof {}: Vuilding proof json for proof validation", self.source_id);
         match self.proof {
             Some(ref x) => Ok(x.libindy_proof.clone()),
             None => Err(VcxError::from_msg(VcxErrorKind::InvalidState,  format!("Invalid {} Proof object state: `libindy_proof` not found", self.source_id)))?
@@ -257,7 +277,7 @@ impl Proof {
     }
 
     fn build_proof_req_json(&self) -> VcxResult<String> {
-        debug!("{} building proof request json for proof validation", self.source_id);
+        debug!("Proof {}: Building proof request json for proof validation", self.source_id);
         match self.proof_request {
             Some(ref x) => Ok(x.get_proof_request_data()),
             None => Err(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Proof object state: `proof_request` not found", self.source_id)))?
@@ -265,6 +285,9 @@ impl Proof {
     }
 
     fn proof_validation(&mut self) -> VcxResult<u32> {
+        trace!("Proof::proof_validation >>>");
+        debug!("Proof {}: Validating received proof", self.source_id);
+
         let proof_json = self.build_proof_json()?;
         let proof_req_json = self.build_proof_req_json()?;
 
@@ -282,10 +305,16 @@ impl Proof {
 
         debug!("Indy validated proof: {}", self.source_id);
         self.proof_state = ProofStateType::ProofValidated;
+
+        trace!("Proof::proof_validation <<< proof_state: {:?}", self.proof_state);
+
         Ok(error::SUCCESS.code_num)
     }
 
     pub fn validate_indy_proof(proof_json: &str, proof_req_json: &str) -> VcxResult<bool> {
+        trace!("Proof::validate_indy_proof >>> proof_json: {:?}, proof_req_json: {:?}", secret!(proof_json), secret!(proof_req_json));
+        debug!("Proof: Validating indy proof");
+
         if settings::indy_mocks_enabled() { return Ok(true); }
 
         Proof::validate_proof_revealed_attributes(&proof_json)?;
@@ -301,21 +330,27 @@ impl Proof {
         let rev_regs_json = Proof::build_rev_reg_json(&credential_data)
             .unwrap_or(json!({}).to_string());
 
-        debug!("*******\n{}\n********", credential_defs_json);
-        debug!("*******\n{}\n********", schemas_json);
-        debug!("*******\n{}\n********", proof_json);
-        debug!("*******\n{}\n********", proof_req_json);
-        debug!("*******\n{}\n********", rev_reg_defs_json);
-        debug!("*******\n{}\n********", rev_regs_json);
-        anoncreds::libindy_verifier_verify_proof(proof_req_json,
+        debug!("*******\n{}\n********", secret!(credential_defs_json));
+        debug!("*******\n{}\n********", secret!(schemas_json));
+        debug!("*******\n{}\n********", secret!(proof_json));
+        debug!("*******\n{}\n********", secret!(proof_req_json));
+        debug!("*******\n{}\n********", secret!(rev_reg_defs_json));
+        debug!("*******\n{}\n********", secret!(rev_regs_json));
+        let valid = anoncreds::libindy_verifier_verify_proof(proof_req_json,
                                                  proof_json,
                                                  &schemas_json,
                                                  &credential_defs_json,
                                                  &rev_reg_defs_json,
-                                                 &rev_regs_json)
+                                                 &rev_regs_json)?;
+
+        trace!("Proof::validate_indy_proof >>> valid: {:?}", valid);
+        Ok(valid)
     }
 
     fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
+        trace!("Proof::generate_proof_request_msg >>>");
+        debug!("Proof {}: Generating proof request message", self.source_id);
+
         let their_did = self.their_did.clone().unwrap_or_default();
         let version = if qualifier::is_fully_qualified(&their_did) {
             Some(ProofRequestVersion::V2)
@@ -336,18 +371,21 @@ impl Proof {
             .to_string()?;
 
         self.proof_request = Some(proof_obj);
+
+        trace!("Proof::generate_proof_request_msg <<< proof_request: {:?}", secret!(self.proof_request ));
+
         Ok(proof_request)
     }
 
     fn send_proof_request(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("Proof::send_proof_request >>> connection_handle: {}", connection_handle);
+        debug!("Proof {}: Snding proof request", self.source_id);
 
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("proof {} has invalid state {} for sending proofRequest", self.source_id, self.state as u32);
             return Err(VcxError::from_msg(VcxErrorKind::NotReady,
                                           format!("Proof object {} has invalid state {} for sending ProofRequest", self.source_id, self.state as u32)));
         }
-        debug!("sending proof request with proof: {}, and connection {}", self.source_id, connection_handle);
         let agent_info = get_agent_info()?.pw_info(connection_handle)?;
         apply_agent_info(self, &agent_info);
 
@@ -370,8 +408,13 @@ impl Proof {
             .send_secure()
             .map_err(|err| err.extend("Cannot send proof request"))?;
 
+
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateOfferSent;
+
+        debug!("Proof {}: Proof request sent", self.source_id);
+        trace!("Proof::send_proof_request <<<");
+
         Ok(error::SUCCESS.code_num)
     }
 
@@ -382,7 +425,9 @@ impl Proof {
     }
 
     fn get_proof_request_status(&mut self, message: Option<String>) -> VcxResult<u32> {
-        debug!("updating state for proof {} with msg_id {:?}", self.source_id, self.msg_uid);
+        trace!("Proof::get_proof_request_status >>> message: {:?}", secret!(message));
+        debug!("Proof {}: Updating state", self.source_id);
+
         if self.state == VcxStateType::VcxStateAccepted {
             return Ok(self.get_state());
         } else if message.is_none() &&
@@ -413,7 +458,6 @@ impl Proof {
             }
             Some(ref message) => message.clone(),
         };
-        debug!("proof: {}", payload);
 
         self.proof = match parse_proof_payload(&payload) {
             Err(_) => return Ok(self.get_state()),
@@ -439,7 +483,10 @@ impl Proof {
             };
         }
 
-        Ok(self.get_state())
+        let state = self.get_state();
+
+        trace!("Proof::get_proof_request_status <<< state: {}", state);
+        Ok(state)
     }
 
     fn update_state(&mut self, message: Option<String>) -> VcxResult<u32> {
@@ -449,11 +496,22 @@ impl Proof {
 
     fn get_state(&self) -> u32 {
         trace!("Proof::get_state >>>");
-        self.state as u32
+
+        let state = self.state as u32;
+
+        debug!("Proof {} is in state {}", self.source_id, self.state as u32);
+        trace!("Proof::get_state <<< state: {:?}", state);
+        state
     }
 
     fn get_proof_state(&self) -> u32 {
-        self.proof_state as u32
+        trace!("Proof::get_proof_state >>>");
+
+        let state = self.proof_state as u32;
+
+        debug!("Proof {} is in state {}", self.source_id, self.state as u32);
+        trace!("Proof::get_proof_state <<< state: {:?}", state);
+        state
     }
 
     fn get_proof_uuid(&self) -> &String { &self.msg_uid }
@@ -489,12 +547,19 @@ pub fn create_proof(source_id: String,
 //            .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
 //    }
 
-    trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}", source_id, requested_attrs, requested_predicates, name);
+    trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}",
+           source_id, secret!(requested_attrs), secret!(requested_predicates), secret!(name));
+    debug!("creating proof state object {}", source_id);
 
     let proof = Proof::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
 
-    PROOF_MAP.add(Proofs::Pending(proof))
-        .or(Err(VcxError::from(VcxErrorKind::CreateProof)))
+    let handle = PROOF_MAP.add(Proofs::Pending(proof))
+        .or(Err(VcxError::from(VcxErrorKind::CreateProof)))?;
+
+    debug!("created proof {} with handle {}", get_source_id(handle).unwrap_or_default(), handle);
+    trace!("create_proof <<< handle: {:?}", handle);
+
+    Ok(handle)
 }
 
 fn apply_agent_info(proof: &mut Proof, agent_info: &MyAgentInfo) {
@@ -522,8 +587,7 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
                     .or_else(|_| Ok(obj.get_state()))
             }
             Proofs::V3(ref mut obj) => {
-                obj.update_state(message.as_ref().map(String::as_str))?;
-                Ok(obj.state())
+                obj.update_state(message.as_ref().map(String::as_str))
             }
         }
     }).map_err(handle_err)
@@ -597,6 +661,8 @@ pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32>
             Proofs::Pending(ref mut obj) => {
                 // if Aries connection is established --> Convert Pending object to V3 Aries proof
                 if ::connection::is_v3_connection(connection_handle)? {
+                    debug!("converting pending proof into aries object");
+
                     let revocation_details = serde_json::to_string(&obj.revocation_interval)
                         .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize RevocationDetails. Err: {:?}", err)))?;
 

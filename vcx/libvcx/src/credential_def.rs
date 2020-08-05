@@ -132,7 +132,7 @@ pub fn create_credentialdef_from_id(_source_id: String,
                                     issuer_did: String,
                                     revocation_config: Option<String>) -> VcxResult<u32> {
     trace!("create_credentialdef_from_id >>> source_id: {}, cred_def_id: {}, issuer_did: {}",
-           _source_id, cred_def_id, issuer_did);
+           _source_id, secret!(cred_def_id), secret!(issuer_did));
 
     let rev_config = RevocationConfig::from_str(
         revocation_config
@@ -177,6 +177,9 @@ fn _create_credentialdef(issuer_did: &str,
                          schema_id: &str,
                          tag: &str,
                          revocation_details: &RevocationDetails) -> VcxResult<(String, String, Option<String>, Option<String>, Option<String>)> {
+    trace!("_create_credentialdef >>> issuer_did: {}, schema_id: {}, tag: {}, revocation_details: {:?}",
+           secret!(issuer_did), secret!(schema_id), secret!(tag), secret!(revocation_details));
+
     let (_, schema_json) = anoncreds::get_schema_json(&schema_id)?;
 
     let (cred_def_id, cred_def_json) = anoncreds::generate_cred_def(issuer_did,
@@ -205,6 +208,9 @@ fn _create_credentialdef(issuer_did: &str,
         _ => (None, None, None),
     };
 
+    trace!("_create_credentialdef <<< cred_def_id: {}, cred_def_json: {}, rev_reg_id: {:?}, rev_reg_def: {:?}, rev_reg_entry: {:?}",
+           secret!(cred_def_id), secret!(cred_def_json), secret!(rev_reg_id), secret!(rev_reg_def), secret!(rev_reg_entry));
+
     Ok((cred_def_id, cred_def_json, rev_reg_id, rev_reg_def, rev_reg_entry))
 }
 
@@ -216,7 +222,8 @@ pub fn prepare_credentialdef_for_endorser(source_id: String,
                                           revocation_details: String,
                                           endorser: String) -> VcxResult<(u32, String, Option<String>, Option<String>)> {
     trace!("prepare_credentialdef_for_endorser >>> source_id: {}, name: {}, issuer_did: {}, schema_id: {}, revocation_details: {}, endorser: {}",
-           source_id, name, issuer_did, schema_id, revocation_details, endorser);
+           source_id, secret!(name), secret!(issuer_did), secret!(schema_id), secret!(revocation_details), secret!(endorser));
+    debug!("prepare credentialdef for next endorsing");
 
     let revocation_details: RevocationDetails = _parse_revocation_details(&revocation_details)?;
 
@@ -263,6 +270,9 @@ pub fn prepare_credentialdef_for_endorser(source_id: String,
 
     let handle = CREDENTIALDEF_MAP.add(cred_def).or(Err(VcxError::from(VcxErrorKind::CreateCredDef)))?;
 
+    trace!("prepare_credentialdef_for_endorser <<< handle: {}, cred_def_req: {}, rev_reg_def_req: {:?}, rev_reg_delta_req: {:?}",
+           handle, secret!(cred_def_req), secret!(rev_reg_def_req), secret!(rev_reg_delta_req));
+
     Ok((handle, cred_def_req, rev_reg_def_req, rev_reg_delta_req))
 }
 
@@ -272,8 +282,9 @@ pub fn create_and_publish_credentialdef(source_id: String,
                                         schema_id: String,
                                         tag: String,
                                         revocation_details: String) -> VcxResult<u32> {
-    trace!("create_new_credentialdef >>> source_id: {}, name: {}, issuer_did: {}, schema_id: {}, revocation_details: {}",
-           source_id, name, issuer_did, schema_id, revocation_details);
+    trace!("create_and_publish_credentialdef >>> source_id: {}, name: {}, issuer_did: {}, schema_id: {}, revocation_details: {}",
+           source_id, secret!(name), secret!(issuer_did), secret!(schema_id), secret!(revocation_details));
+    debug!("creating and publishing credentiadef");
 
     let revocation_details: RevocationDetails = _parse_revocation_details(&revocation_details)?;
 
@@ -314,6 +325,8 @@ pub fn create_and_publish_credentialdef(source_id: String,
     };
 
     let handle = CREDENTIALDEF_MAP.add(cred_def).or(Err(VcxError::from(VcxErrorKind::CreateCredDef)))?;
+
+    trace!("create_and_publish_credentialdef <<< handle: {}", handle);
 
     Ok(handle)
 }

@@ -11,6 +11,7 @@ pub const KEY_AUTHENTICATION_TYPE: &str = "Ed25519SignatureAuthentication2018";
 pub const SERVICE_SUFFIX: &str = "indy";
 pub const SERVICE_TYPE: &str = "IndyAgent";
 pub const SERVICE_ID: &str = "#inline";
+pub const OUTOFBAND_SERVICE_TYPE: &str = "did-communication";
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct DidDoc {
@@ -145,6 +146,8 @@ impl DidDoc {
     }
 
     pub fn validate(&self) -> VcxResult<()> {
+        trace!("DidDoc::validate >>> {:?}", secret!(self));
+
         if self.context != CONTEXT {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)));
         }
@@ -168,6 +171,7 @@ impl DidDoc {
                 .collect::<VcxResult<()>>()?;
         }
 
+        trace!("DidDoc::validate <<<");
         Ok(())
     }
 
@@ -298,6 +302,11 @@ impl Service {
 
     pub fn set_id(mut self, id: String)-> Self {
         self.id = id;
+        self
+    }
+
+    pub fn set_type(mut self, type_: String)-> Self {
+        self.type_ = type_;
         self
     }
 

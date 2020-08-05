@@ -42,7 +42,7 @@ impl MyAgentInfo {
 
     pub fn my_pw_did(&self) -> VcxResult<String> { self.retrieve(&self.my_pw_did, get_pw_did) }
 
-    pub fn my_pw_vk(&self) -> VcxResult<String> {  self.retrieve(&self.my_pw_vk, get_pw_verkey) }
+    pub fn my_pw_vk(&self) -> VcxResult<String> { self.retrieve(&self.my_pw_vk, get_pw_verkey) }
 
     pub fn their_pw_did(&self) -> VcxResult<String> { self.retrieve(&self.their_pw_did, get_their_pw_did) }
 
@@ -71,14 +71,14 @@ impl MyAgentInfo {
     fn log(&self) {
         debug!("my_pw_did: {:?} -- my_pw_vk: {:?} -- their_pw_did: {:?} -- pw_agent_did: {:?} \
         -- pw_agent_vk: {:?} -- their_pw_vk: {:?}-- agent_did: {} -- agent_vk: {} -- version: {:?}",
-               self.my_pw_did,
-               self.my_pw_vk,
-               self.their_pw_did,
-               self.their_pw_vk,
-               self.pw_agent_did,
-               self.pw_agent_vk,
-               self.agent_did,
-               self.agent_vk,
+               secret!(self.my_pw_did),
+               secret!(self.my_pw_vk),
+               secret!(self.their_pw_did),
+               secret!(self.their_pw_vk),
+               secret!(self.pw_agent_did),
+               secret!(self.pw_agent_vk),
+               secret!(self.agent_did),
+               secret!(self.agent_vk),
                self.version,
         );
     }

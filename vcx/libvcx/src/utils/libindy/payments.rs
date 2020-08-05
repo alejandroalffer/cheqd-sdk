@@ -87,7 +87,7 @@ pub fn build_test_address(address: &str) -> String {
 }
 
 pub fn create_address(seed: Option<String>) -> VcxResult<String> {
-    trace!("create_address >>> seed: {:?}", seed);
+    trace!("create_address >>> seed: {:?}", secret!(seed));
 
     if settings::indy_mocks_enabled() {
         return Ok(build_test_address("J81AxU9hVHYFtJc"));
@@ -104,7 +104,7 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
 }
 
 pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
-    trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
+    trace!("sign_with_address >>> address: {:?}, message: {:?}", secret!(address), secret!(message));
 
     if settings::indy_mocks_enabled() {return Ok(Vec::from(message).to_owned()); }
 
@@ -112,7 +112,7 @@ pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
 }
 
 pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> VcxResult<bool> {
-    trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
+    trace!("sign_with_address >>> address: {:?}, message: {:?}", secret!(address), secret!(message));
 
     if settings::indy_mocks_enabled() { return Ok(true); }
 
@@ -222,13 +222,13 @@ pub fn get_wallet_token_info() -> VcxResult<WalletInfo> {
 
     let info = WalletInfo { balance, balance_str: format!("{}", balance), addresses: wallet_info };
 
-    trace!("get_wallet_token_info <<< info: {:?}", info);
+    trace!("get_wallet_token_info <<< info: {:?}", secret!(info));
 
     Ok(info)
 }
 
 pub fn get_ledger_fees() -> VcxResult<String> {
-    trace!("get_ledger_fees >>>");
+    debug!("Ledger: Getting ledger fees");
 
     if settings::indy_mocks_enabled() { return Ok(DEFAULT_FEES.to_string()); }
 
@@ -245,7 +245,7 @@ pub fn get_ledger_fees() -> VcxResult<String> {
 }
 
 pub fn send_transaction(req: &str, txn_action: (&str, &str, &str, Option<&str>, Option<&str>)) -> VcxResult<(Option<PaymentTxn>, String)> {
-    debug!("send_transaction(req: {}, txn_action: {:?})", req, txn_action);
+    debug!("send_transaction(req: {}, txn_action: {:?})", secret!(req), secret!(txn_action));
 
     if settings::indy_mocks_enabled() {
         let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
@@ -265,7 +265,7 @@ pub fn send_transaction(req: &str, txn_action: (&str, &str, &str, Option<&str>, 
         let txn_response = _submit_request(req)?;
         Ok((None, txn_response))
     } else {
-        debug!("Payment is required to perform transaction. Price: {}", txn_price);
+        debug!("Payment is required to perform transaction. Price: {}", secret!(txn_price));
 
         let (refund, inputs, refund_address) = inputs(txn_price)?;
         let output = outputs(refund, &refund_address, None, None)?;
@@ -317,8 +317,8 @@ fn _submit_request_with_fees(req: &str, inputs: &Vec<String>, outputs: &Vec<Outp
 }
 
 pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)> {
-    trace!("pay_a_payee >>> price: {}, address {}", price, address);
-    debug!("sending {} tokens to address {}", price, address);
+    trace!("pay_a_payee >>> price: {}, address {}", secret!(price), secret!(address));
+    debug!("sending {} tokens to address {}", secret!(price), secret!(address));
 
     let ledger_cost = get_action_price(CREATE_TRANSFER_ACTION, None)?;
     let (remainder, input, refund_address) = inputs(price + ledger_cost)?;
@@ -372,6 +372,8 @@ fn get_request_info(get_auth_rule_resp_json: &str, requester_info_json: &str, fe
 }
 
 pub fn get_request_price(action_json: String, requester_info_json: Option<String>) -> VcxResult<u64> {
+    debug!("Ledger: Getting request price");
+
     let action: auth_rule::Action = ::serde_json::from_str(&action_json)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Action: {:?}", err)))?;
 
@@ -384,7 +386,7 @@ pub fn get_request_price(action_json: String, requester_info_json: Option<String
 }
 
 fn get_action_price(action: (&str, &str, &str, Option<&str>, Option<&str>), requester_info_json: Option<String>) -> VcxResult<u64> {
-    trace!("Get transaction price for performing action: {:?}", action);
+    trace!("Get transaction price for performing action: {:?}", secret!(action));
 
     let get_auth_rule_resp = match auth_rule::get_action_auth_rule(action) {
         // TODO: Huck to save backward compatibility
@@ -438,7 +440,7 @@ pub fn inputs(cost: u64) -> VcxResult<(u64, Vec<String>, String)> {
     let wallet_info: WalletInfo = get_wallet_token_info()?;
 
     if wallet_info.balance < cost {
-        warn!("not enough tokens in wallet to pay: balance: {}, cost: {}", wallet_info.balance, cost);
+        warn!("not enough tokens in wallet to pay: balance: {}, cost: {}", secret!(wallet_info.balance), secret!(cost));
         return Err(VcxError::from_msg(VcxErrorKind::InsufficientTokenAmount, format!("Not enough tokens in wallet to pay: balance: {}, cost: {}", wallet_info.balance, cost)));
     }
 
@@ -477,7 +479,7 @@ pub fn outputs(remainder: u64, refund_address: &str, payee_address: Option<Strin
 // This is used for testing purposes only!!!
 pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>, fees: Option<String>, seed: Option<String>) -> VcxResult<()> {
     trace!("mint_tokens_and_set_fees >>> number_of_addresses: {:?}, tokens_per_address: {:?}, fees: {:?}, seed: {:?}",
-           number_of_addresses, tokens_per_address, fees, seed);
+           number_of_addresses, secret!(tokens_per_address), fees, secret!(seed));
 
     let did_1 = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 

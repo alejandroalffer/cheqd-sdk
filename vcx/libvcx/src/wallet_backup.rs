@@ -90,6 +90,7 @@ impl WalletBackup {
     }
 
     fn update_state(&mut self, message: Option<Message>) -> VcxResult<u32> {
+        trace!("WalletBackup::update_state >>> message: {:?}", secret!(message));
         debug!("updating state for wallet_backup {}", self.source_id);
         if settings::agency_mocks_enabled() { return Ok(self.get_state()); }
 
@@ -105,7 +106,10 @@ impl WalletBackup {
                 },
             _ => ()
         }
-        Ok(self.get_state())
+
+        let state = self.get_state();
+        trace!("WalletBackup::update_state <<< state: {:?}", state);
+        Ok(state)
     }
 
     pub fn create(source_id: &str, wallet_encryption_key: &str) -> VcxResult<WalletBackup> {
@@ -120,7 +124,8 @@ impl WalletBackup {
     }
 
     fn init_backup(&mut self) -> VcxResult<u32> {
-        trace!("init_backup >>> ");
+        trace!("WalletBackup::init_backup >>> ");
+        debug!("initializing wallet backup");
 
         messages::wallet_backup_init()
             .recovery_vk(&self.keys.recovery_vk)?
@@ -130,10 +135,15 @@ impl WalletBackup {
 
         self.state = WalletBackupState::InitRequested;
 
+        trace!("WalletBackup::init_backup <<< ");
+
         Ok(error::SUCCESS.code_num)
     }
 
     fn backup(&mut self, exported_wallet_path: &str) -> VcxResult<u32> {
+        trace!("WalletBackup::backup >>> exported_wallet_path: {:?}", secret!(exported_wallet_path));
+        debug!("sending wallet backup on agent");
+
         let wallet_data = _read_exported_wallet(&self.keys.wallet_encryption_key, exported_wallet_path)?;
 
         if wallet_data.len() > MAX_WALLET_SIZE {
@@ -146,6 +156,8 @@ impl WalletBackup {
             .send_secure()?;
 
         self.state = WalletBackupState::BackupInProgress;
+
+        trace!("WalletBackup::backup <<<");
 
         Ok(error::SUCCESS.code_num)
     }
@@ -167,36 +179,49 @@ impl WalletBackup {
 
 pub fn create_wallet_backup(source_id: &str, wallet_encryption_key: &str) -> VcxResult<u32> {
     info!("create_wallet_backup >>> source_id: {}", source_id);
+    debug!("creating wallet backup {}", source_id);
 
     let mut wb = WalletBackup::create(source_id, wallet_encryption_key)?;
 
     wb.init_backup()?;
 
-    WALLET_BACKUP_MAP.add(wb)
-        .or(Err(VcxError::from(VcxErrorKind::CreateWalletBackup)))
+    let handle = WALLET_BACKUP_MAP.add(wb)
+        .or(Err(VcxError::from(VcxErrorKind::CreateWalletBackup)))?;
+
+    info!("create_wallet_backup <<< handle: {}", handle);
+    Ok(handle)
 }
 
 fn gen_keys(wallet_encryption_key: &str) -> VcxResult<WalletBackupKeys> {
-    info!("gen_keys >>> encryption_key: ***");
+    info!("gen_keys >>> encryption_key: {}", secret!(wallet_encryption_key));
+    debug!("generating backup keys");
 
     let vk = &gen_vk(wallet_encryption_key)?;
 
-    Ok(WalletBackupKeys {
+    let keys = WalletBackupKeys {
         wallet_encryption_key: wallet_encryption_key.to_string(),
         recovery_vk: vk.to_string(),
         dead_drop_address: gen_deaddrop_address(vk)?,
         cloud_address: gen_cloud_address(vk)?,
-    })
+    };
+
+    info!("gen_keys <<< keys: {:?}", secret!(keys));
+    Ok(keys)
 }
 
 fn gen_vk(wallet_encryption_key: &str) -> VcxResult<String> {
+    info!("gen_vk >>> wallet_encryption_key: {}", secret!(wallet_encryption_key));
+
     if settings::agency_mocks_enabled() { return Ok(settings::DEFAULT_WALLET_BACKUP_KEY.to_string()); }
 
     let vk_seed = sha256_hex(wallet_encryption_key.as_bytes());
 
-    create_key(Some(&vk_seed))
+    let key = create_key(Some(&vk_seed))
         .and_then(|v| _add_generated_vk(&wallet_encryption_key, &v))
-        .or_else(|e| _handle_duplicate_vk(e, &wallet_encryption_key))
+        .or_else(|e| _handle_duplicate_vk(e, &wallet_encryption_key))?;
+
+    info!("gen_vk <<< key: {}", secret!(key));
+    Ok(key)
 }
 
 fn _add_generated_vk(id: &str, vk: &str) -> VcxResult<String> {
@@ -213,18 +238,23 @@ fn _handle_duplicate_vk(err: VcxError, id: &str) -> VcxResult<String> {
 }
 
 fn gen_deaddrop_address(vk: &str) -> VcxResult<DeadDropAddress> {
-    info!("gen_deaddrop_address >>> vk: {}", vk);
+    trace!("gen_deaddrop_address >>> vk: {}", secret!(vk));
+    info!("generating dead drop address");
     if settings::agency_mocks_enabled() { return Ok(DeadDropAddress { address: String::new(), locator: String::new() }); }
 
     let locator = sha256_hex(&sign(vk, "wallet-backup".as_bytes())?);
-    Ok(DeadDropAddress {
+    let dead_drop_addr = DeadDropAddress {
         locator: locator.to_string(),
         address: sha256_hex((vk.to_string() + &locator).as_bytes()),
-    })
+    };
+    trace!("gen_deaddrop_address <<< dead_drop_addr: {:?}", secret!(dead_drop_addr));
+    Ok(dead_drop_addr)
 }
 
 fn gen_cloud_address(vk: &str) -> VcxResult<Vec<u8>> {
-    info!("gen_cloud_address >>> vk: {}", vk);
+    trace!("gen_cloud_address >>> vk: {}", secret!(vk));
+    info!("generating cloud address");
+
     if settings::agency_mocks_enabled() { return Ok(Vec::new()); }
     let cloud_address = CloudAddress {
         version: None,
@@ -243,13 +273,15 @@ fn gen_cloud_address(vk: &str) -> VcxResult<Vec<u8>> {
     be done in a separate libindy api call if necessary.
  */
 pub fn backup_wallet(handle: u32, exported_wallet_path: &str) -> VcxResult<u32> {
-    info!("backup_wallet >>> handle: {}, export_path: {}", handle, exported_wallet_path);
+    info!("backup_wallet >>> handle: {}, export_path: {}", handle, secret!(exported_wallet_path));
     WALLET_BACKUP_MAP.get_mut(handle, |wb| {
         wb.backup(exported_wallet_path)
     })
 }
 
 fn _read_exported_wallet(backup_key: &str, exported_wallet_path: &str) -> VcxResult<Vec<u8>> {
+    trace!("_read_exported_wallet >>> backup_key: {}, exported_wallet_path: {}", secret!(backup_key), secret!(exported_wallet_path));
+
     if settings::agency_mocks_enabled() { return Ok(Vec::new()); }
 
     let tmp_dir = _unique_tmp_dir(exported_wallet_path)?;
@@ -266,18 +298,23 @@ fn _read_exported_wallet(backup_key: &str, exported_wallet_path: &str) -> VcxRes
         })
         .map_err(|_| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
 
+    trace!("_read_exported_wallet <<<");
+
     Ok(data)
 }
 
 
 pub fn restore_wallet(config: &str) -> VcxResult<()> {
-    info!("restore_wallet >>> config: ***");
+    trace!("restore_wallet >>> config: {}", secret!(config));
+    info!("restoring wallet");
     let (restore_config, backup) = restore_from_cloud(config)?;
 
     reconstitute_restored_wallet(&restore_config, &backup)
 }
 
 fn restore_from_cloud(config: &str) -> VcxResult<(RestoreWalletConfigs, Vec<u8>)> {
+    trace!("restore_from_cloud >>> config: {}", secret!(config));
+
     let recovery_config = RestoreWalletConfigs::from_str(config)?;
     let recovery_vk = gen_vk(&recovery_config.backup_key)?;
     let cloud_address = recover_dead_drop(&recovery_vk)?;
@@ -290,10 +327,14 @@ fn restore_from_cloud(config: &str) -> VcxResult<(RestoreWalletConfigs, Vec<u8>)
     let encrypted_wallet = base64::decode(&backup.wallet)
         .map_err(|e| VcxError::from_msg(VcxErrorKind::RetrieveExportedWallet, format!("Encrypted wallet not base64 encoded: {:?}", e)))?;
 
+    trace!("restore_from_cloud <<<");
+
     Ok((recovery_config, encrypted_wallet))
 }
 
 fn reconstitute_restored_wallet(recovery_config: &RestoreWalletConfigs, encrypted_wallet: &[u8]) -> VcxResult<()> {
+    trace!("reconstitute_restored_wallet >>> recovery_config: {:?}", secret!(recovery_config));
+
     let recovery_config = _write_tmp_encrypted_wallet_for_import(recovery_config, encrypted_wallet)?;
 
     info!("Deleting temporary wallet before the recovered wallet is imported");
@@ -308,10 +349,15 @@ fn reconstitute_restored_wallet(recovery_config: &RestoreWalletConfigs, encrypte
     fs::remove_file(path).map_err(|_| VcxError::from(VcxErrorKind::RetrieveExportedWallet))?;
 
     open_wallet(&recovery_config.wallet_name, None, None, None)?;
+
+    trace!("reconstitute_restored_wallet <<<");
+
     Ok(())
 }
 
 fn _write_tmp_encrypted_wallet_for_import(recovery_config: &RestoreWalletConfigs, wallet: &[u8]) -> VcxResult<RestoreWalletConfigs> {
+    trace!("_write_tmp_encrypted_wallet_for_import >>> recovery_config: {:?}", secret!(recovery_config));
+
     let tmp_dir = _unique_tmp_dir(&recovery_config.exported_wallet_path)?;
 
     if let Some(parent_path) = tmp_dir.parent() {
@@ -331,6 +377,8 @@ fn _write_tmp_encrypted_wallet_for_import(recovery_config: &RestoreWalletConfigs
     let mut new_path_config = recovery_config.clone();
     new_path_config.exported_wallet_path = tmp_dir.to_str().ok_or_else(|| _io_err_opt("Invalid unique temp directory"))?.to_string();
 
+    trace!("_write_tmp_encrypted_wallet_for_import <<< new_path_config: {:?}", secret!(new_path_config));
+
     Ok(new_path_config)
 }
 
@@ -345,7 +393,9 @@ fn _io_err_res(e: Error) -> VcxError { VcxError::from_msg(VcxErrorKind::IOError,
 fn _io_err_opt(e: &str) -> VcxError { VcxError::from_msg(VcxErrorKind::IOError, format!("Wallet IO error: {}", e)) }
 
 pub fn recover_dead_drop(vk: &str) -> VcxResult<CloudAddress> {
-    info!("recover_dead_drop >>> vk: ***");
+    trace!("recover_dead_drop >>> vk: {}", secret!(vk));
+    info!("recovering dead drop");
+
     let dead_drop_info = gen_deaddrop_address(&vk)?;
     let locator_sig = sign(&vk, dead_drop_info.locator.as_bytes())?;
 
@@ -360,7 +410,10 @@ pub fn recover_dead_drop(vk: &str) -> VcxResult<CloudAddress> {
     let encrypted_ca = base64::decode(&entry.data)
         .map_err(|_| VcxError::from_msg(VcxErrorKind::RetrieveDeadDrop, "Cloud Address not base64 encoded"))?;
 
-    CloudAddress::from_str(&parse_message_from_response(&encrypted_ca)?)
+    let cloud_addr = CloudAddress::from_str(&parse_message_from_response(&encrypted_ca)?)?;
+
+    trace!("recover_dead_drop <<< cloud_addr: {:?}", secret!(cloud_addr));
+    Ok(cloud_addr)
 }
 
 pub fn is_valid_handle(handle: u32) -> bool { WALLET_BACKUP_MAP.has_handle(handle) }

@@ -50,7 +50,7 @@ pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
             .build()
             .map_err(|err| VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Could not prepare HTTP client. Err: {:?}", err)))?;
 
-    debug!("Posting encrypted bundle to: \"{}\"", url);
+    debug!("Posting encrypted bundle to: \"{}\"", secret!(url));
 
     let mut response =
         client.post(url)

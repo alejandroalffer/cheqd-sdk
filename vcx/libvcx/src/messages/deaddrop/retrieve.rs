@@ -64,7 +64,7 @@ impl RetrieveDeadDropBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<RetrievedDeadDropResult> {
-        trace!("parse_retrieve_deaddrop_response >>>");
+        trace!("RetrieveDeadDropBuilder::parse_retrieve_deaddrop_response >>>");
 
         let response = parse_message_from_response(&response)?;
 
@@ -73,6 +73,8 @@ impl RetrieveDeadDropBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
+        trace!("RetrieveDeadDropBuilder::prepare_request >>>");
+
         let init_err = |e: &str| VcxError::from_msg(
             VcxErrorKind::RetrieveDeadDrop,
             format!("RetrieveDeadDrop expects {} but got None", e)
@@ -89,6 +91,8 @@ impl RetrieveDeadDropBuilder {
                 signature: self.signature.clone().ok_or(init_err("signature"))?,
             }
         ));
+
+        trace!("RetrieveDeadDropBuilder::prepare_request >>> message: {:?}", secret!(message));
 
         let agency_did = settings::get_config_value(settings::CONFIG_AGENCY_DID)?;
         let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
