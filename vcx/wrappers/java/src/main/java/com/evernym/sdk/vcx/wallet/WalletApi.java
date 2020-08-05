@@ -10,7 +10,7 @@ import com.sun.jna.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
+import java9.util.concurrent.CompletableFuture;
 
 public class WalletApi extends VcxJava.API {
     private static final Logger logger = LoggerFactory.getLogger("WalletApi");
@@ -29,6 +29,16 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Exports opened wallet
+     *
+     * @param  exportPath       Path to export wallet to User's File System.
+     * @param  encryptionKey    String representing the User's Key for securing (encrypting) the exported Wallet.
+     *
+     * @return                  void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<Integer> exportWallet(
             String exportPath,
             String encryptionKey
@@ -56,6 +66,18 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Creates a new secure wallet and then imports its content
+     * according to fields provided in import_config
+     * Cannot be used if wallet is already opened (Especially if vcx_init has already been used).
+     *
+     * @param  config           Configuration JSON for importing wallet
+     *                          "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":"","key_derivation":""}"
+     *
+     * @return                  void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<Integer> importWallet(
             String config
     ) throws VcxException {
@@ -173,14 +195,24 @@ public class WalletApi extends VcxJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            Integer result = commandHandle;
-            future.complete(result);
+            future.complete(null);
         }
     };
 
-    public static CompletableFuture<Integer> addRecordWallet(
+    /**
+     * Adds a record to the wallet
+     *
+     * @param recordType        type of record. (e.g. 'data', 'string', 'foobar', 'image')
+     * @param recordId          the id ("key") of the record.
+     * @param recordValue       value of the record with the associated id.
+     *
+     * @return                  void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<Void> addRecordWallet(
             String recordType,
             String recordId,
             String recordValue
@@ -189,7 +221,7 @@ public class WalletApi extends VcxJava.API {
         ParamGuard.notNull(recordId, "recordId");
         ParamGuard.notNull(recordValue, "recordValue");
         logger.debug("addRecordWallet() called with: recordType = [" + recordType + "], recordId = [" + recordId + "], recordValue = [****]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
+        CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
         String recordTag = "{}";
 
@@ -203,21 +235,30 @@ public class WalletApi extends VcxJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            Integer result = commandHandle;
-            future.complete(result);
+            future.complete(null);
         }
     };
 
-    public static CompletableFuture<Integer> deleteRecordWallet(
+    /**
+     * Deletes an existing record.
+     *
+     * @param recordType        type of record. (e.g. 'data', 'string', 'foobar', 'image')
+     * @param recordId          the id ("key") of the record.
+     *
+     * @return                  void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<Void> deleteRecordWallet(
             String recordType,
             String recordId
     ) throws VcxException {
         ParamGuard.notNull(recordType, "recordType");
         ParamGuard.notNull(recordId, "recordId");
         logger.debug("deleteRecordWallet() called with: recordType = [" + recordType + "], recordId = [" + recordId + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
+        CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_wallet_delete_record(commandHandle, recordType, recordId, vcxDeleteRecordWalletCB);
@@ -239,6 +280,16 @@ public class WalletApi extends VcxJava.API {
         }
     };
 
+    /**
+     * Gets a record from Wallet.
+     *
+     * @param recordType        type of record. (e.g. 'data', 'string', 'foobar', 'image')
+     * @param recordId          the id ("key") of the record.
+     *
+     * @return                  received record as JSON
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
     public static CompletableFuture<String> getRecordWallet(
             String recordType,
             String recordId,
@@ -261,14 +312,24 @@ public class WalletApi extends VcxJava.API {
     private static Callback vcxUpdateRecordWalletCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            Integer result = commandHandle;
-            future.complete(result);
+            future.complete(null);
         }
     };
 
-    public static CompletableFuture<Integer> updateRecordWallet(
+    /**
+     * Updates the value of a record already in the wallet.
+     *
+     * @param recordType        type of record. (e.g. 'data', 'string', 'foobar', 'image')
+     * @param recordId          the id ("key") of the record.
+     * @param recordValue       new value of the record with the associated id.
+     *
+     * @return                  void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<Void> updateRecordWallet(
             String recordType,
             String recordId,
             String recordValue
@@ -277,7 +338,7 @@ public class WalletApi extends VcxJava.API {
         ParamGuard.notNull(recordId, "recordId");
         ParamGuard.notNull(recordValue, "recordValue");
         logger.debug("updateRecordWallet() called with: recordType = [" + recordType + "], recordId = [" + recordId + "], recordValue = [****]");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_wallet_update_record_value(commandHandle, recordType, recordId, recordValue, vcxUpdateRecordWalletCB);
@@ -289,4 +350,256 @@ public class WalletApi extends VcxJava.API {
     public static void setWalletHandle(int handle) {
         LibVcx.api.vcx_wallet_set_handle(handle);
     }
+
+    private static Callback vcxCreateWalletBackupCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, int walletHandle) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], walletHandle = [" + walletHandle + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            Integer result = walletHandle;
+            future.complete(result);
+        }
+    };
+
+    /**
+     * Create a Wallet Backup object that provides a Cloud wallet backup and provision's backup protocol with Agent
+     *
+     * @param sourceID        institution's personal identification for the user
+     * @param backupKey       String representing the User's Key for securing (encrypting) the exported Wallet.
+     *
+     * @return                handle that should be used to perform actions with the WalletBackup object.
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<Integer> createWalletBackup(
+        String sourceID,
+        String backupKey
+    ) throws VcxException {
+        ParamGuard.notNull(sourceID, "sourceID");
+        ParamGuard.notNull(backupKey, "backupKey ");
+        logger.debug("createWalletBackup() called with: sourceID = [" + sourceID + "], backupKey = [" + backupKey + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_wallet_backup_create(commandHandle, sourceID, backupKey, vcxCreateWalletBackupCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    private static Callback vcxBackupWalletBackupBackupCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(null);
+        }
+    };
+
+    /**
+     * Wallet Backup to the Cloud
+     *
+     * @param walletBackupHandle  handle pointing to WalletBackup object.
+     * @param path                path to export wallet to User's File System. (This instance of the export
+     *
+     * @return                    void
+     *
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<Void> backupWalletBackup(
+            int walletBackupHandle,
+            String path
+    ) throws VcxException {
+        ParamGuard.notNull(walletBackupHandle, "walletBackupHandle");
+        ParamGuard.notNull(path, "path");
+        logger.debug("backupWalletBackup() called with: walletBackupHandle = [" + walletBackupHandle + "], path = [" + path + "]");
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_wallet_backup_backup(commandHandle, walletBackupHandle, path, vcxBackupWalletBackupBackupCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    private static Callback vcxUpdateWalletBackupStateCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, int state) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], state = [" + state + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(state);
+        }
+    };
+
+    /**
+     * Checks for any state change and updates the the state attribute
+     *
+     * @param  walletBackupHandle  handle pointing to WalletBackup object.
+     *
+     * @return                      the most current state of the WalletBackup object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Integer> updateWalletBackupState(
+        int walletBackupHandle  // is this a int?
+    )  throws VcxException {
+        ParamGuard.notNull(walletBackupHandle, "walletBackupHandle");
+        logger.debug("updateWalletBackupState() called with: walletBackupHandle = [" + walletBackupHandle + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_wallet_backup_update_state(commandHandle, walletBackupHandle, vcxUpdateWalletBackupStateCB);
+        checkResult(result);
+
+        return future;
+
+    }
+
+    private static Callback vcxUpdateWalletBackupStateWithMessageCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, int state) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], state = [" + state + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return; //TODO: check if we need to add more params here
+            future.complete(state);
+        }
+    };
+
+    /**
+     * Update the state of the WalletBackup object based on the given message.
+     *
+     * @param  walletBackupHandle  handle pointing to WalletBackup object.
+     * @param  message              message to process for any WalletBackup state transitions.
+     *
+     * @return                      the most current state of the WalletBackup object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Integer> updateWalletBackupStateWithMessage(
+        int walletBackupHandle, // is this a int?
+        String message
+    )  throws VcxException {
+        ParamGuard.notNull(walletBackupHandle, "walletBackupHandle");
+        ParamGuard.notNull(message, "message");
+        logger.debug("updateWalletBackupState() called with: walletBackupHandle = [" + walletBackupHandle + "], message = [" + message + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_wallet_backup_update_state_with_message(commandHandle, walletBackupHandle, message, vcxUpdateWalletBackupStateWithMessageCB);
+        checkResult(result);
+
+        return future;
+
+    }
+
+    private static Callback vcxWalletBackupSerializeCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, String data) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], data = [" + data + "]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return; //TODO: check if we need to add more params here
+            future.complete(data);
+        }
+    };
+
+    /**
+     * Get JSON string representation of WalletBackup object.
+     *
+     * @param  walletBackupHandle  handle pointing to WalletBackup object.
+     *
+     * @return                      WalletBackup object as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<String> serializeBackupWallet(
+        int walletBackupHandle // is this a int?
+    )  throws VcxException {
+        ParamGuard.notNull(walletBackupHandle, "walletBackupHandle");
+        logger.debug("serializeBackupWallet() called with: walletBackupHandle = [" + walletBackupHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_wallet_backup_serialize(commandHandle, walletBackupHandle, vcxWalletBackupSerializeCB);
+        checkResult(result);
+
+        return future;
+
+    }
+
+    private static Callback vcxWalletBackupDeserializeCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, int walletBackupHandle) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], walletBackupHandle = [" + walletBackupHandle + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(walletBackupHandle);
+        }
+    };
+
+    /**
+     * Takes a json string representing a WalletBackup object and recreates an object matching the JSON.
+     *
+     * @param  walletBackupStr JSON string representing a WalletBackup object.
+     *
+     * @return                 handle that should be used to perform actions with the WalletBackup object.
+     *
+     * @throws VcxException    If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Integer> deserializeBackupWallet(
+        String walletBackupStr
+    )  throws VcxException {
+        ParamGuard.notNull(walletBackupStr, "walletBackupStr");
+        logger.debug("deserializeBackupWallet() called with: walletBackupStr = [" + walletBackupStr + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_wallet_backup_deserialize(commandHandle, walletBackupStr, vcxWalletBackupDeserializeCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    private static Callback vcxBackupRestore = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(null);
+        }
+    };
+
+    /**
+     * Requests a recovery of a backup previously stored with a cloud agent
+     *
+     * @param  config          config to use for wallet backup restoring
+     *                         "{
+     *                              "wallet_name":string, - new wallet name
+     *                              "wallet_key":string, - key to use for encryption of the new wallet
+     *                              "exported_wallet_path":string, - path to exported wallet
+     *                              "backup_key":string, - key used for export
+     *                              "key_derivation":Option(string) - key derivation method to use for new wallet
+     *                         }"
+     *
+     * @return                 void
+     *
+     * @throws VcxException    If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Void> restoreWalletBackup(
+            String config
+    ) throws VcxException {
+        ParamGuard.notNull(config, "config");
+        logger.debug("restoreBackup() called with: config = [****]");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_wallet_backup_restore(commandHandle, config, vcxBackupRestore);
+        checkResult(result);
+
+        return future;
+    }
+
 }

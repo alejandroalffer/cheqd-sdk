@@ -1,15 +1,14 @@
 use error::prelude::*;
 use std::convert::TryInto;
 
-use connection;
+use messages::proofs::proof_request::ProofRequestMessage;
+use messages::proofs::proof_message::ProofMessage;
+
 use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::handlers::proof_presentation::verifier::states::VerifierSM;
 use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
 use v3::messages::a2a::A2AMessage;
-
-use messages::proofs::proof_request::ProofRequestMessage;
-use messages::proofs::proof_message::ProofMessage;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {
@@ -59,12 +58,19 @@ impl Verifier {
             return self.update_state_with_message(message_);
         }
 
-        let connection_handle = self.verifier_sm.connection_handle()?;
-        let messages = connection::get_messages(connection_handle)?;
+        let agent_info = match self.verifier_sm.get_agent_info() {
+            Some(agent_info) => agent_info.clone(),
+            None => {
+                warn!("Could not update Verifier state: no information about Connection.");
+                return Ok(());
+            }
+        };
+
+        let messages = agent_info.get_messages()?;
 
         if let Some((uid, message)) = self.verifier_sm.find_message_to_handle(messages) {
             self.handle_message(message.into())?;
-            connection::update_message_status(connection_handle, uid)?;
+            agent_info.update_message_status(uid)?;
         };
 
         Ok(())
@@ -74,7 +80,8 @@ impl Verifier {
         trace!("Verifier::update_state_with_message >>> message: {:?}", message);
 
         let message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state with message: Message deserialization failed: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Cannot updated Prover state with messages: Message deserialization failed with: {:?}", err)))?;
 
         self.handle_message(message.into())?;
 
@@ -88,7 +95,7 @@ impl Verifier {
 
     pub fn verify_presentation(&mut self, presentation: Presentation) -> VcxResult<()> {
         trace!("Verifier::verify_presentation >>> presentation: {:?}", presentation);
-        self.step(VerifierMessages::VerifyPresentation(presentation))
+        self.step(VerifierMessages::PresentationReceived(presentation))
     }
 
     pub fn send_presentation_request(&mut self, connection_handle: u32) -> VcxResult<()> {
@@ -102,7 +109,8 @@ impl Verifier {
         let proof_request: ProofRequestMessage = self.verifier_sm.presentation_request()?.try_into()?;
 
         ::serde_json::to_string(&proof_request)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
+                                              format!("Cannot serialize ProofMessage. Err: {:?}", err)))
     }
 
     pub fn get_presentation(&self) -> VcxResult<String> {
@@ -111,7 +119,8 @@ impl Verifier {
         let proof: ProofMessage = self.verifier_sm.presentation()?.try_into()?;
 
         ::serde_json::to_string(&proof)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
+                                              format!("Cannot serialize ProofMessage. Err: {:?}", err)))
     }
 
     pub fn step(&mut self, message: VerifierMessages) -> VcxResult<()> {

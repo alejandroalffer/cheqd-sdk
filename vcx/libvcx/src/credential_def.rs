@@ -1,4 +1,4 @@
-use serde_json;
+use ::{serde_json, messages};
 
 use api::PublicEntityStateType;
 use object_cache::ObjectCache;
@@ -8,6 +8,7 @@ use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::libindy::payments::PaymentTxn;
 use utils::libindy::anoncreds;
 use utils::libindy::ledger;
+use std::convert::AsRef;
 
 lazy_static! {
     static ref CREDENTIALDEF_MAP: ObjectCache<CredentialDef> = Default::default();
@@ -38,17 +39,42 @@ pub struct RevocationDetails {
     pub max_creds: Option<u32>,
 }
 
+#[derive(Clone, Deserialize, Serialize, Debug, Default)]
+pub struct RevocationConfig {
+    pub tails_file: Option<String>,
+    pub rev_reg_id: Option<String>,
+    pub rev_reg_def: Option<String>,
+    pub rev_reg_entry: Option<String>
+}
+
+impl AsRef<RevocationConfig> for RevocationConfig {
+    fn as_ref(&self) -> &RevocationConfig { &self }
+}
+
+impl RevocationConfig {
+    fn to_string(&self) -> VcxResult<String> {
+        messages::ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
+            .serialize()
+            .map_err(|err| err.extend("Cannot serialize RevocationConfig"))
+    }
+
+    fn from_str(data: &str) -> VcxResult<RevocationConfig> {
+        messages::ObjectWithVersion::deserialize(data)
+            .map(|obj: messages::ObjectWithVersion<RevocationConfig>| obj.data)
+            .map_err(|err| err.extend("Cannot deserialize RevocationConfig"))
+    }
+}
 impl CredentialDef {
     pub fn from_str(data: &str) -> VcxResult<CredentialDef> {
         ObjectWithVersion::deserialize(data)
             .map(|obj: ObjectWithVersion<CredentialDef>| obj.data)
-            .map_err(|err| err.map(VcxErrorKind::CreateCredDef, "Cannot deserialize CredentialDefinition"))
+            .map_err(|err| err.map(VcxErrorKind::InvalidJson, "Cannot deserialize CredentialDefinition"))
     }
 
     pub fn to_string(&self) -> VcxResult<String> {
         ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
             .serialize()
-            .map_err(|err| err.extend("Cannot serialize CredentialDefinition"))
+            .map_err(|err|  err.map(VcxErrorKind::SerializationError, "Cannot serialize CredentialDefinition"))
     }
 
     pub fn get_source_id(&self) -> &String { &self.source_id }
@@ -93,6 +119,55 @@ impl CredentialDef {
     fn get_state(&self) -> u32 { self.state as u32 }
 }
 
+fn handle_err(err: VcxError) -> VcxError {
+    if err.kind() == VcxErrorKind::InvalidHandle {
+        VcxError::from(VcxErrorKind::InvalidCredDefHandle)
+    } else {
+        err
+    }
+}
+
+pub fn create_credentialdef_from_id(_source_id: String,
+                                    cred_def_id: String,
+                                    issuer_did: String,
+                                    revocation_config: Option<String>) -> VcxResult<u32> {
+    trace!("create_credentialdef_from_id >>> source_id: {}, cred_def_id: {}, issuer_did: {}",
+           _source_id, cred_def_id, issuer_did);
+
+    let rev_config = RevocationConfig::from_str(
+        revocation_config
+            .unwrap_or(RevocationConfig::to_string(&RevocationConfig::default())?)
+            .as_str()
+    )?;
+
+    let _tag: String = cred_def_id
+        .split_terminator(':')
+        .collect::<Vec<&str>>()
+        .pop()
+        .unwrap_or_default()
+        .to_string();
+
+    let cred_def = CredentialDef {
+        source_id: _source_id,
+        tag: _tag,
+        id: cred_def_id,
+        issuer_did: Some(issuer_did),
+        name: String::new(),
+        cred_def_payment_txn: None,
+        rev_reg_def_payment_txn: None,
+        rev_reg_delta_payment_txn: None,
+        rev_reg_id: rev_config.as_ref().rev_reg_id.to_owned(),
+        rev_reg_def: rev_config.as_ref().rev_reg_id.to_owned(),
+        rev_reg_entry: rev_config.as_ref().rev_reg_entry.to_owned(),
+        tails_file: rev_config.as_ref().tails_file.to_owned(),
+        state: PublicEntityStateType::Built,
+    };
+
+    let handle = CREDENTIALDEF_MAP.add(cred_def).or(Err(VcxError::from(VcxErrorKind::CreateCredDef)))?;
+
+    Ok(handle)
+}
+
 fn _parse_revocation_details(revocation_details: &str) -> VcxResult<RevocationDetails> {
     serde_json::from_str::<RevocationDetails>(&revocation_details)
         .to_vcx(VcxErrorKind::InvalidRevocationDetails, "Cannot deserialize RevocationDeltas")
@@ -123,7 +198,7 @@ fn _create_credentialdef(issuer_did: &str,
 
             let (rev_reg_id, rev_reg_def, rev_reg_entry) =
                 anoncreds::generate_rev_reg(&issuer_did, &cred_def_id, &tails_file, max_creds)
-                    .map_err(|err| err.map(VcxErrorKind::CreateCredDef, "Cannot create CredentialDefinition"))?;
+                    .map_err(|err| err.map(VcxErrorKind::CreateRevRegDef, "Cannot create Revocation Registry"))?;
 
             (Some(rev_reg_id), Some(rev_reg_def), Some(rev_reg_entry))
         }
@@ -250,7 +325,7 @@ pub fn is_valid_handle(handle: u32) -> bool {
 pub fn to_string(handle: u32) -> VcxResult<String> {
     CREDENTIALDEF_MAP.get(handle, |cd| {
         cd.to_string()
-    })
+    }).map_err(handle_err)
 }
 
 pub fn from_string(data: &str) -> VcxResult<u32> {
@@ -261,19 +336,19 @@ pub fn from_string(data: &str) -> VcxResult<u32> {
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
     CREDENTIALDEF_MAP.get(handle, |c| {
         Ok(c.get_source_id().clone())
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_cred_def_payment_txn(handle: u32) -> VcxResult<PaymentTxn> {
     CREDENTIALDEF_MAP.get(handle, |c| {
         c.get_cred_def_payment_txn()
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_cred_def_id(handle: u32) -> VcxResult<String> {
     CREDENTIALDEF_MAP.get(handle, |c| {
         Ok(c.get_cred_def_id().clone())
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_rev_reg_id(handle: u32) -> VcxResult<Option<String>> {
@@ -285,31 +360,30 @@ pub fn get_rev_reg_id(handle: u32) -> VcxResult<Option<String>> {
 pub fn get_tails_file(handle: u32) -> VcxResult<Option<String>> {
     CREDENTIALDEF_MAP.get(handle, |c| {
         Ok(c.get_tails_file().cloned())
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_rev_reg_def(handle: u32) -> VcxResult<Option<String>> {
     CREDENTIALDEF_MAP.get(handle, |c| {
         Ok(c.get_rev_reg_def().cloned())
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_rev_reg_def_payment_txn(handle: u32) -> VcxResult<Option<PaymentTxn>> {
     CREDENTIALDEF_MAP.get(handle, |c| {
         Ok(c.get_rev_reg_def_payment_txn())
-    })
+    }).map_err(handle_err)
 }
 
 
 pub fn get_rev_reg_delta_payment_txn(handle: u32) -> VcxResult<Option<PaymentTxn>> {
     CREDENTIALDEF_MAP.get(handle, |c| {
         Ok(c.get_rev_reg_delta_payment_txn())
-    })
+    }).map_err(handle_err)
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
-    CREDENTIALDEF_MAP.release(handle)
-        .or(Err(VcxError::from(VcxErrorKind::InvalidCredDefHandle)))
+    CREDENTIALDEF_MAP.release(handle).map_err(handle_err)
 }
 
 pub fn release_all() {
@@ -319,19 +393,19 @@ pub fn release_all() {
 pub fn update_state(handle: u32) -> VcxResult<u32> {
     CREDENTIALDEF_MAP.get_mut(handle, |s| {
         s.update_state()
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
     CREDENTIALDEF_MAP.get_mut(handle, |s| {
         Ok(s.get_state())
-    })
+    }).map_err(handle_err)
 }
 
 pub fn check_is_published(handle: u32) -> VcxResult<bool> {
     CREDENTIALDEF_MAP.get_mut(handle, |s| {
         Ok(PublicEntityStateType::Published == s.state)
-    })
+    }).map_err(handle_err)
 }
 
 #[cfg(test)]
@@ -553,7 +627,7 @@ pub mod tests {
         let credentialdef2: CredentialDef = CredentialDef::from_str(&new_credentialdef_data).unwrap();
 
         assert_eq!(credentialdef1, credentialdef2);
-        assert_eq!(CredentialDef::from_str("{}").unwrap_err().kind(), VcxErrorKind::CreateCredDef);
+        assert_eq!(CredentialDef::from_str("{}").unwrap_err().kind(), VcxErrorKind::InvalidJson);
     }
 
     #[test]

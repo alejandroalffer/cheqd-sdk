@@ -83,10 +83,10 @@ class Proof(VcxStateful):
 
     @staticmethod
     async def create(source_id: str, name: str, requested_attrs: list, revocation_interval: dict,
-     				 requested_predicates=None):
+                     requested_predicates=None):
         """
          Create a new Proof object that requests a proof for an enterprise
-        :param source_id: Tag associated by user of sdk
+        :param source_id: Enterprise's personal identification for the proof, should be unique.
         :param name: Name of the Proof
         :param requested_attrs: Attributes associated with the Proof
            {
@@ -128,7 +128,7 @@ class Proof(VcxStateful):
         :return: Proof Object
         """
         if requested_predicates is None:
-        	requested_predicates = []
+            requested_predicates = []
         constructor_params = (source_id,)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
@@ -239,8 +239,8 @@ class Proof(VcxStateful):
         c_proof_handle = c_uint32(self.handle)
 
         msg = await do_call('vcx_proof_get_request_msg',
-                      c_proof_handle,
-                      Proof.get_proof_request_msg.cb)
+                            c_proof_handle,
+                            Proof.get_proof_request_msg.cb)
 
         return json.loads(msg.decode())
 

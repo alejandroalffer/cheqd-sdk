@@ -7,10 +7,11 @@ use time;
 use settings;
 use utils::constants::{LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, PROOF_REQUESTED_PREDICATES, ATTRS, REV_STATE_JSON};
 use utils::libindy::{wallet::get_wallet_handle, LibindyMock};
-use utils::libindy::payments::{pay_for_txn, PaymentTxn};
+use utils::libindy::payments::{send_transaction, PaymentTxn};
 use utils::libindy::ledger::*;
 use utils::constants::{SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN, CREATE_SCHEMA_ACTION, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_REQ, CREATE_CRED_DEF_ACTION, CREATE_REV_REG_DEF_ACTION, CREATE_REV_REG_DELTA_ACTION, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
 use error::prelude::*;
+use utils::libindy::types::CredentialInfo;
 
 const BLOB_STORAGE_TYPE: &str = "default";
 const REVOCATION_REGISTRY_TYPE: &str = "ISSUANCE_BY_DEFAULT";
@@ -128,10 +129,8 @@ fn fetch_credentials(search_handle: i32, requested_attributes: Map<String, Value
     for item_referent in requested_attributes.keys().into_iter() {
         v[ATTRS][item_referent] =
             serde_json::from_str(&anoncreds::prover_fetch_credentials_for_proof_req(search_handle, item_referent, 100).wait()?)
-                .map_err(|_| {
-                    error!("Invalid Json Parsing of Object Returned from Libindy. Did Libindy change its structure?");
-                    VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Invalid Json Parsing of Object Returned from Libindy. Did Libindy change its structure?")
-                })?
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                  format!("Cannot parse object from JSON string. Err: {:?}", err)))?
     }
 
     Ok(v.to_string())
@@ -167,7 +166,7 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> VcxResul
 
     // handle special case of "empty because json is bad" vs "empty because no attributes sepected"
     if requested_attributes == None && requested_predicates == None {
-        return Err(VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, "Invalid Json Parsing of Requested Attributes Retrieved From Libindy"));
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest, "Proof Request neither contains `requested_attributes` nor `requested_predicates`"));
     }
 
     let mut fetch_attrs: Map<String, Value> = match requested_attributes {
@@ -385,7 +384,7 @@ pub fn publish_schema(schema: &str) -> VcxResult<Option<PaymentTxn>> {
 
     let request = build_schema_request(schema)?;
 
-    let (payment, response) = pay_for_txn(&request, CREATE_SCHEMA_ACTION)?;
+    let (payment, response) = send_transaction(&request, CREATE_SCHEMA_ACTION)?;
 
     _check_schema_response(&response)?;
 
@@ -395,9 +394,9 @@ pub fn publish_schema(schema: &str) -> VcxResult<Option<PaymentTxn>> {
 pub fn get_schema_json(schema_id: &str) -> VcxResult<(String, String)> {
     if settings::indy_mocks_enabled() { return Ok((SCHEMA_ID.to_string(), SCHEMA_JSON.to_string())); }
 
-    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
-
-    let schema_json = libindy_get_schema(&submitter_did, schema_id)?;
+    let schema_json = libindy_get_schema(schema_id)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidSchema,
+                                          format!("Could not get Schema from the Ledger. Err: {:?}", err)))?;
 
     Ok((schema_id.to_string(), schema_json))
 }
@@ -425,7 +424,7 @@ pub fn build_cred_def_request(issuer_did: &str, cred_def_json: &str) -> VcxResul
         return Ok(CRED_DEF_REQ.to_string());
     }
 
-    let cred_def_req = libindy_build_create_credential_def_txn(issuer_did, &cred_def_json)?;
+    let cred_def_req = libindy_build_create_credential_def_request(issuer_did, &cred_def_json)?;
 
     let cred_def_req = append_txn_author_agreement_to_request(&cred_def_req)?;
 
@@ -441,7 +440,7 @@ pub fn publish_cred_def(issuer_did: &str, cred_def_json: &str) -> VcxResult<Opti
 
     let cred_def_req = build_cred_def_request(issuer_did, &cred_def_json)?;
 
-    let (payment, _) = pay_for_txn(&cred_def_req, CREATE_CRED_DEF_ACTION)?;
+    let (payment, _) = send_transaction(&cred_def_req, CREATE_CRED_DEF_ACTION)?;
 
     Ok(payment)
 }
@@ -449,7 +448,9 @@ pub fn publish_cred_def(issuer_did: &str, cred_def_json: &str) -> VcxResult<Opti
 pub fn get_cred_def_json(cred_def_id: &str) -> VcxResult<(String, String)> {
     if settings::indy_mocks_enabled() { return Ok((CRED_DEF_ID.to_string(), CRED_DEF_JSON.to_string())); }
 
-    let cred_def_json = libindy_get_cred_def(cred_def_id)?;
+    let cred_def_json = libindy_get_cred_def(cred_def_id)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::CredentialDefinitionNotFound,
+                                          format!("Could not get CredentialDefinition from the Ledger. Err: {:?}", err)))?;
 
     Ok((cred_def_id.to_string(), cred_def_json))
 }
@@ -479,7 +480,7 @@ pub fn publish_rev_reg_def(issuer_did: &str, rev_reg_def_json: &str) -> VcxResul
     if settings::indy_mocks_enabled() { return Ok(None); }
 
     let rev_reg_def_req = build_rev_reg_request(issuer_did, &rev_reg_def_json)?;
-    let (payment, _) = pay_for_txn(&rev_reg_def_req, CREATE_REV_REG_DEF_ACTION)?;
+    let (payment, _) = send_transaction(&rev_reg_def_req, CREATE_REV_REG_DEF_ACTION)?;
     Ok(payment)
 }
 
@@ -503,7 +504,7 @@ pub fn build_rev_reg_delta_request(issuer_did: &str, rev_reg_id: &str, rev_reg_e
 pub fn publish_rev_reg_delta(issuer_did: &str, rev_reg_id: &str, rev_reg_entry_json: &str)
                              -> VcxResult<(Option<PaymentTxn>, String)> {
     let request = build_rev_reg_delta_request(issuer_did, rev_reg_id, rev_reg_entry_json)?;
-    pay_for_txn(&request, CREATE_REV_REG_DELTA_ACTION)
+    send_transaction(&request, CREATE_REV_REG_DELTA_ACTION)
 }
 
 pub fn get_rev_reg_delta_json(rev_reg_id: &str, from: Option<u64>, to: Option<u64>)
@@ -565,6 +566,28 @@ pub fn generate_nonce() -> VcxResult<String> {
         .map_err(VcxError::from)
 }
 
+pub fn fetch_public_entities() -> VcxResult<()> {
+    trace!("fetch_public_entities >>>");
+
+    if settings::indy_mocks_enabled() { return Ok(()); }
+
+    let wallet = get_wallet_handle();
+    let credentials_json = anoncreds::prover_get_credentials(wallet, None).wait()?;
+    let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials_json)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Can not deserialize the list Credentials: {:?}", err)))?;
+
+    for credential in credentials {
+        get_schema_json(&credential.schema_id)?;
+        get_cred_def_json(&credential.cred_def_id)?;
+        if let Some(rev_reg_id) = credential.rev_reg_id.as_ref() {
+            get_rev_reg_def_json(&rev_reg_id)?;
+        }
+    }
+
+    trace!("fetch_public_entities <<<");
+    Ok(())
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -602,7 +625,7 @@ pub mod tests {
     pub fn create_and_write_test_schema(attr_list: &str) -> (String, String) {
         let (schema_id, schema_json) = create_schema(attr_list);
         let req = create_schema_req(&schema_json);
-        ::utils::libindy::payments::pay_for_txn(&req, CREATE_SCHEMA_ACTION).unwrap();
+        ::utils::libindy::payments::send_transaction(&req, CREATE_SCHEMA_ACTION).unwrap();
         thread::sleep(Duration::from_millis(1000));
         (schema_id, schema_json)
     }
@@ -916,7 +939,7 @@ pub mod tests {
         let _result = libindy_prover_get_credentials_for_proof_req(&proof_req).unwrap();
 
         let result_malformed_json = libindy_prover_get_credentials_for_proof_req("{}").unwrap_err();
-        assert_eq!(result_malformed_json.kind(), VcxErrorKind::InvalidAttributesStructure);
+        assert_eq!(result_malformed_json.kind(), VcxErrorKind::InvalidProofRequest);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -1071,5 +1094,14 @@ pub mod tests {
 
         assert!(payment.is_some());
         assert_ne!(first_rev_reg_delta, second_rev_reg_delta);
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_fetch_public_entities() {
+        let _setup = SetupLibraryWalletPool::init();
+
+        let _ = create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
+        fetch_public_entities().unwrap();
     }
 }

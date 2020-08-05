@@ -8,16 +8,18 @@ pub fn encode(s: &str) -> VcxResult<String> {
         Err(_) => {
             let hash = sha256(s.as_bytes());
             let bignum = BigNum::from_slice(&hash)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot encode string: {}", err)))?;
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot encode string. Err: {}", err)))?;
 
             let encoded = bignum.to_dec_str()
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot encode string: {}", err)))?
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot encode string. Err: {}", err)))?
                 .to_string();
 
             Ok(encoded)
         }
     }
 }
+
+pub fn sha256_hex(b: &[u8]) -> String { hex::encode(sha256(b)) }
 
 #[cfg(test)]
 mod test {

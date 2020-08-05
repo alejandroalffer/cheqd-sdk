@@ -18,6 +18,9 @@ use v3::messages::forward::Forward;
 use v3::messages::error::ProblemReport as CommonProblemReport;
 use v3::messages::issuance::credential_proposal::CredentialProposal;
 use v3::messages::ack::Ack;
+use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
+use v3::messages::outofband::handshake_reuse::HandshakeReuse;
+use v3::messages::outofband::handshake_reuse_accepted::HandshakeReuseAccepted;
 
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
@@ -31,6 +34,12 @@ use v3::messages::discovery::query::Query;
 use v3::messages::discovery::disclose::Disclose;
 
 use v3::messages::basic_message::message::BasicMessage;
+
+use v3::messages::questionanswer::question::Question;
+use v3::messages::questionanswer::answer::Answer;
+
+use v3::messages::committedanswer::question::Question as CommitedQuestion;
+use v3::messages::committedanswer::answer::Answer as CommitedAnswer;
 
 #[derive(Debug, PartialEq)]
 pub enum A2AMessage {
@@ -57,12 +66,14 @@ pub enum A2AMessage {
     CredentialRequest(CredentialRequest),
     Credential(Credential),
     CredentialAck(Ack),
+    CredentialReject(CommonProblemReport),
 
     /// proof presentation
     PresentationProposal(PresentationProposal),
     PresentationRequest(PresentationRequest),
     Presentation(Presentation),
     PresentationAck(Ack),
+    PresentationReject(CommonProblemReport),
 
     /// discovery features
     Query(Query),
@@ -70,6 +81,20 @@ pub enum A2AMessage {
 
     /// basic message
     BasicMessage(BasicMessage),
+
+    /// questionanswer
+    Question(Question),
+    Answer(Answer),
+
+    /// committedanswer
+    CommittedQuestion(CommitedQuestion),
+    CommittedAnswer(CommitedAnswer),
+
+    /// Out-of-Band
+    OutOfBandInvitation(OutofbandInvitation),
+    HandshakeReuse(HandshakeReuse),
+    HandshakeReuseAccepted(HandshakeReuseAccepted),
+
 
     /// Any Raw Message
     Generic(Value),
@@ -155,6 +180,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::CredentialAck(msg))
                     .map_err(de::Error::custom)
             }
+            (MessageFamilies::CredentialIssuance, A2AMessage::PROBLEM_REPORT) => {
+                CommonProblemReport::deserialize(value)
+                    .map(|msg| A2AMessage::CredentialReject(msg))
+                    .map_err(de::Error::custom)
+            }
             (MessageFamilies::PresentProof, A2AMessage::PROPOSE_PRESENTATION) => {
                 PresentationProposal::deserialize(value)
                     .map(|msg| A2AMessage::PresentationProposal(msg))
@@ -175,6 +205,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::PresentationAck(msg))
                     .map_err(de::Error::custom)
             }
+            (MessageFamilies::PresentProof, A2AMessage::PROBLEM_REPORT) => {
+                CommonProblemReport::deserialize(value)
+                    .map(|msg| A2AMessage::PresentationReject(msg))
+                    .map_err(de::Error::custom)
+            }
             (MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY) => {
                 Query::deserialize(value)
                     .map(|msg| A2AMessage::Query(msg))
@@ -190,8 +225,43 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::BasicMessage(msg))
                     .map_err(de::Error::custom)
             }
-            (_, other_type) => {
-                warn!("Unexpected @type field structure: {}", other_type);
+            (MessageFamilies::QuestionAnswer, A2AMessage::QUESTION) => {
+                Question::deserialize(value)
+                    .map(|msg| A2AMessage::Question(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::QuestionAnswer, A2AMessage::ANSWER) => {
+                Answer::deserialize(value)
+                    .map(|msg| A2AMessage::Answer(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::Committedanswer, A2AMessage::QUESTION) => {
+                CommitedQuestion::deserialize(value)
+                    .map(|msg| A2AMessage::CommittedQuestion(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::Committedanswer, A2AMessage::ANSWER) => {
+                CommitedAnswer::deserialize(value)
+                    .map(|msg| A2AMessage::CommittedAnswer(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::Outofband, A2AMessage::OUTOFBAND_INVITATION) => {
+                OutofbandInvitation::deserialize(value)
+                    .map(|msg| A2AMessage::OutOfBandInvitation(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE) => {
+                HandshakeReuse::deserialize(value)
+                    .map(|msg| A2AMessage::HandshakeReuse(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED) => {
+                HandshakeReuseAccepted::deserialize(value)
+                    .map(|msg| A2AMessage::HandshakeReuseAccepted(msg))
+                    .map_err(de::Error::custom)
+            }
+            (_, _) => {
+                warn!("Unexpected @type field: {}", value["@type"]);
                 Ok(A2AMessage::Generic(value))
             }
         }
@@ -222,13 +292,22 @@ impl Serialize for A2AMessage {
             A2AMessage::CredentialProposal(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::PROPOSE_CREDENTIAL),
             A2AMessage::CredentialRequest(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::REQUEST_CREDENTIAL),
             A2AMessage::CredentialAck(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::ACK),
+            A2AMessage::CredentialReject(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::PROBLEM_REPORT),
             A2AMessage::PresentationProposal(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::PROPOSE_PRESENTATION),
             A2AMessage::PresentationRequest(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::REQUEST_PRESENTATION),
             A2AMessage::Presentation(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::PRESENTATION),
             A2AMessage::PresentationAck(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::ACK),
+            A2AMessage::PresentationReject(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::PROBLEM_REPORT),
             A2AMessage::Query(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY),
             A2AMessage::Disclose(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::DISCLOSE),
             A2AMessage::BasicMessage(msg) => set_a2a_message_type(msg, MessageFamilies::Basicmessage, A2AMessage::BASIC_MESSAGE),
+            A2AMessage::OutOfBandInvitation(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_INVITATION),
+            A2AMessage::HandshakeReuse(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE),
+            A2AMessage::HandshakeReuseAccepted(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED),
+            A2AMessage::Question(msg) => set_a2a_message_type(msg, MessageFamilies::QuestionAnswer, A2AMessage::QUESTION),
+            A2AMessage::Answer(msg) => set_a2a_message_type(msg, MessageFamilies::QuestionAnswer, A2AMessage::ANSWER),
+            A2AMessage::CommittedQuestion(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::QUESTION),
+            A2AMessage::CommittedAnswer(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ANSWER),
             A2AMessage::Generic(msg) => Ok(msg.clone())
         }.map_err(ser::Error::custom)?;
 
@@ -250,6 +329,12 @@ impl MessageId {
     }
 }
 
+impl ToString for MessageId {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
 impl Default for MessageId {
     #[cfg(all(test, not(feature = "aries")))]
     fn default() -> MessageId {
@@ -264,25 +349,30 @@ impl Default for MessageId {
 }
 
 impl A2AMessage {
-    const FORWARD: &'static str = "forward";
-    const CONNECTION_INVITATION: &'static str = "invitation";
-    const CONNECTION_REQUEST: &'static str = "request";
-    const CONNECTION_RESPONSE: &'static str = "response";
-    const CONNECTION_PROBLEM_REPORT: &'static str = "problem_report";
-    const PING: &'static str = "ping";
-    const PING_RESPONSE: &'static str = "ping_response";
-    const ACK: &'static str = "ack";
-    const PROBLEM_REPORT: &'static str = "problem-report";
-    const CREDENTIAL_OFFER: &'static str = "offer-credential";
-    const CREDENTIAL: &'static str = "issue-credential";
-    const PROPOSE_CREDENTIAL: &'static str = "propose-credential";
-    const REQUEST_CREDENTIAL: &'static str = "request-credential";
-    const PROPOSE_PRESENTATION: &'static str = "propose-presentation";
-    const REQUEST_PRESENTATION: &'static str = "request-presentation";
-    const PRESENTATION: &'static str = "presentation";
-    const QUERY: &'static str = "query";
-    const DISCLOSE: &'static str = "disclose";
-    const BASIC_MESSAGE: &'static str = "message";
+    pub const FORWARD: &'static str = "forward";
+    pub const CONNECTION_INVITATION: &'static str = "invitation";
+    pub const CONNECTION_REQUEST: &'static str = "request";
+    pub const CONNECTION_RESPONSE: &'static str = "response";
+    pub const CONNECTION_PROBLEM_REPORT: &'static str = "problem_report";
+    pub const PING: &'static str = "ping";
+    pub const PING_RESPONSE: &'static str = "ping_response";
+    pub const ACK: &'static str = "ack";
+    pub const PROBLEM_REPORT: &'static str = "problem-report";
+    pub const CREDENTIAL_OFFER: &'static str = "offer-credential";
+    pub const CREDENTIAL: &'static str = "issue-credential";
+    pub const PROPOSE_CREDENTIAL: &'static str = "propose-credential";
+    pub const REQUEST_CREDENTIAL: &'static str = "request-credential";
+    pub const PROPOSE_PRESENTATION: &'static str = "propose-presentation";
+    pub const REQUEST_PRESENTATION: &'static str = "request-presentation";
+    pub const PRESENTATION: &'static str = "presentation";
+    pub const QUERY: &'static str = "query";
+    pub const DISCLOSE: &'static str = "disclose";
+    pub const BASIC_MESSAGE: &'static str = "message";
+    pub const OUTOFBAND_INVITATION: &'static str = "invitation";
+    pub const OUTOFBAND_HANDSHAKE_REUSE: &'static str = "handshake-reuse";
+    pub const OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED: &'static str = "handshake-reuse-accepted";
+    pub const QUESTION: &'static str = "question";
+    pub const ANSWER: &'static str = "answer";
 }
 
 #[macro_export]

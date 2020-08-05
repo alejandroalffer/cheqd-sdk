@@ -28,8 +28,6 @@ async def main():
             uid, offer, _ = await download_message(pw_did, 'credential-offer')
             print(uid)
             credential = await Credential.create_with_msgid('credential', connection_to_faber, uid)
-            print("Offer")
-            print(credential.cred_offer)
             await accept_offer(connection_to_faber, credential)
         elif answer == '2':
             print("Check agency for a proof request")

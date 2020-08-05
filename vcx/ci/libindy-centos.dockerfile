@@ -2,6 +2,8 @@
 FROM centos:7
 
 ARG LIBINDY_VER
+ARG LIBINDY_SIMPLE_VER
+ARG LIBINDY_BRANCH
 
 RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm ;\
     yum install -y \
@@ -11,4 +13,4 @@ RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.n
       cargo \
       openssl-devel \
       rpm-build \
-      https://repo.sovrin.org/rpm/libindy/stable/${LIBINDY_VER}/libindy.${LIBINDY_VER}.rpm
+      https://repo.sovrin.org/rpm/libindy/${LIBINDY_BRANCH}/${LIBINDY_VER}/libindy.${LIBINDY_SIMPLE_VER}.rpm

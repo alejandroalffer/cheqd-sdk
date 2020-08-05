@@ -73,10 +73,10 @@ use indy_sys::CommandHandle;
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: Enterprise's personal identification for the user.
+/// source_id: Enterprise's personal identification for the proof, should be unique..
 ///
 /// requested_attrs: Describes requested attribute
-///     {
+///     [{
 ///         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
 ///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
 ///                                              // NOTE: should either be "name" or "names", not both and not none of them.
@@ -87,12 +87,12 @@ use indy_sys::CommandHandle;
 ///             "to": Optional<(u64)>
 ///                 //Requested time represented as a total number of seconds from Unix Epoch, Optional
 ///         }
-///     }
+///     }]
 ///
 /// # Example requested_attrs -> "[{"name":"attrName","restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
 ///
 /// requested_predicates: predicate specifications prover must provide claim for
-///          { // set of requested predicates
+///          [{ // set of requested predicates
 ///             "name": attribute name, (case insensitive and ignore spaces)
 ///             "p_type": predicate type (Currently ">=" only)
 ///             "p_value": int predicate value
@@ -101,7 +101,7 @@ use indy_sys::CommandHandle;
 ///                 "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
 ///                 "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
 ///             }>
-///          },
+///          }]
 ///
 /// # Example requested_predicates -> "[{"name":"attrName","p_type":"GE","p_value":9,"restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
 ///

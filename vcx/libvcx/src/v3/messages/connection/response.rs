@@ -126,7 +126,7 @@ impl SignedResponse {
         let sig_data = &sig_data[8..];
 
         let connection: ConnectionData = ::serde_json::from_slice(&sig_data)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, err.to_string()))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ConnectionData from JSON. Err: {:?}", err)))?;
 
         Ok(Response {
             id: self.id,

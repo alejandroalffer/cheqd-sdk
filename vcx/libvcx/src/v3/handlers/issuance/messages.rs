@@ -10,7 +10,7 @@ use v3::messages::a2a::A2AMessage;
 #[derive(Debug, Clone)]
 pub enum CredentialIssuanceMessage {
     CredentialInit(u32),
-    CredentialSend(),
+    CredentialSend(u32),
     CredentialProposal(CredentialProposal),
     CredentialOffer(CredentialOffer),
     CredentialRequestSend(u32),
@@ -18,6 +18,7 @@ pub enum CredentialIssuanceMessage {
     Credential(Credential),
     CredentialAck(CredentialAck),
     ProblemReport(ProblemReport),
+    CredentialRejectSend((u32, Option<String>)),
     Unknown
 }
 
@@ -39,7 +40,8 @@ impl From<A2AMessage> for CredentialIssuanceMessage {
             A2AMessage::Ack(ack) | A2AMessage::CredentialAck(ack) => {
                 CredentialIssuanceMessage::CredentialAck(ack)
             },
-            A2AMessage::CommonProblemReport(report) => {
+            A2AMessage::CommonProblemReport(report) |
+            A2AMessage::CredentialReject(report)  => {
                 CredentialIssuanceMessage::ProblemReport(report)
             },
             _ => {

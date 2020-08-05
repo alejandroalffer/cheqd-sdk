@@ -1,12 +1,19 @@
 use settings;
+use messages::message_type::{MessageTypes, MessageTypeV2};
 use messages::*;
-use messages::message_type::MessageTypes;
-use messages::MessageStatusCode;
-use messages::payload::Payloads;
+use messages::payload::{Payloads, PayloadTypes, PayloadKinds, PayloadV1, PayloadV2};
 use utils::{httpclient, constants};
 use error::prelude::*;
 use settings::ProtocolTypes;
 use utils::httpclient::AgencyMock;
+use messages::issuance::credential_offer::set_cred_offer_ref_message;
+use messages::proofs::proof_request::set_proof_req_ref_message;
+use messages::issuance::credential_request::set_cred_req_ref_message;
+use v3::messages::a2a::A2AMessage as AriesA2AMessage;
+use v3::utils::encryption_envelope::EncryptionEnvelope;
+use messages::issuance::credential_offer::CredentialOffer;
+use messages::issuance::credential::CredentialMessage;
+use std::convert::TryInto;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -24,19 +31,6 @@ pub struct GetMessages {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "pairwiseDIDs")]
     pairwise_dids: Option<Vec<String>>,
-}
-
-impl GetMessages {
-    fn build(kind: A2AMessageKinds, exclude_payload: Option<String>, uids: Option<Vec<String>>,
-             status_codes: Option<Vec<MessageStatusCode>>, pairwise_dids: Option<Vec<String>>) -> GetMessages {
-        GetMessages {
-            msg_type: MessageTypes::build(kind),
-            exclude_payload,
-            uids,
-            status_codes,
-            pairwise_dids,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -153,7 +147,7 @@ impl GetMessagesBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesResponse(res)) => Ok(res.msgs),
             A2AMessage::Version2(A2AMessageV2::GetMessagesResponse(res)) => Ok(res.msgs),
-            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of GetMessagesResponse"))
         }
     }
 
@@ -178,23 +172,28 @@ impl GetMessagesBuilder {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::GetMessagesByConnections)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::GetMessagesByConnections)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
-
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -210,7 +209,7 @@ impl GetMessagesBuilder {
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
             A2AMessage::Version2(A2AMessageV2::GetMessagesByConnectionsResponse(res)) => res.msgs,
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesByConnectionsResponse"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of GetMessagesByConnectionsResponse"))
         };
 
         msgs
@@ -240,21 +239,27 @@ impl GeneralMessage for GetMessagesBuilder {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessages,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::GetMessages)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessages,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::GetMessages)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
         };
 
@@ -299,8 +304,9 @@ impl Message {
     pub fn payload<'a>(&'a self) -> VcxResult<Vec<u8>> {
         match self.payload {
             Some(MessagePayload::V1(ref payload)) => Ok(to_u8(payload)),
-            Some(MessagePayload::V2(ref payload)) => serde_json::to_vec(payload).map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, err)),
-            _ => Err(VcxError::from(VcxErrorKind::InvalidState)),
+            Some(MessagePayload::V2(ref payload)) => serde_json::to_vec(payload)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot represent JSON object as bytes. Err: {:?}", err))),
+            None => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response Message doesn't contain any payload")),
         }
     }
 
@@ -309,17 +315,46 @@ impl Message {
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
             let decrypted_payload = match payload {
-                MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
-                    .map(Payloads::PayloadV1),
+                MessagePayload::V1(payload) => {
+                    if let Ok(payload) = Payloads::decrypt_payload_v1(&vk, &payload) {
+                        Ok(Payloads::PayloadV1(payload))
+                    } else {
+                        warn!("fallback to Payloads::decrypt_payload_v12 in Message:decrypt for MessagePayload::V1");
+                        serde_json::from_slice::<serde_json::Value>(&to_u8(payload)[..])
+                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize MessagePayload: {}", err)))
+                            .and_then(|json| Payloads::decrypt_payload_v12(&vk, &json))
+                            .map(|json| {
+                                (
+                                    json.type_,
+                                    match json.msg {
+                                        serde_json::Value::String(_str) => _str,
+                                        value => value.to_string()
+                                    }
+                                )
+                            })
+                            .map(|(type_, payload)|
+                                Payloads::PayloadV2(PayloadV2 {
+                                    type_,
+                                    id: ::utils::uuid::uuid(),
+                                    msg: payload,
+                                    thread: Default::default(),
+                                })
+                            )
+                    }
+                }
                 MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
                     .map(Payloads::PayloadV2)
             };
 
-            if let Ok(decrypted_payload) = decrypted_payload {
+            if let Ok(mut decrypted_payload) = decrypted_payload {
+                Self::_set_ref_msg_id(&mut decrypted_payload, &self.uid)
+                    .map_err(|err| error!("Could not set ref_msg_id: {:?}", err)).ok();
                 new_message.decrypted_payload = ::serde_json::to_string(&decrypted_payload).ok();
             } else if let Ok(decrypted_payload) = self._decrypt_v3_message() {
+                new_message.msg_type = RemoteMessageType::Other(String::from("aries"));
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(decrypted_payload)).ok()
             } else {
+                warn!("Message::decrypt <<< were not able to decrypt message, setting null");
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(null)).ok();
             }
         }
@@ -327,30 +362,111 @@ impl Message {
         new_message
     }
 
+    fn _set_ref_msg_id(decrypted_payload: &mut Payloads, msg_id: &str) -> VcxResult<()> {
+        trace!("_set_ref_msg_id >>>");
+        match decrypted_payload {
+            Payloads::PayloadV1(ref mut payload) => {
+                let type_ = payload.type_.name.as_str();
+                trace!("_set_ref_msg_id >>> message type: {:?}", type_);
+
+                match type_ {
+                    "CRED_OFFER" => {
+                        let offer = set_cred_offer_ref_message(&payload.msg, None, &msg_id)?;
+                        payload.msg = json!(offer).to_string();
+                    }
+                    "CRED_REQ" => {
+                        let cred_req = set_cred_req_ref_message(&payload.msg, &msg_id)?;
+                        payload.msg = json!(cred_req).to_string();
+                    }
+                    "PROOF_REQUEST" => {
+                        let proof_request = set_proof_req_ref_message(&payload.msg, None, &msg_id)?;
+                        payload.msg = json!(proof_request).to_string();
+                    }
+                    _ => {}
+                }
+            }
+            Payloads::PayloadV2(ref mut payload) => {
+                let message_type: MessageTypeV2 = serde_json::from_value(json!(payload.type_))
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse message type: {:?}", err)))?;
+                let type_ = message_type.type_.as_str();
+                trace!("_set_ref_msg_id >>> message type: {:?}", type_);
+
+                match type_ {
+                    "credential-offer" => {
+                        let offer = set_cred_offer_ref_message(&payload.msg, Some(payload.thread.clone()), &msg_id)?;
+                        payload.msg = json!(offer).to_string();
+                    }
+                    "credential-request" => {
+                        let cred_req = set_cred_req_ref_message(&payload.msg, &msg_id).unwrap();
+                        payload.msg = json!(cred_req).to_string();
+                    }
+                    "presentation-request" => {
+                        let proof_request = set_proof_req_ref_message(&payload.msg, Some(payload.thread.clone()), &msg_id)?;
+                        payload.msg = json!(proof_request).to_string();
+                    }
+                    _ => {}
+                }
+            }
+        };
+        trace!("_set_ref_msg_id <<<");
+        Ok(())
+    }
+
     fn _decrypt_v3_message(&self) -> VcxResult<::messages::payload::PayloadV1> {
-        use v3::messages::a2a::A2AMessage;
-        use v3::utils::encryption_envelope::EncryptionEnvelope;
-        use ::issuer_credential::{CredentialOffer, CredentialMessage};
-        use ::messages::payload::{PayloadTypes, PayloadV1, PayloadKinds};
-        use std::convert::TryInto;
+        trace!("_decrypt_v3_message >>>");
 
         let a2a_message = EncryptionEnvelope::open(self.payload()?)?;
 
         let (kind, msg) = match a2a_message {
-            A2AMessage::PresentationRequest(presentation_request) => {
-                let proof_req: ProofRequestMessage = presentation_request.try_into()?;
-
+            AriesA2AMessage::PresentationRequest(presentation_request) => {
+                let mut proof_req: ProofRequestMessage = presentation_request.try_into()?;
+                proof_req.msg_ref_id = Some(self.uid.clone());
                 (PayloadKinds::ProofRequest, json!(&proof_req).to_string())
             }
-            A2AMessage::CredentialOffer(offer) => {
-                let cred_offer: CredentialOffer = offer.try_into()?;
-
+            AriesA2AMessage::CredentialOffer(offer) => {
+                let mut cred_offer: CredentialOffer = offer.try_into()?;
+                cred_offer.msg_ref_id = Some(self.uid.clone());
                 (PayloadKinds::CredOffer, json!(vec![cred_offer]).to_string())
             }
-            A2AMessage::Credential(credential) => {
+            AriesA2AMessage::Credential(credential) => {
                 let credential: CredentialMessage = credential.try_into()?;
-
                 (PayloadKinds::Cred, json!(&credential).to_string())
+            }
+            AriesA2AMessage::Presentation(presentation) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::PRESENTATION)), json!(&presentation).to_string())
+            }
+            AriesA2AMessage::Ping(ping) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::PING)), json!(&ping).to_string())
+            }
+            AriesA2AMessage::PingResponse(ping_response) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::PING_RESPONSE)), json!(&ping_response).to_string())
+            }
+            AriesA2AMessage::Query(query) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::QUERY)), json!(&query).to_string())
+            }
+            AriesA2AMessage::Disclose(disclose) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::DISCLOSE)), json!(&disclose).to_string())
+            }
+            AriesA2AMessage::HandshakeReuse(reuse) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::OUTOFBAND_HANDSHAKE_REUSE)), json!(&reuse).to_string())
+            }
+            AriesA2AMessage::HandshakeReuseAccepted(reuse) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED)), json!(&reuse).to_string())
+            }
+            AriesA2AMessage::Question(question) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::QUESTION)), json!(&question).to_string())
+            }
+            AriesA2AMessage::Answer(answer) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::ANSWER)), json!(&answer).to_string())
+            }
+            AriesA2AMessage::CommittedQuestion(question) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::QUESTION)), json!(&question).to_string())
+            }
+            AriesA2AMessage::CommittedAnswer(answer) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::ANSWER)), json!(&answer).to_string())
+            }
+            AriesA2AMessage::BasicMessage(message) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::BASIC_MESSAGE)), json!(&message).to_string())
             }
             msg => {
                 let msg = json!(&msg).to_string();
@@ -358,10 +474,14 @@ impl Message {
             }
         };
 
-        Ok(PayloadV1 {
+        trace!("_decrypt_v3_message <<< kind: {:?}, msg: {:?}", kind, msg);
+
+        let payload = PayloadV1 {
             type_: PayloadTypes::build_v1(kind, "json"),
             msg,
-        })
+        };
+
+        Ok(payload)
     }
 }
 
@@ -378,7 +498,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .status_codes(status_codes)?
         .version(version)?
         .send_secure()
-        .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, "Cannot get messages"))?;
+        .map_err(|err| err.extend("Cannot get messages"))?;
 
     trace!("message returned: {:?}", response);
     Ok(response)
@@ -388,7 +508,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &None)?; // TODO: FIXME version should be param
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &None)?;
     trace!("checking for ref_msg: {:?}", message);
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
@@ -396,7 +516,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
         _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &None)?;  // TODO: FIXME version should be param
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &None)?;
 
     trace!("checking for pending message: {:?}", message);
 
@@ -406,7 +526,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
             // TODO: check returned verkey
             Ok((message[0].uid.clone(), payload.to_owned()))
         }
-        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message"))
+        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Cannot find referent message"))
     }
 }
 
@@ -466,6 +586,37 @@ pub fn download_agent_messages(status_codes: Option<Vec<String>>, uids: Option<V
     Ok(response)
 }
 
+pub fn download_message(uid: String) -> VcxResult<Message> {
+    trace!("download_message >>> uid: {:?}", uid);
+
+    AgencyMock::set_next_response(constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
+
+    let mut messages: Vec<Message> =
+        get_messages()
+            .uid(Some(vec![uid.clone()]))?
+            .version(&Some(::settings::get_protocol_type()))?
+            .download_messages()?
+            .into_iter()
+            .flat_map(|msgs_by_connection| msgs_by_connection.msgs)
+            .collect();
+
+    if messages.is_empty() {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse,
+                                      format!("Message for the given uid:\"{}\" not found.", uid)));
+    }
+
+    if messages.len() > 1 {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse,
+                                      format!("More than one message was received for the given uid:\"{}\". \
+                                      Please, use `vcx_messages_download` function to retrieve several messages.", uid)));
+    }
+
+    let message = messages.remove(0);
+
+    trace!("download_message <<< message: {:?}", message);
+    Ok(message)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -494,25 +645,23 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "wallet_backup")]
     #[test]
-    #[ignore] // Dummy cloud agent has not implemented this functionality yet
     fn test_download_agent_messages() {
-        let _setup = SetupLibraryAgencyV1::init();
-
-        let (_faber, alice) = ::connection::tests::create_connected_connections();
+        let _setup = SetupConsumer::init();
 
         // AS CONSUMER GET MESSAGES
-        ::utils::devsetup::set_consumer();
         let all_messages = download_agent_messages(None, None).unwrap();
         assert_eq!(all_messages.len(), 0);
 
-        let _hello_uid = ::connection::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
+        let _wallet_backup = ::wallet_backup::create_wallet_backup("123", ::settings::DEFAULT_WALLET_KEY).unwrap();
+
         thread::sleep(Duration::from_millis(2000));
         let all_messages = download_agent_messages(None, None).unwrap();
         assert_eq!(all_messages.len(), 1);
 
         let invalid_status_code = "abc".to_string();
-        let bad_req = download_agent_messages(Some(vec![invalid_status_code]),  None);
+        let bad_req = download_agent_messages(Some(vec![invalid_status_code]), None);
         assert!(bad_req.is_err());
     }
 
@@ -544,6 +693,8 @@ mod tests {
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::set_consumer();
 
+        thread::sleep(Duration::from_millis(3000));
+
         let _all_messages = download_messages(None, None, None).unwrap();
 
         let pending = download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
@@ -567,5 +718,34 @@ mod tests {
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);
         assert_eq!(bad_req.unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_download_message() {
+        let _setup = SetupLibraryAgencyV1::init();
+
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
+
+        let message = "hello";
+        let message_options = json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string();
+        let hello_uid = ::connection::send_generic_message(alice, message, &message_options).unwrap();
+
+        // AS CONSUMER GET MESSAGE
+        ::utils::devsetup::set_consumer();
+
+        thread::sleep(Duration::from_secs(5));
+        // download hello message
+        let retrieved_message = download_message(hello_uid).unwrap();
+
+        let expected_payload = json!({"@type":{"name":"hello","ver":"1.0","fmt":"json"},"@msg":"hello"});
+        let retrieved_payload: serde_json::Value = serde_json::from_str(&retrieved_message.decrypted_payload.unwrap()).unwrap();
+        assert_eq!(retrieved_payload, expected_payload);
+
+        // download unknown message
+        let unknown_uid = "unknown";
+        let res = download_message(unknown_uid.to_string()).unwrap_err();
+        assert_eq!(VcxErrorKind::InvalidAgencyResponse, res.kind())
     }
 }

@@ -24,6 +24,11 @@ impl Ping {
         self
     }
 
+    pub fn set_thread(mut self, thread: Thread) -> Self {
+        self.thread = Some(thread);
+        self
+    }
+
     pub fn set_comment(mut self, comment: Option<String>) -> Ping {
         self.comment = comment;
         self

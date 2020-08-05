@@ -3,6 +3,9 @@ import java.text.SimpleDateFormat
 apply plugin: 'java'
 group = 'com.evernym.sdk'
 
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
 }
@@ -28,17 +31,31 @@ test {
     useJUnitPlatform()
 }
 
-static def versionMajor() {
-    return '0.8.0'
-}
+// Disabled until fix
+// task("buildJavadoc", type: Javadoc) {
+//    title = "VCX SDK ${version()}"
+//    failOnError = false
+//    source = sourceSets.main.java.srcDirs
+//    classpath += files(sourceSets.main.runtimeClasspath)
+//    destinationDir = file("${project.docsDir}/javadoc-${version()}")
+//}
+//
+//task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
+//    baseName = fullVersionName()
+//    classifier = 'javadoc'
+//    from tasks["buildJavadoc"].destinationDir
+//}
+//
+//build.finalizedBy(buildJavadocJar)
 
 static def version() {
-    String version = System.getenv("PACKAGE_VERSION")
-    if (version != null) {
-        return version
-    } else {
-        return versionMajor()
+    String version = "0.9.3"
+    String suffix = System.getenv("CI_PIPELINE_IID")
+    String branch = System.getenv("CI_COMMIT_REF_SLUG")
+    if (suffix != null && !branch.equals("stable")) {
+        version += "." + suffix
     }
+    return version
 }
 
 version = "${version()}"
@@ -72,8 +89,8 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
     implementation 'net.sourceforge.streamsupport:android-retrofuture:1.6.2'
     implementation group: 'net.sourceforge.streamsupport', name: 'android-retrostreams', version: '1.6.2'
-    implementation group: 'org.json', name: 'json', version: '20180130'
-    testCompile 'org.junit.jupiter:junit-jupiter-api:5.1.0'
+    implementation group: 'org.json', name: 'json', version: '20160810'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
     testImplementation 'com.getkeepsafe.relinker:relinker:1.3.1'
     testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'

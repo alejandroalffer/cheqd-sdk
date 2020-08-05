@@ -2,7 +2,7 @@ import '../module-resolver-helper'
 
 import { assert } from 'chai'
 import { connectionCreate, connectionCreateConnect, dataConnectionCreate } from 'helpers/entities'
-import { INVITE_ACCEPTED_MESSAGE, INVITE_REDIRECTED_MESSAGE, INVITE_DETAILS } from 'helpers/test-constants'
+import { INVITE_ACCEPTED_MESSAGE, INVITE_REDIRECTED_MESSAGE, INVITE_DETAILS, OUTOFBAND_INVITE } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow, sleep } from 'helpers/utils'
 import { Connection, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
@@ -227,4 +227,58 @@ describe('Connection:', () => {
     })
   })
 
+  describe('createWithOutofbandInvite:', () => {
+    it('success: create with out-of-band invitation', async () => {
+      await Connection.createWithOutofbandInvite({
+        id: 'new',
+        invite: OUTOFBAND_INVITE
+      })
+    })
+  })
+
+  describe('sendReuse:', () => {
+    it('success: send reuse', async () => {
+      const connection = await connectionCreate()
+      const error = await shouldThrow(() => connection.sendReuse(OUTOFBAND_INVITE))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+    })
+  })
+
+  describe('create out-of-band:', () => {
+    it('success', async () => {
+      const data = {
+        goal: 'Foo Goal',
+        handshake: true,
+        id: 'foobar123'
+      }
+      const error = await shouldThrow(() => Connection.createOutofband(data))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+
+    })
+  })
+
+  describe('sendAnswer:', () => {
+    it('success: send answer', async () => {
+      const connection = await connectionCreate()
+      const data = {
+        answer: {
+          text: 'Yes, it\'s me'
+        },
+        question: {
+          '@id': '518be002-de8e-456e-b3d5-8fe472477a86',
+          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question',
+          'question_text': 'Alice, are you on the phone with Bob from Faber Bank right now?',
+          'valid_responses' : [
+                  { text: 'Yes, it\'s me' },
+                  { text: 'No, that\'s not me!' }
+          ],
+          '~timing': {
+            expires_time: '2018-12-13T17:29:06+0000'
+          }
+        }
+      }
+      const error = await shouldThrow(() => connection.sendAnswer(data))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+    })
+  })
 })

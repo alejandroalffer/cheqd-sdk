@@ -20,13 +20,13 @@ pub struct Issuer {
 }
 
 impl Issuer {
-    pub fn create(cred_def_handle: u32, credential_data: &str, source_id: &str) -> VcxResult<Issuer> {
+    pub fn create(cred_def_handle: u32, credential_data: &str, source_id: &str, credential_name: &str) -> VcxResult<Issuer> {
         trace!("Issuer::issuer_create_credential >>> cred_def_handle: {:?}, credential_data: {:?}, source_id: {:?}", cred_def_handle, credential_data, source_id);
 
         let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
         let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle)?;
         let tails_file = ::credential_def::get_tails_file(cred_def_handle)?;
-        let issuer_sm = IssuerSM::new(&cred_def_id, credential_data, rev_reg_id, tails_file, source_id);
+        let issuer_sm = IssuerSM::new(&cred_def_id, credential_data, rev_reg_id, tails_file, source_id, credential_name);
         Ok(Issuer { issuer_sm })
     }
 
@@ -34,8 +34,8 @@ impl Issuer {
         self.step(CredentialIssuanceMessage::CredentialInit(connection_handle))
     }
 
-    pub fn send_credential(&mut self, _connection_handle: u32) -> VcxResult<()> { // TODO: should use connection_handle
-        self.step(CredentialIssuanceMessage::CredentialSend())
+    pub fn send_credential(&mut self, connection_handle: u32) -> VcxResult<()> {
+        self.step(CredentialIssuanceMessage::CredentialSend(connection_handle))
     }
 
     pub fn get_state(&self) -> VcxResult<u32> {
@@ -46,11 +46,18 @@ impl Issuer {
         Ok(self.issuer_sm.get_source_id())
     }
 
+    pub fn get_credential_offer(&self) -> VcxResult<CredentialOffer> {
+        self.issuer_sm.get_credential_offer()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Issuer object state: `offer` not found", self.get_source_id()?)))
+    }
+
+
     pub fn update_status(&mut self, msg: Option<String>) -> VcxResult<()> {
         match msg {
             Some(msg) => {
                 let message: A2AMessage = ::serde_json::from_str(&msg)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      format!("Cannot updated Issuer state with messages: Message deserialization failed with: {:?}", err)))?;
 
                 self.step(message.into())
             }
@@ -59,10 +66,6 @@ impl Issuer {
                 Ok(())
             }
         }
-    }
-
-    pub fn get_credential_status(&self) -> VcxResult<u32> {
-        Ok(self.issuer_sm.credential_status())
     }
 
     pub fn step(&mut self, message: CredentialIssuanceMessage) -> VcxResult<()> {
@@ -91,11 +94,16 @@ impl Holder {
         self.step(CredentialIssuanceMessage::CredentialRequestSend(connection_handle))
     }
 
+    pub fn send_reject(&mut self, connection_handle: u32, comment: Option<String>) -> VcxResult<()> {
+        self.step(CredentialIssuanceMessage::CredentialRejectSend((connection_handle, comment)))
+    }
+
     pub fn update_state(&mut self, msg: Option<String>) -> VcxResult<()> {
         match msg {
             Some(msg) => {
                 let message: A2AMessage = ::serde_json::from_str(&msg)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state: Message deserialization failed: {:?}", err)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      format!("Cannot updated Holder state with messages: Message deserialization failed with: {:?}", err)))?;
 
                 self.step(message.into())
             }
@@ -114,13 +122,17 @@ impl Holder {
         self.holder_sm.get_source_id()
     }
 
+    pub fn get_credential_offer(&self) -> VcxResult<CredentialOffer> {
+        self.holder_sm.get_credential_offer()
+    }
+
     pub fn get_credential(&self) -> VcxResult<(String, Credential)> {
         self.holder_sm.get_credential()
     }
 
     pub fn delete_credential(&self) -> VcxResult<()> {
-        self.holder_sm.delete_credential()
     }
+        self.holder_sm.delete_credential()
 
     pub fn get_credential_status(&self) -> VcxResult<u32> {
         Ok(self.holder_sm.credential_status())
@@ -137,8 +149,8 @@ impl Holder {
         let credential_offer: CredentialOffer = match message {
             A2AMessage::CredentialOffer(credential_offer) => credential_offer,
             msg => {
-                return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages,
-                                              format!("Message of different type was received: {:?}", msg)));
+                return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse,
+                                              format!("Message of different type has been received. Expected: CredentialOffer. Received: {:?}", msg)));
             }
         };
 

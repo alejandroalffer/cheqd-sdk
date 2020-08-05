@@ -38,7 +38,7 @@ impl<'de> Deserialize<'de> for MessageType {
                     type_,
                 })
             }
-            _ => Err(de::Error::custom("Unexpected @type field structure."))
+            val => Err(de::Error::custom(format!("Unexpected @type field structure: {:?}", val)))
         }
     }
 }

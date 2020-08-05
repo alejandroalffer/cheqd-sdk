@@ -264,8 +264,8 @@ def linuxTesting(file, env_name, network_name) {
 
 def vcxTesting(file, env_name, network_name, full_testing) {
     parallel([
-            failFast                                     : true,
-            "${env_name} Test: build and test libvcx"    : {
+            failFast                                 : true,
+            "${env_name} Test: build and test libvcx": {
                 node('ubuntu') {
                     cleanWs()
                     linuxVcxBuild(file, env_name, network_name)

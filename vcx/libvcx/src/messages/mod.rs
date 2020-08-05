@@ -10,8 +10,13 @@ pub mod update_connection;
 pub mod update_message;
 pub mod message_type;
 pub mod payload;
+pub mod wallet_backup;
+pub mod deaddrop;
+pub mod agent_provisioning;
+pub mod token_provisioning;
 #[macro_use]
 pub mod thread;
+pub mod issuance;
 
 use std::u8;
 use settings;
@@ -29,12 +34,19 @@ use self::send_message::SendMessageBuilder;
 use self::update_message::{UpdateMessageStatusByConnections, UpdateMessageStatusByConnectionsResponse};
 use self::proofs::proof_request::ProofRequestMessage;
 use self::agent_utils::{Connect, ConnectResponse, SignUp, SignUpResponse, CreateAgent, CreateAgentResponse, UpdateComMethod, ComMethodUpdated};
+use self::wallet_backup::backup_init::{BackupInit, BackupProvisioned, BackupInitBuilder};
+use self::wallet_backup::backup::{Backup, BackupAck, BackupBuilder};
+use self::wallet_backup::restore::{BackupRestore, BackupRestored, BackupRestoreBuilder};
 use self::message_type::*;
 use error::prelude::*;
 
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
 use settings::ProtocolTypes;
+use messages::deaddrop::retrieve::{RetrieveDeadDrop, RetrievedDeadDropResult, RetrieveDeadDropBuilder};
+use messages::agent_provisioning::agent_provisioning_v0_7::{AgentCreated, ProvisionAgent};
+use messages::token_provisioning::token_provisioning::{TokenRequest, TokenResponse};
+use messages::agent_utils::ProblemReport;
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -225,6 +237,11 @@ pub enum A2AMessageV2 {
     SignUpResponse(SignUpResponse),
     CreateAgent(CreateAgent),
     CreateAgentResponse(CreateAgentResponse),
+    ProvisionAgent(ProvisionAgent),
+    AgentCreated(AgentCreated),
+    ProblemReport(ProblemReport),
+    TokenRequest(TokenRequest),
+    TokenResponse(TokenResponse),
 
     /// PW Connection
     CreateKey(CreateKey),
@@ -256,6 +273,18 @@ pub enum A2AMessageV2 {
     UpdateConfigsResponse(UpdateConfigsResponse),
     UpdateComMethod(UpdateComMethod),
     ComMethodUpdated(ComMethodUpdated),
+
+    /// Wallet Backup
+    BackupProvision(BackupInit),
+    BackupProvisioned(BackupProvisioned),
+    Backup(Backup),
+    BackupAck(BackupAck),
+    BackupRestore(BackupRestore),
+    BackupRestored(BackupRestored),
+
+    /// Dead Drop
+    RetrieveDeadDrop(RetrieveDeadDrop),
+    RetrievedDeadDropResult(RetrievedDeadDropResult),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV2 {
@@ -287,6 +316,31 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "SIGNED_UP" => {
                 SignUpResponse::deserialize(value)
                     .map(A2AMessageV2::SignUpResponse)
+                    .map_err(de::Error::custom)
+            }
+            "get-token" => {
+                TokenRequest::deserialize(value)
+                    .map(A2AMessageV2::TokenRequest)
+                    .map_err(de::Error::custom)
+            }
+            "send-token" => {
+                TokenResponse::deserialize(value)
+                    .map(A2AMessageV2::TokenResponse)
+                    .map_err(de::Error::custom)
+            }
+            "CREATE_AGENT" if message_type.version == "0.7" => {
+                ProvisionAgent::deserialize(value)
+                    .map(A2AMessageV2::ProvisionAgent)
+                    .map_err(de::Error::custom)
+            }
+            "AGENT_CREATED" if message_type.version == "0.7" => {
+                AgentCreated::deserialize(value)
+                    .map(A2AMessageV2::AgentCreated)
+                    .map_err(de::Error::custom)
+            }
+            "problem-report" if message_type.version == "0.7" => {
+                ProblemReport::deserialize(value)
+                    .map(A2AMessageV2::ProblemReport)
                     .map_err(de::Error::custom)
             }
             "CREATE_AGENT" => {
@@ -419,6 +473,46 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map(A2AMessageV2::ComMethodUpdated)
                     .map_err(de::Error::custom)
             }
+            "WALLET_INIT_BACKUP" => {
+                BackupInit::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupProvision(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_READY" => {
+                BackupProvisioned::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupProvisioned(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP" => {
+                Backup::deserialize(value)
+                    .map(|msg| A2AMessageV2::Backup(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_ACK" => {
+                BackupAck::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupAck(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_RESTORE" => {
+                BackupRestore::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupRestore(msg))
+                    .map_err(de::Error::custom)
+            }
+            "WALLET_BACKUP_RESTORED" => {
+                BackupRestored::deserialize(value)
+                    .map(|msg| A2AMessageV2::BackupRestored(msg))
+                    .map_err(de::Error::custom)
+            }
+            "DEAD_DROP_RETRIEVE" => {
+                RetrieveDeadDrop::deserialize(value)
+                    .map(|msg| A2AMessageV2::RetrieveDeadDrop(msg))
+                    .map_err(de::Error::custom)
+            }
+            "DEAD_DROP_RETRIEVED_RESULT" => {
+                RetrievedDeadDropResult::deserialize(value)
+                    .map(|msg| A2AMessageV2::RetrievedDeadDropResult(msg))
+                    .map_err(de::Error::custom)
+            }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
         }
     }
@@ -492,7 +586,8 @@ impl Forward {
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 => {
                 let msg = serde_json::from_slice(msg.as_slice())
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      format!("Could not parse JSON object from bytes. Err: {:?}", err)))?;
 
                 Ok(A2AMessage::Version2(A2AMessageV2::Forward(
                     ForwardV2 {
@@ -602,6 +697,10 @@ pub enum RemoteMessageType {
     Cred,
     ProofReq,
     Proof,
+    WalletBackupProvisioned,
+    WalletBackupAck,
+    WalletBackupRestored,
+    RetrievedDeadDropResult,
 }
 
 impl Serialize for RemoteMessageType {
@@ -615,6 +714,10 @@ impl Serialize for RemoteMessageType {
             RemoteMessageType::Cred => "cred",
             RemoteMessageType::ProofReq => "proofReq",
             RemoteMessageType::Proof => "proof",
+            RemoteMessageType::WalletBackupProvisioned => "WALLET_BACKUP_READY",
+            RemoteMessageType::WalletBackupAck => "WALLET_BACKUP_ACK",
+            RemoteMessageType::WalletBackupRestored => "WALLET_BACKUP_RESTORED",
+            RemoteMessageType::RetrievedDeadDropResult => "DEAD_DROP_RETRIEVE_RESULT",
             RemoteMessageType::Other(_type) => _type,
         };
         Value::String(value.to_string()).serialize(serializer)
@@ -627,14 +730,18 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
         match value.as_str() {
             Some("connReq") => Ok(RemoteMessageType::ConnReq),
             Some("connReqAnswer") | Some("CONN_REQ_ACCEPTED") => Ok(RemoteMessageType::ConnReqAnswer),
-            Some("connReqRedirect") | Some("CONN_REQ_REDIRECTED") | Some("connReqRedirected")  => Ok(RemoteMessageType::ConnReqRedirect),
+            Some("connReqRedirect") | Some("CONN_REQ_REDIRECTED") | Some("connReqRedirected") => Ok(RemoteMessageType::ConnReqRedirect),
             Some("credOffer") => Ok(RemoteMessageType::CredOffer),
             Some("credReq") => Ok(RemoteMessageType::CredReq),
             Some("cred") => Ok(RemoteMessageType::Cred),
             Some("proofReq") => Ok(RemoteMessageType::ProofReq),
             Some("proof") => Ok(RemoteMessageType::Proof),
+            Some("WALLET_BACKUP_READY") => Ok(RemoteMessageType::WalletBackupProvisioned),
+            Some("WALLET_BACKUP_ACK") => Ok(RemoteMessageType::WalletBackupAck),
+            Some("WALLET_BACKUP_RESTORED") => Ok(RemoteMessageType::WalletBackupRestored),
+            Some("DEAD_DROP_RETRIEVE_RESULT") => Ok(RemoteMessageType::RetrievedDeadDropResult),
             Some(_type) => Ok(RemoteMessageType::Other(_type.to_string())),
-            _ => Err(de::Error::custom("Unexpected message type."))
+            value => Err(de::Error::custom(format!("Unexpected message type: {:?}", value)))
         }
     }
 }
@@ -696,7 +803,7 @@ impl<'de> Deserialize<'de> for MessageStatusCode {
             Some("MS-105") => Ok(MessageStatusCode::Rejected),
             Some("MS-106") => Ok(MessageStatusCode::Reviewed),
             Some("MS-107") => Ok(MessageStatusCode::Redirected),
-            _ => Err(de::Error::custom("Unexpected message type."))
+            value => Err(de::Error::custom(format!("Unexpected message status code: {:?}", value)))
         }
     }
 }
@@ -709,7 +816,11 @@ pub enum A2AMessageKinds {
     SignUp,
     SignedUp,
     CreateAgent,
+    ProvisionAgent,
     AgentCreated,
+    ProblemReport,
+    TokenRequest,
+    TokenResponse,
     CreateKey,
     KeyCreated,
     CreateMessage,
@@ -731,20 +842,32 @@ pub enum A2AMessageKinds {
     ConnectionRequestRedirect,
     SendRemoteMessage,
     SendRemoteMessageResponse,
+    BackupInit,
+    BackupReady,
+    Backup,
+    BackupAck,
+    BackupRestore,
+    BackupRestored,
+    RetrieveDeadDrop,
+    RetrievedDeadDropResult,
 }
 
 impl A2AMessageKinds {
     pub fn family(&self) -> MessageFamilies {
         match self {
             A2AMessageKinds::Forward => MessageFamilies::Routing,
-            A2AMessageKinds::Connect => MessageFamilies::Onboarding,
-            A2AMessageKinds::Connected => MessageFamilies::Onboarding,
-            A2AMessageKinds::CreateAgent => MessageFamilies::Onboarding,
-            A2AMessageKinds::AgentCreated => MessageFamilies::Onboarding,
-            A2AMessageKinds::SignUp => MessageFamilies::Onboarding,
-            A2AMessageKinds::SignedUp => MessageFamilies::Onboarding,
-            A2AMessageKinds::CreateKey => MessageFamilies::Pairwise,
-            A2AMessageKinds::KeyCreated => MessageFamilies::Pairwise,
+            A2AMessageKinds::Connect => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::Connected => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::CreateAgent => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::ProvisionAgent => MessageFamilies::AgentProvisioningV2,
+            A2AMessageKinds::AgentCreated => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::ProblemReport => MessageFamilies::AgentProvisioningV2,
+            A2AMessageKinds::TokenRequest => MessageFamilies::Tokenizer,
+            A2AMessageKinds::TokenResponse => MessageFamilies::Tokenizer,
+            A2AMessageKinds::SignUp => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::SignedUp => MessageFamilies::AgentProvisioning,
+            A2AMessageKinds::CreateKey => MessageFamilies::Connecting,
+            A2AMessageKinds::KeyCreated => MessageFamilies::Connecting,
             A2AMessageKinds::CreateMessage => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageDetail => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageCreated => MessageFamilies::Pairwise,
@@ -753,17 +876,25 @@ impl A2AMessageKinds {
             A2AMessageKinds::GetMessagesByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::Messages => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConnectionStatus => MessageFamilies::Pairwise,
-            A2AMessageKinds::ConnectionRequest => MessageFamilies::Pairwise,
-            A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Pairwise,
-            A2AMessageKinds::ConnectionRequestRedirect => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequest => MessageFamilies::Connecting,
+            A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Connecting,
+            A2AMessageKinds::ConnectionRequestRedirect => MessageFamilies::Connecting,
             A2AMessageKinds::UpdateMessageStatusByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageStatusUpdatedByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConfigs => MessageFamilies::Configs,
             A2AMessageKinds::ConfigsUpdated => MessageFamilies::Configs,
             A2AMessageKinds::UpdateComMethod => MessageFamilies::Configs,
             A2AMessageKinds::ComMethodUpdated => MessageFamilies::Configs,
-            A2AMessageKinds::SendRemoteMessage => MessageFamilies::Routing,
-            A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Routing,
+            A2AMessageKinds::SendRemoteMessage => MessageFamilies::Pairwise,
+            A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Pairwise,
+            A2AMessageKinds::BackupInit => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupReady => MessageFamilies::WalletBackup,
+            A2AMessageKinds::Backup => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupAck => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupRestore => MessageFamilies::WalletBackup,
+            A2AMessageKinds::BackupRestored => MessageFamilies::WalletBackup,
+            A2AMessageKinds::RetrieveDeadDrop => MessageFamilies::DeadDrop,
+            A2AMessageKinds::RetrievedDeadDropResult => MessageFamilies::DeadDrop,
         }
     }
 
@@ -773,7 +904,11 @@ impl A2AMessageKinds {
             A2AMessageKinds::Connect => "CONNECT".to_string(),
             A2AMessageKinds::Connected => "CONNECTED".to_string(),
             A2AMessageKinds::CreateAgent => "CREATE_AGENT".to_string(),
+            A2AMessageKinds::ProvisionAgent => "CREATE_AGENT".to_string(),
             A2AMessageKinds::AgentCreated => "AGENT_CREATED".to_string(),
+            A2AMessageKinds::ProblemReport => "problem-report".to_string(),
+            A2AMessageKinds::TokenRequest => "get-token".to_string(),
+            A2AMessageKinds::TokenResponse => "send-token".to_string(),
             A2AMessageKinds::SignUp => "SIGNUP".to_string(),
             A2AMessageKinds::SignedUp => "SIGNED_UP".to_string(),
             A2AMessageKinds::CreateKey => "CREATE_KEY".to_string(),
@@ -797,6 +932,14 @@ impl A2AMessageKinds {
             A2AMessageKinds::ComMethodUpdated => "COM_METHOD_UPDATED".to_string(),
             A2AMessageKinds::SendRemoteMessage => "SEND_REMOTE_MSG".to_string(),
             A2AMessageKinds::SendRemoteMessageResponse => "REMOTE_MSG_SENT".to_string(),
+            A2AMessageKinds::BackupInit => "WALLET_INIT_BACKUP".to_string(),
+            A2AMessageKinds::BackupReady => "WALLET_BACKUP_READY".to_string(),
+            A2AMessageKinds::Backup => "WALLET_BACKUP".to_string(),
+            A2AMessageKinds::BackupAck => "WALLET_BACKUP_ACK".to_string(),
+            A2AMessageKinds::BackupRestore => "WALLET_BACKUP_RESTORE".to_string(),
+            A2AMessageKinds::BackupRestored => "WALLET_BACKUP_RESTORED".to_string(),
+            A2AMessageKinds::RetrieveDeadDrop => "DEAD_DROP_RETRIEVE".to_string(),
+            A2AMessageKinds::RetrievedDeadDropResult => "DEAD_DROP_RETRIEVE_RESULT".to_string(),
         }
     }
 }
@@ -814,7 +957,7 @@ fn bundle_for_agency_v1(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
     let message = rmp_serde::to_vec_named(&message)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::UnknownError, format!("Cannot encode message: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot encode message: {}", err)))?;
 
     let message = Bundled::create(message).encode()?;
 
@@ -853,7 +996,7 @@ fn parse_response_from_agency_v1(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage
     bundle.bundled
         .iter()
         .map(|msg| rmp_serde::from_slice(msg)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err))))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize response from bytes. Error: {}", err))))
         .collect::<VcxResult<Vec<A2AMessage>>>()
 }
 
@@ -861,17 +1004,17 @@ pub fn parse_message_from_response(response: &Vec<u8>) -> VcxResult<String> {
     let unpacked_msg = crypto::unpack_message(&response[..])?;
 
     let message: Value = ::serde_json::from_slice(unpacked_msg.as_slice())
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize JSON object from bytes. Err: {}", err)))?;
 
     Ok(message["message"].as_str()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field on response"))?.to_string())
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Cannot find `message` field on response"))?.to_string())
 }
 
 fn parse_response_from_agency_v2(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage>> {
     let message = parse_message_from_response(response)?;
 
     let message: A2AMessage = serde_json::from_str(&message)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize A2A message: {}", err)))?;
 
     Ok(vec![message])
 }
@@ -941,13 +1084,13 @@ fn prepare_forward_message(message: Vec<u8>, did: &str, version: ProtocolTypes) 
     match message {
         A2AMessage::Version1(A2AMessageV1::Forward(msg)) => prepare_forward_message_for_agency_v1(&msg, &agency_vk),
         A2AMessage::Version2(A2AMessageV2::Forward(msg)) => prepare_forward_message_for_agency_v2(&msg, &agency_vk),
-        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Invalid message type"))
+        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Unexpected message type. The message expected to be of Forward type"))
     }
 }
 
 fn prepare_forward_message_for_agency_v1(message: &Forward, agency_vk: &str) -> VcxResult<Vec<u8>> {
     let message = rmp_serde::to_vec_named(message)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::UnknownError, format!("Cannot serialize Forward message: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot serialize Forward message: {}", err)))?;
     let message = Bundled::create(message).encode()?;
     crypto::prep_anonymous_msg(agency_vk, &message[..])
 }
@@ -991,7 +1134,7 @@ fn prepare_message_for_agent_v1(messages: Vec<A2AMessage>, pw_vk: &str, agent_di
 
 fn prepare_message_for_agent_v2(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> VcxResult<Vec<u8>> {
     let message = messages.get(0)
-        .ok_or(VcxError::from_msg(VcxErrorKind::SerializationError, "Cannot get message"))?;
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get message"))?;
 
     let message = serde_json::to_string(message)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize A2A message: {}", err)))?;
@@ -1059,7 +1202,7 @@ impl<'a, 'de, T> ObjectWithVersion<'a, T> where T: ::serde::Serialize + ::serde:
 
     pub fn serialize(&self) -> VcxResult<String> {
         ::serde_json::to_string(self)
-            .to_vcx(VcxErrorKind::InvalidState, "Cannot serialize object")
+            .to_vcx(VcxErrorKind::SerializationError, "Cannot serialize object")
     }
 
     pub fn deserialize(data: &str) -> VcxResult<ObjectWithVersion<T>> where T: ::serde::de::DeserializeOwned {
@@ -1094,6 +1237,14 @@ pub fn get_messages() -> GetMessagesBuilder { GetMessagesBuilder::create() }
 pub fn send_message() -> SendMessageBuilder { SendMessageBuilder::create() }
 
 pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
+
+pub fn wallet_backup_init() -> BackupInitBuilder { BackupInitBuilder::create() }
+
+pub fn wallet_backup_restore() -> BackupRestoreBuilder { BackupRestoreBuilder::create() }
+
+pub fn retrieve_dead_drop() -> RetrieveDeadDropBuilder { RetrieveDeadDropBuilder::create() }
+
+pub fn backup_wallet() -> BackupBuilder { BackupBuilder::create() }
 
 #[cfg(test)]
 pub mod tests {

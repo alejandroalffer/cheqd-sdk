@@ -3,16 +3,17 @@ use v3::messages::attachment::{Attachments, AttachmentId};
 use v3::messages::ack::PleaseAck;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
-use issuer_credential::CredentialMessage;
 use messages::payload::PayloadKinds;
 use std::convert::TryInto;
+use messages::issuance::credential::CredentialMessage;
 
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct Credential {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    pub comment: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     #[serde(rename = "credentials~attach")]
     pub credentials_attach: Attachments,
     #[serde(rename = "~thread")]
@@ -27,7 +28,7 @@ impl Credential {
         Credential::default()
     }
 
-    pub fn set_comment(mut self, comment: String) -> Self {
+    pub fn set_comment(mut self, comment: Option<String>) -> Self {
         self.comment = comment;
         self
     }
@@ -59,7 +60,7 @@ impl TryInto<CredentialMessage> for Credential {
         let indy_credential_json = self.credentials_attach.content()?;
 
         let indy_credential: ::serde_json::Value = ::serde_json::from_str(&indy_credential_json)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Indy Credential: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize Indy Credential: {:?}", err)))?;
 
         Ok(CredentialMessage {
             msg_type: PayloadKinds::Cred.name().to_string(),
@@ -88,8 +89,8 @@ pub mod tests {
         })
     }
 
-    fn _comment() -> String {
-        String::from("comment")
+    fn _comment() -> Option<String> {
+        Some(String::from("comment"))
     }
 
     pub fn _credential() -> Credential {

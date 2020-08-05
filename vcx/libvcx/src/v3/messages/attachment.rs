@@ -1,5 +1,7 @@
 use std::str::from_utf8;
+use serde::{de, Serialize, Serializer, Deserialize, Deserializer};
 use serde_json;
+use serde_json::Value;
 
 use error::{VcxResult, VcxError, VcxErrorKind};
 
@@ -32,7 +34,7 @@ impl Attachments {
     pub fn content(&self) -> VcxResult<String> {
         match self.get() {
             Some(Attachment::JSON(ref attach)) => attach.get_data(),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "Unsupported Attachment type"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAttachmentEncoding, "Unsupported Attachment type"))
         }
     }
 }
@@ -52,18 +54,46 @@ pub struct Json {
     data: AttachmentData,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AttachmentId {
-    #[serde(rename = "libindy-cred-offer-0")]
+    OutofbandRequest,
     CredentialOffer,
-    #[serde(rename = "libindy-cred-request-0")]
     CredentialRequest,
-    #[serde(rename = "libindy-cred-0")]
     Credential,
-    #[serde(rename = "libindy-request-presentation-0")]
     PresentationRequest,
-    #[serde(rename = "libindy-presentation-0")]
-    Presentation
+    Presentation,
+    Other(String),
+}
+
+impl Serialize for AttachmentId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let value = match self {
+            AttachmentId::OutofbandRequest => "request-0",
+            AttachmentId::CredentialOffer => "libindy-cred-offer-0",
+            AttachmentId::CredentialRequest => "libindy-cred-request-0",
+            AttachmentId::Credential => "libindy-cred-0",
+            AttachmentId::PresentationRequest => "libindy-request-presentation-0",
+            AttachmentId::Presentation => "libindy-presentation-0",
+            AttachmentId::Other(type_) => type_,
+        };
+        Value::String(value.to_string()).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for AttachmentId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
+        match value.as_str() {
+            Some("request-0") => Ok(AttachmentId::OutofbandRequest),
+            Some("libindy-cred-offer-0") => Ok(AttachmentId::CredentialOffer),
+            Some("libindy-cred-request-0") => Ok(AttachmentId::CredentialRequest),
+            Some("libindy-cred-0") => Ok(AttachmentId::Credential),
+            Some("libindy-request-presentation-0") => Ok(AttachmentId::PresentationRequest),
+            Some("libindy-presentation-0") => Ok(AttachmentId::Presentation),
+            Some(_type) => Ok(AttachmentId::Other(_type.to_string())),
+            val => Err(de::Error::custom(format!("Unexpected Attachment id: {:?}", val)))
+        }
+    }
 }
 
 impl Json {
@@ -74,11 +104,10 @@ impl Json {
                     base64::encode(&
                         match json {
                             ::serde_json::Value::Object(obj) => {
-                                serde_json::to_string(&obj)
-                                    .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Attachment Json".to_string()))?
+                                json!(obj).to_string()
                             }
                             ::serde_json::Value::String(str) => str,
-                            val => return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Unsupported Json value: {:?}", val)))
+                            val => return Err(VcxError::from_msg(VcxErrorKind::InvalidAttachmentEncoding, format!("Unsupported Json value: {:?}", val)))
                         }
                     )
                 )
@@ -94,7 +123,7 @@ impl Json {
         let data = self.data.get_bytes()?;
         from_utf8(data.as_slice())
             .map(|s| s.to_string())
-            .map_err(|_| VcxError::from_msg(VcxErrorKind::IOError, "Wrong bytes in attachment".to_string()))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAttachmentEncoding, format!("Wrong bytes in attachment. Err: {:?}",err)))
     }
 }
 
@@ -113,7 +142,8 @@ impl AttachmentData {
     pub fn get_bytes(&self) -> VcxResult<Vec<u8>> {
         match self {
             AttachmentData::Base64(s) => {
-                base64::decode(s).map_err(|_| VcxError::from_msg(VcxErrorKind::IOError, "Wrong bytes in attachment"))
+                base64::decode(s)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAttachmentEncoding, format!("Wrong bytes in attachment. Err: {:?}",err)))
             }
         }
     }

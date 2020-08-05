@@ -85,7 +85,7 @@ use indy_sys::CommandHandle;
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: Enterprise's personal identification for the user.
+/// source_id: Enterprise's personal identification for the credential, should be unique.
 ///
 /// cred_def_id: id of credential definition given during creation of the credential definition
 ///
@@ -261,7 +261,7 @@ pub extern fn vcx_issuer_get_credential_offer_msg(command_handle: CommandHandle,
 
     spawn(move || {
         match issuer_credential::generate_credential_offer_msg(credential_handle) {
-            Ok((msg, _)) => {
+            Ok(msg) => {
                 let msg = CStringUtils::string_to_cstring(msg);
                 trace!("vcx_issuer_get_credential_offer_msg_cb(command_handle: {}, credential_handle: {}, rc: {}) source_id: {}",
                        command_handle, credential_handle, error::SUCCESS.message, source_id);
@@ -724,7 +724,7 @@ pub extern fn vcx_issuer_credential_get_payment_txn(command_handle: CommandHandl
                         cb(command_handle, 0, msg.as_ptr());
                     }
                     Err(e) => {
-                        let err = VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payment txn: {}", e));
+                        let err = VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize payment txn as JSON. Error: {}", e));
                         error!("vcx_issuer_credential_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}) source_id: {}",
                                command_handle, err, "null", source_id);
                         cb(command_handle, err.into(), ptr::null_mut());
@@ -801,7 +801,7 @@ pub mod tests {
     use settings;
     use utils::{
         constants::CREDENTIAL_REQ_RESPONSE_STR,
-        get_temp_dir_path,
+        get_temp_dir_path
     };
     use api::{return_types_u32, VcxStateType};
     use utils::devsetup::*;
@@ -943,6 +943,7 @@ pub mod tests {
     #[test]
     fn test_vcx_issuer_send_credential_offer() {
         let _setup = SetupMocks::init();
+
         let connection_handle = ::connection::tests::build_test_connection();
 
         let handle = _vcx_issuer_create_credential_c_closure().unwrap();

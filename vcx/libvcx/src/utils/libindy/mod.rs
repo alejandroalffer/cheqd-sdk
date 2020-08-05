@@ -9,8 +9,12 @@ pub mod crypto;
 pub mod payments;
 pub mod cache;
 pub mod logger;
+pub mod types;
 
 pub mod error_codes;
+
+#[cfg(all(feature="mysql", not(feature="sqlite")))]
+pub mod mysql_wallet;
 
 use std::sync::Mutex;
 use settings;

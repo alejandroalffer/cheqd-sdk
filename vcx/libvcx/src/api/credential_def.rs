@@ -99,6 +99,84 @@ pub extern fn vcx_credentialdef_create(command_handle: CommandHandle,
 
     error::SUCCESS.code_num
 }
+/// Create a new CredentialDef object from a cred_def_id
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the user.
+///
+/// cred_def_id: reference to already created cred def
+///
+/// issuer_did: did corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
+///
+/// revocation_config: Information given during the initial create of the cred def if revocation was enabled
+///  {
+///     tails_file: Option<String>,  // Path to tails file
+///     rev_reg_id: Option<String>,
+///     rev_reg_def: Option<String>,
+///     rev_reg_entry: Option<String>,
+///  }
+///
+/// cb: Callback that provides CredentialDef handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_credentialdef_create_with_id(command_handle: CommandHandle,
+                                               source_id: *const c_char,
+                                               cred_def_id: *const c_char,
+                                               issuer_did: *const c_char,
+                                               revocation_config: *const c_char,
+                                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_handle: u32)>) -> u32 {
+    info!("vcx_credentialdef_create_with_id >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(cred_def_id, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(revocation_config, VcxErrorKind::InvalidOption);
+
+    let issuer_did: String = if !issuer_did.is_null() {
+        check_useful_c_str!(issuer_did, VcxErrorKind::InvalidOption);
+        issuer_did.to_owned()
+    } else {
+        match settings::get_config_value(settings::CONFIG_INSTITUTION_DID) {
+            Ok(x) => x,
+            Err(x) => return x.into(),
+        }
+    };
+
+    trace!("vcx_credentialdef_create_with_id(command_handle: {}, source_id: {}, cred_def_id: {} issuer_did: {}, revocation_config: {:?})",
+           command_handle,
+           source_id,
+           cred_def_id,
+           issuer_did,
+           revocation_config
+    );
+
+    spawn(move|| {
+        let ( rc, handle) = match credential_def::create_credentialdef_from_id(source_id,
+                                                                               cred_def_id,
+                                                                               issuer_did,
+                                                                               revocation_config ) {
+            Ok(x) => {
+                trace!("vcx_credentialdef_create_with_id_cb(command_handle: {}, rc: {}, credentialdef_handle: {}), source_id: {:?}",
+                       command_handle, error::SUCCESS.message, x, credential_def::get_source_id(x).unwrap_or_default());
+                (error::SUCCESS.code_num, x)
+            }
+            Err(x) => {
+                warn!("vcx_credentialdef_create_with_id(command_handle: {}, rc: {}, credentialdef_handle: {}), source_id: {:?}",
+                      command_handle, x, 0, "");
+                (x.into(), 0)
+            }
+        };
+        cb(command_handle, rc, handle);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
 
 /// Create a new CredentialDef object that will be published by Endorser later.
 ///
@@ -382,7 +460,7 @@ pub extern fn vcx_credentialdef_get_payment_txn(command_handle: CommandHandle,
                         cb(command_handle, 0, msg.as_ptr());
                     }
                     Err(e) => {
-                        let err = VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payment txn: {:?}", e));
+                        let err = VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize payment txn. Err: {:?}", e));
                         error!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {}",
                                command_handle, err, "null", credential_def::get_source_id(handle).unwrap_or_default());
                         cb(command_handle, err.into(), ptr::null_mut());
@@ -574,6 +652,19 @@ mod tests {
                                             0,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
         assert!(cb.receive(TimeoutUtils::some_medium()).is_err());
+    }
+    #[test]
+    fn test_vcx_create_credentialdef_from_id_success() {
+        let _setup = SetupMocks::init();
+
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credentialdef_create_with_id(cb.command_handle,
+                                            CString::new("Test Source ID").unwrap().into_raw(),
+                                            CString::new("Test Credential Def").unwrap().into_raw(),
+                                            CString::new("6vkhW3L28AophhA68SSzRS").unwrap().into_raw(),
+                                            ptr::null(),
+                                            Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]

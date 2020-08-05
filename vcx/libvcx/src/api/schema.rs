@@ -273,7 +273,7 @@ pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
 /// Retrieves schema's id
 ///
 /// #Params
-/// schema_handle: Schema handle that was provided during creation. Used to access proof object
+/// schema_handle: Schema handle that was provided during creation.
 ///
 /// cb: Callback that provides schema id and provides error status
 ///
@@ -405,7 +405,7 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: CommandHandle,
                         cb(command_handle, 0, msg.as_ptr());
                     }
                     Err(e) => {
-                        let err = VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payment txn: {}", e));
+                        let err = VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize payment txn as JSON. Error: {}", e));
                         error!("vcx_schema_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {:?}",
                                command_handle, err, "null", schema::get_source_id(handle).unwrap_or_default());
                         cb(command_handle, err.into(), ptr::null_mut());
@@ -425,7 +425,7 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Checks if schema is published on the Ledger and updates the  state
+/// Checks if schema is published on the Ledger and updates the state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

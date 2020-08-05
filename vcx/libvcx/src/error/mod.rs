@@ -18,7 +18,7 @@ pub enum VcxErrorKind {
     // Common
     #[fail(display = "Object is in invalid state for requested operation")]
     InvalidState,
-    #[fail(display = "Invalid Configuration")]
+    #[fail(display = "Invalid configuration was passed into provisioning /initialization functions")]
     InvalidConfiguration,
     #[fail(display = "Obj was not found with handle")]
     InvalidHandle,
@@ -46,7 +46,7 @@ pub enum VcxErrorKind {
     ActionNotSupported,
 
     // Connection
-    #[fail(display = "Could not create connection")]
+    #[fail(display = "Could not store Connection object into the Object Cache")]
     CreateConnection,
     #[fail(display = "Invalid Connection Handle")]
     InvalidConnectionHandle,
@@ -56,8 +56,6 @@ pub enum VcxErrorKind {
     InvalidRedirectDetail,
     #[fail(display = "Cannot Delete Connection. Check status of connection is appropriate to be deleted from agency.")]
     DeleteConnection,
-    #[fail(display = "Error with Connection")]
-    GeneralConnectionError,
 
     // Payment
     #[fail(display = "No payment information associated with object")]
@@ -67,13 +65,15 @@ pub enum VcxErrorKind {
     #[fail(display = "Invalid payment address")]
     InvalidPaymentAddress,
 
-    // Credential Definition error
+    // Credential Definition
     #[fail(display = "Call to create Credential Definition failed")]
     CreateCredDef,
     #[fail(display = "Can't create, Credential Def already on ledger")]
     CredDefAlreadyCreated,
     #[fail(display = "Invalid Credential Definition handle")]
     InvalidCredDefHandle,
+    #[fail(display = "Credential Definition not found on the Ledger")]
+    CredentialDefinitionNotFound,
 
     // Revocation
     #[fail(display = "Failed to create Revocation Registration Definition")]
@@ -88,17 +88,17 @@ pub enum VcxErrorKind {
     // Credential
     #[fail(display = "Invalid credential handle")]
     InvalidCredentialHandle,
-    #[fail(display = "could not create credential request")]
-    CreateCredentialRequest,
 
     // Issuer Credential
     #[fail(display = "Invalid Credential Issuer Handle")]
     InvalidIssuerCredentialHandle,
+    #[fail(display = "Invalid Credential Offer")]
+    InvalidCredentialOffer,
     #[fail(display = "Invalid Credential Request")]
     InvalidCredentialRequest,
     #[fail(display = "Invalid credential json")]
     InvalidCredential,
-    #[fail(display = "Attributes provided to Credential Offer are not correct, possibly malformed")]
+    #[fail(display = "Attributes provided to Credential Offer / Proof Request are not correct, possibly malformed")]
     InvalidAttributesStructure,
 
     // Proof
@@ -116,6 +116,8 @@ pub enum VcxErrorKind {
     CreateProof,
     #[fail(display = "Proof Request Passed into Libindy Call Was Invalid")]
     InvalidProofRequest,
+    #[fail(display = "Predicates provided to create a Proof Request are not correct")]
+    InvalidPredicatesStructure,
 
     // Schema
     #[fail(display = "Could not create schema")]
@@ -146,10 +148,8 @@ pub enum VcxErrorKind {
     // Wallet
     #[fail(display = "Error Creating a wallet")]
     WalletCreate,
-    #[fail(display = "Missing wallet name in config")]
-    MissingWalletName,
-    #[fail(display = "Missing exported wallet path in config")]
-    MissingExportedWalletPath,
+    #[fail(display = "Invalid config JSON passed into wallet import")]
+    InvalidWalletImportConfig,
     #[fail(display = "Missing exported backup key in config")]
     MissingBackupKey,
     #[fail(display = "Attempt to open wallet with invalid credentials")]
@@ -180,8 +180,6 @@ pub enum VcxErrorKind {
     // Validation
     #[fail(display = "Could not encode string to a big integer.")]
     EncodeError,
-    #[fail(display = "Unknown Error")]
-    UnknownError,
     #[fail(display = "Invalid DID")]
     InvalidDid,
     #[fail(display = "Invalid VERKEY")]
@@ -198,21 +196,40 @@ pub enum VcxErrorKind {
     NotBase58,
 
     // A2A
-    #[fail(display = "Invalid HTTP response.")]
-    InvalidHttpResponse,
-    #[fail(display = "No Endpoint set for Connection Object")]
-    NoEndpoint,
-    #[fail(display = "Error Retrieving messages from API")]
-    InvalidMessages,
+    #[fail(display = "Invalid or unexpected message received from the Agency")]
+    InvalidAgencyResponse,
 
     #[fail(display = "Common error {}", 0)]
     Common(u32),
     #[fail(display = "Libndy error {}", 0)]
     LibndyError(u32),
-    #[fail(display = "Unknown libindy error")]
-    UnknownLibndyError,
+
+    // Wallet Backup
+    #[fail(display = "Could not create WalletBackup")]
+    CreateWalletBackup,
+
+    #[fail(display = "Failed to retrieve exported wallet")]
+    RetrieveExportedWallet,
+
+    #[fail(display = "Failed to retrieve dead drop payload")]
+    RetrieveDeadDrop,
+
+    #[fail(display = "Cloud Backup exceeds max size limit")]
+    MaxBackupSize,
+
     #[fail(display = "No Agent pairwise information")]
     NoAgentInformation,
+
+    #[fail(display = "Token provided by sponsor is invalid")]
+    InvalidProvisioningToken,
+
+    // Aries
+    #[fail(display = "Invalid DIDDoc")]
+    InvalidDIDDoc,
+    #[fail(display = "Message is out of thread")]
+    MessageIsOutOfThread,
+    #[fail(display = "Message attachment is invalid")]
+    InvalidAttachmentEncoding,
 }
 
 #[derive(Debug)]
@@ -306,7 +323,6 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::NoPaymentInformation => error::NO_PAYMENT_INFORMATION.code_num,
             VcxErrorKind::NotReady => error::NOT_READY.code_num,
             VcxErrorKind::InvalidRevocationDetails => error::INVALID_REVOCATION_DETAILS.code_num,
-            VcxErrorKind::GeneralConnectionError => error::CONNECTION_ERROR.code_num,
             VcxErrorKind::IOError => error::IOERROR.code_num,
             VcxErrorKind::LibindyInvalidStructure => error::LIBINDY_INVALID_STRUCTURE.code_num,
             VcxErrorKind::TimeoutLibindy => error::TIMEOUT_LIBINDY_ERROR.code_num,
@@ -320,11 +336,12 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::CreateCredDef => error::CREATE_CREDENTIAL_DEF_ERR.code_num,
             VcxErrorKind::CredDefAlreadyCreated => error::CREDENTIAL_DEF_ALREADY_CREATED.code_num,
             VcxErrorKind::InvalidCredDefHandle => error::INVALID_CREDENTIAL_DEF_HANDLE.code_num,
+            VcxErrorKind::CredentialDefinitionNotFound => error::CREDENTIAL_DEFINITION_NOT_FOUND.code_num,
             VcxErrorKind::InvalidRevocationEntry => error::INVALID_REV_ENTRY.code_num,
             VcxErrorKind::CreateRevRegDef => error::INVALID_REV_REG_DEF_CREATION.code_num,
             VcxErrorKind::InvalidCredentialHandle => error::INVALID_CREDENTIAL_HANDLE.code_num,
-            VcxErrorKind::CreateCredentialRequest => error::CREATE_CREDENTIAL_REQUEST_ERROR.code_num,
             VcxErrorKind::InvalidIssuerCredentialHandle => error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num,
+            VcxErrorKind::InvalidCredentialOffer => error::INVALID_CREDENTIAL_OFFER.code_num,
             VcxErrorKind::InvalidCredentialRequest => error::INVALID_CREDENTIAL_REQUEST.code_num,
             VcxErrorKind::InvalidCredential => error::INVALID_CREDENTIAL_JSON.code_num,
             VcxErrorKind::InsufficientTokenAmount => error::INSUFFICIENT_TOKEN_AMOUNT.code_num,
@@ -341,7 +358,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::DuplicationSchema => error::DUPLICATE_SCHEMA.code_num,
             VcxErrorKind::UnknownSchemaRejection => error::UNKNOWN_SCHEMA_REJECTION.code_num,
             VcxErrorKind::WalletCreate => error::INVALID_WALLET_CREATION.code_num,
-            VcxErrorKind::MissingWalletName => error::MISSING_WALLET_NAME.code_num,
+            VcxErrorKind::InvalidWalletImportConfig => error::INVALID_WALLET_IMPORT_CONFIG.code_num,
             VcxErrorKind::WalletAccessFailed => error::WALLET_ACCESS_FAILED.code_num,
             VcxErrorKind::InvalidWalletHandle => error::INVALID_WALLET_HANDLE.code_num,
             VcxErrorKind::DuplicationWallet => error::WALLET_ALREADY_EXISTS.code_num,
@@ -357,13 +374,11 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::InvalidLedgerResponse => error::INVALID_LEDGER_RESPONSE.code_num,
             VcxErrorKind::InvalidAttributesStructure => error::INVALID_ATTRIBUTES_STRUCTURE.code_num,
             VcxErrorKind::InvalidPaymentAddress => error::INVALID_PAYMENT_ADDRESS.code_num,
-            VcxErrorKind::NoEndpoint => error::NO_ENDPOINT.code_num,
             VcxErrorKind::InvalidProofRequest => error::INVALID_PROOF_REQUEST.code_num,
             VcxErrorKind::NoPoolOpen => error::NO_POOL_OPEN.code_num,
             VcxErrorKind::PostMessageFailed => error::POST_MSG_FAILURE.code_num,
             VcxErrorKind::LoggingError => error::LOGGING_ERROR.code_num,
             VcxErrorKind::EncodeError => error::BIG_NUMBER_ERROR.code_num,
-            VcxErrorKind::UnknownError => error::UNKNOWN_ERROR.code_num,
             VcxErrorKind::InvalidDid => error::INVALID_DID.code_num,
             VcxErrorKind::InvalidVerkey => error::INVALID_VERKEY.code_num,
             VcxErrorKind::InvalidNonce => error::INVALID_NONCE.code_num,
@@ -372,15 +387,21 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::MissingPaymentMethod => error::MISSING_PAYMENT_METHOD.code_num,
             VcxErrorKind::SerializationError => error::SERIALIZATION_ERROR.code_num,
             VcxErrorKind::NotBase58 => error::NOT_BASE58.code_num,
-            VcxErrorKind::InvalidHttpResponse => error::INVALID_HTTP_RESPONSE.code_num,
-            VcxErrorKind::InvalidMessages => error::INVALID_MESSAGES.code_num,
-            VcxErrorKind::MissingExportedWalletPath => error::MISSING_EXPORTED_WALLET_PATH.code_num,
+            VcxErrorKind::InvalidAgencyResponse => error::INVALID_AGENCY_RESPONSE.code_num,
             VcxErrorKind::MissingBackupKey => error::MISSING_BACKUP_KEY.code_num,
-            VcxErrorKind::UnknownLibndyError => error::UNKNOWN_LIBINDY_ERROR.code_num,
             VcxErrorKind::ActionNotSupported => error::ACTION_NOT_SUPPORTED.code_num,
             VcxErrorKind::Common(num) => num,
             VcxErrorKind::LibndyError(num) => num,
+            VcxErrorKind::CreateWalletBackup => error::CREATE_WALLET_BACKUP.code_num,
+            VcxErrorKind::RetrieveExportedWallet => error::RETRIEVE_EXPORTED_WALLET.code_num,
+            VcxErrorKind::RetrieveDeadDrop => error::RETRIEVE_DEAD_DROP.code_num,
+            VcxErrorKind::MaxBackupSize => error::MAX_BACKUP_SIZE.code_num,
             VcxErrorKind::NoAgentInformation => error::NO_AGENT_INFO.code_num,
+            VcxErrorKind::InvalidProvisioningToken => error::INVALID_PROVISION_TOKEN.code_num,
+            VcxErrorKind::InvalidDIDDoc => error::INVALID_DID_DOC.code_num,
+            VcxErrorKind::MessageIsOutOfThread => error::MESSAGE_IS_OUT_OF_THREAD.code_num,
+            VcxErrorKind::InvalidPredicatesStructure => error::INVALID_PREDICATES_STRUCTURE.code_num,
+            VcxErrorKind::InvalidAttachmentEncoding => error::INVALID_ATTACHMENT_ENCODING.code_num,
         }
     }
 }

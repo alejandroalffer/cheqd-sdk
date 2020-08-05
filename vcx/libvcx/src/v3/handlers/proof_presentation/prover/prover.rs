@@ -28,11 +28,6 @@ impl Prover {
 
     pub fn state(&self) -> u32 { self.prover_sm.state() }
 
-    pub fn presentation_status(&self) -> u32 {
-        trace!("Prover::presentation_state >>>");
-        self.prover_sm.presentation_status()
-    }
-
     pub fn retrieve_credentials(&self) -> VcxResult<String> {
         trace!("Prover::retrieve_credentials >>>");
         let presentation_request = self.prover_sm.presentation_request().request_presentations_attach.content()?;
@@ -50,7 +45,7 @@ impl Prover {
         let proof: ProofMessage = self.prover_sm.presentation()?.clone().try_into()?;
 
         ::serde_json::to_string(&proof)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize ProofMessage. Err: {:?}", err)))
     }
 
     pub fn set_presentation(&mut self, presentation: Presentation) -> VcxResult<()> {
@@ -72,12 +67,18 @@ impl Prover {
             return self.update_state_with_message(message_);
         }
 
-        let connection_handle = self.prover_sm.connection_handle()?;
-        let messages = connection::get_messages(connection_handle)?;
+        let agent_info = match self.prover_sm.get_agent_info() {
+            Some(agent_info) => agent_info.clone(),
+            None => {
+                warn!("Could not update Prover state: no information about Connection.");
+                return Ok(());
+            }
+        };
 
+        let messages = agent_info.get_messages()?;
         if let Some((uid, message)) = self.prover_sm.find_message_to_handle(messages) {
             self.handle_message(message.into())?;
-            connection::update_message_status(connection_handle, uid)?;
+            agent_info.update_message_status(uid)?;
         };
 
         Ok(())
@@ -87,7 +88,8 @@ impl Prover {
         trace!("Prover::update_state_with_message >>> message: {:?}", message);
 
         let a2a_message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot updated state with message: Message deserialization failed: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Cannot updated Prover state with messages: Message deserialization failed with: {:?}", err)))?;
 
         self.handle_message(a2a_message.into())?;
 
@@ -107,8 +109,8 @@ impl Prover {
         let presentation_request: PresentationRequest = match message {
             A2AMessage::PresentationRequest(presentation_request) => presentation_request,
             msg => {
-                return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages,
-                                              format!("Message of different type was received: {:?}", msg)));
+                return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse,
+                                              format!("Message of different type has been received. Expected: PresentationRequest. Received: {:?}", msg)));
             }
         };
 
@@ -149,7 +151,7 @@ impl Prover {
             }
             (None, Some(proposal)) => {
                 let presentation_preview: PresentationPreview = serde_json::from_str(&proposal)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize Presentation Preview: {:?}", err)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse Presentation Preview from JSON string. Err: {:?}", err)))?;
 
                 self.step(ProverMessages::ProposePresentation((connection_handle, presentation_preview)))
             }

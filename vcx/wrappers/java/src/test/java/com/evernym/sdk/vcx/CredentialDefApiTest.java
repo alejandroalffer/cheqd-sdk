@@ -40,6 +40,12 @@ public class CredentialDefApiTest {
         Assertions.assertNotEquals(0,credentialDef);
     }
     @Test
+    @DisplayName("create a credential def with id")
+    void createCredentialDefWithId() throws VcxException, ExecutionException, InterruptedException {
+        int credentialDef = TestHelper._createCredentialDefWithId();
+        Assertions.assertNotEquals(0,credentialDef);
+    }
+    @Test
     @DisplayName("serialise a credential def")
     void serialize() throws VcxException, ExecutionException, InterruptedException {
         int credentialDef = TestHelper._createCredentialDef();

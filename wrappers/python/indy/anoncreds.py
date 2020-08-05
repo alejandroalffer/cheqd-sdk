@@ -96,7 +96,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
 
     :param wallet_handle: wallet handle (created by open_wallet).
     :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
-    :param schema_json: credential schema as a json 
+    :param schema_json: credential schema as a json
         {
             id: identifier of schema
             attrNames: array of attribute name strings
@@ -173,7 +173,7 @@ async def issuer_rotate_credential_def_start(wallet_handle: int,
                                              config_json: Optional[str]) -> str:
     """
     Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
-   
+
     Use `issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
 
     WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
@@ -320,7 +320,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                     revoked: array<number> an array of revoked indices.
                 },
                 ver: string - version revocation registry entry json
-            }    
+            }
     """
 
     logger = logging.getLogger(__name__)
@@ -1186,7 +1186,7 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
            "issuer_did": string, (Optional)
            "cred_def_id": string, (Optional)
         }
-        
+
     :return: json with credentials for the given proof request.
         {
             "attrs": {
@@ -1268,8 +1268,8 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
             "<attr_referent>": <wql query>,
             "<predicate_referent>": <wql query>,
         }
-        
-        
+
+
     where
     attr_info: Describes requested attribute
         {
@@ -1314,7 +1314,7 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
             "issuer_did": <credential issuer did>,
             "cred_def_id": <credential definition id>,
             "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
-            
+
     :return: search_handle: Search handle that can be used later to fetch records by small batches (with prover_fetch_credentials_for_proof_req)
     """
 
@@ -1499,7 +1499,7 @@ async def prover_create_proof(wallet_handle: int,
                   "timestamp4": <rev_state4>
               },
           } - Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
-          
+
     where
         attr_referent: Proof-request local identifier of requested attribute
         attr_info: Describes requested attribute
@@ -1906,7 +1906,7 @@ async def generate_nonce() -> str:
 async def to_unqualified(entity: str) -> str:
     """
     Get unqualified form (short form without method) of a fully qualified entity like DID.
-   
+
     This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
         Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
         Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.

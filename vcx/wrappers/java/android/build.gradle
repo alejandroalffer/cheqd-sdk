@@ -48,7 +48,13 @@ allprojects {
 group = 'com.evernym.sdk'
 
 def versionMajor() {
-    return '1.0.0'
+    String version = "0.9.3"
+    String suffix = System.getenv("CI_PIPELINE_IID")
+    String branch = System.getenv("CI_COMMIT_REF_SLUG")
+    if (suffix != null && !branch.equals("stable")) {
+        version += "." + suffix
+    }
+    return version
 }
 
 //TODO: consider removing buildtime from version number when the wrapper api is on par with vcx-rust api
@@ -176,3 +182,27 @@ dependencies {
 
 }
 
+task("buildJavadoc", type: Javadoc) {    
+    title = "VCX SDK ${versionMajor()}-${buildTime()}"
+    failOnError = false
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    destinationDir = file("${project.docsDir}/javadoc-${fullVersionName()}")
+    options {
+        links("https://docs.oracle.com/javase/8/docs/api/")
+    }
+}
+
+task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
+    baseName = fullVersionName()
+    classifier = 'javadoc'
+    from tasks["buildJavadoc"].destinationDir
+}
+
+build.finalizedBy(buildJavadocJar)
+
+afterEvaluate {
+    buildJavadoc.classpath += files(android.libraryVariants.collect { variant ->
+        variant.getCompileClasspath().files
+    })
+}

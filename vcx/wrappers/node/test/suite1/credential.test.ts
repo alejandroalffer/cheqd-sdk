@@ -43,7 +43,7 @@ describe('Credential:', () => {
     it('throws: invalid offer', async () => {
       const { offer, ...data } = await dataCredentialCreateWithOffer()
       const error = await shouldThrow(() => Credential.create({ offer: 'invalid', ...data }))
-      assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
+      assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_OFFER)
     })
   })
 
@@ -225,4 +225,20 @@ describe('Credential:', () => {
     })
   })
 
+  describe('acceptOffer:', () => {
+    it('success: accept credential offer', async () => {
+      const data = await dataCredentialCreateWithOffer()
+      const credential = await Credential.acceptOffer(data)
+      assert.equal(await credential.getState(), StateType.OfferSent)
+    })
+  })
+
+  describe('rejectCredentail:', () => {
+    it('success: reject credential offer', async () => {
+      const data = await dataCredentialCreateWithOffer()
+      const credential = await credentialCreateWithOffer(data)
+      const error = await shouldThrow(() => credential.reject({ connection: data.connection }))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+    })
+  })
 })

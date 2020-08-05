@@ -30,6 +30,13 @@ async def main():
             credential = await Credential.create('credential', json.loads(offer))
             await accept_offer(connection_to_faber, credential)
             await update_message_as_read(pw_did, uid)
+
+            # Mark Credential as read
+            try:
+                uid, offer, _ = await download_message(pw_did)
+                await update_message_as_read(pw_did, uid)
+            except:
+                pass
         elif answer == '2':
             print("Check agency for a proof request")
             pw_did = await connection_to_faber.get_my_pw_did()

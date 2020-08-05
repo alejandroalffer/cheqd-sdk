@@ -42,7 +42,7 @@ describe('DisclosedProof', () => {
     it('throws: invalid request', async () => {
       const { connection, sourceId } = await dataDisclosedProofCreateWithRequest()
       const error = await shouldThrow(() => DisclosedProof.create({ connection, request: 'invalid', sourceId }))
-      assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
+      assert.equal(error.vcxCode, VCXCode.INVALID_PROOF_REQUEST)
     })
   })
 
@@ -209,6 +209,6 @@ describe('DisclosedProof', () => {
       const data = await dataDisclosedProofCreateWithRequest()
       await disclosedProofCreateWithRequest(data)
     })
-  })
+ })
 
 })

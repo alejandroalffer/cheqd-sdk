@@ -6,7 +6,7 @@ use v3::messages::a2a::A2AMessage;
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum VerifierMessages {
     SendPresentationRequest(u32),
-    VerifyPresentation(Presentation),
+    PresentationReceived(Presentation),
     PresentationProposalReceived(PresentationProposal),
     PresentationRejectReceived(ProblemReport),
     Unknown
@@ -16,12 +16,13 @@ impl From<A2AMessage> for VerifierMessages {
     fn from(msg: A2AMessage) -> Self {
         match msg {
             A2AMessage::Presentation(presentation) => {
-                VerifierMessages::VerifyPresentation(presentation)
+                VerifierMessages::PresentationReceived(presentation)
             }
             A2AMessage::PresentationProposal(presentation_proposal) => {
                 VerifierMessages::PresentationProposalReceived(presentation_proposal)
             }
-            A2AMessage::CommonProblemReport(report) => {
+            A2AMessage::CommonProblemReport(report) |
+            A2AMessage::PresentationReject(report)=> {
                 VerifierMessages::PresentationRejectReceived(report)
             }
             _ => {

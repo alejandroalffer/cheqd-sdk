@@ -4,7 +4,7 @@ use v3::messages::attachment::{Attachments, AttachmentId};
 use v3::messages::mime_type::MimeType;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
-use issuer_credential::CredentialOffer as CredentialOfferV1;
+use messages::issuance::credential_offer::CredentialOffer as CredentialOfferV1;
 use messages::payload::PayloadKinds;
 use std::convert::TryInto;
 
@@ -12,7 +12,8 @@ use std::convert::TryInto;
 pub struct CredentialOffer {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    pub comment: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     pub credential_preview: CredentialPreviewData,
     #[serde(rename = "offers~attach")]
     pub offers_attach: Attachments,
@@ -31,7 +32,7 @@ impl CredentialOffer {
         self
     }
 
-    pub fn set_comment(mut self, comment: String) -> Self {
+    pub fn set_comment(mut self, comment: Option<String>) -> Self {
         self.comment = comment;
         self
     }
@@ -82,7 +83,7 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
     fn try_into(self) -> Result<CredentialOfferV1, Self::Error> {
         let indy_cred_offer_json = self.offers_attach.content()?;
         let indy_cred_offer: ::serde_json::Value = ::serde_json::from_str(&indy_cred_offer_json)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Indy Offer: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, format!("Cannot deserialize Indy Offer: {:?}", err)))?;
 
         let mut credential_attrs: ::serde_json::Map<String, ::serde_json::Value> = ::serde_json::Map::new();
 
@@ -97,7 +98,7 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
             from_did: String::new(),
             credential_attrs,
             schema_seq_no: 0,
-            claim_name: String::new(),
+            claim_name: self.comment.unwrap_or("".to_string()),
             claim_id: String::new(),
             msg_ref_id: None,
             cred_def_id: indy_cred_offer["cred_def_id"].as_str().map(String::from).unwrap_or_default(),
@@ -119,8 +120,8 @@ pub mod tests {
         })
     }
 
-    fn _comment() -> String {
-        String::from("comment")
+    fn _comment() -> Option<String> {
+        Some(String::from("comment"))
     }
 
     pub fn _value() -> (&'static str, &'static str) {

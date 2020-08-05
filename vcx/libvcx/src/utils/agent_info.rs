@@ -23,7 +23,7 @@ pub struct MyAgentInfo {
     pub agency_vk: String,
 }
 
-pub fn get_agent_attr(v: &Option<String>) -> VcxResult<String> { get_or_err(v, Some(VcxErrorKind::NoAgentInformation)) }
+pub fn get_agent_attr(v: &Option<String>) -> VcxResult<String> { get_or_err(v, VcxErrorKind::NoAgentInformation) }
 
 impl MyAgentInfo {
     pub fn connection_handle(&self) -> VcxResult<u32> {

@@ -15,3 +15,10 @@ Podfile.lock
 /wrappers/python/venv/
 .vscode
 _build/
+output/
+
+# Byte-compiled python
+__pycache__/
+*.py[cod]
+*$py.class
+.pybuild

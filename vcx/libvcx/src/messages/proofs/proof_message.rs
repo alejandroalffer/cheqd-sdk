@@ -47,12 +47,12 @@ impl ProofMessage {
 
     pub fn to_string(&self) -> VcxResult<String> {
         serde_json::to_string(&self)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProof, format!("Cannot serialize proof: {}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize Proof: {}", err)))
     }
 
     pub fn from_str(payload: &str) -> VcxResult<ProofMessage> {
         serde_json::from_str(payload)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProof, format!("Cannot deserialize proof: {}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProof, format!("Cannot deserialize Proof: {}", err)))
     }
 
     pub fn get_credential_info(&self) -> VcxResult<Vec<CredInfo>> {
@@ -64,7 +64,7 @@ pub fn get_credential_info(proof: &str) -> VcxResult<Vec<CredInfo>> {
     let mut rtn = Vec::new();
 
     let credentials: Value = serde_json::from_str(&proof)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize libndy proof: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProof, format!("Cannot deserialize libndy proof: {}", err)))?;
 
     if let Value::Array(ref identifiers) = credentials["identifiers"] {
         for identifier in identifiers {
@@ -72,7 +72,7 @@ pub fn get_credential_info(proof: &str) -> VcxResult<Vec<CredInfo>> {
                                                            identifier["cred_def_id"].as_str()) {
                 let rev_reg_id = identifier["rev_reg_id"]
                     .as_str()
-                    .map(|x| x.to_string());
+                    .map(String::from);
 
                 let timestamp = identifier["timestamp"].as_u64();
                 rtn.push(
@@ -83,7 +83,7 @@ pub fn get_credential_info(proof: &str) -> VcxResult<Vec<CredInfo>> {
                         timestamp,
                     }
                 );
-            } else { return Err(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, "Cannot get identifiers")); }
+            } else { return Err(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, "Cannot get the list of Public Identifiers from the Proof")); }
         }
     }
 
@@ -135,7 +135,7 @@ pub mod tests {
 
         let mut proof = ProofMessage::new();
         proof.libindy_proof = "".to_string();
-        assert_eq!(proof.get_credential_info().unwrap_err().kind(), VcxErrorKind::InvalidJson);
+        assert_eq!(proof.get_credential_info().unwrap_err().kind(), VcxErrorKind::InvalidProof);
 
         proof.libindy_proof = "{}".to_string();
         assert_eq!(proof.get_credential_info().unwrap(), Vec::new());

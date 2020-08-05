@@ -14,6 +14,8 @@ def parse_args():
     parser.add_argument("WALLET_KEY")
     parser.add_argument("--wallet-name", help="optional name for libindy wallet")
     parser.add_argument("--wallet-type", help="optional type of libindy wallet")
+    parser.add_argument("--storage-config", help="config for the storage", default="{}")
+    parser.add_argument("--storage-credentials", help="credentials for the storage", default="{}")
     parser.add_argument("--agent-seed", help="optional seed used to create enterprise->agent DID/VK")
     parser.add_argument("--enterprise-seed", help="optional seed used to create enterprise DID/VK")
     parser.add_argument("--pool-config", help="optional additional config for connection to pool nodes ({timeout: Opt<int>, extended_timeout: Opt<int>, preordered_nodes: Opt<array<string>>})")
@@ -50,6 +52,9 @@ def get_agency_info(agency_url):
 
 def register_agent(args):
     vcx = CDLL("/usr/lib/libvcx.so")
+    if args.wallet_type == "mysql":
+        mysql = CDLL("/usr/lib/libmysqlstorage.so")
+        mysql.mysql_storage_init()
 
     if args.verbose:
             c_debug = c_char_p('debug'.encode('utf-8'))
@@ -62,6 +67,8 @@ def register_agent(args):
         'wallet_key':args.WALLET_KEY,
         'wallet_name':args.wallet_name,
         'wallet_type':args.wallet_type,
+        'storage_config': args.storage_config,
+        'storage_credentials': args.storage_credentials,
         'pool_config':args.pool_config,
         'agent_seed':args.agent_seed,
         'enterprise_seed':args.enterprise_seed})

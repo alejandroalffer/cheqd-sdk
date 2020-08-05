@@ -15,6 +15,10 @@ pub mod test {
     use indy_sys::WalletHandle;
     use utils::plugins::init_plugin;
     use messages::payload::PayloadV1;
+    use api::VcxStateType;
+    use v3::messages::a2a::A2AMessage;
+    use v3::handlers::connection::types::OutofbandMeta;
+    use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -177,6 +181,12 @@ pub mod test {
             set_wallet_handle(self.wallet_handle);
         }
 
+        pub fn send_message(&self, message: &A2AMessage) {
+            self.activate();
+            let agent_info = ::connection::get_completed_connection(self.connection_handle).unwrap();
+            agent_info.agent.send_message(message, &agent_info.data.did_doc).unwrap();
+        }
+
         pub fn create_schema(&mut self) {
             self.activate();
             let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
@@ -220,6 +230,14 @@ pub mod test {
             ::connection::update_state(self.connection_handle, None).unwrap();
             assert_eq!(2, ::connection::get_state(self.connection_handle));
 
+            ::connection::get_invite_details(self.connection_handle, false).unwrap()
+        }
+
+        pub fn create_outofband_connection(&mut self, invite: OutofbandMeta) -> String {
+            self.activate();
+
+            self.connection_handle = ::connection::create_outofband_connection("alice", invite.goal_code, invite.goal, invite.handshake, invite.request_attach).unwrap();
+            ::connection::connect(self.connection_handle, None).unwrap();
             ::connection::get_invite_details(self.connection_handle, false).unwrap()
         }
 
@@ -274,8 +292,7 @@ pub mod test {
 
             ::issuer_credential::send_credential(self.credential_handle, self.connection_handle).unwrap();
             ::issuer_credential::update_state(self.credential_handle, None).unwrap();
-            assert_eq!(4, ::issuer_credential::get_state(self.credential_handle).unwrap());
-            assert_eq!(::v3::messages::status::Status::Success.code(), ::issuer_credential::get_credential_status(self.credential_handle).unwrap());
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, ::issuer_credential::get_state(self.credential_handle).unwrap());
         }
 
         pub fn request_presentation(&mut self) {
@@ -291,15 +308,20 @@ pub mod test {
 
         pub fn verify_presentation(&self) {
             self.activate();
-            self.update_proof_state(4, ::v3::messages::status::Status::Success.code())
+            self.update_proof_state(4)
         }
 
-        pub fn update_proof_state(&self, expected_state: u32, expected_status: u32) {
+        pub fn update_proof_state(&self, expected_state: u32) {
             self.activate();
 
             ::proof::update_state(self.presentation_handle, None).unwrap();
             assert_eq!(expected_state, ::proof::get_state(self.presentation_handle).unwrap());
-            assert_eq!(expected_status, ::proof::get_proof_state(self.presentation_handle).unwrap());
+        }
+
+        pub fn update_message(&self, uid: &str) {
+            self.activate();
+            let agent_info = ::connection::get_completed_connection(self.connection_handle).unwrap();
+            agent_info.agent.update_message_status(uid.to_string()).unwrap();
         }
 
         pub fn teardown(&self) {
@@ -362,6 +384,12 @@ pub mod test {
             assert_eq!(3, ::connection::get_state(self.connection_handle));
         }
 
+        pub fn accept_outofband_invite(&mut self, invite: &str) {
+            self.activate();
+            self.connection_handle = ::connection::create_connection_with_outofband_invite("faber", invite).unwrap();
+            ::connection::connect(self.connection_handle, None).unwrap();
+        }
+
         pub fn update_state(&self, expected_state: u32) {
             self.activate();
             ::connection::update_state(self.connection_handle, None).unwrap();
@@ -390,8 +418,7 @@ pub mod test {
         pub fn accept_credential(&self) {
             self.activate();
             ::credential::update_state(self.credential_handle, None).unwrap();
-            assert_eq!(4, ::credential::get_state(self.credential_handle).unwrap());
-            assert_eq!(::v3::messages::status::Status::Success.code(), ::credential::get_credential_status(self.credential_handle).unwrap());
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, ::credential::get_state(self.credential_handle).unwrap());
         }
 
         pub fn get_proof_request_messages(&self) -> String {
@@ -465,7 +492,13 @@ pub mod test {
         pub fn ensure_presentation_verified(&self) {
             self.activate();
             ::disclosed_proof::update_state(self.presentation_handle, None).unwrap();
-            assert_eq!(::v3::messages::status::Status::Success.code(), ::disclosed_proof::get_presentation_status(self.presentation_handle).unwrap());
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, ::disclosed_proof::get_state(self.presentation_handle).unwrap());
+        }
+
+        pub fn update_message_status(&self, uid: String) {
+            self.activate();
+            let agent_info = ::connection::get_completed_connection(self.connection_handle).unwrap();
+            agent_info.agent.update_message_status(uid).unwrap();
         }
     }
 
@@ -669,7 +702,7 @@ pub mod test {
 
             alice.credential_handle = ::credential::credential_create_with_offer("test", &message.message).unwrap();
 
-            ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
+            alice.update_message_status(message.uid);
 
             ::credential::send_credential_request(alice.credential_handle, alice.connection_handle).unwrap();
             assert_eq!(2, ::credential::get_state(alice.credential_handle).unwrap());
@@ -687,7 +720,7 @@ pub mod test {
 
             alice.presentation_handle = ::disclosed_proof::create_proof("test", &message.message).unwrap();
 
-            ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
+            alice.update_message_status(message.uid);
 
             let credentials = alice.get_credentials_for_presentation();
 
@@ -699,6 +732,105 @@ pub mod test {
         }
 
         faber.verify_presentation();
+    }
+
+    #[cfg(feature = "aries")]
+    #[test]
+    fn test_outofband_connection_works() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Publish Schema and Credential Definition
+        faber.create_schema();
+
+        ::std::thread::sleep(::std::time::Duration::from_secs(2));
+
+        faber.create_credential_definition();
+
+        let meta = OutofbandMeta {
+            goal_code: None,
+            goal: Some(String::from("Test Goal")),
+            handshake: true,
+            request_attach: None
+        };
+        let invite = faber.create_outofband_connection(meta);
+        println!("invite {}", invite);
+        let outofband_invite: OutofbandInvitation = ::serde_json::from_str(&invite).unwrap();
+        assert_eq!(1, outofband_invite.handshake_protocols.len());
+        assert_eq!(0, outofband_invite.request_attach.0.len());
+
+        alice.accept_outofband_invite(&invite);
+
+        // Connection is not completed
+        assert_eq!(VcxStateType::VcxStateOfferSent as u32, ::connection::get_state(faber.connection_handle));
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, ::connection::get_state(alice.connection_handle));
+
+        // Complete connection
+        faber.update_state(3);
+        alice.update_state(4);
+        faber.update_state(4);
+
+        // Credential issuance
+        faber.offer_credential();
+        alice.accept_offer();
+        faber.send_credential();
+        alice.accept_credential();
+    }
+
+    #[cfg(feature = "aries")]
+    #[test]
+    fn test_outofband_connection_works_without_handshake() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Publish Schema and Credential Definition
+        faber.create_schema();
+
+        ::std::thread::sleep(::std::time::Duration::from_secs(2));
+
+        faber.create_credential_definition();
+
+        let meta = OutofbandMeta {
+            goal_code: None,
+            goal: Some(String::from("Test Goal")),
+            handshake: false,
+            request_attach: Some(String::from("{}"))
+        };
+        let invite = faber.create_outofband_connection(meta);
+        let outofband_invite: OutofbandInvitation = ::serde_json::from_str(&invite).unwrap();
+        assert_eq!(0, outofband_invite.handshake_protocols.len());
+        assert_eq!(1, outofband_invite.request_attach.0.len());
+
+        alice.accept_outofband_invite(&invite);
+
+        // Connection is not completed
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, ::connection::get_state(faber.connection_handle));
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, ::connection::get_state(alice.connection_handle));
+
+        // Alice Send Basic Message
+        alice.activate();
+
+        {
+            let basic_message = r#"Hi there"#;
+            ::connection::send_generic_message(alice.connection_handle, basic_message, "").unwrap();
+
+            faber.activate();
+            let messages = ::connection::get_messages(faber.connection_handle).unwrap();
+            assert_eq!(1, messages.len());
+
+            let message = messages.values().next().unwrap().clone();
+
+            match message {
+                A2AMessage::BasicMessage(message) => assert_eq!(basic_message, message.content),
+                _ => assert!(false)
+            }
+        }
     }
 }
 

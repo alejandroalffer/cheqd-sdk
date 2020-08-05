@@ -1,32 +1,43 @@
 use api::VcxStateType;
 
-use connection;
 use v3::handlers::proof_presentation::prover::messages::ProverMessages;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use v3::messages::proof_presentation::presentation_proposal::{PresentationProposal, PresentationPreview};
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::proof_presentation::presentation_ack::PresentationAck;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, ProblemReportCodes, Reason};
 use v3::messages::status::Status;
 
 use std::collections::HashMap;
 use disclosed_proof::DisclosedProof;
 
 use error::prelude::*;
+use messages::thread::Thread;
+use v3::messages::ack::Ack;
+use v3::handlers::connection::types::CompletedConnection;
+use v3::handlers::connection::agent::AgentInfo;
+use v3::handlers::connection::connection::Connection;
 
 /// A state machine that tracks the evolution of states for a Prover during
 /// the Present Proof protocol.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProverSM {
     source_id: String,
-    thread_id: String,
     state: ProverState,
 }
 
 impl ProverSM {
     pub fn new(presentation_request: PresentationRequest, source_id: String) -> ProverSM {
-        ProverSM { source_id, thread_id: presentation_request.id.0.clone(), state: ProverState::Initiated(InitialState { presentation_request }) }
+        ProverSM {
+            source_id,
+            state: ProverState::Initiated(
+                InitialState {
+                    thread: Thread::new().set_thid(presentation_request.id.to_string()),
+                    presentation_request,
+                }
+            ),
+        }
     }
 }
 
@@ -48,122 +59,181 @@ pub enum ProverState {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct InitialState {
     presentation_request: PresentationRequest,
+    #[serde(default)]
+    thread: Thread,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationPreparedState {
     presentation_request: PresentationRequest,
     presentation: Presentation,
+    #[serde(default)]
+    thread: Thread,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationPreparationFailedState {
     presentation_request: PresentationRequest,
     problem_report: ProblemReport,
+    #[serde(default)]
+    thread: Thread,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationSentState {
-    connection_handle: u32,
     presentation_request: PresentationRequest,
     presentation: Presentation,
+    connection: CompletedConnection,
+    #[serde(default)]
+    thread: Thread,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FinishedState {
-    connection_handle: u32,
     presentation_request: PresentationRequest,
     presentation: Presentation,
     status: Status,
+    #[serde(default)]
+    thread: Thread,
 }
 
-impl From<(InitialState, Presentation)> for PresentationPreparedState {
-    fn from((state, presentation): (InitialState, Presentation)) -> Self {
-        trace!("transit state from InitialState to PresentationPreparedState");
+impl From<(InitialState, Presentation, Thread)> for PresentationPreparedState {
+    fn from((state, presentation, thread): (InitialState, Presentation, Thread)) -> Self {
+        trace!("ProverSM transit state from InitialState to PresentationPreparedState");
+        trace!("Thread: {:?}", thread);
         PresentationPreparedState {
             presentation_request: state.presentation_request,
+            thread,
             presentation,
         }
     }
 }
 
-impl From<(InitialState, ProblemReport)> for PresentationPreparationFailedState {
-    fn from((state, problem_report): (InitialState, ProblemReport)) -> Self {
-        trace!("transit state from InitialState to PresentationPreparationFailedState");
+impl From<(InitialState, ProblemReport, Thread)> for PresentationPreparationFailedState {
+    fn from((state, problem_report, thread): (InitialState, ProblemReport, Thread)) -> Self {
+        trace!("ProverSM transit state from InitialState to PresentationPreparationFailedState with ProblemReport: {:?}", problem_report);
+        trace!("Thread: {:?}", thread);
         PresentationPreparationFailedState {
             presentation_request: state.presentation_request,
+            thread,
             problem_report,
         }
     }
 }
 
-impl From<InitialState> for FinishedState {
-    fn from(state: InitialState) -> Self {
-        trace!("transit state from InitialState to FinishedState");
+impl From<(InitialState, Thread, ProblemReport, Reason)> for FinishedState {
+    fn from((state, thread, problem_report, reason): (InitialState, Thread, ProblemReport, Reason)) -> Self {
+        trace!("ProverSM transit state from InitialState to FinishedState with DeclineProof message");
+        trace!("Thread: {:?}", thread);
         FinishedState {
-            connection_handle: 0,
             presentation_request: state.presentation_request,
             presentation: Default::default(),
-            status: Status::Declined,
+            status: reason.to_status(problem_report),
+            thread,
         }
     }
 }
 
-impl From<(PresentationPreparedState, u32)> for PresentationSentState {
-    fn from((state, connection_handle): (PresentationPreparedState, u32)) -> Self {
-        trace!("transit state from PresentationPreparedState to PresentationSentState");
+impl From<(InitialState, Thread, PresentationProposal, Reason)> for FinishedState {
+    fn from((state, thread, _presentation_proposal, _reason): (InitialState, Thread, PresentationProposal, Reason)) -> Self {
+        trace!("ProverSM transit state from InitialState to FinishedState with PresentationProposal message");
+        trace!("Thread: {:?}", thread);
+        FinishedState {
+            presentation_request: state.presentation_request,
+            presentation: Default::default(),
+            status: Status::Rejected,
+            thread,
+        }
+    }
+}
+
+impl From<(PresentationPreparedState, CompletedConnection, Presentation, Thread)> for PresentationSentState {
+    fn from((state, connection, presentation, thread): (PresentationPreparedState, CompletedConnection, Presentation, Thread)) -> Self {
+        trace!("ProverSM transit state from PresentationPreparedState to PresentationSentState");
+        trace!("Thread: {:?}", thread);
         PresentationSentState {
             presentation_request: state.presentation_request,
-            presentation: state.presentation,
-            connection_handle,
+            presentation,
+            connection,
+            thread,
         }
     }
 }
 
-impl From<PresentationPreparedState> for FinishedState {
-    fn from(state: PresentationPreparedState) -> Self {
-        trace!("transit state from PresentationPreparedState to FinishedState");
+impl From<(PresentationPreparedState, Thread)> for FinishedState {
+    fn from((state, thread): (PresentationPreparedState, Thread)) -> Self {
+        trace!("ProverSM transit state from PresentationPreparedState to FinishedState");
+        trace!("Thread: {:?}", thread);
         FinishedState {
-            connection_handle: 0,
-            presentation_request: state.presentation_request,
-            presentation: Default::default(),
-            status: Status::Declined,
-        }
-    }
-}
-
-impl From<(PresentationPreparationFailedState, u32)> for FinishedState {
-    fn from((state, connection_handle): (PresentationPreparationFailedState, u32)) -> Self {
-        trace!("transit state from PresentationPreparationFailedState to FinishedState");
-        FinishedState {
-            presentation_request: state.presentation_request,
-            presentation: Presentation::create(),
-            connection_handle,
-            status: Status::Failed(state.problem_report),
-        }
-    }
-}
-
-impl From<(PresentationSentState, PresentationAck)> for FinishedState {
-    fn from((state, _ack): (PresentationSentState, PresentationAck)) -> Self {
-        trace!("transit state from PresentationSentState to FinishedState");
-        FinishedState {
-            connection_handle: state.connection_handle,
             presentation_request: state.presentation_request,
             presentation: state.presentation,
             status: Status::Success,
+            thread,
         }
     }
 }
 
-impl From<(PresentationSentState, ProblemReport)> for FinishedState {
-    fn from((state, problem_report): (PresentationSentState, ProblemReport)) -> Self {
-        trace!("transit state from PresentationSentState to FinishedState");
+impl From<(PresentationPreparedState, Thread, ProblemReport, Reason)> for FinishedState {
+    fn from((state, thread, problem_report, reason): (PresentationPreparedState, Thread, ProblemReport, Reason)) -> Self {
+        trace!("ProverSM transit state from PresentationPreparedState to FinishedState with DeclineProof message");
+        trace!("Thread: {:?}", thread);
         FinishedState {
-            connection_handle: state.connection_handle,
+            presentation_request: state.presentation_request,
+            presentation: Default::default(),
+            status: reason.to_status(problem_report),
+            thread,
+        }
+    }
+}
+
+impl From<(PresentationPreparedState, Thread, PresentationProposal, Reason)> for FinishedState {
+    fn from((state, thread, _presentation_proposal, _reason): (PresentationPreparedState, Thread, PresentationProposal, Reason)) -> Self {
+        trace!("ProverSM transit state from PresentationPreparedState to FinishedState with DeclineProof message");
+        trace!("Thread: {:?}", thread);
+        FinishedState {
+            presentation_request: state.presentation_request,
+            presentation: Default::default(),
+            status: Status::Rejected,
+            thread,
+        }
+    }
+}
+
+impl From<(PresentationPreparationFailedState, Thread)> for FinishedState {
+    fn from((state, thread): (PresentationPreparationFailedState, Thread)) -> Self {
+        trace!("ProverSM transit state from PresentationPreparationFailedState to FinishedState with ProblemReport: {:?}", state.problem_report);
+        trace!("Thread: {:?}", thread);
+        FinishedState {
+            presentation_request: state.presentation_request,
+            presentation: Presentation::create(),
+            status: Status::Failed(state.problem_report),
+            thread,
+        }
+    }
+}
+
+impl From<(PresentationSentState, PresentationAck, Thread)> for FinishedState {
+    fn from((state, _ack, thread): (PresentationSentState, PresentationAck, Thread)) -> Self {
+        trace!("ProverSM transit state from PresentationSentState to FinishedState");
+        trace!("Thread: {:?}", thread);
+        FinishedState {
             presentation_request: state.presentation_request,
             presentation: state.presentation,
-            status: Status::Failed(problem_report),
+            status: Status::Success,
+            thread,
+        }
+    }
+}
+
+impl From<(PresentationSentState, ProblemReport, Thread, Reason)> for FinishedState {
+    fn from((state, problem_report, thread, reason): (PresentationSentState, ProblemReport, Thread, Reason)) -> Self {
+        trace!("ProverSM transit state from PresentationSentState to FinishedState with ProblemReport: {:?}", problem_report);
+        trace!("Thread: {:?}", problem_report.thread);
+        FinishedState {
+            presentation_request: state.presentation_request,
+            presentation: state.presentation,
+            status: reason.to_status(problem_report),
+            thread,
         }
     }
 }
@@ -175,6 +245,14 @@ impl InitialState {
                                             &self.presentation_request.request_presentations_attach.content()?)
     }
 }
+
+impl PresentationSentState {
+    fn handle_ack(&self, ack: &Ack) -> VcxResult<()> {
+        self.thread.check_message_order(&self.connection.data.did_doc.id, &ack.thread)?;
+        Ok(())
+    }
+}
+
 
 impl ProverSM {
     pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
@@ -196,15 +274,16 @@ impl ProverSM {
                 ProverState::PresentationPreparationFailed(_) => {
                     // do not process messages
                 }
-                ProverState::PresentationSent(_) => {
+                ProverState::PresentationSent(ref state) => {
                     match message {
                         A2AMessage::Ack(ack) | A2AMessage::PresentationAck(ack) => {
-                            if ack.from_thread(&self.thread_id) {
+                            if ack.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::PresentationAck(ack)));
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.from_thread(&self.thread_id) {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::PresentationReject(problem_report) => {
+                            if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -223,42 +302,48 @@ impl ProverSM {
     pub fn step(self, message: ProverMessages) -> VcxResult<ProverSM> {
         trace!("ProverSM::step >>> message: {:?}", message);
 
-        let ProverSM { source_id, state, thread_id } = self;
+        let ProverSM { source_id, state } = self;
 
         let state = match state {
             ProverState::Initiated(state) => {
+                let thread = state.thread.clone();
+
                 match message {
                     ProverMessages::SetPresentation(presentation) => {
-                        let presentation = presentation.set_thread_id(&thread_id);
-                        ProverState::PresentationPrepared((state, presentation).into())
+                        let presentation = presentation.set_thread(thread.clone());
+                        ProverState::PresentationPrepared((state, presentation, thread).into())
                     }
                     ProverMessages::PreparePresentation((credentials, self_attested_attrs)) => {
                         match state.build_presentation(&credentials, &self_attested_attrs) {
                             Ok(presentation) => {
                                 let presentation = Presentation::create()
+                                    .set_comment(state.presentation_request.comment.clone())
                                     .ask_for_ack()
-                                    .set_thread_id(&thread_id)
+                                    .set_thread(thread.clone())
                                     .set_presentations_attach(presentation)?;
-
-                                ProverState::PresentationPrepared((state, presentation).into())
+                                ProverState::PresentationPrepared((state, presentation, thread).into())
                             }
                             Err(err) => {
                                 let problem_report =
                                     ProblemReport::create()
-                                        .set_comment(err.to_string())
-                                        .set_thread_id(&thread_id);
-
-                                ProverState::PresentationPreparationFailed((state, problem_report).into())
+                                        .set_description(ProblemReportCodes::InvalidPresentationRequest)
+                                        .set_comment(format!("error occurred: {:?}", err))
+                                        .set_thread(thread.clone());
+                                ProverState::PresentationPreparationFailed((state, problem_report, thread).into())
                             }
                         }
                     }
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
-                        Self::_handle_reject_presentation_request(connection_handle, &reason, &state.presentation_request, &thread_id)?;
-                        ProverState::Finished(state.into())
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+                        let thread = thread.clone().update_received_order(&connection.data.did_doc.id);
+                        let problem_report = Self::_handle_reject_presentation_request(&connection, &reason, &state.presentation_request, &thread)?;
+                        ProverState::Finished((state, thread, problem_report, Reason::Reject).into())
                     }
                     ProverMessages::ProposePresentation((connection_handle, preview)) => {
-                        Self::_handle_presentation_proposal(connection_handle, preview, &state.presentation_request, &thread_id)?;
-                        ProverState::Finished(state.into())
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+                        let thread = thread.clone().update_received_order(&connection.data.did_doc.id);
+                        let presentation_proposal = Self::_handle_presentation_proposal(&connection, preview, &state.presentation_request, &thread)?;
+                        ProverState::Finished((state, thread, presentation_proposal, Reason::Reject).into())
                     }
                     _ => {
                         ProverState::Initiated(state)
@@ -268,24 +353,36 @@ impl ProverSM {
             ProverState::PresentationPrepared(state) => {
                 match message {
                     ProverMessages::SendPresentation(connection_handle) => {
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+                        let thread = state.thread.clone()
+                            .update_received_order(&connection.data.did_doc.id)
+                            .set_opt_pthid(connection.data.thread.pthid.clone());
+
+                        let presentation = state.presentation.clone()
+                            .set_thread(thread.clone());
+
                         match state.presentation_request.service.clone() {
                             None => {
-                                connection::send_message(connection_handle, state.presentation.to_a2a_message())?;
-                                ProverState::PresentationSent((state, connection_handle).into())
+                                connection.data.send_message(&presentation.to_a2a_message(), &connection.agent)?;
+                                ProverState::PresentationSent((state, connection, presentation, thread).into())
                             }
                             Some(service) => {
-                                connection::send_message_to_self_endpoint(state.presentation.to_a2a_message(), &service.into())?;
-                                ProverState::Finished(state.into())
+                                Connection::send_message_to_self_endpoint(&presentation.to_a2a_message(), &service.into())?;
+                                ProverState::Finished((state, thread).into())
                             }
                         }
                     }
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
-                        Self::_handle_reject_presentation_request(connection_handle, &reason, &state.presentation_request, &thread_id)?;
-                        ProverState::Finished(state.into())
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+                        let thread = state.thread.clone().update_received_order(&connection.data.did_doc.id);
+                        let problem_report =Self::_handle_reject_presentation_request(&connection, &reason, &state.presentation_request, &thread)?;
+                        ProverState::Finished((state, thread, problem_report, Reason::Reject).into())
                     }
                     ProverMessages::ProposePresentation((connection_handle, preview)) => {
-                        Self::_handle_presentation_proposal(connection_handle, preview, &state.presentation_request, &thread_id)?;
-                        ProverState::Finished(state.into())
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+                        let thread = state.thread.clone().update_received_order(&connection.data.did_doc.id);
+                        let presentation_proposal = Self::_handle_presentation_proposal(&connection, preview, &state.presentation_request, &thread)?;
+                        ProverState::Finished((state, thread, presentation_proposal, Reason::Reject).into())
                     }
                     _ => {
                         ProverState::PresentationPrepared(state)
@@ -295,16 +392,24 @@ impl ProverSM {
             ProverState::PresentationPreparationFailed(state) => {
                 match message {
                     ProverMessages::SendPresentation(connection_handle) => {
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+                        let thread = state.thread.clone()
+                            .update_received_order(&connection.data.did_doc.id);
+
+                        let problem_report = A2AMessage::PresentationReject(
+                            state.problem_report.clone()
+                                .set_thread(thread.clone())
+                        );
+
                         match state.presentation_request.service.clone() {
                             None => {
-                                connection::send_message(connection_handle, state.problem_report.to_a2a_message())?;
+                                connection.data.send_message(&problem_report, &connection.agent)?;
                             }
                             Some(service) => {
-                                connection::send_message_to_self_endpoint(state.problem_report.to_a2a_message(), &service.into())?;
+                                Connection::send_message_to_self_endpoint(&problem_report, &service.into())?;
                             }
                         }
-
-                        ProverState::Finished((state, connection_handle).into())
+                        ProverState::Finished((state, thread).into())
                     }
                     _ => {
                         ProverState::PresentationPreparationFailed(state)
@@ -314,13 +419,34 @@ impl ProverSM {
             ProverState::PresentationSent(state) => {
                 match message {
                     ProverMessages::PresentationAckReceived(ack) => {
-                        ProverState::Finished((state, ack).into())
+                        let mut thread = state.thread.clone()
+                            .update_received_order(&state.connection.data.did_doc.id);
+
+                        match state.handle_ack(&ack) {
+                            Ok(()) => {
+                                ProverState::Finished((state, ack, thread).into())
+                            }
+                            Err(err) => {
+                                thread = thread.increment_sender_order();
+
+                                let problem_report = ProblemReport::create()
+                                    .set_description(ProblemReportCodes::Other(String::from("invalid-message-state")))
+                                    .set_comment(format!("error occurred: {:?}", err))
+                                    .set_thread(thread.clone());
+
+                                state.connection.data.send_message(&A2AMessage::PresentationReject(problem_report.clone()), &state.connection.agent)?;
+                                ProverState::Finished((state, problem_report, thread, Reason::Fail).into())
+                            }
+                        }
                     }
                     ProverMessages::PresentationRejectReceived(problem_report) => {
-                        ProverState::Finished((state, problem_report).into())
+                        let thread = state.thread.clone()
+                            .update_received_order(&state.connection.data.did_doc.id);
+
+                        ProverState::Finished((state, problem_report, thread, Reason::Fail).into())
                     }
                     ProverMessages::RejectPresentationRequest(_) => {
-                        return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Presentation is already sent"));
+                        return Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Presentation is already sent"));
                     }
                     _ => {
                         ProverState::PresentationSent(state)
@@ -330,33 +456,34 @@ impl ProverSM {
             ProverState::Finished(state) => ProverState::Finished(state)
         };
 
-        Ok(ProverSM { source_id, state, thread_id })
+        Ok(ProverSM { source_id, state })
     }
 
-    fn _handle_reject_presentation_request(connection_handle: u32, reason: &str, presentation_request: &PresentationRequest, thread_id: &str) -> VcxResult<()> {
+    fn _handle_reject_presentation_request(connection: &CompletedConnection, reason: &str, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<ProblemReport> {
         let problem_report = ProblemReport::create()
+            .set_description(ProblemReportCodes::PresentationRejected)
             .set_comment(reason.to_string())
-            .set_thread_id(thread_id);
+            .set_thread(thread.clone());
 
         match presentation_request.service.clone() {
-            None => connection::send_message(connection_handle, problem_report.to_a2a_message())?,
-            Some(service) => connection::send_message_to_self_endpoint(problem_report.to_a2a_message(), &service.into())?
+            None => connection.data.send_message(&A2AMessage::PresentationReject(problem_report.clone()), &connection.agent)?,
+            Some(service) => Connection::send_message_to_self_endpoint(&A2AMessage::PresentationReject(problem_report.clone()), &service.into())?
         }
 
-        Ok(())
+        Ok(problem_report)
     }
 
-    fn _handle_presentation_proposal(connection_handle: u32, preview: PresentationPreview, presentation_request: &PresentationRequest, thread_id: &str) -> VcxResult<()> {
+    fn _handle_presentation_proposal(connection: &CompletedConnection, preview: PresentationPreview, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<PresentationProposal> {
         let proposal = PresentationProposal::create()
             .set_presentation_preview(preview)
-            .set_thread_id(thread_id);
+            .set_thread(thread.clone());
 
         match presentation_request.service.clone() {
-            None => connection::send_message(connection_handle, proposal.to_a2a_message())?,
-            Some(service) => connection::send_message_to_self_endpoint(proposal.to_a2a_message(), &service.into())?
+            None => connection.data.send_message(&proposal.to_a2a_message(), &connection.agent)?,
+            Some(service) => Connection::send_message_to_self_endpoint(&proposal.to_a2a_message(), &service.into())?
         }
 
-        Ok(())
+        Ok(proposal)
     }
 
     pub fn source_id(&self) -> String { self.source_id.clone() }
@@ -366,10 +493,11 @@ impl ProverSM {
             ProverState::Initiated(_) => VcxStateType::VcxStateRequestReceived as u32,
             ProverState::PresentationPrepared(_) => VcxStateType::VcxStateRequestReceived as u32,
             ProverState::PresentationPreparationFailed(_) => VcxStateType::VcxStateRequestReceived as u32,
-            ProverState::PresentationSent(_) => VcxStateType::VcxStateOfferSent as u32, // TODO: maybe VcxStateType::VcxStateAccepted
+            ProverState::PresentationSent(_) => VcxStateType::VcxStateOfferSent as u32,
             ProverState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
+                    Status::Rejected => VcxStateType::VcxStateRejected as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
             }
@@ -386,20 +514,13 @@ impl ProverSM {
         }
     }
 
-    pub fn presentation_status(&self) -> u32 {
+    pub fn get_agent_info(&self) -> Option<&AgentInfo> {
         match self.state {
-            ProverState::Finished(ref state) => state.status.code(),
-            _ => Status::Undefined.code()
-        }
-    }
-
-    pub fn connection_handle(&self) -> VcxResult<u32> {
-        match self.state {
-            ProverState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Connection handle isn't set")),
-            ProverState::PresentationPrepared(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Connection handle isn't set")),
-            ProverState::PresentationPreparationFailed(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Connection handle isn't set")),
-            ProverState::PresentationSent(ref state) => Ok(state.connection_handle),
-            ProverState::Finished(ref state) => Ok(state.connection_handle),
+            ProverState::Initiated(_) => None,
+            ProverState::PresentationPrepared(_) => None,
+            ProverState::PresentationPreparationFailed(_) => None,
+            ProverState::PresentationSent(ref state) => Some(&state.connection.agent),
+            ProverState::Finished(_) => None,
         }
     }
 
@@ -415,9 +536,10 @@ impl ProverSM {
 
     pub fn presentation(&self) -> VcxResult<&Presentation> {
         match self.state {
-            ProverState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not created yet")),
+            ProverState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                format!("Prover object {} in state {} not ready to get Presentation message", self.source_id, self.state()))),
             ProverState::PresentationPrepared(ref state) => Ok(&state.presentation),
-            ProverState::PresentationPreparationFailed(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not created yet")),
+            ProverState::PresentationPreparationFailed(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation preparation failed")),
             ProverState::PresentationSent(ref state) => Ok(&state.presentation),
             ProverState::Finished(ref state) => Ok(&state.presentation),
         }
@@ -527,13 +649,20 @@ pub mod test {
         }
 
         #[test]
-        fn test_prover_handle_reject_presentation_request_message_from_initiated_state() {
+        fn test_prover_handle_reject_presentation_request_message_from_initiated_state() -> Result<(), String> {
             let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::RejectPresentationRequest((mock_connection(), String::from("reject request")))).unwrap();
 
             assert_match!(ProverState::Finished(_), prover_sm.state);
+            match prover_sm.state {
+                ProverState::Finished(state) => {
+                    assert_eq!(3, state.status.code());
+                    Ok(())
+                }
+                other => Err(format!("State expected to be Finished, but: {:?}", other))
+            }
         }
 
         #[test]
@@ -595,13 +724,20 @@ pub mod test {
         }
 
         #[test]
-        fn test_prover_handle_reject_presentation_request_message_from_presentation_prepared_state() {
+        fn test_prover_handle_reject_presentation_request_message_from_presentation_prepared_state() -> Result<(), String> {
             let _setup = SetupAriesMocks::init();
 
             let mut prover_sm = _prover_sm().to_presentation_prepared_state();
             prover_sm = prover_sm.step(ProverMessages::RejectPresentationRequest((mock_connection(), String::from("reject request")))).unwrap();
 
             assert_match!(ProverState::Finished(_), prover_sm.state);
+            match prover_sm.state {
+                ProverState::Finished(state) => {
+                    assert_eq!(3, state.status.code());
+                    Ok(())
+                }
+                other => Err(format!("State expected to be Finished, but: {:?}", other))
+            }
         }
 
         #[test]
@@ -624,7 +760,7 @@ pub mod test {
 
             prover_sm = prover_sm.step(ProverMessages::SendPresentation(mock_connection())).unwrap();
             assert_match!(ProverState::Finished(_), prover_sm.state);
-            assert_eq!(Status::Failed(ProblemReport::default()).code(), prover_sm.presentation_status());
+            assert_eq!(VcxStateType::VcxStateNone as u32, prover_sm.state());
         }
 
         #[test]
@@ -651,7 +787,7 @@ pub mod test {
             prover_sm = prover_sm.step(ProverMessages::PresentationAckReceived(_ack())).unwrap();
 
             assert_match!(ProverState::Finished(_), prover_sm.state);
-            assert_eq!(Status::Success.code(), prover_sm.presentation_status());
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, prover_sm.state());
         }
 
         #[test]
@@ -660,7 +796,7 @@ pub mod test {
 
             let prover_sm = _prover_sm().to_presentation_sent_state();
             let err = prover_sm.step(ProverMessages::RejectPresentationRequest((mock_connection(), String::from("reject")))).unwrap_err();
-            assert_eq!(VcxErrorKind::ActionNotSupported, err.kind());
+            assert_eq!(VcxErrorKind::InvalidState, err.kind());
         }
 
         #[test]
@@ -673,7 +809,7 @@ pub mod test {
             prover_sm = prover_sm.step(ProverMessages::PresentationRejectReceived(_problem_report())).unwrap();
 
             assert_match!(ProverState::Finished(_), prover_sm.state);
-            assert_eq!(Status::Failed(ProblemReport::create()).code(), prover_sm.presentation_status());
+            assert_eq!(VcxStateType::VcxStateNone as u32, prover_sm.state());
         }
 
         #[test]
@@ -776,6 +912,19 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
                     "key_2".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
                     "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = prover.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
+            }
+
+            // Presentation Reject
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_2".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_3".to_string() => A2AMessage::PresentationReject(_problem_report())
                 );
 
                 let (uid, message) = prover.find_message_to_handle(messages).unwrap();
