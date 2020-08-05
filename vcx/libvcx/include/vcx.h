@@ -1534,6 +1534,21 @@ vcx_error_t vcx_get_credential(vcx_command_handle_t command_handle,
                             vcx_credential_handle_t credential_handle,
                             void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+// Delete a Credential associated with the state object from the Wallet and release handle of the state object.
+//
+// # Params
+// command_handle: command handle to map callback to user context.
+//
+// credential_handle: handle pointing to credential state object to delete.
+//
+// cb: Callback that provides error status of delete credential request
+//
+// # Returns
+// Error code as a u32
+vcx_error_t vcx_delete_credential(vcx_command_handle_t command_handle,
+                            vcx_credential_handle_t credential_handle,
+                            void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 // Get Proof
 //
 // #Params

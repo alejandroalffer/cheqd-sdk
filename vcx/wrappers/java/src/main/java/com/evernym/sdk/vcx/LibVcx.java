@@ -689,6 +689,9 @@ public abstract class LibVcx {
         /** Send a Credential rejection to the connection. */
         public int vcx_credential_reject(int command_handle, int credential_handle, int connection_handle, String comment, Callback cb);
 
+        /** Delete a credential from the wallet and release it from memory. */
+        public int vcx_delete_credential(int command_handle, int credential_handle, Callback cb);
+
         /**
          * wallet object
          *

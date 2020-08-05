@@ -247,6 +247,15 @@ pub fn libindy_prover_store_credential(cred_id: Option<&str>,
         .map_err(VcxError::from)
 }
 
+pub fn libindy_prover_delete_credential(cred_id: &str) -> VcxResult<()>{
+    if settings::indy_mocks_enabled() { return Ok(()); }
+
+    anoncreds::prover_delete_credential(get_wallet_handle(),
+                                        cred_id)
+        .wait()
+        .map_err(VcxError::from)
+}
+
 pub fn libindy_prover_create_master_secret(master_secret_id: &str) -> VcxResult<String> {
     if settings::indy_mocks_enabled() { return Ok(settings::DEFAULT_LINK_SECRET_ALIAS.to_string()); }
 
@@ -558,17 +567,25 @@ pub fn generate_nonce() -> VcxResult<String> {
         .map_err(VcxError::from)
 }
 
-pub fn fetch_public_entities() -> VcxResult<()> {
-    trace!("fetch_public_entities >>>");
-    debug!("Ledger: Fetching public entities");
+pub fn prover_get_credentials() -> VcxResult<Vec<CredentialInfo>> {
+    trace!("prover_get_credentials >>>");
 
-    if settings::indy_mocks_enabled() { return Ok(()); }
+    if settings::indy_mocks_enabled() { return Ok(Vec::new()); }
 
     let wallet = get_wallet_handle();
     let credentials_json = anoncreds::prover_get_credentials(wallet, None).wait()?;
     let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials_json)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Can not deserialize the list Credentials: {:?}", err)))?;
 
+    trace!("prover_get_credentials <<< credentials: {:?}", secret!(credentials));
+
+    Ok(credentials)
+}
+
+pub fn fetch_public_entities() -> VcxResult<()> {
+    trace!("fetch_public_entities >>>");
+
+    let credentials: Vec<CredentialInfo> = prover_get_credentials()?;
     for credential in credentials {
         get_schema_json(&credential.schema_id)?;
         get_cred_def_json(&credential.cred_def_id)?;

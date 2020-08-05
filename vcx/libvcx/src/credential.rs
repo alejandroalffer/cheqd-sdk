@@ -23,11 +23,7 @@ use messages::{
     },
 };
 use connection;
-use utils::libindy::anoncreds::{
-    libindy_prover_create_credential_req,
-    libindy_prover_store_credential,
-    get_cred_def_json,
-};
+use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential, get_cred_def_json, libindy_prover_delete_credential};
 use utils::libindy::payments::{pay_a_payee, PaymentTxn};
 use utils::{error, constants};
 
@@ -439,6 +435,20 @@ impl Credential {
     fn set_state(&mut self, state: VcxStateType) {
         self.state = state;
     }
+
+    fn delete_credential(&self) -> VcxResult<()> {
+        debug!("Credential {}: Deleting credential", self.source_id);
+
+        if self.state != VcxStateType::VcxStateAccepted {
+            return Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                          format!("Credential object {} in state {} not ready to delete credential", self.source_id, self.state as u32)));
+        }
+
+        let cred_id = self.cred_id.as_ref()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Credential object state: `cred_id` not found", self.source_id)))?;
+
+        libindy_prover_delete_credential(cred_id)
+    }
 }
 
 //********************************************
@@ -591,6 +601,25 @@ pub fn get_credential(handle: u32) -> VcxResult<String> {
             }
         }
     }).map_err(handle_err)
+}
+
+pub fn delete_credential(handle: u32) -> VcxResult<()> {
+    HANDLE_MAP.get(handle, |credential| {
+        match credential {
+            Credentials::Pending(_) => {
+                warn!("Cannot delete credential for Pending object");
+                Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot delete credential for Pending object: Credential is not received yet"))
+            }
+            Credentials::V1(ref credential) => {
+                credential.delete_credential()
+            }
+            Credentials::V3(ref credential) => {
+                credential.delete_credential()
+            }
+        }
+    })
+        .map_err(handle_err)
+        .and(release(handle))
 }
 
 pub fn get_payment_txn(handle: u32) -> VcxResult<PaymentTxn> {
@@ -1002,6 +1031,10 @@ pub mod tests {
         let msg_value: serde_json::Value = serde_json::from_str(&msg).unwrap();
 
         let _credential_struct: CredentialMessage = serde_json::from_str(msg_value["credential"].as_str().unwrap()).unwrap();
+
+        delete_credential(c_h).unwrap();
+        assert_eq!(get_credential(c_h).unwrap_err().kind(), VcxErrorKind::InvalidCredentialHandle);
+
     }
 
     #[test]

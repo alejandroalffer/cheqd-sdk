@@ -367,8 +367,11 @@ vcx_error_t vcx_disclosed_proof_release(vcx_proof_handle_t proof_handle);
  * Used for accepting and requesting a credential with an identity owner.
  */
 
+/** Retrieve information about a stored credential in user's wallet, including credential id and the credential itself. */
 vcx_error_t vcx_get_credential(vcx_command_handle_t handle, vcx_credential_handle_t credential_handle, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *credential));
-/** pub extern fn vcx_get_credential(command_handle: u32,credential_handle: u32,cb: Option<extern fn(xcommand_handle:u32, err: u32, credential: *const c_char)>) -> u32  */
+
+/** Delete a Credential associated with the state object from the Wallet and release handle of the state object. */
+vcx_error_t vcx_delete_credential(vcx_command_handle_t handle, vcx_credential_handle_t credential_handle, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *credential));
 
 /** Creates a credential object from the specified credentialdef handle. Populates a handle the new credential. */
 vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle, const char *source_id, const char *credential_offer, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));

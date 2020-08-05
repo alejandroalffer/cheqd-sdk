@@ -246,6 +246,39 @@ public class CredentialApi extends VcxJava.API {
         return future;
     }
 
+    private static Callback vcxDeleteCredentialCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int command_handle, int err) {
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(command_handle);
+            if (!checkCallback(future,err)) return;
+            future.complete(null);
+        }
+    };
+
+    /**
+     * Delete a Credential associated with the state object from the Wallet and release handle of the state object.
+     *
+     * @param  credentialHandle     handle pointing to credential state object to delete.
+     *
+     * @return                      void
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Void> deleteCredential(
+            int credentialHandle
+    ) throws VcxException {
+        ParamGuard.notNull(credentialHandle, "credentialHandle");
+        logger.debug("deleteCredential() called with: credentialHandle = [" + credentialHandle + "]");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_delete_credential(commandHandle, credentialHandle, vcxDeleteCredentialCB);
+        checkResult(result);
+
+        return future;
+    }
+
     private static Callback vcxCredentialUpdateStateCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int command_handle, int err, int state) {

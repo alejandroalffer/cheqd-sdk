@@ -178,6 +178,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)getCredential:(NSInteger )credentailHandle
            completion:(void (^)(NSError *error, NSString *credential))completion;
 
+- (void)deleteCredential:(NSInteger )credentailHandle
+              completion:(void (^)(NSError *error, NSString *credential))completion;
+
 - (void)credentialCreateWithOffer:(NSString *)sourceId
                             offer:(NSString *)credentialOffer
                        completion:(void (^)(NSError *error, NSInteger credentailHandle))completion;
