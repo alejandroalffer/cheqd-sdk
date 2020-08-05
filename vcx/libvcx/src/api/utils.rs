@@ -72,7 +72,7 @@ pub extern fn vcx_provision_agent_with_token(config: *const c_char, token: *cons
         }
     };
 
-    trace!("vcx_provision_agent_with_token(config: {}, token: {})", config, token);
+    trace!("vcx_provision_agent_with_token(config: {}, token: {})", secret!(config), secret!(token));
 
     match messages::agent_provisioning::agent_provisioning_v0_7::provision(&config, &token) {
         Err(e) => {
@@ -109,7 +109,7 @@ pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
         }
     };
 
-    trace!("vcx_provision_agent(config: {})", config);
+    trace!("vcx_provision_agent(config: {})", secret!(config));
 
     match messages::agent_utils::connect_register_provision(&config) {
         Err(e) => {
@@ -148,7 +148,7 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
     check_useful_c_str!(config, VcxErrorKind::InvalidOption);
 
     trace!("vcx_agent_provision_async(command_handle: {}, json: {})",
-           command_handle, config);
+           command_handle, secret!(config));
 
     thread::spawn(move || {
         match messages::agent_utils::connect_register_provision(&config) {
@@ -158,7 +158,7 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
             }
             Ok(s) => {
                 trace!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: {})",
-                       command_handle, error::SUCCESS.message, s);
+                       command_handle, error::SUCCESS.message, secret!(s));
                 let msg = CStringUtils::string_to_cstring(s);
                 cb(command_handle, 0, msg.as_ptr());
             }
@@ -223,7 +223,7 @@ pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
     check_useful_c_str!(config, VcxErrorKind::InvalidOption);
 
     trace!("vcx_get_provision_token(command_handle: {}, config: {})",
-           command_handle, config );
+           command_handle, secret!(config));
 
     let configs: serde_json::Value = match serde_json::from_str(&config) {
         Ok(x) => x,
@@ -308,7 +308,7 @@ pub extern fn vcx_agent_update_info(command_handle: CommandHandle,
     check_useful_c_str!(json, VcxErrorKind::InvalidOption);
 
     trace!("vcx_agent_update_info(command_handle: {}, json: {})",
-           command_handle, json);
+           command_handle, secret!(json));
 
     let com_method: ComMethod = match serde_json::from_str(&json) {
         Ok(x) => x,
@@ -450,7 +450,7 @@ pub extern fn vcx_download_agent_messages(command_handle: u32,
                 match serde_json::to_string(&x) {
                     Ok(x) => {
                         trace!("vcx_download_agent_messages(command_handle: {}, rc: {}, messages: {})",
-                               command_handle, error::SUCCESS.message, x);
+                               command_handle, error::SUCCESS.message, secret!(x));
 
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
@@ -546,8 +546,8 @@ pub extern fn vcx_messages_download(command_handle: CommandHandle,
         None
     };
 
-    trace!("vcx_messages_download(command_handle: {}, message_status: {:?}, uids: {:?})",
-           command_handle, message_status, uids);
+    trace!("vcx_messages_download(command_handle: {}, message_status: {:?}, uids: {:?}, pw_dids: {:?})",
+           command_handle, message_status, uids, secret!(pw_dids));
 
     spawn(move || {
         match ::messages::get_message::download_messages(pw_dids, message_status, uids) {
@@ -555,7 +555,7 @@ pub extern fn vcx_messages_download(command_handle: CommandHandle,
                 match serde_json::to_string(&x) {
                     Ok(x) => {
                         trace!("vcx_messages_download_cb(command_handle: {}, rc: {}, messages: {})",
-                               command_handle, error::SUCCESS.message, x);
+                               command_handle, error::SUCCESS.message, secret!(x));
 
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
@@ -614,7 +614,7 @@ pub extern fn vcx_download_message(command_handle: CommandHandle,
         match ::messages::get_message::download_message(uid) {
             Ok(message) => {
                 trace!("vcx_download_message_cb(command_handle: {}, rc: {}, message: {:?})",
-                       command_handle, error::SUCCESS.message, message);
+                       command_handle, error::SUCCESS.message, secret!(message));
 
                 let message_json = json!(message).to_string();
                 let msg = CStringUtils::string_to_cstring(message_json);
@@ -667,7 +667,7 @@ pub extern fn vcx_messages_update_status(command_handle: CommandHandle,
     check_useful_c_str!(msg_json, VcxErrorKind::InvalidOption);
 
     trace!("vcx_messages_set_status(command_handle: {}, message_status: {:?}, uids: {:?})",
-           command_handle, message_status, msg_json);
+           command_handle, message_status, secret!(msg_json));
 
     spawn(move || {
         match ::messages::update_message::update_agency_messages(&message_status, &msg_json) {
@@ -778,7 +778,7 @@ pub extern fn vcx_endorse_transaction(command_handle: CommandHandle,
     check_useful_c_str!(transaction, VcxErrorKind::InvalidOption);
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     trace!("vcx_endorse_transaction(command_handle: {}, transaction: {})",
-           command_handle, transaction);
+           command_handle, secret!(transaction));
 
     spawn(move || {
         match ::utils::libindy::ledger::endorse_transaction(&transaction) {

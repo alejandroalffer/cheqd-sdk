@@ -54,7 +54,7 @@ impl BackupInitBuilder {
 
 
     pub fn send_secure(&mut self) -> VcxResult<()> {
-        trace!("WalletBackupInit::send >>>");
+        trace!("BackupInitBuilder::send >>>");
 
         let data = self.prepare_request()?;
 
@@ -65,6 +65,8 @@ impl BackupInitBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
+        trace!("BackupInitBuilder::prepare_request >>>");
+
         let init_err = |e: &str| VcxError::from_msg(
             VcxErrorKind::CreateWalletBackup,
             format!("BackupInit expects {} but got None", e)
@@ -83,6 +85,8 @@ impl BackupInitBuilder {
                 params
             }
         ));
+
+        trace!("BackupInitBuilder::prepare_request >>> message: {:?}", secret!(message));
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
         let agency_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?;

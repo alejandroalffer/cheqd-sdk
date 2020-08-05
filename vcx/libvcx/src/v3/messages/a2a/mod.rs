@@ -102,6 +102,8 @@ pub enum A2AMessage {
 
 impl<'de> Deserialize<'de> for A2AMessage {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        trace!("deserializing aries a2a message");
+
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
 
         let message_type: MessageType = match serde_json::from_value(value["@type"].clone()) {
@@ -277,6 +279,8 @@ fn set_a2a_message_type<T>(msg: T, family: MessageFamilies, name: &str) -> Resul
 
 impl Serialize for A2AMessage {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        trace!("serializing aries a2a message");
+
         let value = match self {
             A2AMessage::Forward(msg) => set_a2a_message_type(msg, MessageFamilies::Routing, A2AMessage::FORWARD),
             A2AMessage::ConnectionInvitation(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_INVITATION),

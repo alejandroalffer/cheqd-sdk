@@ -136,6 +136,8 @@ impl ::std::string::ToString for MessageFamilies {
 
 
 pub fn parse_message_type(message_type: &str) -> VcxResult<(String, String, String, String)> {
+    trace!("parse_message_type >>> message_type: {:?}", secret!(message_type));
+
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?x)
             (?P<did>[\d\w:]*);
@@ -145,7 +147,7 @@ pub fn parse_message_type(message_type: &str) -> VcxResult<(String, String, Stri
             (?P<type>.*)").unwrap();
     }
 
-    RE.captures(message_type)
+    let message_type = RE.captures(message_type)
         .and_then(|cap| {
             let did = cap.name("did").as_ref().map(Match::as_str);
             let family = cap.name("family").as_ref().map(Match::as_str);
@@ -157,7 +159,10 @@ pub fn parse_message_type(message_type: &str) -> VcxResult<(String, String, Stri
                     Some((did.to_string(), family.to_string(), version.to_string(), type_.to_string())),
                 _ => None
             }
-        }).ok_or(VcxError::from_msg(VcxErrorKind::InvalidOption, "Cannot parse @type"))
+        }).ok_or(VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot parse @type from string: {}", message_type)))?;
+
+    trace!("parse_message_type <<< message_type: {:?}", secret!(message_type));
+    Ok(message_type)
 }
 
 impl<'de> Deserialize<'de> for MessageTypeV2 {

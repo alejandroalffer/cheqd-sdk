@@ -12,7 +12,8 @@ impl EncryptionEnvelope {
     pub fn create(message: &A2AMessage,
                   pw_verkey: Option<&str>,
                   did_doc: &DidDoc) -> VcxResult<EncryptionEnvelope> {
-        trace!("EncryptionEnvelope::create >>> message: {:?}, pw_verkey: {:?}, did_doc: {:?}", message, pw_verkey, did_doc);
+        trace!("EncryptionEnvelope::create >>> message: {:?}, pw_verkey: {:?}, did_doc: {:?}", secret!(message), secret!(pw_verkey), secret!(did_doc));
+        debug!("EncryptionEnvelope: Creating encryption envelop");
 
         if ::settings::indy_mocks_enabled() { return Ok(EncryptionEnvelope(vec![])); }
 
@@ -24,7 +25,8 @@ impl EncryptionEnvelope {
     fn encrypt_for_pairwise(message: &A2AMessage,
                             pw_verkey: Option<&str>,
                             did_doc: &DidDoc) -> VcxResult<Vec<u8>> {
-        trace!("EncryptionEnvelope::encrypt_for_pairwise >>> pw_verkey: {:?}", pw_verkey);
+        trace!("EncryptionEnvelope::encrypt_for_pairwise >>> pw_verkey: {:?}, did_doc: {:?}", secret!(pw_verkey), secret!(did_doc));
+        debug!("EncryptionEnvelope: Encryption for recipient");
 
         let message = match message {
             A2AMessage::Generic(message_) => message_.to_string(),
@@ -38,6 +40,9 @@ impl EncryptionEnvelope {
 
     fn wrap_into_forward_messages(mut message: Vec<u8>,
                                   did_doc: &DidDoc) -> VcxResult<Vec<u8>> {
+        trace!("EncryptionEnvelope::encrypt_for_pairwise >>> did_doc: {:?}", secret!(did_doc));
+        debug!("EncryptionEnvelope: Encryption for routing");
+
         let (recipient_keys, routing_keys) = did_doc.resolve_keys();
 
         let mut to = recipient_keys.get(0)
@@ -55,7 +60,8 @@ impl EncryptionEnvelope {
     fn wrap_into_forward(message: Vec<u8>,
                          to: &str,
                          routing_key: &str) -> VcxResult<Vec<u8>> {
-        trace!("EncryptionEnvelope::wrap_into_forward >>> to: {:?}", to);
+        trace!("EncryptionEnvelope::wrap_into_forward >>> to: {:?}", secret!(to));
+        debug!("EncryptionEnvelope: Wrapping into Forward");
 
         let message = A2AMessage::Forward(Forward::new(to.to_string(), message)?);
 
@@ -66,7 +72,8 @@ impl EncryptionEnvelope {
     }
 
     pub fn open(payload: Vec<u8>) -> VcxResult<A2AMessage> {
-        debug!("EncryptionEnvelope::open >>>");
+        trace!("EncryptionEnvelope::open >>>");
+        debug!("EncryptionEnvelope: Opening");
 
         let unpacked_msg = crypto::unpack_message(&payload)?;
 
@@ -81,7 +88,7 @@ impl EncryptionEnvelope {
                 VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize A2A message: {}", err))
             })?;
 
-        debug!("EncryptionEnvelope::open <<< message: {:?}", message);
+        trace!("EncryptionEnvelope::open <<< message: {:?}", secret!(message));
 
         Ok(message)
     }

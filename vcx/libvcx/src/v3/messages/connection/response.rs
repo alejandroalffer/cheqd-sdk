@@ -74,6 +74,8 @@ impl Response {
     }
 
     pub fn encode(&self, key: &str) -> VcxResult<SignedResponse> {
+        trace!("Response::encode >>> {:?}", secret!(self));
+
         let connection_data = json!(self.connection).to_string();
 
         let now: u64 = time::get_time().sec as u64;
@@ -102,6 +104,8 @@ impl Response {
             please_ack: self.please_ack.clone(),
         };
 
+        trace!("Response::encode <<<");
+
         Ok(signed_response)
     }
 }
@@ -111,6 +115,8 @@ threadlike!(Response);
 
 impl SignedResponse {
     pub fn decode(self, key: &str) -> VcxResult<Response> {
+        trace!("SignedResponse::decode >>> {:?}", secret!(self));
+
         let signature = base64::decode_config(&self.connection_sig.signature.as_bytes(), base64::URL_SAFE)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot decode ConnectionResponse: {:?}", err)))?;
 
@@ -127,6 +133,8 @@ impl SignedResponse {
 
         let connection: ConnectionData = ::serde_json::from_slice(&sig_data)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ConnectionData from JSON. Err: {:?}", err)))?;
+
+        trace!("SignedResponse::decode <<<");
 
         Ok(Response {
             id: self.id,

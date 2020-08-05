@@ -1,7 +1,7 @@
 use indy::ErrorCode;
 
 pub fn init_mysql_wallet() -> Result<(), ErrorCode> {
-    trace!("initializing mysql wallet");
+    debug!("initializing mysql wallet");
 
     let lib = _load_lib("libmysqlstorage.so").map_err(|_| ErrorCode::CommonInvalidState)?;
 

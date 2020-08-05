@@ -81,13 +81,13 @@ pub fn create_and_publish_schema(source_id: &str,
                                  name: String,
                                  version: String,
                                  data: String) -> VcxResult<u32> {
-    trace!("create_new_schema >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}", source_id, issuer_did, name, version, data);
-    debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
+    trace!("create_new_schema >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}", source_id, secret!(issuer_did), secret!(name), secret!(version), secret!(data));
+    debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, secret!(name), secret!(issuer_did));
 
     let (schema_id, schema) = anoncreds::create_schema(&name, &version, &data)?;
     let payment_txn = anoncreds::publish_schema(&schema)?;
 
-    debug!("created schema on ledger with id: {}", schema_id);
+    debug!("created schema on ledger with id: {}", secret!(schema_id));
 
     let schema_handle = _store_schema(source_id, name, version, schema_id, data, payment_txn, PublicEntityStateType::Published)?;
 
@@ -100,14 +100,15 @@ pub fn prepare_schema_for_endorser(source_id: &str,
                                    version: String,
                                    data: String,
                                    endorser: String) -> VcxResult<(u32, String)> {
-    trace!("create_schema_for_endorser >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}, endorser: {}", source_id, issuer_did, name, version, data, endorser);
-    debug!("preparing schema for endorser with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
+    trace!("create_schema_for_endorser >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}, endorser: {}",
+           source_id, secret!(issuer_did), secret!(name), secret!(version), secret!(data), secret!(endorser));
+    debug!("preparing schema for endorser with source_id: {}, name: {}, issuer_did: {}", source_id, secret!(name), secret!(issuer_did));
 
     let (schema_id, schema) = anoncreds::create_schema(&name, &version, &data)?;
     let schema_request = anoncreds::build_schema_request(&schema)?;
     let schema_request = ledger::set_endorser(&schema_request, &endorser)?;
 
-    debug!("prepared schema for endorser with id: {}", schema_id);
+    debug!("prepared schema for endorser with id: {}", secret!(schema_id));
 
     let schema_handle = _store_schema(source_id, name, version, schema_id, data, None, PublicEntityStateType::Built)?;
 

@@ -58,7 +58,7 @@ public class CredentialDefApi extends VcxJava.API {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
         ParamGuard.notNullOrWhiteSpace(credentialName, "credentialName");
         ParamGuard.notNullOrWhiteSpace(schemaId, "schemaId");
-        logger.debug("credentialDefCreate() called with: sourceId = [" + sourceId + "], credentialName = [" + credentialName + "], schemaId = [" + schemaId + "], issuerId = [****], tag = [" + tag + "], config = [" + config + "], paymentHandle = [" + paymentHandle + "]");
+        logger.debug("credentialDefCreate() called with: sourceId = [" + sourceId + "], credentialName = [" + credentialName + "], schemaId = [****], issuerId = [****], tag = [****], config = [****], paymentHandle = [" + paymentHandle + "]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
@@ -115,7 +115,7 @@ public class CredentialDefApi extends VcxJava.API {
     ) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
         ParamGuard.notNullOrWhiteSpace(credDefId, "credDefId");
-        logger.debug("credentialDefCreateWithId() called with: sourceId = [" + sourceId + "], credDefId = [" + credDefId + "], issuerId = [****], revocationConfig = [" + revocationConfig + "]");
+        logger.debug("credentialDefCreateWithId() called with: sourceId = [" + sourceId + "], credDefId = [****], issuerId = [****], revocationConfig = [****]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
@@ -206,7 +206,7 @@ public class CredentialDefApi extends VcxJava.API {
     private static Callback credentialDefGetCredentialDefIdCb = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String credentialDefId) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], credentialDefId = [" + credentialDefId + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], credentialDefId = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             future.complete(credentialDefId);
@@ -254,7 +254,7 @@ public class CredentialDefApi extends VcxJava.API {
     private static Callback credentialDefPrepareForEndorserCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int command_handle, int err, int handle, String credentialDefTxn, String revocRegDefTxn, String revocRegEntryTxn) {
-	        System.out.println("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], handle = [" + handle + "], credentialDefTxn = [" + credentialDefTxn + "], revocRegDefTxn = [" + revocRegDefTxn + "], revocRegEntryTxn = [" + revocRegEntryTxn + "]");
+	        System.out.println("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], handle = [" + handle + "], credentialDefTxn = [****], revocRegDefTxn = [****], revocRegEntryTxn = [****]");
             CompletableFuture<CredentialDefPrepareForEndorserResult> future = (CompletableFuture<CredentialDefPrepareForEndorserResult>) removeFuture(command_handle);
             if (!checkCallback(future, err)) return;
 	        CredentialDefPrepareForEndorserResult result = new CredentialDefPrepareForEndorserResult(handle, credentialDefTxn, revocRegDefTxn, revocRegEntryTxn);
@@ -296,7 +296,7 @@ public class CredentialDefApi extends VcxJava.API {
 		ParamGuard.notNull(credentialName, "credentialName");
 		ParamGuard.notNull(schemaId, "schemaId");
 		ParamGuard.notNull(endorser, "endorser");
-		logger.debug("credentialDefCreate() called with: sourceId = [" + sourceId + "], credentialName = [" + credentialName + "], schemaId = [" + schemaId + "], issuerId = [" + issuerId + "], tag = [" + tag + "], config = [" + config + "], endorser = [" + endorser + "]");
+		logger.debug("credentialDefCreate() called with: sourceId = [" + sourceId + "], credentialName = [****], schemaId = [****], issuerId = [****], tag = [****], config = [****], endorser = [****]");
 		CompletableFuture<CredentialDefPrepareForEndorserResult> future = new CompletableFuture<CredentialDefPrepareForEndorserResult>();
 		int commandHandle = addFuture(future);
 

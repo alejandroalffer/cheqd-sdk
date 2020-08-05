@@ -80,7 +80,7 @@ public class ProofApi extends VcxJava.API {
         ParamGuard.notNull(requestedPredicates, "requestedPredicates");
         ParamGuard.notNull(revocationInterval, "revocationInterval");
         ParamGuard.notNull(name, "name");
-        logger.debug("proofCreate() called with: sourceId = [" + sourceId + "], requestedAttrs = [" + requestedAttrs + "], requestedPredicates = [" + requestedPredicates + "], revocationInterval = [" + revocationInterval + "], name = [" + name + "]");
+        logger.debug("proofCreate() called with: sourceId = [" + sourceId + "], requestedAttrs = [****], requestedPredicates = [****], revocationInterval = [****], name = [****]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
         if (requestedPredicates.isEmpty()) requestedPredicates = "[]";
@@ -127,7 +127,7 @@ public class ProofApi extends VcxJava.API {
 
     private static Callback vcxProofGetRequestMsgCB = new Callback() {
         public void callback(int commandHandle, int err, String msg){
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [" + msg + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if(!checkCallback(future,err)) return;
             Integer result = commandHandle;

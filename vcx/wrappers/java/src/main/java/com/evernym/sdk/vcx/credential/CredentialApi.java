@@ -124,7 +124,7 @@ public class CredentialApi extends VcxJava.API {
             String theirPwDid,
             int paymentHandle
     ) throws VcxException {
-        logger.debug("credentialGetRequestMsg() called with: credentialHandle = [" + credentialHandle + "], myPwDid = [" + myPwDid + "], theirPwDid = [" + theirPwDid + "], paymentHandle = [" + paymentHandle + "]");
+        logger.debug("credentialGetRequestMsg() called with: credentialHandle = [" + credentialHandle + "], myPwDid = [****], theirPwDid = [****], paymentHandle = [" + paymentHandle + "]");
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
@@ -144,7 +144,7 @@ public class CredentialApi extends VcxJava.API {
     private static Callback vcxCredentialStringCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int command_handle, int err, String stringData) {
-            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], string = [" + stringData + "]");
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], string = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
             if (!checkCallback(future, err)) return;
             future.complete(stringData);
@@ -493,7 +493,7 @@ public class CredentialApi extends VcxJava.API {
         ParamGuard.notNull(credentialOffer, "credentialOffer");
         ParamGuard.notNull(connectionHandle, "connectionHandle");
 
-        logger.debug("acceptCredentialOffer() called with: sourceId = [" + sourceId + "], credentialOffer = [" + credentialOffer + "], " +
+        logger.debug("acceptCredentialOffer() called with: sourceId = [" + sourceId + "], credentialOffer = [****], " +
                 "connectionHandle = [" + connectionHandle + "]");
         CompletableFuture<CredentialAcceptOfferResult> future = new CompletableFuture<CredentialAcceptOfferResult>();
         int commandHandle = addFuture(future);
@@ -539,7 +539,7 @@ public class CredentialApi extends VcxJava.API {
             int connectionHandle,
             String comment
     ) throws VcxException {
-        logger.debug("credentialReject() called with: credentialHandle = [ {} ], connectionHandle = [ {} ], comment = [ {} ]", credentialHandle, connectionHandle, comment);
+        logger.debug("credentialReject() called with: credentialHandle = [ {} ], connectionHandle = [ {} ], comment = [****]", credentialHandle, connectionHandle);
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 

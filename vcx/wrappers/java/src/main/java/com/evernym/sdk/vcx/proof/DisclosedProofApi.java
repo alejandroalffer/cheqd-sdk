@@ -339,7 +339,7 @@ public class DisclosedProofApi extends VcxJava.API {
     private static Callback vcxProofGetMsgCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String msg) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [" + msg + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             future.complete(msg);
@@ -371,7 +371,7 @@ public class DisclosedProofApi extends VcxJava.API {
     private static Callback vcxProofGetRejectMsgCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String msg) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [" + msg + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             future.complete(msg);
@@ -546,7 +546,7 @@ public class DisclosedProofApi extends VcxJava.API {
             String proposal
     ) throws VcxException {
         logger.debug("declinePresentationRequest() called with: proofHandle = [" + proofHandle + "], connectionHandle = [" + connectionHandle + "], " +
-                "reason = [" + reason + "], proposal = [" + proposal + "]");
+                "reason = [****], proposal = [****]");
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
