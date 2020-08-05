@@ -131,11 +131,8 @@ impl Holder {
     }
 
     pub fn delete_credential(&self) -> VcxResult<()> {
-    }
+        debug!("Holder {}: Deleting credential", self.get_source_id());
         self.holder_sm.delete_credential()
-
-    pub fn get_credential_status(&self) -> VcxResult<u32> {
-        Ok(self.holder_sm.credential_status())
     }
 
     pub fn step(&mut self, message: CredentialIssuanceMessage) -> VcxResult<()> {

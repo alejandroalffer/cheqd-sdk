@@ -580,6 +580,8 @@ pub mod tests {
             backup_wallet(handle, FILE_PATH).unwrap();
             assert_eq!(get_state(handle), WalletBackupState::BackupInProgress as u32);
 
+            thread::sleep(Duration::from_millis(2000));
+
             assert!(update_state(handle, None).is_ok());
             assert_eq!(get_state(handle), WalletBackupState::ReadyToExportWallet as u32);
         }
@@ -659,6 +661,8 @@ pub mod tests {
             backup_wallet(wallet_backup, FILE_PATH).unwrap();
             thread::sleep(Duration::from_millis(2000));
             assert_eq!(get_state(wallet_backup), WalletBackupState::BackupInProgress as u32);
+
+            thread::sleep(Duration::from_millis(2000));
 
             assert!(update_state(wallet_backup, None).is_ok());
             assert_eq!(get_state(wallet_backup), WalletBackupState::ReadyToExportWallet as u32);

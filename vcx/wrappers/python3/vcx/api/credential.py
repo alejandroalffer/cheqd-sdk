@@ -423,6 +423,28 @@ class Credential(VcxStateful):
 
         return json.loads(msg.decode())
 
+    async def get_credential(self):
+        """
+        Retrieve information about a stored credential in user's wallet, 
+        including credential id and the credential itself.
+
+        :return:
+        Example:
+        credential = await Credential.create(source_id, offer)
+        await credential.get_credential()
+        """
+        if not hasattr(Credential.get_credential, "cb"):
+            self.logger.debug("vcx_get_credential: Creating callback")
+            Credential.get_credential.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_credential_handle = c_uint32(self.handle)
+
+        msg = await do_call('vcx_get_credential',
+                      c_credential_handle,
+                      Credential.get_credential.cb)
+
+        return json.loads(msg.decode())
+
     async def get_payment_info(self):
         """
         Retrieve Payment Transaction Information for this Credential. Typically this will include
@@ -509,6 +531,25 @@ class Credential(VcxStateful):
                       c_connection_handle,
                       c_comment,
                       Credential.reject.cb)
+
+    async def delete(self):
+        """
+        Delete a Credential associated with the state object from the Wallet and release handle of the state object.
+
+        :return:
+        Example:
+        credential = await Credential.create(source_id, offer)
+        await credential.delete()
+        """
+        if not hasattr(Credential.delete, "cb"):
+            self.logger.debug("vcx_delete_credential: Creating callback")
+            Credential.delete.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_credential_handle = c_uint32(self.handle)
+
+        await do_call('vcx_delete_credential',
+                      c_credential_handle,
+                      Credential.delete.cb)
 
 
 

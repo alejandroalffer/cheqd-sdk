@@ -213,6 +213,7 @@ export interface IFFIEntryPoint {
                                 payment: number, cb: any) => number,
   vcx_credential_get_request_msg: (commandId: number, handle: number, myPwDid: string,
                                    theirPwDid: string | undefined | null, payment: number, cb: any) => number,
+  vcx_get_credential: (commandId: number, handle: number, cb: any) => number,
   vcx_credential_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_credential_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_credential_update_state: (commandId: number, handle: number, cb: any) => number,
@@ -223,6 +224,7 @@ export interface IFFIEntryPoint {
   vcx_credential_get_payment_txn: (commandId: number, handle: number, cb: any) => number,
   vcx_credential_reject: (commandId: number, handle: number, connectionHandle: number,
                           comment: string | undefined | null, cb: any) => number,
+  vcx_delete_credential: (commandId: number, handle: number, cb: any) => number,
 
   // logger
   vcx_set_default_logger: (level: string) => number,
@@ -445,6 +447,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
   vcx_credential_get_request_msg: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_get_credential: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_credential_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_credential_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_credential_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
@@ -456,6 +459,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_credential_get_payment_txn: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
   vcx_credential_reject: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_delete_credential: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
 
   // credentialDef
   vcx_credentialdef_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,

@@ -351,12 +351,12 @@ pub extern fn vcx_get_credential(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Delete a Credential from the wallet and release its handle.
+/// Delete a Credential associated with the state object from the Wallet and release handle of the state object.
 ///
 /// # Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// credential_handle: handle of the credential to delete.
+/// credential_handle: handle pointing to credential state object to delete.
 ///
 /// cb: Callback that provides error status of delete credential request
 ///
@@ -377,16 +377,20 @@ pub extern fn vcx_delete_credential(command_handle: CommandHandle,
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
-    trace!("vcx_delete_credential(command_handle: {}, credential_handle: {}), source_id: {})", command_handle, credential_handle, source_id);
+
+    trace!("vcx_delete_credential(command_handle: {}, credential_handle: {}), source_id: {})",
+           command_handle, credential_handle, source_id);
 
     spawn(move || {
         match credential::delete_credential(credential_handle) {
             Ok(_) => {
-                trace!("vcx_delete_credential_cb(command_handle: {}, rc: {}), credential_handle: {}, source_id: {})", command_handle, error::SUCCESS.message, credential_handle, source_id);
+                trace!("vcx_delete_credential_cb(command_handle: {}, rc: {}), credential_handle: {}, source_id: {})",
+                       command_handle, error::SUCCESS.message, credential_handle, source_id);
                 cb(command_handle, error::SUCCESS.code_num);
             }
             Err(e) => {
-                trace!("vcx_delete_credential_cb(command_handle: {}, rc: {}), credential_handle: {}, source_id: {})", command_handle, e, credential_handle, source_id);
+                trace!("vcx_delete_credential_cb(command_handle: {}, rc: {}), credential_handle: {}, source_id: {})",
+                       command_handle, e, credential_handle, source_id);
                 cb(command_handle, e.into());
             }
         }

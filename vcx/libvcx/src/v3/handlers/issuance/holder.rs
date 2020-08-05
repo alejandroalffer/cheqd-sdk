@@ -1,6 +1,6 @@
 use api::VcxStateType;
 
-use v3::handlers::issuance::states::{HolderState, OfferReceivedState, RequestSentState};
+use v3::handlers::issuance::states::{HolderState, OfferReceivedState, RequestSentState, FinishedHolderState};
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
@@ -248,14 +248,16 @@ impl HolderSM {
     }
 
     pub fn delete_credential(&self) -> VcxResult<()> {
-        trace!("Holder::delete_credential");
-        
+        trace!("Holder::delete_credential >>>");
+
         match self.state {
             HolderState::Finished(ref state) => {
-                let cred_id = state.cred_id.clone().ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get credential: credential id not found"))?;
-                _delete_credential(&cred_id)
+                let cred_id = state.cred_id.clone()
+                    .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Holder object state: `cred_id` not found", self.source_id)))?;
+                state.delete_credential(&cred_id)
             }
-            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot delete credential: credential issuance is not finished yet"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                        format!("Holder object {} in state {} not ready to delete Credential", self.source_id, self.state())))
         }
     }
 
@@ -313,13 +315,6 @@ impl RequestSentState {
                                         rev_reg_def_json.as_ref().map(String::as_str))
     }
 }
-
-fn _delete_credential(cred_id: &str) -> VcxResult<()> {
-    trace!("Holder::_delete_credential >>> cred_id: {}", cred_id);
-
-    libindy_prover_delete_credential(cred_id)
-}
-
 impl OfferReceivedState {
     fn make_credential_request(&self, connection: &CompletedConnection) -> VcxResult<(CredentialRequest, String, String)> {
         trace!("Holder::OfferReceivedState::make_credential_request >>> offer: {:?}", self.offer);
@@ -329,6 +324,13 @@ impl OfferReceivedState {
         let (req, req_meta, _cred_def_id, cred_def_json) =
             credential::Credential::create_credential_request(&cred_def_id, &connection.agent.pw_did, &cred_offer)?;
         Ok((CredentialRequest::create().set_requests_attach(req)?, req_meta, cred_def_json))
+    }
+}
+
+impl FinishedHolderState {
+    fn delete_credential(&self, cred_id: &str) -> VcxResult<()> {
+        trace!("Holder::_delete_credential >>> cred_id: {}", cred_id);
+        libindy_prover_delete_credential(cred_id)
     }
 }
 
