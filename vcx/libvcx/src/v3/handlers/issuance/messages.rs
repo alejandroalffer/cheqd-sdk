@@ -9,7 +9,8 @@ use v3::messages::a2a::A2AMessage;
 
 #[derive(Debug, Clone)]
 pub enum CredentialIssuanceMessage {
-    CredentialInit(u32),
+    SendCredentialOffer(u32),
+    PrepareCredentialOffer(),
     CredentialSend(u32),
     CredentialProposal(CredentialProposal),
     CredentialOffer(CredentialOffer),

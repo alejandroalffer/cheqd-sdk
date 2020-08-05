@@ -39,6 +39,7 @@ impl VerifierSM {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum VerifierState {
     Initiated(InitialState),
+//    PresentationRequestPrepared(PresentationRequestPreparedState),
     PresentationRequestSent(PresentationRequestSentState),
     Finished(FinishedState),
 }
@@ -46,6 +47,13 @@ pub enum VerifierState {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct InitialState {
     presentation_request_data: PresentationRequestData
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PresentationRequestPreparedState {
+    presentation_request: PresentationRequest,
+    #[serde(default)]
+    thread: Thread,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -315,9 +323,8 @@ impl VerifierSM {
 
     pub fn presentation_request(&self) -> VcxResult<PresentationRequest> {
         match self.state {
-            VerifierState::Initiated(ref state) => {
-                PresentationRequest::create().set_request_presentations_attach(&state.presentation_request_data)
-            }
+            VerifierState::Initiated(ref state) =>
+                Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Could not get Presentation Request message. VerifierSM is not in appropriate state.")),
             VerifierState::PresentationRequestSent(ref state) => Ok(state.presentation_request.clone()),
             VerifierState::Finished(ref state) => Ok(state.presentation_request.clone()),
         }

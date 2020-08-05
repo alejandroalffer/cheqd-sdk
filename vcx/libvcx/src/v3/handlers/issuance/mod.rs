@@ -35,9 +35,14 @@ impl Issuer {
         Ok(Issuer { issuer_sm })
     }
 
+    pub fn generate_credential_offer(&mut self) -> VcxResult<()> {
+        debug!("Issuer {}: Generating credential offer", self.get_source_id()?);
+        self.step(CredentialIssuanceMessage::PrepareCredentialOffer())
+    }
+
     pub fn send_credential_offer(&mut self, connection_handle: u32) -> VcxResult<()> {
         debug!("Issuer {}: Sending credential offer", self.get_source_id()?);
-        self.step(CredentialIssuanceMessage::CredentialInit(connection_handle))
+        self.step(CredentialIssuanceMessage::SendCredentialOffer(connection_handle))
     }
 
     pub fn send_credential(&mut self, connection_handle: u32) -> VcxResult<()> {

@@ -15,6 +15,7 @@ use messages::thread::Thread;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum IssuerState {
     Initial(InitialState),
+    OfferPrepared(OfferPreparedState),
     OfferSent(OfferSentState),
     RequestReceived(RequestReceivedState),
     CredentialSent(CredentialSentState),
@@ -41,6 +42,16 @@ pub struct InitialState {
     pub tails_file: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub credential_name: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct OfferPreparedState {
+    pub offer: CredentialOffer,
+    pub cred_data: String,
+    pub rev_reg_id: Option<String>,
+    pub tails_file: Option<String>,
+    #[serde(default)]
+    pub connection: Option<CompletedConnection>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -93,6 +104,63 @@ impl From<(InitialState, CredentialOffer, CompletedConnection, Thread)> for Offe
             rev_reg_id: state.rev_reg_id,
             tails_file: state.tails_file,
             connection,
+            thread,
+        }
+    }
+}
+
+impl From<(InitialState, CredentialOffer)> for OfferPreparedState {
+    fn from((state, offer): (InitialState, CredentialOffer)) -> Self {
+        trace!("IssuerSM: transit state from InitialState to OfferPreparedState");
+        OfferPreparedState {
+            offer,
+            cred_data: state.credential_json,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
+            connection: None,
+        }
+    }
+}
+
+impl From<(OfferPreparedState, CompletedConnection, Thread)> for OfferSentState {
+    fn from((state, connection, thread): (OfferPreparedState, CompletedConnection, Thread)) -> Self {
+        trace!("OfferPreparedState: transit state from InitialState to OfferSentState");
+        trace!("Thread: {:?}", thread);
+        OfferSentState {
+            offer: state.offer,
+            cred_data: state.cred_data,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
+            connection,
+            thread,
+        }
+    }
+}
+
+impl From<(OfferPreparedState, CredentialRequest, CompletedConnection, Thread)> for RequestReceivedState {
+    fn from((state, request, connection, thread): (OfferPreparedState, CredentialRequest, CompletedConnection, Thread)) -> Self {
+        trace!("OfferPreparedState: transit state from InitialState to RequestReceivedState");
+        trace!("Thread: {:?}", thread);
+        RequestReceivedState {
+            offer: state.offer,
+            cred_data: state.cred_data,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
+            request,
+            connection,
+            thread,
+        }
+    }
+}
+
+impl From<(OfferPreparedState, ProblemReport, Thread)> for FinishedState {
+    fn from((state, err, thread): (OfferPreparedState, ProblemReport, Thread)) -> Self {
+        trace!("OfferPreparedState: transit state from InitialState to FinishedState");
+        trace!("Thread: {:?}", thread);
+        FinishedState {
+            cred_id: None,
+            offer: Some(state.offer),
+            status: Status::Failed(err),
             thread,
         }
     }

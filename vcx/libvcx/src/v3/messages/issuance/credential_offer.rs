@@ -56,6 +56,11 @@ impl CredentialOffer {
         self.thread = Some(Thread::new().set_thid(id.to_string()));
         self
     }
+
+    pub fn set_thread(mut self, thread: Thread) -> Self {
+        self.thread = Some(thread);
+        self
+    }
 }
 
 a2a_message!(CredentialOffer);
