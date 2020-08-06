@@ -10,7 +10,10 @@ use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::holder::HolderSM;
 use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
+use v3::messages::proof_presentation::presentation_proposal::{PresentationProposal, PresentationPreview};
+
 use connection;
+use utils::libindy::anoncreds::prover_get_credential;
 
 // Issuer
 
@@ -159,6 +162,21 @@ impl Holder {
     pub fn delete_credential(&self) -> VcxResult<()> {
         debug!("Holder {}: Deleting credential", self.get_source_id());
         self.holder_sm.delete_credential()
+    }
+
+    pub fn get_presentation_proposal(&self) -> VcxResult<PresentationProposal> {
+        trace!("Holder::get_presentation_proposal >>>");
+        debug!("Credential {}: Building presentation proposal", self.get_source_id());
+
+        let (cred_id, _) = self.get_credential()?;
+
+        let credential = prover_get_credential(&cred_id)?;
+
+        let presentation_proposal = PresentationProposal::default()
+            .set_presentation_preview(PresentationPreview::for_credential(&credential));
+
+        trace!("Credential::get_presentation_proposal <<< presentation_proposal: {:?}", presentation_proposal);
+        Ok(presentation_proposal)
     }
 
     pub fn step(&mut self, message: CredentialIssuanceMessage) -> VcxResult<()> {

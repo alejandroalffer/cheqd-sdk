@@ -90,6 +90,61 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Create a new Proof object based on the given Presentation Proposal message
+     *
+     * @param  sourceId             Enterprise's personal identification for the proof, should be unique.
+     * @param  presentationProposal Message sent by the Prover to the verifier to initiate a proof presentation process:
+     *         {
+     *             "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/propose-presentation",
+     *             "@id": "<uuid-propose-presentation>",
+     *             "comment": "some comment",
+     *             "presentation_proposal": {
+     *                 "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview",
+     *                 "attributes": [
+     *                     {
+     *                         "name": "<attribute_name>", - name of the attribute.
+     *                         "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+     *                         "mime-type": Optional"<type>", - optional type of value. if mime-type is missing (null), then value is a string.
+     *                         "value": "<value>", - value of the attribute to reveal in presentation
+     *                     },
+     *                     // more attributes
+     *                   ],
+     *                  "predicates": [
+     *                     {
+     *                         "name": "<attribute_name>", - name of the attribute.
+     *                         "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+     *                         "predicate": "<predicate>", - predicate operator: "<", "<=", ">=", ">"
+     *                         "threshold": <threshold> - threshold value for the predicate.
+     *                     },
+     *                     // more predicates
+     *                 ]
+     *             }
+     *         }
+     *                                            
+     * @param  name                 label for proof request.
+     *
+     * @return                      handle that should be used to perform actions with the Proof object.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Integer> proofCreateWithProposal(
+            String sourceId,
+            String presentationProposal,
+            String name
+    ) throws VcxException {
+        ParamGuard.notNull(sourceId, "sourceId");
+        ParamGuard.notNull(presentationProposal, "presentationProposal");
+        ParamGuard.notNull(name, "name");
+        logger.debug("proofCreateWithProposal() called with: sourceId = [" + sourceId + "], presentationProposal = [" + presentationProposal + "], name = [" + name + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+        int result = LibVcx.api.vcx_proof_create_with_proposal(commandHandle, sourceId, presentationProposal, name, vcxProofCreateCB);
+        checkResult(result);
+
+        return future;
+    }
+
     private static Callback vcxProofSendRequestCB = new Callback() {
         public void callback(int commandHandle, int err){
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");

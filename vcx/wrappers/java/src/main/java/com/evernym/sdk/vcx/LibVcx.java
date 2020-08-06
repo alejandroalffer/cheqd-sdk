@@ -302,6 +302,12 @@ public abstract class LibVcx {
          */
         public int vcx_proof_create(int command_handle, String source_id, String requested_attrs, String requested_predicates, String revocationInterval, String name, Callback cb);
 
+
+        /**
+         * Create a new Proof object based on the given Presentation Proposal message
+         */
+        public int vcx_proof_create_with_proposal(int command_handle, String source_id, String presentation_proposal, String name, Callback cb);
+
         /**
          * Sends a proof request to pairwise connection.
          */
@@ -688,6 +694,9 @@ public abstract class LibVcx {
 
         /** Send a Credential rejection to the connection. */
         public int vcx_credential_reject(int command_handle, int credential_handle, int connection_handle, String comment, Callback cb);
+
+        /** Build Presentation Proposal message for revealing Credential data. */
+        public int vcx_credential_get_presentation_proposal_msg(int command_handle, int credential_handle, Callback cb);
 
         /** Delete a credential from the wallet and release it from memory. */
         public int vcx_delete_credential(int command_handle, int credential_handle, Callback cb);

@@ -556,6 +556,52 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
     }
   }
 
+  /**
+   * Build Presentation Proposal message for revealing Credential data.
+   *
+   * Presentation Proposal is an optional message that can be sent by the Prover to the Verifier to 
+   * initiate a Presentation Proof process.
+   *
+   * Presentation Proposal Format:
+   *   https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#propose-presentation
+   *
+   * EXPERIMENTAL
+   *
+   * ```
+   * credential = Credential.create(data)
+   * await credential.getPresentationProposal()
+   * ```
+   *
+   */
+  public async getPresentationProposal (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credential_get_presentation_proposal_msg(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`Credential ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
   protected _setHandle (handle: number) {
     super._setHandle(handle)
     this.paymentManager = new CredentialPaymentManager({ handle })

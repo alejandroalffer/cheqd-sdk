@@ -218,6 +218,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                  comment:(NSString *)comment
               completion:(void (^)(NSError *error))completion;
 
+- (void)credentialGetPresentationProposal:(NSInteger )credentialHandle
+                               completion:(void (^)(NSError *error, NSString *presentationProposal))completion;
+
 - (void)credentialSerialize:(NSInteger)credentialHandle
                  completion:(void (^)(NSError *error, NSString *state))completion;
 

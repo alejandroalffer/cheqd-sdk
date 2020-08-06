@@ -23,6 +23,7 @@ use messages::proofs::proof_message::get_credential_info;
 
 use v3::handlers::proof_presentation::verifier::verifier::Verifier;
 use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
+use v3::messages::proof_presentation::presentation_proposal::PresentationProposal;
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Proofs> = Default::default();
@@ -562,6 +563,28 @@ pub fn create_proof(source_id: String,
     Ok(handle)
 }
 
+pub fn create_proof_with_proposal(source_id: String,
+                                  name: String,
+                                  presentation_proposal: String) -> VcxResult<u32> {
+    debug!("create_proof >>> source_id: {}, name: {}, presentation_proposal: {}", source_id, secret!(name), secret!(presentation_proposal));
+    debug!("creating proof state object with presentation proposal");
+
+    let presentation_proposal: PresentationProposal = serde_json::from_str(&presentation_proposal)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse PresentationProposal from JSON string. Err: {:?}", err)))?;
+
+    let requested_attributes = presentation_proposal.to_proof_request_requested_attributes();
+    let requested_predicates = presentation_proposal.to_proof_request_requested_predicates();
+
+    let proof = Proof::create(source_id,
+                              json!(requested_attributes).to_string(),
+                              json!(requested_predicates).to_string(),
+                              String::from("{}"),
+                              name)?;
+
+    PROOF_MAP.add(Proofs::Pending(proof))
+        .or(Err(VcxError::from(VcxErrorKind::CreateProof)))
+}
+
 fn apply_agent_info(proof: &mut Proof, agent_info: &MyAgentInfo) {
     proof.my_did = agent_info.my_pw_did.clone();
     proof.my_vk = agent_info.my_pw_vk.clone();
@@ -737,6 +760,7 @@ pub mod tests {
     use utils::devsetup::*;
     use utils::httpclient::AgencyMock;
     use connection;
+    use messages::proofs::proof_request::{AttrInfo, PredicateInfo};
 
     fn default_agent_info(connection_handle: Option<u32>) -> MyAgentInfo {
         if let Some(h) = connection_handle { get_agent_info().unwrap().pw_info(h).unwrap() } else {
@@ -1412,5 +1436,53 @@ pub mod tests {
             rc.unwrap_err(); //FIXME check error code also
             assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
         }
+    }
+
+    #[test]
+    fn test_create_proof_with_proposal() {
+        let _setup = SetupMocks::init();
+
+        let proposal = json!({
+            "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation",
+            "@id": "<uuid-presentation>",
+            "comment": "some comment",
+            "presentation_proposal": {
+                "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview",
+                "attributes": [
+                    {
+                        "name": "account",
+                        "cred_def_id": "BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag",
+                        "value": "12345678",
+                        "referent": "0"
+                    },
+                    {
+                        "name": "streetAddress",
+                        "cred_def_id": "BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag",
+                        "value": "123 Main Street",
+                        "referent": "0"
+                    },
+                ],
+                "predicates": [
+                ]
+            }
+        }).to_string();
+
+        let proof_handle = create_proof_with_proposal("1".to_string(),
+                                               "Optional".to_owned(),
+                                               proposal).unwrap();
+
+        PROOF_MAP.get_mut(proof_handle, |proof| {
+            match proof {
+                Proofs::V3(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending")),
+                Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending")),
+                Proofs::Pending(proof) => {
+                    let requested_attrs: Vec<AttrInfo> = serde_json::from_str(&proof.requested_attrs).unwrap();
+                    let requested_predicates: Vec<PredicateInfo> = serde_json::from_str(&proof.requested_predicates).unwrap();
+                    assert_eq!(2, requested_attrs.len());
+                    assert_eq!(0, requested_predicates.len());
+                    Ok(())
+                },
+            }
+        }).unwrap();
     }
 }

@@ -8,7 +8,6 @@ use messages::{RemoteMessageType, MessageStatusCode, GeneralMessage};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
 use messages::get_message::get_ref_msg;
-use connection;
 use utils::error;
 use utils::libindy::{payments, anoncreds};
 use utils::constants::CRED_MSG;

@@ -585,6 +585,45 @@ public class CredentialApi extends VcxJava.API {
         checkResult(result);
 
         return future;
+    }
 
+    private static Callback vcxGetPresentationProposalCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int command_handle, int err, String presentationProposal) {
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], presentationProposal = [****]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
+            if (!checkCallback(future, err)) return;
+            future.complete(presentationProposal);
+        }
+    };
+
+    /**
+     * Build Presentation Proposal message for revealing Credential data.
+     *
+     * Presentation Proposal is an optional message that can be sent by the Prover to the Verifier to
+     * initiate a Presentation Proof process.
+     *
+     * Presentation Proposal Format: https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#propose-presentation
+     *
+     * EXPERIMENTAL
+     *
+     * @param  credentialHandle     handle pointing to Credential to use for Presentation Proposal message building
+     *
+     * @return                      Presentation Proposal message as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<String> credentialGetPresentationProposal(
+            int credentialHandle
+    ) throws VcxException {
+        ParamGuard.notNull(credentialHandle, "credentialHandle");
+        logger.debug("getPresentationProposal() called with: credentialHandle = [" + credentialHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_credential_get_presentation_proposal_msg(commandHandle, credentialHandle, vcxGetPresentationProposalCB);
+        checkResult(result);
+
+        return future;
     }
 }
