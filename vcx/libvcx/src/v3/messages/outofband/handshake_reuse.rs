@@ -36,5 +36,8 @@ pub mod tests {
             .set_thread(_thread());
 
         assert_eq!(_handshake_reuse(), handshake_reuse);
+
+        let expected = r#"{"@id":"testid","@type":"https://didcomm.org/out-of-band/1.0/handshake-reuse","~thread":{"received_orders":{},"sender_order":0,"thid":"test_id"}}"#;
+        assert_eq!(expected, json!(handshake_reuse.to_a2a_message()).to_string());
     }
 }

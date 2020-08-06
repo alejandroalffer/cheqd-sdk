@@ -150,7 +150,7 @@ a2a_message!(SignedResponse, ConnectionResponse);
 impl Default for ConnectionSignature {
     fn default() -> ConnectionSignature {
         ConnectionSignature {
-            msg_type: MessageType::build(MessageFamilies::Signature, "ed25519Sha512_single"),
+            msg_type: MessageType::build_with_did(MessageFamilies::Signature, "ed25519Sha512_single"),
             signature: String::new(),
             sig_data: String::new(),
             signer: String::new(),
