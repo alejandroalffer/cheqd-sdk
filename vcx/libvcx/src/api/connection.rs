@@ -1228,6 +1228,10 @@ pub extern fn vcx_connection_sign_data(command_handle: CommandHandle,
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
 
+    trace!("vcx_connection_sign_data(command_handle: {}, connection_handle: {}, data_raw: {:?}, data_len: {:?}), source_id: {:?}",
+           command_handle, connection_handle, secret!(data_raw), secret!(data_len), source_id);
+
+
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_sign - invalid handle");
         return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
@@ -1305,6 +1309,9 @@ pub extern fn vcx_connection_verify_signature(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
+
+    trace!("vcx_connection_verify_signature(command_handle: {}, connection_handle: {}, data_raw: {:?}, data_len: {:?}, signature_raw: {:?}, signature_len: {:?}), source_id: {:?}",
+           command_handle, connection_handle, secret!(data_raw), secret!(data_len), secret!(signature_raw), secret!(signature_len), source_id);
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_verify_signature - invalid handle");

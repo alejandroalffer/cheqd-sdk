@@ -567,6 +567,19 @@ pub fn generate_nonce() -> VcxResult<String> {
         .map_err(VcxError::from)
 }
 
+pub fn prover_get_credential(cred_id: &str) -> VcxResult<CredentialInfo> {
+    trace!("prover_get_credential >>>");
+
+    let wallet = get_wallet_handle();
+    let credential_json = anoncreds::prover_get_credential(wallet, cred_id).wait()?;
+    let credential: CredentialInfo = serde_json::from_str(&credential_json)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Can not deserialize the list Credential: {:?}", err)))?;
+
+    trace!("prover_get_credential <<< credential: {:?}", secret!(credential));
+
+    Ok(credential)
+}
+
 pub fn prover_get_credentials() -> VcxResult<Vec<CredentialInfo>> {
     trace!("prover_get_credentials >>>");
 

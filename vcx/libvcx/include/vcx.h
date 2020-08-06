@@ -854,7 +854,29 @@ vcx_error_t vcx_credential_reject(vcx_command_handle_t command_handle,
                                   vcx_credential_handle_t handle,
                                   connection_handle handle,
                                   const char *comment,
-                                  void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+                                  void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Build Presentation Proposal message for revealing Credential data.
+///
+/// Presentation Proposal is an optional message that can be sent by the Prover to the Verifier to
+/// initiate a Presentation Proof process.
+///
+/// Presentation Proposal Format: https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#propose-presentation
+///
+/// EXPERIMENTAL
+///
+/// #params
+/// command_handle: command handle to map callback to user context
+///
+/// credential_handle: handle pointing to Credential to use for Presentation Proposal message building
+///
+/// cb: Callback that provides Presentation Proposal as json string and provides error status
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_credential_get_presentation_proposal_msg(vcx_command_handle_t command_handle,
+                                                         vcx_credential_handle_t handle,
+                                                         void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 // Get the current state of the credential object
 //

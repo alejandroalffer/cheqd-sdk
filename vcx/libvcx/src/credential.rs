@@ -23,7 +23,7 @@ use messages::{
     },
 };
 use connection;
-use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential, get_cred_def_json, libindy_prover_delete_credential};
+use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential, get_cred_def_json, libindy_prover_delete_credential, prover_get_credential};
 use utils::libindy::payments::{pay_a_payee, PaymentTxn};
 use utils::{error, constants};
 
@@ -35,6 +35,7 @@ use v3::{
 };
 use utils::agent_info::{get_agent_info, get_agent_attr, MyAgentInfo};
 use messages::issuance::credential_offer::{set_cred_offer_ref_message, parse_json_offer, CredentialOffer};
+use v3::messages::proof_presentation::presentation_proposal::{PresentationProposal, PresentationPreview};
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Credentials>  = Default::default();
@@ -448,6 +449,27 @@ impl Credential {
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Credential object state: `cred_id` not found", self.source_id)))?;
 
         libindy_prover_delete_credential(cred_id)
+    }
+
+    fn get_presentation_proposal(&self) -> VcxResult<PresentationProposal> {
+        trace!("Credential::get_presentation_proposal_msg >>>");
+        debug!("Credential {}: Building presentation proposal", self.source_id);
+
+        if self.state != VcxStateType::VcxStateAccepted {
+            return Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                          format!("Credential object {} in state {} not ready to prepare presentation proposal message", self.source_id, self.state as u32)));
+        }
+
+        let cred_id = self.cred_id.as_ref()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Credential object state: `cred_id` not found", self.source_id)))?;
+
+        let credential = prover_get_credential(&cred_id)?;
+
+        let presentation_proposal = PresentationProposal::default()
+            .set_presentation_preview(PresentationPreview::for_credential(&credential));
+
+        trace!("Credential::get_presentation_proposal_msg <<< presentation_proposal: {:?}", presentation_proposal);
+        Ok(presentation_proposal)
     }
 }
 
@@ -920,6 +942,21 @@ pub fn reject(handle: u32, connection_handle: u32, comment: Option<String>) -> V
         *credential = new_credential;
         Ok(())
     }).map_err(handle_err)
+}
+
+pub fn get_presentation_proposal_msg(handle: u32) -> VcxResult<String> {
+    HANDLE_MAP.get(handle, |obj| {
+        match obj {
+            Credentials::Pending(_) => {
+                warn!("Cannot prepare presentation proposal for Pending Credential object");
+                Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot prepare presentation proposal for Pending object: Credential is not received yet"))
+            }
+            Credentials::V1(ref obj) => obj.get_presentation_proposal(),
+            Credentials::V3(ref obj) => obj.get_presentation_proposal(),
+        }
+    })
+        .map(|presentation_proposal| presentation_proposal.to_string())
+        .map_err(handle_err)
 }
 
 #[cfg(test)]

@@ -532,6 +532,35 @@ class Credential(VcxStateful):
                       c_comment,
                       Credential.reject.cb)
 
+    async def get_presentation_proposal(self):
+        """
+        Build Presentation Proposal message for revealing Credential data.
+
+        Presentation Proposal is an optional message that can be sent by the Prover to the Verifier to 
+        initiate a Presentation Proof process.
+
+        Presentation Proposal Format: 
+            https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#propose-presentation
+
+        EXPERIMENTAL
+
+        :return:
+        Example:
+        credential = await Credential.create(source_id, offer)
+        await credential.get_presentation_proposal()
+        """
+        if not hasattr(Credential.get_presentation_proposal, "cb"):
+            self.logger.debug("vcx_credential_get_presentation_proposal_msg: Creating callback")
+            Credential.get_presentation_proposal.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_credential_handle = c_uint32(self.handle)
+
+        msg = await do_call('vcx_credential_get_presentation_proposal_msg',
+                      c_credential_handle,
+                      Credential.get_presentation_proposal.cb)
+
+        return json.loads(msg.decode())
+
     async def delete(self):
         """
         Delete a Credential associated with the state object from the Wallet and release handle of the state object.

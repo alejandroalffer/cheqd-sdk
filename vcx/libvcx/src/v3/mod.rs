@@ -536,8 +536,6 @@ pub mod test {
     #[cfg(feature = "aries")]
     #[test]
     fn aries_demo() {
-        ::utils::logger::LibvcxDefaultLogger::init(Some("trace".to_string()));
-
         PaymentPlugin::load();
         let _pool = Pool::open();
 

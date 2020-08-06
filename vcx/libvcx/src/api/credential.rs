@@ -377,7 +377,7 @@ pub extern fn vcx_delete_credential(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     if !credential::is_valid_handle(credential_handle) {
-        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -444,7 +444,7 @@ pub extern fn vcx_credential_create_with_msgid(command_handle: CommandHandle,
                     Err(_) => offer_string,
                 };
                 trace!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {}, offer_string: {:?}) source_id: {}",
-                       command_handle, source_id, error::SUCCESS.message, handle, secret!(offer_string),  source_id);
+                       command_handle, source_id, error::SUCCESS.message, handle, secret!(offer_string), source_id);
                 let c_offer = CStringUtils::string_to_cstring(offer_string);
                 cb(command_handle, error::SUCCESS.code_num, handle, c_offer.as_ptr())
             }
@@ -660,7 +660,7 @@ pub extern fn vcx_credential_update_state(command_handle: CommandHandle,
                 trace!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, state, source_id);
                 cb(command_handle, error::SUCCESS.code_num, state)
-            },
+            }
             Err(e) => {
                 error!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, e, 0, source_id);
@@ -712,7 +712,7 @@ pub extern fn vcx_credential_update_state_with_message(command_handle: CommandHa
                 trace!("vcx_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, state, source_id);
                 cb(command_handle, error::SUCCESS.code_num, state)
-            },
+            }
             Err(e) => {
                 error!("vcx_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, e, 0, source_id);
@@ -1017,6 +1017,64 @@ pub extern fn vcx_credential_reject(command_handle: CommandHandle,
                 warn!("vcx_credential_reject_cb(command_handle: {}, rc: {}) source_id: {}",
                       command_handle, e, source_id);
                 cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Build Presentation Proposal message for revealing Credential data.
+///
+/// Presentation Proposal is an optional message that can be sent by the Prover to the Verifier to
+/// initiate a Presentation Proof process.
+///
+/// Presentation Proposal Format: https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#propose-presentation
+///
+/// EXPERIMENTAL
+///
+/// #params
+/// command_handle: command handle to map callback to user context
+///
+/// credential_handle: handle pointing to Credential to use for Presentation Proposal message building
+///
+/// cb: Callback that provides Presentation Proposal as json string and provides error status
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_credential_get_presentation_proposal_msg(command_handle: CommandHandle,
+                                                           credential_handle: u32,
+                                                           cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                                                err: u32,
+                                                                                msg: *const c_char)>) -> u32 {
+    info!("vcx_credential_get_presentation_proposal_msg >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !credential::is_valid_handle(credential_handle) {
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into();
+    }
+
+    let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
+
+    trace!("vcx_credential_get_presentation_proposal_msg(command_handle: {}, credential_handle: {}), source_id: {:?}",
+           command_handle, credential_handle, source_id);
+
+    spawn(move || {
+        match credential::get_presentation_proposal_msg(credential_handle) {
+            Ok(msg) => {
+                trace!("vcx_credential_get_presentation_proposal_msg_cb(command_handle: {}, rc: {}, msg: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, secret!(msg), source_id);
+                let msg = CStringUtils::string_to_cstring(msg);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            }
+            Err(e) => {
+                warn!("vcx_credential_get_presentation_proposal_msg_cb(command_handle: {}, rc: {}) source_id: {}",
+                      command_handle, e, source_id);
+                cb(command_handle, e.into(), ptr::null_mut());
             }
         };
 
