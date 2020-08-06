@@ -34,7 +34,7 @@ pub struct ResponseSignature {
 impl Default for ResponseSignature {
     fn default() -> ResponseSignature {
         ResponseSignature {
-            msg_type: MessageType::build(MessageFamilies::QuestionAnswer, "ed25519Sha512_single"),
+            msg_type: MessageType::build_with_did(MessageFamilies::QuestionAnswer, "ed25519Sha512_single"),
             signature: String::new(),
             sig_data: String::new(),
             signers: Vec::new(),

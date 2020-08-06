@@ -19,7 +19,8 @@ pub enum MessageFamilies {
 }
 
 impl MessageFamilies {
-    pub const DID: &'static str = "did:sov:BzCbsNYhMrjHiqZDTUASHg";
+    pub const DID: &'static str = "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec";
+    pub const ENDPOINT: &'static str = "https://didcomm.org";
 
     pub fn version(&self) -> &'static str {
         match self {
@@ -41,7 +42,22 @@ impl MessageFamilies {
     }
 
     pub fn id(&self) -> String {
-        format!("{};spec/{}/{}", Self::DID, self.to_string(), self.version().to_string())
+        match self {
+            MessageFamilies::Routing |
+            MessageFamilies::Connections |
+            MessageFamilies::Notification |
+            MessageFamilies::Signature |
+            MessageFamilies::CredentialIssuance |
+            MessageFamilies::ReportProblem |
+            MessageFamilies::PresentProof |
+            MessageFamilies::TrustPing |
+            MessageFamilies::DiscoveryFeatures |
+            MessageFamilies::Basicmessage |
+            MessageFamilies::QuestionAnswer |
+            MessageFamilies::Committedanswer |
+            MessageFamilies::Unknown(_) => format!("{}/{}/{}", Self::DID, self.to_string(), self.version().to_string()),
+            MessageFamilies::Outofband => format!("{}/{}/{}", Self::ENDPOINT, self.to_string(), self.version().to_string()),
+        }
     }
 
     pub fn actors(&self) -> Option<(Option<Actors>, Option<Actors>)> {

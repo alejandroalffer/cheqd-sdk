@@ -51,7 +51,7 @@ pub struct Predicate {
 }
 
 fn default_presentation_preview_type() -> MessageType {
-    MessageType::build(MessageFamilies::PresentProof, "presentation-preview")
+    MessageType::build_with_did(MessageFamilies::PresentProof, "presentation-preview")
 }
 
 impl PresentationProposal {

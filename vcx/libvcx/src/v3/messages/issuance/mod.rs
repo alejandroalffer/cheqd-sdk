@@ -48,7 +48,7 @@ pub struct CredentialValue {
 impl Default for CredentialPreviewData {
     fn default() -> CredentialPreviewData {
         CredentialPreviewData {
-            _type: MessageType::build(MessageFamilies::CredentialIssuance, "credential-preview"),
+            _type: MessageType::build_with_did(MessageFamilies::CredentialIssuance, "credential-preview"),
             attributes: vec![],
         }
     }

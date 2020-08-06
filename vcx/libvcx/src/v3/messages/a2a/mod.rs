@@ -270,9 +270,16 @@ impl<'de> Deserialize<'de> for A2AMessage {
     }
 }
 
-fn set_a2a_message_type<T>(msg: T, family: MessageFamilies, name: &str) -> Result<serde_json::Value, serde_json::Error> where T: Serialize {
+fn set_a2a_message_type_with_did<T>(msg: T, family: MessageFamilies, name: &str) -> Result<serde_json::Value, serde_json::Error> where T: Serialize {
     let mut value = ::serde_json::to_value(msg)?;
-    let type_ = ::serde_json::to_value(MessageType::build(family, name))?;
+    let type_ = ::serde_json::to_value(MessageType::build_with_did(family, name))?;
+    value.as_object_mut().unwrap().insert("@type".into(), type_);
+    Ok(value)
+}
+
+fn set_a2a_message_type_with_endpoint<T>(msg: T, family: MessageFamilies, name: &str) -> Result<serde_json::Value, serde_json::Error> where T: Serialize {
+    let mut value = ::serde_json::to_value(msg)?;
+    let type_ = ::serde_json::to_value(MessageType::build_with_endpoint(family, name))?;
     value.as_object_mut().unwrap().insert("@type".into(), type_);
     Ok(value)
 }
@@ -282,36 +289,36 @@ impl Serialize for A2AMessage {
         trace!("serializing aries a2a message");
 
         let value = match self {
-            A2AMessage::Forward(msg) => set_a2a_message_type(msg, MessageFamilies::Routing, A2AMessage::FORWARD),
-            A2AMessage::ConnectionInvitation(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_INVITATION),
-            A2AMessage::ConnectionRequest(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_REQUEST),
-            A2AMessage::ConnectionResponse(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_RESPONSE),
-            A2AMessage::ConnectionProblemReport(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_PROBLEM_REPORT),
-            A2AMessage::Ping(msg) => set_a2a_message_type(msg, MessageFamilies::TrustPing, A2AMessage::PING),
-            A2AMessage::PingResponse(msg) => set_a2a_message_type(msg, MessageFamilies::TrustPing, A2AMessage::PING_RESPONSE),
-            A2AMessage::Ack(msg) => set_a2a_message_type(msg, MessageFamilies::Notification, A2AMessage::ACK),
-            A2AMessage::CommonProblemReport(msg) => set_a2a_message_type(msg, MessageFamilies::ReportProblem, A2AMessage::PROBLEM_REPORT),
-            A2AMessage::CredentialOffer(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::CREDENTIAL_OFFER),
-            A2AMessage::Credential(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::CREDENTIAL),
-            A2AMessage::CredentialProposal(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::PROPOSE_CREDENTIAL),
-            A2AMessage::CredentialRequest(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::REQUEST_CREDENTIAL),
-            A2AMessage::CredentialAck(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::ACK),
-            A2AMessage::CredentialReject(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::PROBLEM_REPORT),
-            A2AMessage::PresentationProposal(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::PROPOSE_PRESENTATION),
-            A2AMessage::PresentationRequest(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::REQUEST_PRESENTATION),
-            A2AMessage::Presentation(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::PRESENTATION),
-            A2AMessage::PresentationAck(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::ACK),
-            A2AMessage::PresentationReject(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::PROBLEM_REPORT),
-            A2AMessage::Query(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY),
-            A2AMessage::Disclose(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::DISCLOSE),
-            A2AMessage::BasicMessage(msg) => set_a2a_message_type(msg, MessageFamilies::Basicmessage, A2AMessage::BASIC_MESSAGE),
-            A2AMessage::OutOfBandInvitation(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_INVITATION),
-            A2AMessage::HandshakeReuse(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE),
-            A2AMessage::HandshakeReuseAccepted(msg) => set_a2a_message_type(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED),
-            A2AMessage::Question(msg) => set_a2a_message_type(msg, MessageFamilies::QuestionAnswer, A2AMessage::QUESTION),
-            A2AMessage::Answer(msg) => set_a2a_message_type(msg, MessageFamilies::QuestionAnswer, A2AMessage::ANSWER),
-            A2AMessage::CommittedQuestion(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::QUESTION),
-            A2AMessage::CommittedAnswer(msg) => set_a2a_message_type(msg, MessageFamilies::Committedanswer, A2AMessage::ANSWER),
+            A2AMessage::Forward(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::Routing, A2AMessage::FORWARD),
+            A2AMessage::ConnectionInvitation(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_INVITATION),
+            A2AMessage::ConnectionRequest(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_REQUEST),
+            A2AMessage::ConnectionResponse(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_RESPONSE),
+            A2AMessage::ConnectionProblemReport(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_PROBLEM_REPORT),
+            A2AMessage::Ping(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::TrustPing, A2AMessage::PING),
+            A2AMessage::PingResponse(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::TrustPing, A2AMessage::PING_RESPONSE),
+            A2AMessage::Ack(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::Notification, A2AMessage::ACK),
+            A2AMessage::CommonProblemReport(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::ReportProblem, A2AMessage::PROBLEM_REPORT),
+            A2AMessage::CredentialOffer(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::CredentialIssuance, A2AMessage::CREDENTIAL_OFFER),
+            A2AMessage::Credential(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::CredentialIssuance, A2AMessage::CREDENTIAL),
+            A2AMessage::CredentialProposal(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::CredentialIssuance, A2AMessage::PROPOSE_CREDENTIAL),
+            A2AMessage::CredentialRequest(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::CredentialIssuance, A2AMessage::REQUEST_CREDENTIAL),
+            A2AMessage::CredentialAck(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::CredentialIssuance, A2AMessage::ACK),
+            A2AMessage::CredentialReject(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::CredentialIssuance, A2AMessage::PROBLEM_REPORT),
+            A2AMessage::PresentationProposal(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::PresentProof, A2AMessage::PROPOSE_PRESENTATION),
+            A2AMessage::PresentationRequest(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::PresentProof, A2AMessage::REQUEST_PRESENTATION),
+            A2AMessage::Presentation(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::PresentProof, A2AMessage::PRESENTATION),
+            A2AMessage::PresentationAck(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::PresentProof, A2AMessage::ACK),
+            A2AMessage::PresentationReject(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::PresentProof, A2AMessage::PROBLEM_REPORT),
+            A2AMessage::Query(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY),
+            A2AMessage::Disclose(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::DISCLOSE),
+            A2AMessage::BasicMessage(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::Basicmessage, A2AMessage::BASIC_MESSAGE),
+            A2AMessage::OutOfBandInvitation(msg) => set_a2a_message_type_with_endpoint(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_INVITATION),
+            A2AMessage::HandshakeReuse(msg) => set_a2a_message_type_with_endpoint(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE),
+            A2AMessage::HandshakeReuseAccepted(msg) => set_a2a_message_type_with_endpoint(msg, MessageFamilies::Outofband, A2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED),
+            A2AMessage::Question(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::QuestionAnswer, A2AMessage::QUESTION),
+            A2AMessage::Answer(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::QuestionAnswer, A2AMessage::ANSWER),
+            A2AMessage::CommittedQuestion(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::Committedanswer, A2AMessage::QUESTION),
+            A2AMessage::CommittedAnswer(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::Committedanswer, A2AMessage::ANSWER),
             A2AMessage::Generic(msg) => Ok(msg.clone())
         }.map_err(ser::Error::custom)?;
 
