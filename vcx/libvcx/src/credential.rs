@@ -264,6 +264,11 @@ impl Credential {
         let credential_msg: CredentialMessage = serde_json::from_str(&credential)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot parse Credential message from JSON string. Err: {:?}", err)))?;
 
+        let cred_offer: &CredentialOffer = self.credential_offer.as_ref()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Invalid Credential object state:`credential_offer` not found"))?;
+
+        credential_msg.ensure_match_offer(&cred_offer)?;
+
         let cred_req: &CredentialRequest = self.credential_request.as_ref()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Invalid Credential object state:`credential_request` not found"))?;
 
