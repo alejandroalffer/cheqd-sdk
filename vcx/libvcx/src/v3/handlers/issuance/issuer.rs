@@ -205,6 +205,10 @@ impl IssuerSM {
                 }
             }
             IssuerState::OfferPrepared(state_data) => match cim {
+                CredentialIssuanceMessage::SetConnection(connection_handle) => {
+                    let connection = ::connection::get_completed_connection(connection_handle)?;
+                    IssuerState::OfferPrepared((state_data, connection).into())
+                }
                 CredentialIssuanceMessage::SendCredentialOffer(connection_handle) => {
                     let connection = ::connection::get_completed_connection(connection_handle)?;
 

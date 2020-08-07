@@ -659,11 +659,11 @@ pub fn issuer_credential_create(cred_def_handle: u32,
            cred_def_handle, source_id, secret!(issuer_did), secret!(credential_name), secret!(&credential_data), price);
     debug!("creating issuer credential {} state object", source_id);
 
-//    // Initiate connection of new format -- redirect to v3 folder
-//    if settings::is_aries_protocol_set() {
-//        let issuer = v3::handlers::issuance::Issuer::create(cred_def_handle, &credential_data, &source_id)?;
-//        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer));
-//    }
+    // Initiate connection of new format -- redirect to v3 folder
+    if settings::is_aries_protocol_set() {
+        let issuer = Issuer::create(cred_def_handle, &credential_data, &source_id, &credential_name)?;
+        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer));
+    }
 
     let issuer_credential = IssuerCredential::create(cred_def_handle, source_id, issuer_did, credential_name, credential_data, price)?;
 
@@ -735,9 +735,8 @@ pub fn generate_credential_offer_msg(handle: u32) -> VcxResult<String> {
             IssuerCredentials::V1(ref mut obj) => obj.generate_credential_offer_msg(),
             IssuerCredentials::V3(ref mut obj) =>  {
                 obj.generate_credential_offer()?;
-                let cred_offer = obj.get_credential_offer()?;
-                let cred_offer: CredentialOffer = cred_offer.try_into()?;
-                let cred_offer = json!(vec![cred_offer]).to_string();
+                let cred_offer = obj.get_credential_offer()?.to_a2a_message();
+                let cred_offer = json!(cred_offer).to_string();
                 Ok(cred_offer)
             },
         }
@@ -795,6 +794,21 @@ pub fn send_credential(handle: u32, connection_handle: u32) -> VcxResult<u32> {
             }
             IssuerCredentials::V3(ref mut obj) => {
                 obj.send_credential(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+    }).map_err(handle_err)
+}
+
+pub fn set_connection(handle: u32, connection_handle: u32) -> VcxResult<u32> {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
+        match obj {
+            IssuerCredentials::Pending(ref mut obj) =>
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries IssuerCredential type doesn't support this action: `revoke_credential`.")),
+            IssuerCredentials::V1(ref mut obj) =>
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries IssuerCredential type doesn't support this action: `revoke_credential`.")),
+            IssuerCredentials::V3(ref mut obj) => {
+                obj.set_connection(connection_handle)?;
                 Ok(error::SUCCESS.code_num)
             }
         }

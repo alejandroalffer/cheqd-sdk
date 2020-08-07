@@ -12,6 +12,7 @@ pub enum CredentialIssuanceMessage {
     SendCredentialOffer(u32),
     PrepareCredentialOffer(),
     CredentialSend(u32),
+    SetConnection(u32),
     CredentialProposal(CredentialProposal),
     CredentialOffer(CredentialOffer),
     CredentialRequestSend(u32),

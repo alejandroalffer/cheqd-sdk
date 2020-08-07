@@ -50,6 +50,11 @@ impl Issuer {
         self.step(CredentialIssuanceMessage::CredentialSend(connection_handle))
     }
 
+    pub fn set_connection(&mut self, connection_handle: u32) -> VcxResult<()> {
+        debug!("Issuer {}: Sending credential", self.get_source_id()?);
+        self.step(CredentialIssuanceMessage::SetConnection(connection_handle))
+    }
+
     pub fn get_state(&self) -> VcxResult<u32> {
         Ok(self.issuer_sm.state())
     }

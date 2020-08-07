@@ -213,6 +213,19 @@ class IssuerCredential(VcxStateful):
         """
         self._release(IssuerCredential, 'vcx_issuer_credential_release')
 
+    async def set_connection(self, connection: Connection):
+        if not hasattr(IssuerCredential.set_connection, "cb"):
+            self.logger.debug("vcx_issuer_set_connection: Creating callback")
+            IssuerCredential.set_connection.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_credential_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+
+        await do_call('vcx_issuer_set_connection',
+                      c_credential_handle,
+                      c_connection_handle,
+                      IssuerCredential.set_connection.cb)
+
     async def send_offer(self, connection: Connection):
         """
         Send a credential offer to a holder showing what will be included in the actual credential

@@ -166,6 +166,19 @@ impl From<(OfferPreparedState, ProblemReport, Thread)> for FinishedState {
     }
 }
 
+impl From<(OfferPreparedState, CompletedConnection)> for OfferPreparedState {
+    fn from((state, connection): (OfferPreparedState, CompletedConnection)) -> Self {
+        trace!("OfferPreparedState: transit state from InitialState to OfferPreparedState");
+        OfferPreparedState {
+            offer: state.offer,
+            cred_data: state.cred_data,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
+            connection: Some(connection),
+        }
+    }
+}
+
 impl From<(OfferSentState, CredentialRequest, Thread)> for RequestReceivedState {
     fn from((state, request, thread): (OfferSentState, CredentialRequest, Thread)) -> Self {
         trace!("IssuerSM: transit state from OfferSentState to RequestReceivedState");
