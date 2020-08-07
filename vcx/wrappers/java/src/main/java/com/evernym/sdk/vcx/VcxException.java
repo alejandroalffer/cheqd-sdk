@@ -149,7 +149,7 @@ public class VcxException extends Exception {
             case INVALID_MSGPACK:
                 return new InvalidMsgPackException();
             case INVALID_AGENCY_RESPONSE:
-                return new InvalidMessagesException();
+                return new InvalidAgencyResponseException();
             case INVALID_ATTRIBUTES_STRUCTURE:
                 return new InvalidAttributeStructureException();
             case BIG_NUMBER_ERROR:
@@ -298,6 +298,12 @@ public class VcxException extends Exception {
                 return new InvalidDidDocException();
             case MESSAGE_IS_OUT_OF_THREAD:
                 return new MessageIsOutOfThreadException();
+            case INVALID_AGENCY_REQUEST:
+                return new InvalidAgencyRequestException();
+            case CONNECTION_ALREADY_EXISTS:
+                return new ConnectionAlreadyExistsException();
+            case CONNECTION_DOES_NOT_EXIST:
+                return new ConnectionDoesNotExistException();
             case UNIDENTIFIED_ERROR_CODE:
                 String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
                 return new VcxException(message, sdkErrorCode);

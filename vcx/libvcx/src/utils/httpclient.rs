@@ -6,6 +6,7 @@ use std::env;
 use error::prelude::*;
 use utils::timeout::TimeoutUtils;
 use reqwest::ClientBuilder;
+use error::agency_error::AgencyError;
 
 lazy_static! {
     static ref AGENCY_MOCK: Mutex<AgencyMock> = Mutex::new(AgencyMock::default());
@@ -69,7 +70,11 @@ pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
             Ok(_) => info!("Request failed: {}", content),
             Err(_) => info!("Could not read response"),
         };
-        return Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Sending POST HTTP request failed with: {}", content)));
+
+        return match AgencyError::from_response(&content) {
+            Some(agency_error) => Err(agency_error.to_vcx_error()),
+            None => Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Sending POST HTTP request failed with: {}", content)))
+        };
     }
 
     let mut content = Vec::new();

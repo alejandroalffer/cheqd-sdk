@@ -9,6 +9,8 @@ use libc::c_char;
 use utils::error;
 use utils::cstring::CStringUtils;
 
+pub mod agency_error;
+
 pub mod prelude {
     pub use super::{err_msg, VcxError, VcxErrorExt, VcxErrorKind, VcxResult, VcxResultExt, get_current_error_c_json};
 }
@@ -56,6 +58,10 @@ pub enum VcxErrorKind {
     InvalidRedirectDetail,
     #[fail(display = "Cannot Delete Connection. Check status of connection is appropriate to be deleted from agency.")]
     DeleteConnection,
+    #[fail(display = "Connection invitation has been already accepted")]
+    ConnectionAlreadyExists,
+    #[fail(display = "Connection does not exist")]
+    ConnectionDoesNotExist,
 
     // Payment
     #[fail(display = "No payment information associated with object")]
@@ -198,6 +204,8 @@ pub enum VcxErrorKind {
     // A2A
     #[fail(display = "Invalid or unexpected message received from the Agency")]
     InvalidAgencyResponse,
+    #[fail(display = "The message submitted on the Agency has an invalid format or field value")]
+    InvalidAgencyRequest,
 
     #[fail(display = "Common error {}", 0)]
     Common(u32),
@@ -333,6 +341,8 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::InvalidInviteDetail => error::INVALID_INVITE_DETAILS.code_num,
             VcxErrorKind::InvalidRedirectDetail => error::INVALID_REDIRECT_DETAILS.code_num,
             VcxErrorKind::DeleteConnection => error::CANNOT_DELETE_CONNECTION.code_num,
+            VcxErrorKind::ConnectionAlreadyExists => error::CONNECTION_ALREADY_EXISTS.code_num,
+            VcxErrorKind::ConnectionDoesNotExist => error::CONNECTION_DOES_NOT_EXIST.code_num,
             VcxErrorKind::CreateCredDef => error::CREATE_CREDENTIAL_DEF_ERR.code_num,
             VcxErrorKind::CredDefAlreadyCreated => error::CREDENTIAL_DEF_ALREADY_CREATED.code_num,
             VcxErrorKind::InvalidCredDefHandle => error::INVALID_CREDENTIAL_DEF_HANDLE.code_num,
@@ -388,6 +398,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::SerializationError => error::SERIALIZATION_ERROR.code_num,
             VcxErrorKind::NotBase58 => error::NOT_BASE58.code_num,
             VcxErrorKind::InvalidAgencyResponse => error::INVALID_AGENCY_RESPONSE.code_num,
+            VcxErrorKind::InvalidAgencyRequest => error::INVALID_AGENCY_REQUEST.code_num,
             VcxErrorKind::MissingBackupKey => error::MISSING_BACKUP_KEY.code_num,
             VcxErrorKind::ActionNotSupported => error::ACTION_NOT_SUPPORTED.code_num,
             VcxErrorKind::Common(num) => num,

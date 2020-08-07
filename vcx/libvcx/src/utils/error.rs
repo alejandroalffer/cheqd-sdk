@@ -35,6 +35,7 @@ pub static POOL_LEDGER_CONNECT: Error = Error{code_num: 1025, message: "Connecti
 pub static CREATE_POOL_CONFIG: Error = Error{code_num: 1026, message: "Formatting for Pool Config are incorrect."};
 pub static INVALID_PROOF_CREDENTIAL_DATA: Error = Error{code_num: 1027, message: "The Proof received does not have valid credentials listed."};
 pub static INVALID_PREDICATES_STRUCTURE: Error = Error{code_num: 1028, message: "Predicates provided to create a Proof Request are not correct"};
+pub static INVALID_AGENCY_REQUEST: Error = Error{code_num:1029, message:"The message submitted on the Agency has an invalid format or field value"};
 pub static NO_POOL_OPEN: Error = Error{code_num: 1030, message: "No Pool open. Can't return handle."};
 pub static INVALID_SCHEMA: Error = Error{code_num: 1031, message: "Schema was invalid or corrupt"};
 pub static CREATE_CREDENTIAL_DEF_ERR: Error = Error{code_num: 1034, message: "Call to create Credential Definition failed"};
@@ -61,6 +62,8 @@ pub static INVALID_WALLET_HANDLE: Error = Error{code_num: 1057, message: "Invali
 pub static INVALID_WALLET_CREATION: Error = Error{code_num: 1058, message: "Error Creating a wallet"};
 pub static CANNOT_DELETE_CONNECTION: Error = Error{code_num: 1060, message: "Cannot Delete Connection. Check status of connection is appropriate to be deleted from agency."};
 pub static CREATE_CONNECTION_ERROR: Error = Error{code_num:1061, message: "Could not store Connection object into the Object Cache"};
+pub static CONNECTION_ALREADY_EXISTS: Error = Error{code_num: 1062, message: "Connection invitation has been already accepted. You have to use another invitation to set up a new connection."};
+pub static CONNECTION_DOES_NOT_EXIST: Error = Error{code_num: 1063, message: "Connection does not exist."};
 pub static INSUFFICIENT_TOKEN_AMOUNT: Error = Error{code_num: 1064, message: "Insufficient amount of tokens to process request"};
 pub static INVALID_PAYMENT_ADDRESS: Error = Error{code_num: 1066, message: "Invalid payment address"};
 pub static INVALID_LIBINDY_PARAM: Error = Error{code_num: 1067, message: "Parameter passed to libindy was invalid"};
@@ -129,6 +132,7 @@ lazy_static! {
         insert_c_message(&mut m, &CREATE_POOL_CONFIG);
         insert_c_message(&mut m, &INVALID_PROOF_CREDENTIAL_DATA);
         insert_c_message(&mut m, &INVALID_PREDICATES_STRUCTURE);
+        insert_c_message(&mut m, &INVALID_AGENCY_REQUEST);
         insert_c_message(&mut m, &POOL_LEDGER_CONNECT);
         insert_c_message(&mut m, &NO_POOL_OPEN);
         insert_c_message(&mut m, &INVALID_SCHEMA);
@@ -156,6 +160,8 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_WALLET_CREATION);
         insert_c_message(&mut m, &CANNOT_DELETE_CONNECTION);
         insert_c_message(&mut m, &CREATE_CONNECTION_ERROR);
+        insert_c_message(&mut m, &CONNECTION_ALREADY_EXISTS);
+        insert_c_message(&mut m, &CONNECTION_DOES_NOT_EXIST);
         insert_c_message(&mut m, &INSUFFICIENT_TOKEN_AMOUNT);
         insert_c_message(&mut m, &INVALID_PAYMENT_ADDRESS);
         insert_c_message(&mut m, &INVALID_LIBINDY_PARAM);
