@@ -71,7 +71,6 @@ impl HolderSM {
                 let state = self.handle_message(msg.into())?;
                 agent.update_message_status(uid)?;
                 Ok(state)
-
             }
             None => Ok(self)
         }
@@ -123,7 +122,7 @@ impl HolderSM {
         trace!("Holder::handle_message >>> cim: {:?}", secret!(cim));
         debug!("Holder: Updating state");
 
-        let HolderSM { state, source_id} = self;
+        let HolderSM { state, source_id } = self;
         let state = match state {
             HolderState::OfferReceived(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequestSend(connection_handle) => {
@@ -134,7 +133,6 @@ impl HolderSM {
 
                     match state_data.make_credential_request(&connection) {
                         Ok((cred_request, req_meta, cred_def_json)) => {
-
                             let cred_request = cred_request
                                 .set_thread(thread.clone());
 
@@ -308,6 +306,12 @@ impl RequestSentState {
 
         self.thread.check_message_order(&self.connection.data.did_doc.id, &credential.thread)?;
 
+        let credential_offer = self.offer.as_ref()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState,
+                                      format!("Invalid Holder object state: `offer` not found")))?;
+
+        credential.ensure_match_offer(credential_offer)?;
+
         let credential_json = credential.credentials_attach.content()?;
         let rev_reg_id = _parse_rev_reg_id_from_credential(&credential_json)?;
         let rev_reg_def_json = if let Some(rev_reg_id) = rev_reg_id {
@@ -318,15 +322,16 @@ impl RequestSentState {
         };
 
         let cred_id = libindy_prover_store_credential(None,
-                                        &self.req_meta,
-                                        &credential_json,
-                                        &self.cred_def_json,
-                                        rev_reg_def_json.as_ref().map(String::as_str))?;
+                                                      &self.req_meta,
+                                                      &credential_json,
+                                                      &self.cred_def_json,
+                                                      rev_reg_def_json.as_ref().map(String::as_str))?;
 
         trace!("Holder::_store_credential <<<");
         Ok(cred_id)
     }
 }
+
 impl OfferReceivedState {
     fn make_credential_request(&self, connection: &CompletedConnection) -> VcxResult<(CredentialRequest, String, String)> {
         trace!("Holder::OfferReceivedState::make_credential_request >>> offer: {:?}", secret!(self.offer));
@@ -350,7 +355,7 @@ impl FinishedHolderState {
     }
 }
 
-fn _reject_credential(connection: &CompletedConnection, thread: &Thread, comment: Option<String>) -> VcxResult<ProblemReport>{
+fn _reject_credential(connection: &CompletedConnection, thread: &Thread, comment: Option<String>) -> VcxResult<ProblemReport> {
     trace!("Holder::_reject_credential >>> comment: {:?}", secret!(comment));
     debug!("holder preparing credential reject");
 
