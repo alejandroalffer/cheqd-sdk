@@ -7,7 +7,7 @@ pub struct Question {
     pub question_text: String,
     pub question_detail: Option<String>,
     #[serde(default)]
-    pub external_links: Vec<String>,
+    pub external_links: Vec<::serde_json::Value>,
     pub valid_responses: Vec<QuestionResponse>,
 }
 
@@ -32,7 +32,7 @@ impl Question {
         self
     }
 
-    pub fn set_external_links(mut self, external_links: Vec<String>) -> Self {
+    pub fn set_external_links(mut self, external_links: Vec<serde_json::Value>) -> Self {
         self.external_links = external_links;
         self
     }
