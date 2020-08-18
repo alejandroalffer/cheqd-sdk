@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use messages::issuance::credential_offer::CredentialOffer;
 use error::prelude::*;
 use utils::libindy::types::Credential as IndyCredential;

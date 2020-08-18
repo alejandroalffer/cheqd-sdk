@@ -341,6 +341,7 @@ impl OfferReceivedState {
         let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
         let (req, req_meta, _cred_def_id, cred_def_json) =
             credential::Credential::create_credential_request(&cred_def_id, &connection.agent.pw_did, &cred_offer)?;
+        self.offer.ensure_match_credential_definition(&cred_def_json)?;
         let cred_req = CredentialRequest::create().set_requests_attach(req)?;
 
         trace!("Holder::make_credential_request <<<");
