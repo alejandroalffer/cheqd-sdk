@@ -206,10 +206,10 @@ public class UtilsApi extends VcxJava.API {
      * @throws VcxException   If an exception occurred in Libvcx library.
      *
      **/
-    public static CompletableFuture<Integer> vcxGetProvisionToken(String config) throws VcxException {
+    public static CompletableFuture<Void> vcxGetProvisionToken(String config) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(config, "config");
         logger.debug("vcxGetProvisionToken() called with: config = [****]");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_get_provision_token(
