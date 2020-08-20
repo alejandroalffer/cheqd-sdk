@@ -3,6 +3,7 @@ use serde_json::Value;
 
 use issuer_credential::PaymentInfo;
 use messages::thread::Thread;
+use utils::libindy::anoncreds::ensure_credential_definition_contains_offered_attributes;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct CredentialOffer {
@@ -70,4 +71,11 @@ pub fn parse_json_offer(offer: &str) -> VcxResult<(CredentialOffer, Option<Payme
     trace!("parse_json_offer <<< offer: {:?}", secret!(offer));
 
     Ok((offer, payment))
+}
+
+impl CredentialOffer {
+    pub fn ensure_match_credential_definition(&self, cred_def_json: &str) -> VcxResult<()> {
+        let cred_offer_attributes = self.credential_attrs.iter().map(|(key, _)| key).collect();
+        ensure_credential_definition_contains_offered_attributes(cred_def_json, cred_offer_attributes)
+    }
 }
