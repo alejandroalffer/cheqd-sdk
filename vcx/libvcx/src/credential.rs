@@ -138,9 +138,11 @@ impl Credential {
         let credential_offer = self.credential_offer.as_ref()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Credential object state: `credential_offer` not found", self.source_id)))?;
 
-        let (req, req_meta, cred_def_id, _) = Credential::create_credential_request(&credential_offer.cred_def_id,
-                                                                                    &my_did,
-                                                                                    &credential_offer.libindy_offer)?;
+        let (req, req_meta, cred_def_id, cred_def_json) =
+            Credential::create_credential_request(&credential_offer.cred_def_id,
+                                                  &my_did,
+                                                  &credential_offer.libindy_offer)?;
+        credential_offer.ensure_match_credential_definition(&cred_def_json)?;
 
         let credential = CredentialRequest {
             libindy_cred_req: req,
@@ -163,9 +165,9 @@ impl Credential {
 
         let (cred_def_id, cred_def_json) = get_cred_def_json(&cred_def_id)?;
 
-        let (cred_req, cred_req_meta) =  libindy_prover_create_credential_req(&prover_did,
-                                             &cred_offer,
-                                             &cred_def_json)
+        let (cred_req, cred_req_meta) = libindy_prover_create_credential_req(&prover_did,
+                                                                             &cred_offer,
+                                                                             &cred_def_json)
             .map_err(|err| err.extend("Cannot create credential request"))?;
 
         trace!("Credential::create_credential_request <<< cred_req: {}, cred_req_meta: {}", secret!(cred_req), secret!(cred_req_meta));
@@ -331,7 +333,7 @@ impl Credential {
 
         if self.state != VcxStateType::VcxStateAccepted {
             return Err(VcxError::from_msg(VcxErrorKind::NotReady,
-                                          format!("Credential object {} in state {} not ready to get Credential message", self.source_id, self.state as u32)))
+                                          format!("Credential object {} in state {} not ready to get Credential message", self.source_id, self.state as u32)));
         }
 
         let credential = self.credential.as_ref()
@@ -350,7 +352,7 @@ impl Credential {
 
         if self.state != VcxStateType::VcxStateRequestReceived {
             return Err(VcxError::from_msg(VcxErrorKind::NotReady,
-                                          format!("Credential object {} in state {} not ready to get Credential Offer message", self.source_id, self.state as u32)))
+                                          format!("Credential object {} in state {} not ready to get Credential Offer message", self.source_id, self.state as u32)));
         }
 
         let credential_offer = self.credential_offer.as_ref()
@@ -1076,7 +1078,6 @@ pub mod tests {
 
         delete_credential(c_h).unwrap();
         assert_eq!(get_credential(c_h).unwrap_err().kind(), VcxErrorKind::InvalidCredentialHandle);
-
     }
 
     #[test]

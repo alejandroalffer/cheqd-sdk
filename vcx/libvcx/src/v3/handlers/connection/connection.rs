@@ -148,16 +148,16 @@ impl Connection {
         if let Some((uid, message)) = self.connection_sm.find_message_to_handle(messages) {
             self.handle_message(message.into())?;
             self.agent_info().update_message_status(uid)?;
-        };
+        } else {
+            if let Some(prev_agent_info) = self.connection_sm.prev_agent_info().cloned() {
+                let messages = prev_agent_info.get_messages()?;
 
-        if let Some(prev_agent_info) = self.connection_sm.prev_agent_info().cloned() {
-            let messages = prev_agent_info.get_messages()?;
-
-            if let Some((uid, message)) = self.connection_sm.find_message_to_handle(messages) {
-                self.handle_message(message.into())?;
-                prev_agent_info.update_message_status(uid)?;
+                if let Some((uid, message)) = self.connection_sm.find_message_to_handle(messages) {
+                    self.handle_message(message.into())?;
+                    prev_agent_info.update_message_status(uid)?;
+                }
             }
-        }
+        };
 
         let state = self.state();
 

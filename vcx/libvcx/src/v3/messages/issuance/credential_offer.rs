@@ -7,6 +7,7 @@ use messages::thread::Thread;
 use messages::issuance::credential_offer::CredentialOffer as CredentialOfferV1;
 use messages::payload::PayloadKinds;
 use std::convert::TryInto;
+use utils::libindy::anoncreds::ensure_credential_definition_contains_offered_attributes;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct CredentialOffer {
@@ -19,7 +20,7 @@ pub struct CredentialOffer {
     pub offers_attach: Attachments,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "~thread")]
-    pub thread: Option<Thread>
+    pub thread: Option<Thread>,
 }
 
 impl CredentialOffer {
@@ -55,6 +56,11 @@ impl CredentialOffer {
     pub fn set_thread_id(mut self, id: &str) -> Self {
         self.thread = Some(Thread::new().set_thid(id.to_string()));
         self
+    }
+
+    pub fn ensure_match_credential_definition(&self, cred_def_json: &str) -> VcxResult<()> {
+        let cred_offer_attributes = self.credential_preview.attributes.iter().map(|value| &value.name).collect();
+        ensure_credential_definition_contains_offered_attributes(cred_def_json, cred_offer_attributes)
     }
 
     pub fn set_thread(mut self, thread: Thread) -> Self {
@@ -117,6 +123,7 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
 pub mod tests {
     use super::*;
     use v3::messages::connection::response::tests::*;
+    use utils::constants::CRED_DEF_JSON;
 
     fn _attachment() -> ::serde_json::Value {
         json!({
@@ -169,5 +176,56 @@ pub mod tests {
             .set_offers_attach(&_attachment().to_string()).unwrap();
 
         assert_eq!(_credential_offer(), credential_offer);
+    }
+
+    #[test]
+    fn test_credential_offer_match_cred_def_works() {
+        // Credential Definition contains attributes: name, height, sex, age
+
+        // Credential Offer contains less attributes than Credential Definition
+        let credential_offer: CredentialOffer = CredentialOffer::create()
+            .set_credential_preview_data(
+                CredentialPreviewData::new()
+                    .add_value("name", "Test", MimeType::Plain).unwrap()
+            ).unwrap();
+
+        credential_offer.ensure_match_credential_definition(CRED_DEF_JSON).unwrap_err();
+
+        // Credential Offer contains same attributes as Credential Definition
+        let credential_offer: CredentialOffer = CredentialOffer::create()
+            .set_credential_preview_data(
+                CredentialPreviewData::new()
+                    .add_value("name", "Test", MimeType::Plain).unwrap()
+                    .add_value("height", "Test", MimeType::Plain).unwrap()
+                    .add_value("sex", "Test", MimeType::Plain).unwrap()
+                    .add_value("age", "Test", MimeType::Plain).unwrap()
+            ).unwrap();
+
+        credential_offer.ensure_match_credential_definition(CRED_DEF_JSON).unwrap();
+
+        // Credential Offer contains same attributes as Credential Definition but in different case
+        let credential_offer: CredentialOffer = CredentialOffer::create()
+            .set_credential_preview_data(
+                CredentialPreviewData::new()
+                    .add_value("NAME", "Test", MimeType::Plain).unwrap()
+                    .add_value("Height", "Test", MimeType::Plain).unwrap()
+                    .add_value("SEX", "Test", MimeType::Plain).unwrap()
+                    .add_value("age", "Test", MimeType::Plain).unwrap()
+            ).unwrap();
+
+        credential_offer.ensure_match_credential_definition(CRED_DEF_JSON).unwrap();
+
+        // Credential Offer contains more attributes than Credential Definition
+        let credential_offer: CredentialOffer = CredentialOffer::create()
+            .set_credential_preview_data(
+                CredentialPreviewData::new()
+                    .add_value("name", "Test", MimeType::Plain).unwrap()
+                    .add_value("height", "Test", MimeType::Plain).unwrap()
+                    .add_value("sex", "Test", MimeType::Plain).unwrap()
+                    .add_value("age", "Test", MimeType::Plain).unwrap()
+                    .add_value("additional", "Test", MimeType::Plain).unwrap()
+            ).unwrap();
+
+        credential_offer.ensure_match_credential_definition(CRED_DEF_JSON).unwrap_err();
     }
 }

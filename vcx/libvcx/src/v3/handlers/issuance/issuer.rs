@@ -244,9 +244,7 @@ impl IssuerSM {
             }
             IssuerState::OfferSent(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequest(request) => {
-                    let thread = state_data.thread.clone()
-                        .update_received_order(&state_data.connection.data.did_doc.id);
-
+                    let thread = state_data.thread.clone();
                     IssuerState::RequestReceived((state_data, request, thread).into())
                 }
                 CredentialIssuanceMessage::CredentialProposal(_) => {
