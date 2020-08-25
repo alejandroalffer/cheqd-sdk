@@ -5,6 +5,8 @@ use v3::messages::a2a::A2AMessage;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum VerifierMessages {
+    PreparePresentationRequest(),
+    SetConnection(u32),
     SendPresentationRequest(u32),
     PresentationReceived(Presentation),
     PresentationProposalReceived(PresentationProposal),

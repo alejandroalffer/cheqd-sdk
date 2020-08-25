@@ -371,3 +371,16 @@ class Proof(VcxStateful):
                                            Proof.get_proof_msg.cb)
         self.proof_state = proof_state
         return json.loads(proof.decode())
+
+    async def set_connection(self, connection: Connection):
+        if not hasattr(Proof.set_connection, "cb"):
+            self.logger.debug("vcx_proof_set_connection: Creating callback")
+            Proof.set_connection.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_proof_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+
+        await do_call('vcx_proof_set_connection',
+                      c_proof_handle,
+                      c_connection_handle,
+                      Proof.set_connection.cb)

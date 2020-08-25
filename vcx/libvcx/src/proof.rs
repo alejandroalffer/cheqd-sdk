@@ -542,11 +542,11 @@ pub fn create_proof(source_id: String,
                     revocation_details: String,
                     name: String) -> VcxResult<u32> {
 //    // Initiate proof of new format -- redirect to v3 folder
-//    if settings::is_aries_protocol_set() {
-//        let verifier = Verifier::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
-//        return PROOF_MAP.add(Proofs::V3(verifier))
-//            .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
-//    }
+    if settings::is_aries_protocol_set() {
+        let verifier = Verifier::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
+        return PROOF_MAP.add(Proofs::V3(verifier))
+            .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
+    }
 
     trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}",
            source_id, secret!(requested_attrs), secret!(requested_predicates), secret!(name));
@@ -673,7 +673,10 @@ pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
         match obj {
             Proofs::Pending(ref mut obj) => obj.generate_proof_request_msg(),
             Proofs::V1(ref mut obj) => obj.generate_proof_request_msg(),
-            Proofs::V3(ref obj) => obj.generate_presentation_request_msg()
+            Proofs::V3(ref mut obj) => {
+                obj.generate_presentation_request()?;
+                obj.get_presentation_request()
+            }
         }
     }).map_err(handle_err)
 }
@@ -750,6 +753,21 @@ pub fn generate_nonce() -> VcxResult<String> {
         .map_err(|err| VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot generate nonce: {}", err)))?;
     Ok(bn.to_dec_str()
         .map_err(|err| VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot generate nonce: {}", err)))?.to_string())
+}
+
+pub fn set_connection(handle: u32, connection_handle: u32) -> VcxResult<u32> {
+    PROOF_MAP.get_mut(handle, |obj| {
+        match obj {
+            Proofs::Pending(ref mut obj) =>
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries Proofs type doesn't support this action: `set_connection`.")),
+            Proofs::V1(ref mut obj) =>
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries Proofs type doesn't support this action: `set_connection`.")),
+            Proofs::V3(ref mut obj) => {
+                obj.set_connection(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+    }).map_err(handle_err)
 }
 
 #[cfg(test)]

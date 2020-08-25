@@ -163,7 +163,7 @@ impl IssuerSM {
         match self.state {
             IssuerState::Initial(_) => VcxStateType::VcxStateInitialized as u32,
             IssuerState::OfferSent(_) => VcxStateType::VcxStateOfferSent as u32,
-            IssuerState::OfferPrepared(_) => VcxStateType::VcxStateOfferSent as u32,
+            IssuerState::OfferPrepared(_) => VcxStateType::VcxStateInitialized as u32,
             IssuerState::RequestReceived(_) => VcxStateType::VcxStateRequestReceived as u32,
             IssuerState::CredentialSent(_) => VcxStateType::VcxStateAccepted as u32,
             IssuerState::Finished(ref status) => {
@@ -369,10 +369,7 @@ impl InitialState {
 
         let cred_offer = libindy_issuer_create_credential_offer(&self.cred_def_id)?;
         let cred_offer = CredentialOffer::create()
-            .set_comment(Some(format!("{} is offering you a credential: {}",
-                                      ::settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME)?,
-                                      self.credential_name.clone().unwrap_or_default()
-            )))
+            .set_comment(Some(self.credential_name.clone().unwrap_or_default()))
             .set_offers_attach(&cred_offer)?;
         let cred_offer = self.append_credential_preview(cred_offer)?;
 
