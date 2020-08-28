@@ -47,6 +47,7 @@ pub struct ConnectionOptions {
     #[serde(default)]
     pub phone: Option<String>,
     pub use_public_did: Option<bool>,
+    pub update_agent_info: Option<bool>,
 }
 
 impl Default for ConnectionOptions {
@@ -55,19 +56,20 @@ impl Default for ConnectionOptions {
             connection_type: None,
             phone: None,
             use_public_did: None,
+            update_agent_info: Some(true),
         }
     }
 }
 
 impl ConnectionOptions {
-    pub fn from_opt_str(options: Option<String>) -> VcxResult<ConnectionOptions> {
+    pub fn from_opt_str(options: Option<&String>) -> VcxResult<ConnectionOptions> {
         Ok(
             match options.as_ref().map(|opt| opt.trim()) {
                 None => ConnectionOptions::default(),
                 Some(opt) if opt.is_empty() => ConnectionOptions::default(),
                 Some(opt) => {
-                    serde_json::from_str(&opt)
-                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ConnectionOptions: {}", err)))?
+                    serde_json::from_str(opt)
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ConnectionOptions: {}", err)))?
                 }
             }
         )
@@ -321,25 +323,9 @@ impl Connection {
     fn update_agent_profile(&mut self, options: &ConnectionOptions) -> VcxResult<u32> {
         debug!("updating agent config for connection {}", self.source_id);
 
-        if let Some(true) = options.use_public_did {
-            self.public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
-        };
-
-        let webhook_url = settings::get_config_value(settings::CONFIG_WEBHOOK_URL).ok();
-
-        if let Ok(name) = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME) {
-            messages::update_data()
-                .to(&self.pw_did)?
-                .name(&name)?
-                .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL)?)?
-                .webhook_url(&webhook_url)?
-                .use_public_did(&self.public_did)?
-                .version(&Some(ProtocolTypes::V1))?
-                .send_secure()
-                .map_err(|err| err.extend("Cannot update agent profile"))?;
-        }
-
-        Ok(error::SUCCESS.code_num)
+        ::messages::agent_utils::update_agent_profile(&self.pw_did,
+                                                      options.use_public_did.unwrap_or(false),
+                                                      ProtocolTypes::V1)
     }
 
     pub fn update_state(&mut self, _message: Option<String>) -> VcxResult<u32> {
@@ -974,13 +960,15 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
 }
 
 pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
-    let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options)?;
-
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
             Connections::V1(ref mut connection) => {
                 debug!("establish connection {}", connection.source_id);
-                connection.update_agent_profile(&options_obj)?;
+                let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options.as_ref())?;
+                if options_obj.update_agent_info.unwrap_or(true) {
+                    connection.update_agent_profile(&options_obj)?;
+                }
+
                 connection.create_agent_pairwise()?;
                 connection.connect(&options_obj)
             }
@@ -1450,6 +1438,22 @@ pub mod tests {
 
         // This errors b/c we release handle in delete connection
         assert!(release(handle).is_err());
+    }
+
+    #[test]
+    fn test_vcx_connection_connect_options() {
+        let _setup = SetupMocks::init();
+        let handle = create_connection("test_create_connection").unwrap();
+        let mut connection_options = json!({
+            "connection_type":"SMS",
+            "phone":"123",
+            "use_public_did":true,
+        });
+        assert!(connect(handle, Some(connection_options.to_string())).is_ok());
+        connection_options["update_agent_info"] = json!(false);
+        assert!(connect(handle, Some(connection_options.to_string())).is_ok());
+        connection_options["update_agent_info"] = json!(true);
+        assert!(connect(handle, Some(connection_options.to_string())).is_ok());
     }
 
     #[test]

@@ -1,9 +1,10 @@
 use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
 use utils::libindy::wallet;
 use error::prelude::*;
-use messages::agent_utils::{parse_config, set_config_values, configure_wallet, get_final_config, connect_v2, send_message_to_agency};
+use messages::agent_utils::{parse_config, set_config_values, configure_wallet, get_final_config, connect_v2, send_message_to_agency, update_agent_profile};
 use serde_json::from_str;
 use messages::message_type::MessageTypes;
+use settings::{config_str_to_bool, ProtocolTypes, CONFIG_USE_PUBLIC_DID};
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -78,6 +79,13 @@ pub fn provision(config: &str, token: &str) -> VcxResult<String> {
 
     trace!("Connecting to Agency");
     let (agent_did, agent_vk) = create_agent(&my_did, &my_vk, &my_config.agency_did, token)?;
+
+
+    /* Update Agent Info */
+    update_agent_profile(&agent_did,
+                         config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false),
+                         ProtocolTypes::V2)?;
+
     wallet::close_wallet()?;
 
     get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)
@@ -148,6 +156,7 @@ mod tests {
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
             "protocol_type": protocol_type,
+            "use_public_did": true,
         }).to_string();
 
         let token = json!( {
