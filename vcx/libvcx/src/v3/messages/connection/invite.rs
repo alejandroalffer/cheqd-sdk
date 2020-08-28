@@ -12,6 +12,9 @@ pub struct Invitation {
     pub routing_keys: Vec<String>,
     #[serde(rename = "serviceEndpoint")]
     pub service_endpoint: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "profileUrl")]
+    pub profile_url: Option<String>,
 }
 
 impl Invitation {
@@ -26,6 +29,11 @@ impl Invitation {
 
     pub fn set_id(mut self, id: String) -> Invitation {
         self.id = MessageId(id);
+        self
+    }
+
+    pub fn set_opt_profile_url(mut self, profile_url: Option<String>) -> Invitation {
+        self.profile_url = profile_url;
         self
     }
 
@@ -59,6 +67,7 @@ pub mod tests {
             recipient_keys: _recipient_keys(),
             routing_keys: _routing_keys(),
             service_endpoint: _service_endpoint(),
+            profile_url: None
         }
     }
 
