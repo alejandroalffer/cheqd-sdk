@@ -7,6 +7,7 @@ use utils::libindy::signus::create_and_store_my_did;
 use utils::option_util::get_or_default;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
+use settings::{ProtocolTypes, CONFIG_USE_PUBLIC_DID, config_str_to_bool};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Connect {
@@ -146,6 +147,7 @@ pub struct Config {
     communication_method: Option<String>,
     webhook_url: Option<String>,
     use_latest_protocols: Option<String>,
+    use_public_did: Option<bool>,
 }
 
 pub fn set_config_values(my_config: &Config) {
@@ -167,6 +169,7 @@ pub fn set_config_values(my_config: &Config) {
     settings::set_opt_config_value(settings::CONFIG_DID_METHOD, &my_config.did_method);
     settings::set_opt_config_value(settings::COMMUNICATION_METHOD, &my_config.communication_method);
     settings::set_opt_config_value(settings::CONFIG_WEBHOOK_URL, &my_config.webhook_url);
+    settings::set_opt_config_value(settings::CONFIG_USE_PUBLIC_DID, &my_config.use_public_did.map(|x| x.to_string()));
 }
 
 fn _create_issuer_keys(my_did: &str, my_vk: &str, my_config: &Config) -> VcxResult<(String, String)> {
@@ -347,7 +350,42 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of CreateAgentResponse"))
         };
 
+    /* STEP 4 - Update Agent Info */
+    update_agent_profile(&response.from_did,
+                         config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false),
+                         ProtocolTypes::V1)?;
+
     Ok((response.from_did, response.from_vk))
+}
+
+pub fn update_agent_profile(agent_did: &str,
+                            use_public_did: bool,
+                            protocol_type: ProtocolTypes) -> VcxResult<u32> {
+    trace!("update_agent_profile >>> agent_did: {}, use_public_did: {}, protocol_type: {:?}",
+           agent_did, use_public_did, protocol_type);
+
+    let mut public_did: Option<String> = None;
+    if use_public_did {
+        public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
+    };
+
+    let webhook_url = settings::get_config_value(settings::CONFIG_WEBHOOK_URL).ok();
+
+    if let Ok(name) = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME) {
+        ::messages::update_data()
+            .to(agent_did)?
+            .name(&name)?
+            .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL)?)?
+            .webhook_url(&webhook_url)?
+            .use_public_did(&public_did)?
+            .version(&Some(protocol_type))?
+            .send_secure()
+            .map_err(|err| err.extend("Cannot update agent profile"))?;
+    }
+
+    trace!("Connection::create_agent_pairwise <<<");
+
+    Ok(::utils::error::SUCCESS.code_num)
 }
 
 pub fn connect_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
@@ -408,6 +446,10 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of CreateAgentResponse"))
         };
 
+    /* STEP 4 - Update Agent Info */
+    update_agent_profile(&response.from_did,
+                         config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false),
+                         ProtocolTypes::V2)?;
     Ok((response.from_did, response.from_vk))
 }
 
