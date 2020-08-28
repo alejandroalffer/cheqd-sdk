@@ -2,7 +2,7 @@ extern crate url;
 extern crate serde_json;
 
 use std::collections::HashMap;
-use std::sync::{RwLock, Once};
+use std::sync::RwLock;
 use utils::{get_temp_dir_path, error};
 use std::path::Path;
 use url::Url;
@@ -100,6 +100,10 @@ impl ToString for HashMap<String, String> {
     }
 }
 
+#[cfg(all(feature="mysql"))]
+use std::sync::Once;
+
+#[cfg(all(feature="mysql"))]
 static START: Once = Once::new();
 
 #[cfg(all(feature="mysql"))]

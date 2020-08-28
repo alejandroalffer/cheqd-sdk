@@ -200,7 +200,7 @@ impl<'de> Deserialize<'de> for A2AMessage {
 
 fn set_a2a_message_type<T>(msg: T, family: MessageFamilies, name: &str) -> Result<serde_json::Value, serde_json::Error> where T: Serialize {
     let mut value = ::serde_json::to_value(msg)?;
-    let type_ = ::serde_json::to_value(MessageType::build(family, name))?;
+    let type_ = ::serde_json::to_value(MessageType::build_with_did(family, name))?;
     value.as_object_mut().unwrap().insert("@type".into(), type_);
     Ok(value)
 }
