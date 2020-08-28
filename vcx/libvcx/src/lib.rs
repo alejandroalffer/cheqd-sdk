@@ -65,6 +65,7 @@ pub mod disclosed_proof;
 pub mod wallet_backup;
 
 pub mod v3;
+pub mod connection_test;
 
 #[allow(unused_imports)]
 #[allow(dead_code)]

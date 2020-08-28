@@ -48,7 +48,7 @@ fn setup() {
     settings::clear_config();
     set_defaults();
     threadpool::init();
-    init_test_logging();
+//    init_test_logging();
 }
 
 fn tear_down() {
