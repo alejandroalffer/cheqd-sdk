@@ -282,7 +282,8 @@ pub extern fn vcx_connection_create_with_invite(command_handle: CommandHandle,
 /// connection_handle: Connection handle that identifies connection object
 ///
 /// connection_options: Provides details indicating if the connection will be established by text or QR Code
-///     If agent info needs to be updated (specifically the `use_public_did` field), add `update_agent_info`=true
+///     If agent info needs to be updated, add `update_agent_info`=true /
+///     default value for `update_agent_info`=false
 /// # Examples connection_options ->
 /// "{"connection_type":"SMS","phone":"123","use_public_did":true, "update_agent_info": Option<false>}"
 ///     OR:
