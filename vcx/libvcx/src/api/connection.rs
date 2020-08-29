@@ -579,7 +579,7 @@ pub extern fn vcx_connection_accept_connection_invite(command_handle: CommandHan
 ///
 /// connection_options: Provides details indicating if the connection will be established by text or QR Code
 ///     If agent info needs to be updated, add `update_agent_info`=true /
-///     default value for `update_agent_info`=false
+///     default value for `update_agent_info`=true
 /// # Examples connection_options ->
 /// "{"connection_type":"SMS","phone":"123","use_public_did":true, "update_agent_info": Option<false>}"
 ///     OR:

@@ -347,8 +347,12 @@ impl Connection {
         trace!("Connection::create_agent_pairwise >>> options: {:?}", secret!(options));
         debug!("Connection {}: Updating agent config", self.source_id);
 
+        if options.use_public_did.unwrap_or(false) {
+            self.public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
+        };
+
         ::messages::agent_utils::update_agent_profile(&self.pw_did,
-                                                      options.use_public_did.unwrap_or(false),
+                                                      &self.public_did,
                                                       ProtocolTypes::V1)
     }
 
