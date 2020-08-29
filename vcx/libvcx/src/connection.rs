@@ -323,8 +323,12 @@ impl Connection {
     fn update_agent_profile(&mut self, options: &ConnectionOptions) -> VcxResult<u32> {
         debug!("updating agent config for connection {}", self.source_id);
 
+        if options.use_public_did.unwrap_or(false) {
+            self.public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
+        };
+
         ::messages::agent_utils::update_agent_profile(&self.pw_did,
-                                                      options.use_public_did.unwrap_or(false),
+                                                      &self.public_did,
                                                       ProtocolTypes::V1)
     }
 

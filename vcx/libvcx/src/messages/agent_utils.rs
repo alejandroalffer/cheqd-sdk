@@ -232,6 +232,7 @@ pub fn get_final_config(my_did: &str,
         "institution_logo_url": get_or_default(&my_config.logo, "<CHANGE_ME>"),
         "genesis_path": get_or_default(&my_config.path, "<CHANGE_ME>"),
         "protocol_type": &my_config.protocol_type,
+        "use_public_did": &my_config.use_public_did.unwrap_or(false)
     });
 
     if let Some(key_derivation) = &my_config.wallet_key_derivation {
@@ -346,24 +347,22 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
         };
 
     /* STEP 4 - Update Agent Info */
+    /* Update Agent Info */
+    let mut public_did: Option<String> = None;
+    if config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false) {
+        println!("Use public did");
+        public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
+    };
     update_agent_profile(&response.from_did,
-                         config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false),
+                         &public_did,
                          ProtocolTypes::V1)?;
 
     Ok((response.from_did, response.from_vk))
 }
 
 pub fn update_agent_profile(agent_did: &str,
-                            use_public_did: bool,
+                            public_did: &Option<String>,
                             protocol_type: ProtocolTypes) -> VcxResult<u32> {
-    trace!("update_agent_profile >>> agent_did: {}, use_public_did: {}, protocol_type: {:?}",
-           agent_did, use_public_did, protocol_type);
-
-    let mut public_did: Option<String> = None;
-    if use_public_did {
-        public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
-    };
-
     let webhook_url = settings::get_config_value(settings::CONFIG_WEBHOOK_URL).ok();
 
     if let Ok(name) = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME) {
@@ -372,7 +371,7 @@ pub fn update_agent_profile(agent_did: &str,
             .name(&name)?
             .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL)?)?
             .webhook_url(&webhook_url)?
-            .use_public_did(&public_did)?
+            .use_public_did(public_did)?
             .version(&Some(protocol_type))?
             .send_secure()
             .map_err(|err| err.extend("Cannot update agent profile"))?;
@@ -437,8 +436,13 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
         };
 
     /* STEP 4 - Update Agent Info */
+    let mut public_did: Option<String> = None;
+    if config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false) {
+        println!("Use public did");
+        public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
+    };
     update_agent_profile(&response.from_did,
-                         config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false),
+                         &public_did,
                          ProtocolTypes::V2)?;
     Ok((response.from_did, response.from_vk))
 }
@@ -558,6 +562,7 @@ mod tests {
             "remote_to_sdk_verkey":"5wTKXrdfUiTQ7f3sZJzvHpcS7XHHxiBkFtPCsynZtv4k",
             "sdk_to_remote_did":"FhrSrYtQcw3p9xwf7NYemf",
             "sdk_to_remote_verkey":"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "use_public_did": false,
             "wallet_key":"test_key",
             "wallet_name":"LIBVCX_SDK_WALLET"
         });
