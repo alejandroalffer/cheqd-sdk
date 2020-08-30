@@ -79,7 +79,8 @@ impl TryInto<CredentialMessage> for Credential {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::issuance::credential_offer::tests::{thread, thread_id};
+    use v3::messages::issuance::credential_offer::tests::{thread, thread_id, _credential_offer};
+    use v3::messages::issuance::CredentialValue;
 
     fn _attachment() -> ::serde_json::Value {
         json!({

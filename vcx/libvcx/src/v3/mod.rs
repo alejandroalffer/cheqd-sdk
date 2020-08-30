@@ -15,7 +15,8 @@ pub mod test {
     use v3::messages::a2a::A2AMessage;
     use indy_sys::WalletHandle;
     use utils::plugins::init_plugin;
-    use messages::get_message::Message;
+    use messages::payload::PayloadV1;
+    use api::VcxStateType;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -696,6 +697,10 @@ pub mod test {
 
         faber.verify_presentation();
     }
+
+    #[cfg(feature = "aries")]
+    use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
+    use messages::get_message::Message;
 
     #[cfg(feature = "aries")]
     #[test]

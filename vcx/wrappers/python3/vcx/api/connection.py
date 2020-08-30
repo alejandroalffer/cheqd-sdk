@@ -217,7 +217,17 @@ class Connection(VcxStateful):
         """
         Connect securely and privately to the endpoint represented by the object.
 
-        :param options: detailed connection options
+        :param options: Provides details about establishing connection
+                        {
+                            "connection_type": Option<"string"> - one of "SMS", "QR",
+                            "phone": "string": Option<"string"> - phone number in case "connection_type" is set into "SMS",
+                            "update_agent_info": Option<bool> - whether agent information needs to be updated.
+                                                                default value for `update_agent_info`=true
+                                                                if agent info does not need to be updated, set `update_agent_info`=false
+                            "use_public_did": Option<bool> - whether to use public DID for an establishing connection
+                                                             default value for `use_public_did`=false
+                        }
+        
         Example options:
         {"connection_type":"SMS","phone":"5555555555","use_public_did":true}
         or:
