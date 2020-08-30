@@ -85,7 +85,6 @@ pub fn provision(config: &str, token: &str) -> VcxResult<String> {
     /* Update Agent Info */
     let mut public_did: Option<String> = None;
     if config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false) {
-        println!("Use public did");
         public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
     };
     update_agent_profile(&agent_did,
