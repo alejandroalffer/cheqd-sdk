@@ -36,6 +36,14 @@ public class ProofApiTest {
     }
 
     @Test
+    @DisplayName("create a proof with proposal")
+    void createProofWithProposal() throws VcxException, ExecutionException, InterruptedException {
+        String presentationProposal = "{\"@type\": \"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation\", \"@id\": \"<uuid-presentation>\", \"comment\": \"somecomment\", \"presentation_proposal\": {\"@type\": \"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview\", \"attributes\":[{\"name\": \"account\", \"cred_def_id\": \"BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag\", \"value\": \"12345678\",\"referent\": \"0\"}, {\"name\": \"streetAddress\", \"cred_def_id\": \"BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag\",\"value\": \"123MainStreet\", \"referent\": \"0\"}], \"predicates\": []}}";
+        int result = TestHelper.getResultFromFuture(ProofApi.proofCreateWithProposal(sourceId, presentationProposal, name));
+        assert (result != 0);
+    }
+
+    @Test
     @DisplayName("throw illegal argument exception if invalid arguments are provided")
     void throwIllegalArgumentxException() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {

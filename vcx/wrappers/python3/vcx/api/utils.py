@@ -356,3 +356,63 @@ async def vcx_endorse_transaction(transaction: str) -> None:
     logger.debug("vcx_endorse_transaction completed")
     return result
 
+
+async def vcx_download_message(uid: str) -> str:
+    """
+    Retrieves single message from the agency by the given uid.
+
+    :param uid: id of the message to query.
+    :return: message
+        {
+            "statusCode": string,
+            "payload":optional(string),
+            "senderDID":string,
+            "uid":string,
+            "type":string,
+            "refMsgId":optional(string),
+            "deliveryDetails":[],
+            "decryptedPayload":"{"@msg":string,"@type":{"fmt":string,"name":string"ver":string}}"
+        }
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_download_message, "cb"):
+        logger.debug("vcx_download_message: Creating callback")
+        vcx_download_message.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+    c_uid = c_char_p(uid.encode('utf-8'))
+
+    result = await do_call('vcx_download_message',
+                           c_uid,
+                           vcx_download_message.cb)
+
+    logger.debug("vcx_download_message completed")
+    return result.decode()
+
+
+async def vcx_fetch_public_entities() -> None:
+    """
+    Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+    This function performs two steps:
+        1) Retrieves the list of all credentials stored in the opened wallet.
+        2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+           correspondent to received credentials from the connected Ledger.
+   
+    This helper function can be used, for instance as a background task, to refresh library cache.
+    This allows us to reduce the time taken for Proof generation by using already cached entities instead of queering the Ledger.
+   
+    NOTE: Library must be already initialized (wallet and pool must be opened).
+
+    :return: None
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_fetch_public_entities, "cb"):
+        logger.debug("vcx_fetch_public_entities: Creating callback")
+        vcx_fetch_public_entities.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+    result = await do_call('vcx_fetch_public_entities',
+                           vcx_fetch_public_entities.cb)
+
+    logger.debug("vcx_fetch_public_entities completed")
+    return result

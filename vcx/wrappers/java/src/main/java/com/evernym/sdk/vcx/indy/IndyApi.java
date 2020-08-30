@@ -110,11 +110,16 @@ public class IndyApi extends VcxJava.API {
      *
      * @param submitterDid DID of the request sender.
      * @param aml - a set of new acceptance mechanisms:
+     * <pre>
+     * {@code
      * {
-     *     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
-     *     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+     *     "<acceptance mechanism label 1>": { acceptance mechanism description 1},
+     *     "<acceptance mechanism label 2>": { acceptance mechanism description 2},
      *     ...
      * }
+     * }
+     * </pre>
+     *
      * @param version - a version of new acceptance mechanisms. (Note: unique on the Ledger).
      * @param amlContext - (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
      *

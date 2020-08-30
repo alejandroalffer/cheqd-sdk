@@ -182,3 +182,27 @@ dependencies {
 
 }
 
+task("buildJavadoc", type: Javadoc) {    
+    title = "VCX SDK ${versionMajor()}-${buildTime()}"
+    failOnError = false
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    destinationDir = file("${project.docsDir}/javadoc-${fullVersionName()}")
+    options {
+        links("https://docs.oracle.com/javase/8/docs/api/")
+    }
+}
+
+task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
+    baseName = fullVersionName()
+    classifier = 'javadoc'
+    from tasks["buildJavadoc"].destinationDir
+}
+
+build.finalizedBy(buildJavadocJar)
+
+afterEvaluate {
+    buildJavadoc.classpath += files(android.libraryVariants.collect { variant ->
+        variant.getCompileClasspath().files
+    })
+}

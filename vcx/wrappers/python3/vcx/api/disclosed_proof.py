@@ -89,7 +89,7 @@ class DisclosedProof(VcxStateful):
     async def create(source_id: str, proof_request: str):
         """
         Create a proof for fulfilling a corresponding proof request
-        :param source_id: Tag associated by user of sdk
+        :param source_id: Institution's personal identification for the proof, should be unique.
         :param proof_request: Proof Request data sent by requester.
         Example:
         source_id = 'sourceId'
@@ -139,7 +139,7 @@ class DisclosedProof(VcxStateful):
         """
         Create a proof based off of a known message id for a given connection.
 
-        :param source_id: user defined id of object.
+        :param source_id: Institution's personal identification for the proof, should be unique.
         :param connection: connection to receive proof request from
         :param msg_id: id of the message that contains the proof request
         Example:

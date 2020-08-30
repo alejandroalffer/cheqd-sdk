@@ -40,7 +40,7 @@ impl BackupRestoreBuilder {
     }
 
     pub fn send_secure(&mut self) -> VcxResult<BackupRestored> {
-        trace!("Restore Backup::send >>>");
+        trace!("BackupRestoreBuilder::send_secure >>>");
 
         let data = self.prepare_request()?;
 
@@ -50,15 +50,17 @@ impl BackupRestoreBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<BackupRestored> {
-        trace!("restore wallet >>>");
+        trace!("BackupRestoreBuilder::parse_response >>>");
 
         let response = parse_message_from_response(&response)?;
 
         serde_json::from_str(&response)
-            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of BackupRestored"))
+            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of BackupRestored"))
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
+        trace!("BackupRestoreBuilder::prepare_request >>>");
+
         let init_err = |e: &str| VcxError::from_msg(
             VcxErrorKind::RetrieveExportedWallet,
             format!("BackupRestore expects {} but got None", e)
@@ -71,6 +73,8 @@ impl BackupRestoreBuilder {
                 )),
             }
         ));
+
+        trace!("BackupRestoreBuilder::prepare_request >>> message: {:?}", secret!(message));
 
         let agency_did = self.agent_did.clone().ok_or(init_err("agency_did"))?;
         let agency_vk = self.agent_vk.clone().ok_or(init_err("agency_vk"))?;

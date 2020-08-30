@@ -24,6 +24,9 @@ impl ProtocolRegistry {
                 family @ MessageFamilies::PresentProof |
                 family @ MessageFamilies::TrustPing |
                 family @ MessageFamilies::Basicmessage |
+                family @ MessageFamilies::Outofband |
+                family @ MessageFamilies::QuestionAnswer |
+                family @ MessageFamilies::Committedanswer |
                 family @ MessageFamilies::DiscoveryFeatures => registry.add_protocol(&actors, family),
                 MessageFamilies::Signature => {}
                 MessageFamilies::Unknown(_) => {}
@@ -38,7 +41,7 @@ impl ProtocolRegistry {
             None => {
                 self.protocols.push(ProtocolDescriptor { pid: family.id(), roles: None })
             }
-            Some((actor_1, actor_2)) => {
+            Some((Some(actor_1), Some(actor_2))) => {
                 match (actors.contains(&actor_1), actors.contains(&actor_2)) {
                     (true, true) => {
                         self.protocols.push({ ProtocolDescriptor { pid: family.id(), roles: None } })
@@ -52,6 +55,17 @@ impl ProtocolRegistry {
                     (false, false) => {}
                 }
             }
+            Some((Some(actor_1), None)) => {
+                if actors.contains(&actor_1) {
+                    self.protocols.push({ ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_1]) } })
+                }
+            }
+            Some((None, Some(actor_2))) => {
+                if actors.contains(&actor_2) {
+                    self.protocols.push({ ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_2]) } })
+                }
+            },
+            _ => {}
         }
     }
 
@@ -68,7 +82,7 @@ impl ProtocolRegistry {
         }
     }
 
-    pub fn protocols(&self) -> Vec<ProtocolDescriptor>{
+    pub fn protocols(&self) -> Vec<ProtocolDescriptor> {
         self.protocols.clone()
     }
 }
@@ -191,6 +205,19 @@ pub mod tests {
 
         let expected_protocols = vec![
             ProtocolDescriptor { pid: MessageFamilies::Connections.id(), roles: Some(vec![Actors::Invitee]) },
+        ];
+        assert_eq!(expected_protocols, protocols);
+    }
+
+    #[test]
+    fn test_get_protocols_for_query_works_for_outofband() {
+        let _setup = SetupEmpty::init();
+
+        let registry: ProtocolRegistry = ProtocolRegistry::init();
+
+        let protocols = registry.get_protocols_for_query(Some("https://didcomm.org/out-of-band"));
+        let expected_protocols = vec![
+            ProtocolDescriptor { pid: MessageFamilies::Outofband.id(), roles: Some(vec![Actors::Receiver]) },
         ];
         assert_eq!(expected_protocols, protocols);
     }

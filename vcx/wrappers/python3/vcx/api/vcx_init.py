@@ -89,3 +89,55 @@ def vcx_init_minimal(config_string: str) -> None:
 
     logger.debug("vcx_init_minimal completed")
     return result
+
+async def vcx_init_pool(pool_config: str) -> None:
+    """
+    Connect to a Pool Ledger
+   
+    You can deffer connecting to the Pool Ledger during library initialization (vcx_init or vcx_init_with_config)
+    to decrease the taken time by omitting `genesis_path` field in config JSON.
+    Next, you can use this function (for instance as a background task) to perform a connection to the Pool Ledger.
+   
+    Note: Pool must be already initialized before sending any request to the Ledger.
+   
+    Note: EXPERIMENTAL
+
+    :param pool_config: String - the configuration JSON containing pool related settings:
+                                {
+                                    genesis_path: string - path to pool ledger genesis transactions,
+                                    pool_name: Optional[string] - name of the pool ledger configuration will be created.
+                                                                  If no value specified, the default pool name pool_name will be used.
+                                    pool_config: Optional[string] - runtime pool configuration json:
+                                            {
+                                                "timeout": int (optional), timeout for network request (in sec).
+                                                "extended_timeout": int (optional), extended timeout for network request (in sec).
+                                                "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
+                                                        ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+                                                        This can be useful if a user prefers querying specific nodes.
+                                                        Assume that `Node1` and `Node2` nodes reply faster.
+                                                        If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
+                                                        Note: Nodes not specified will be placed randomly.
+                                                "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+                                                        By default Libindy sends a read requests to 2 nodes in the pool.
+                                            }
+                                }
+
+    Example:
+    await vcx_init_pool('/home/username/docker.txn')
+
+    :return: None
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_init_pool, "cb"):
+        logger.debug("vcx_init_pool: Creating callback")
+        vcx_init_pool.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+    c_pool_config = c_char_p(pool_config.encode('utf-8'))
+
+    result = await do_call('vcx_init_pool',
+                           c_pool_config,
+                           vcx_init_pool.cb)
+
+    logger.debug("vcx_init_pool completed")
+    return result

@@ -2,14 +2,33 @@ pub mod agent;
 pub mod states;
 pub mod connection;
 pub mod messages;
+pub mod types;
 
 #[cfg(test)]
 pub mod tests {
-    use v3::messages::connection::invite::tests::_invitation_json;
+    use v3::messages::connection::invite::Invitation;
+    use v3::messages::connection::response::Response;
+    use v3::messages::connection::did_doc::tests::_service_endpoint;
+    use v3::messages::connection::request::tests::_request;
 
     pub fn mock_connection() -> u32 {
-        let connection_handle = ::connection::create_connection_with_invite("source_id", &_invitation_json()).unwrap();
+        let key = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL".to_string();
+        let invitation =
+            Invitation::default()
+                .set_recipient_keys(vec![key.clone()]);
+
+        let connection_handle = ::connection::create_connection_with_invite("source_id", &json!(invitation).to_string()).unwrap();
+
         ::connection::connect(connection_handle, None).unwrap();
+
+        let response =
+            Response::default()
+                .set_service_endpoint(_service_endpoint())
+                .set_keys(vec![key.to_string()], vec![])
+                .set_thread_id(&_request().id.0)
+                .encode(&key).unwrap();
+        ::connection::update_state(connection_handle, Some(json!(response.to_a2a_message()).to_string())).unwrap();
+
         connection_handle
     }
 
@@ -28,6 +47,7 @@ pub mod tests {
         use v3::test::{Faber, Alice};
         use v3::messages::ack::tests::_ack;
         use v3::messages::a2a::A2AMessage;
+        use v3::messages::connection::invite::tests::_invitation_json;
 
         #[test]
         fn test_create_connection_works() {
@@ -73,8 +93,7 @@ pub mod tests {
 
             // Send Message works
             {
-                faber.activate();
-                ::connection::send_message(faber.connection_handle, message.to_a2a_message()).unwrap();
+                faber.send_message(&message.to_a2a_message());
             }
 
             {
@@ -110,8 +129,7 @@ pub mod tests {
             // Update Message Status works
             {
                 alice.activate();
-
-                ::connection::update_message_status(alice.connection_handle, uid).unwrap();
+                alice.update_message_status(uid);
                 let messages = ::connection::get_messages(alice.connection_handle).unwrap();
                 assert_eq!(0, messages.len());
             }
@@ -135,28 +153,7 @@ pub mod tests {
                     A2AMessage::BasicMessage(message) => assert_eq!(basic_message, message.content),
                     _ => assert!(false)
                 }
-                ::connection::update_message_status(alice.connection_handle, uid).unwrap();
-            }
-
-            // Pending Message
-            {
-                faber.activate();
-
-                let message = _ack();
-                ::connection::send_message(faber.connection_handle, message.to_a2a_message()).unwrap();
-
-                alice.activate();
-
-                let messages = ::connection::get_messages(alice.connection_handle).unwrap();
-                assert_eq!(1, messages.len());
-                let uid = messages.keys().next().unwrap().clone();
-
-                ::connection::add_pending_messages(alice.connection_handle, map!( message.id.clone() => uid )).unwrap();
-
-                ::connection::remove_pending_message(alice.connection_handle, &message.id).unwrap();
-
-                let messages = ::connection::get_messages(alice.connection_handle).unwrap();
-                assert_eq!(0, messages.len());
+                alice.update_message_status(uid);
             }
 
             // Download Messages
@@ -165,8 +162,7 @@ pub mod tests {
 
                 let credential_offer = ::v3::messages::issuance::credential_offer::tests::_credential_offer();
 
-                faber.activate();
-                ::connection::send_message(faber.connection_handle, credential_offer.to_a2a_message()).unwrap();
+                faber.send_message(&credential_offer.to_a2a_message());
 
                 alice.activate();
 
@@ -174,9 +170,9 @@ pub mod tests {
                 let message: Message = messages[0].msgs[0].clone();
                 assert_eq!(::messages::RemoteMessageType::Other("aries".to_string()), message.msg_type);
                 let payload: ::messages::payload::PayloadV1 = ::serde_json::from_str(&message.decrypted_payload.unwrap()).unwrap();
-                let _payload: ::issuer_credential::CredentialOffer = ::serde_json::from_str(&payload.msg).unwrap();
+                let _payload: Vec<::messages::issuance::credential_offer::CredentialOffer> = ::serde_json::from_str(&payload.msg).unwrap();
 
-                ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
+                alice.update_message_status(message.uid);
 
             }
 
@@ -189,17 +185,6 @@ pub mod tests {
                 ::connection::get_their_pw_verkey(faber.connection_handle).unwrap();
                 ::connection::get_source_id(faber.connection_handle).unwrap();
             }
-        }
-
-        #[cfg(feature = "aries")]
-        #[test]
-        fn test_connection_delete() {
-            _setup();
-            let connection_handle = ::connection::create_connection(_source_id()).unwrap();
-            assert!(::connection::is_valid_handle(connection_handle));
-
-            ::connection::release(connection_handle).unwrap();
-            assert!(!::connection::is_valid_handle(connection_handle));
         }
     }
 }

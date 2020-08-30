@@ -56,7 +56,7 @@ impl TokenRequestBuilder {
     pub fn agency_did(&mut self, did: &str) -> &mut Self { self.agency_did = Some(did.to_string()); self}
 
     pub fn send_secure(&mut self) -> VcxResult<()> {
-        trace!("GetToken::send >>>");
+        trace!("TokenRequestBuilder::send >>>");
 
         let data = self.prepare_request()?;
 
@@ -66,6 +66,8 @@ impl TokenRequestBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
+        trace!("TokenRequestBuilder::prepare_request >>>");
+
         let init_err = |e: &str| VcxError::from_msg(
             VcxErrorKind::CreateWalletBackup,
             format!("TokenRequest expects {} but got None", e)
@@ -84,14 +86,20 @@ impl TokenRequestBuilder {
             )
         );
 
+        trace!("TokenRequestBuilder::prepare_request >>> message: {:?}", secret!(message));
+
         prepare_message_for_agency(&message, &agency_did, &version)
     }
 }
 
 pub fn provision(my_config: Config, sponsee_id: &str, sponsor_id: &str, com_method: ComMethod) -> VcxResult<()> {
+    debug!("***Configuring Library");
     set_config_values(&my_config);
+
+    debug!("***Configuring Wallet");
     configure_wallet(&my_config)?;
 
+    debug!("Getting Token");
     TokenRequestBuilder::build()
         .sponsee_id(sponsee_id)
         .sponsor_id(sponsor_id)

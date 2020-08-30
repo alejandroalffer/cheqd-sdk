@@ -5,7 +5,7 @@ pub enum Status {
     Undefined,
     Success,
     Failed(ProblemReport),
-    Declined,
+    Rejected,
 }
 
 impl Status {
@@ -17,7 +17,7 @@ impl Status {
                 error!("Process Failed: {:?}", err);
                 2
             }
-            Status::Declined => 3
+            Status::Rejected => 3
         }
     }
 }

@@ -1,10 +1,12 @@
 use settings;
 use std::io::Read;
 use std::sync::Mutex;
-use reqwest;
 use reqwest::header::CONTENT_TYPE;
 use std::env;
 use error::prelude::*;
+use utils::timeout::TimeoutUtils;
+use reqwest::ClientBuilder;
+use error::agency_error::AgencyError;
 
 lazy_static! {
     static ref AGENCY_MOCK: Mutex<AgencyMock> = Mutex::new(AgencyMock::default());
@@ -43,9 +45,13 @@ pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
         info!("::Android code");
         set_ssl_cert_location();
     }
-    let client = reqwest::ClientBuilder::new().timeout(::utils::timeout::TimeoutUtils::long_timeout()).build()
-        .or(Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, "Preparing Post failed")))?;
-    debug!("Posting encrypted bundle to: \"{}\"", url);
+    let client =
+        ClientBuilder::new()
+            .timeout(TimeoutUtils::long_timeout())
+            .build()
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Could not prepare HTTP client. Err: {:?}", err)))?;
+
+    debug!("Posting encrypted bundle to: \"{}\"", secret!(url));
 
     let mut response =
         client.post(url)
@@ -54,7 +60,7 @@ pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
             .send()
             .map_err(|err| {
                 error!("error: {}", err);
-                VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Could not connect {:?}", err))
+                VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Could send HTTP message. Error: {:?}", err))
             })?;
 
     trace!("Response Header: {:?}", response);
@@ -62,14 +68,18 @@ pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
         let mut content = String::new();
         match response.read_to_string(&mut content) {
             Ok(_) => info!("Request failed: {}", content),
-            Err(_) => info!("could not read response"),
+            Err(_) => info!("Could not read response"),
         };
-        return Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("POST failed with: {}", content)));
+
+        return match AgencyError::from_response(&content) {
+            Some(agency_error) => Err(agency_error.to_vcx_error()),
+            None => Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Sending POST HTTP request failed with: {}", content)))
+        };
     }
 
     let mut content = Vec::new();
     response.read_to_end(&mut content)
-        .or(Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, "could not read response")))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Could not read HTTP response. Err: {:?}", err)))?;
 
     Ok(content)
 }

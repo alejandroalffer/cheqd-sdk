@@ -10,7 +10,8 @@ pub struct Forward {
 impl Forward {
     pub fn new(to: String, msg: Vec<u8>) -> VcxResult<Forward> {
         let msg = ::serde_json::from_slice(msg.as_slice())
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Could not parse JSON from bytes. Err: {:?}", err)))?;
 
         Ok(Forward {
             to,

@@ -12,7 +12,7 @@ pub struct TxnAuthorAgreementAcceptanceData {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub taa_digest: Option<String>,
     pub acceptance_mechanism_type: String,
-    pub time_of_acceptance: u64
+    pub time_of_acceptance: u64,
 }
 
 pub fn set_txn_author_agreement(text: Option<String>,
@@ -28,9 +28,7 @@ pub fn set_txn_author_agreement(text: Option<String>,
         time_of_acceptance,
     };
 
-    let meta = serde_json::to_string(&meta)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, err))?;
-
+    let meta = json!(meta).to_string();
     settings::set_config_value(settings::CONFIG_TXN_AUTHOR_AGREEMENT, &meta);
 
     Ok(())
@@ -40,7 +38,8 @@ pub fn get_txn_author_agreement() -> VcxResult<Option<TxnAuthorAgreementAcceptan
     match settings::get_config_value(settings::CONFIG_TXN_AUTHOR_AGREEMENT) {
         Ok(value) => {
             let meta: TxnAuthorAgreementAcceptanceData = serde_json::from_str(&value)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                  format!("Could not parse TxnAuthorAgreementAcceptanceData from JSON. Err: {:?}", err)))?;
             Ok(Some(meta))
         }
         Err(_) => Ok(None)

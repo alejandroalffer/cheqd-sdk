@@ -41,12 +41,6 @@ pub fn validate_nonce(nonce: &str) -> VcxResult<String> {
     Ok(nonce.to_string())
 }
 
-pub fn validate_key_delegate(delegate: &str) -> VcxResult<String> {
-    //todo: find out what needs to be validated for key_delegate
-    let check_delegate = String::from(delegate);
-    Ok(check_delegate)
-}
-
 pub fn validate_url(url: &str) -> VcxResult<String> {
     Url::parse(url)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidUrl, err))?;
@@ -55,18 +49,7 @@ pub fn validate_url(url: &str) -> VcxResult<String> {
 
 pub fn validate_actors(actors: &str) -> VcxResult<Vec<Actors>> {
     ::serde_json::from_str(&actors)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Invalid actors: {:?}", err)))
-}
-
-pub fn validate_phone_number(p_num: &str) -> VcxResult<String> {
-    Ok(String::from(p_num))
-}
-
-pub fn validate_payment_method(payment_method: &str) -> VcxResult<()> {
-    if payment_method.is_empty() {
-        return Err(VcxError::from(VcxErrorKind::MissingPaymentMethod));
-    }
-    Ok(())
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid actors: {:?}", err)))
 }
 
 #[cfg(test)]
@@ -138,19 +121,5 @@ mod tests {
             Err(x) => assert_eq!(x.kind(), VcxErrorKind::NotBase58),
             Ok(_) => panic!("Should be invalid verkey"),
         }
-    }
-
-    #[test]
-    fn test_payment_plugin_validation() {
-        let _setup = SetupDefaults::init();
-
-        validate_payment_method("null").unwrap();
-    }
-
-    #[test]
-    fn test_payment_plugin_validation_empty_string() {
-        let _setup = SetupDefaults::init();
-
-        assert_eq!(validate_payment_method("").unwrap_err().kind(), VcxErrorKind::MissingPaymentMethod);
     }
 }

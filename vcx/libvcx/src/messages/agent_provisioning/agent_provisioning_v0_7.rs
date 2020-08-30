@@ -65,20 +65,20 @@ impl ProvisionAgent {
     }
 }
 pub fn provision(config: &str, token: &str) -> VcxResult<String> {
-    trace!("connect_register_provision >>> config: {:?}", config);
+    trace!("connect_register_provision >>> config: {:?}", secret!(config));
     let my_config = parse_config(config)?;
     let token: ProvisionToken = from_str(token).map_err(|err| VcxError::from_msg(
         VcxErrorKind::InvalidProvisioningToken,
         format!("Cannot parse config: {}", err)
     ))?;
 
-    trace!("***Configuring Library");
+    debug!("***Configuring Library");
     set_config_values(&my_config);
 
-    trace!("***Configuring Wallet");
+    debug!("***Configuring Wallet");
     let (my_did, my_vk, wallet_name) = configure_wallet(&my_config)?;
 
-    trace!("Connecting to Agency");
+    debug!("Connecting to Agency");
     let (agent_did, agent_vk) = create_agent(&my_did, &my_vk, &my_config.agency_did, token)?;
 
 
@@ -93,6 +93,7 @@ pub fn provision(config: &str, token: &str) -> VcxResult<String> {
 
     wallet::close_wallet()?;
 
+    debug!("Building config");
     get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)
 }
 
@@ -118,7 +119,7 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
             A2AMessage::Version2(A2AMessageV2::ProblemReport(resp)) => {
                 return Err(VcxError::from_msg(VcxErrorKind::InvalidProvisioningToken, format!("provisioning failed: {:?}", resp)))
             },
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of AgentCreated"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of AgentCreated"))
         };
 
     Ok((response.self_did, response.agent_vk))

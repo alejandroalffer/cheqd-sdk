@@ -18,10 +18,10 @@ variables:
   rustVersion: "1.40.0"
   libsovtokenVersion: "1.0.5"
   libsovtokenVersionExtra: "15"
-  indyBranch: 'stable'
+  indyBranch: 'master'
   indySimpleVersion: "1.15.0"
-  indyFullVersion: "1.15.0"
-  indyFullDebVersion: "1.15.0"
+  indyFullVersion: "1.15.0-1560"
+  indyFullDebVersion: "1.15.0~1560"
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
 
@@ -348,7 +348,7 @@ build-android-armv7-from-latest:
 
 build-consistent-vers-ts:
   extends: .tags_micro
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18
   stage: build-pre
   artifacts:
     expire_in: 1 week

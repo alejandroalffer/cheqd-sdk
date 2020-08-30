@@ -27,8 +27,8 @@ impl Presentation {
         Presentation::default()
     }
 
-    pub fn set_comment(mut self, comment: String) -> Self {
-        self.comment = Some(comment);
+    pub fn set_comment(mut self, comment: Option<String>) -> Self {
+        self.comment = comment;
         self
     }
 
@@ -93,7 +93,7 @@ pub mod tests {
     #[test]
     fn test_presentation_build_works() {
         let presentation: Presentation = Presentation::default()
-            .set_comment(_comment())
+            .set_comment(Some(_comment()))
             .ask_for_ack()
             .set_thread_id(&thread_id())
             .set_presentations_attach(_attachment().to_string()).unwrap();

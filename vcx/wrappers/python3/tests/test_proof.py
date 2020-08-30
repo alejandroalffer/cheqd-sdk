@@ -31,6 +31,15 @@ async def test_create_proof():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_create_proof_with_proposal():
+    presentation_proposal = {"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation", "@id": "<uuid-presentation>", "comment": "somecomment", "presentation_proposal": {"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview", "attributes":[{"name": "account", "cred_def_id": "BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag", "value": "12345678","referent": "0"}, {"name": "streetAddress", "cred_def_id": "BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag","value": "123MainStreet", "referent": "0"},], "predicates": []}}
+    proof = await Proof.create_with_proposal(source_id, json.dumps(presentation_proposal), name)
+    assert proof.source_id == source_id
+    assert proof.handle > 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize():
     proof = await Proof.create(source_id, name, requested_attrs, revocation_interval)
     data = await proof.serialize()

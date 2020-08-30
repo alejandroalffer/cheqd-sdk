@@ -70,7 +70,7 @@ import { VCXBaseWithState } from './vcx-base-with-state'
  * @interface
  */
 export interface IProofCreateData {
-  // Enterprise's personal identification for the user.
+  // Enterprise's personal identification for the proof, should be unique.
   sourceId: string,
   //  Describes requested attribute
   attrs: IProofAttr[],
@@ -80,6 +80,19 @@ export interface IProofCreateData {
   name: string,
   // Revocation interval
   revocationInterval: IRevocationInterval
+}
+
+/**
+* @description Interface that represents the parameters for `Proof.createWithProposal` function.
+* @interface
+*/
+export interface IProofCreateWithProposalData {
+  // Enterprise's personal identification for the proof, should be unique.
+  sourceId: string,
+  //  Describes requested attribute
+  presentationProposal: any,
+  // Name of the proof request
+  name: string,
 }
 
 export interface IProofConstructorData {
@@ -291,6 +304,44 @@ export class Proof extends VCXBaseWithState<IProofData> {
         JSON.stringify(createDataRest.preds),
         JSON.stringify(createDataRest.revocationInterval),
         createDataRest.name,
+        cb
+      ))
+      return proof
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+  /**
+   * Create a new Proof object based on the given Presentation Proposal message
+   *
+   * Example:
+   * ```
+   * data = {
+   *   presentationProposal: {
+   *     "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation",
+   *     "@id": "<uuid-presentation>",
+   *     "comment": "somecomment",
+   *     "presentation_proposal": {
+   *        "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview",
+   *        "attributes":[{"name": "account", "cred_def_id": "BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag", "value": "12345678"}],
+   *        "predicates": []
+   *     }
+   *   },
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId',
+   * }
+   * proof1 = await Proof.createWithProposal(data)
+   * ```
+   */
+  public static async createWithProposal ({ sourceId, name, presentationProposal }: IProofCreateWithProposalData): Promise<Proof> {
+    try {
+      const proof = new Proof(sourceId, {attrs: [], preds: [], name: name})
+      const commandHandle = 0
+      await proof._create((cb) => rustAPI().vcx_proof_create_with_proposal(
+        commandHandle,
+        proof.sourceId,
+        JSON.stringify(presentationProposal),
+        name,
         cb
       ))
       return proof

@@ -1,12 +1,19 @@
 use settings;
+use messages::message_type::{MessageTypes, MessageTypeV2};
 use messages::*;
-use messages::message_type::MessageTypes;
-use messages::MessageStatusCode;
 use messages::payload::{Payloads, PayloadTypes, PayloadKinds, PayloadV1, PayloadV2};
 use utils::{httpclient, constants};
 use error::prelude::*;
 use settings::ProtocolTypes;
 use utils::httpclient::AgencyMock;
+use messages::issuance::credential_offer::set_cred_offer_ref_message;
+use messages::proofs::proof_request::set_proof_req_ref_message;
+use messages::issuance::credential_request::set_cred_req_ref_message;
+use v3::messages::a2a::A2AMessage as AriesA2AMessage;
+use v3::utils::encryption_envelope::EncryptionEnvelope;
+use messages::issuance::credential_offer::CredentialOffer;
+use messages::issuance::credential::CredentialMessage;
+use std::convert::TryInto;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -119,7 +126,7 @@ impl GetMessagesBuilder {
     }
 
     pub fn send_secure(&mut self) -> VcxResult<Vec<Message>> {
-        trace!("GetMessages::send >>>");
+        trace!("GetMessagesBuilder::send_secure >>>");
 
         let data = self.prepare_request()?;
 
@@ -133,19 +140,19 @@ impl GetMessagesBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<Vec<Message>> {
-        trace!("parse_get_messages_response >>>");
+        trace!("GetMessagesBuilder::parse_response >>>");
 
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesResponse(res)) => Ok(res.msgs),
             A2AMessage::Version2(A2AMessageV2::GetMessagesResponse(res)) => Ok(res.msgs),
-            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of GetMessagesResponse"))
         }
     }
 
     pub fn download_messages(&mut self) -> VcxResult<Vec<MessageByConnection>> {
-        trace!("GetMessages::download >>>");
+        trace!("GetMessagesBuilder::download >>>");
 
         let data = self.prepare_download_request()?;
 
@@ -161,6 +168,8 @@ impl GetMessagesBuilder {
     }
 
     fn prepare_download_request(&self) -> VcxResult<Vec<u8>> {
+        trace!("GetMessagesBuilder::prepare_download_request >>>");
+
         let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -189,20 +198,22 @@ impl GetMessagesBuilder {
                 ),
         };
 
+        trace!("GetMessagesBuilder::prepare_request >>> message: {:?}", secret!(message));
+
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
         prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_download_messages_response(&self, response: Vec<u8>) -> VcxResult<Vec<MessageByConnection>> {
-        trace!("parse_download_messages_response >>>");
+        trace!("GetMessagesBuilder::parse_download_messages_response >>>");
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         trace!("parse_download_messages_response: parsed response {:?}", response);
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
             A2AMessage::Version2(A2AMessageV2::GetMessagesByConnectionsResponse(res)) => res.msgs,
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesByConnectionsResponse"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of GetMessagesByConnectionsResponse"))
         };
 
         msgs
@@ -228,6 +239,8 @@ impl GeneralMessage for GetMessagesBuilder {
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("GetMessagesBuilder::prepare_request >>>");
+
         let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -255,6 +268,8 @@ impl GeneralMessage for GetMessagesBuilder {
                     )
                 ),
         };
+
+        trace!("GetMessagesBuilder::prepare_request >>> message: {:?}", secret!(message));
 
         prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
@@ -295,14 +310,18 @@ pub struct Message {
 
 impl Message {
     pub fn payload<'a>(&'a self) -> VcxResult<Vec<u8>> {
+        trace!("Message::payload >>>");
         match self.payload {
             Some(MessagePayload::V1(ref payload)) => Ok(to_u8(payload)),
-            Some(MessagePayload::V2(ref payload)) => serde_json::to_vec(payload).map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, err)),
-            _ => Err(VcxError::from(VcxErrorKind::InvalidState)),
+            Some(MessagePayload::V2(ref payload)) => serde_json::to_vec(payload)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot represent JSON object as bytes. Err: {:?}", err))),
+            None => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response Message doesn't contain any payload")),
         }
     }
 
     pub fn decrypt(&self, vk: &str) -> Message {
+        trace!("Message::decrypt >>> vk: {:?}", secret!(vk));
+
         // TODO: must be Result
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
@@ -313,7 +332,7 @@ impl Message {
                     } else {
                         warn!("fallback to Payloads::decrypt_payload_v12 in Message:decrypt for MessagePayload::V1");
                         serde_json::from_slice::<serde_json::Value>(&to_u8(payload)[..])
-                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize MessagePayload: {}", err)))
+                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize MessagePayload: {}", err)))
                             .and_then(|json| Payloads::decrypt_payload_v12(&vk, &json))
                             .map(|json| {
                                 (
@@ -334,11 +353,15 @@ impl Message {
                             )
                     }
                 }
-                MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
-                    .map(Payloads::PayloadV2)
+                MessagePayload::V2(payload) => {
+                    Payloads::decrypt_payload_v2(&vk, &payload)
+                        .map(Payloads::PayloadV2)
+                }
             };
 
-            if let Ok(decrypted_payload) = decrypted_payload {
+            if let Ok(mut decrypted_payload) = decrypted_payload {
+                Self::_set_ref_msg_id(&mut decrypted_payload, &self.uid)
+                    .map_err(|err| error!("Could not set ref_msg_id: {:?}", err)).ok();
                 new_message.decrypted_payload = ::serde_json::to_string(&decrypted_payload).ok();
             } else if let Ok(decrypted_payload) = self._decrypt_v3_message() {
                 new_message.msg_type = RemoteMessageType::Other(String::from("aries"));
@@ -349,32 +372,117 @@ impl Message {
             }
         }
         new_message.payload = None;
+
+        trace!("Message::decrypt <<< message: {:?}", secret!(new_message));
+
         new_message
     }
 
+    fn _set_ref_msg_id(decrypted_payload: &mut Payloads, msg_id: &str) -> VcxResult<()> {
+        trace!("_set_ref_msg_id >>> decrypted_payload: {:?}, msg_id: {:?}", secret!(decrypted_payload), msg_id);
+        match decrypted_payload {
+            Payloads::PayloadV1(ref mut payload) => {
+                let type_ = payload.type_.name.as_str();
+                trace!("_set_ref_msg_id >>> message type: {:?}", secret!(type_));
+
+                match type_ {
+                    "CRED_OFFER" => {
+                        let offer = set_cred_offer_ref_message(&payload.msg, None, &msg_id)?;
+                        payload.msg = json!(offer).to_string();
+                    }
+                    "CRED_REQ" => {
+                        let cred_req = set_cred_req_ref_message(&payload.msg, &msg_id)?;
+                        payload.msg = json!(cred_req).to_string();
+                    }
+                    "PROOF_REQUEST" => {
+                        let proof_request = set_proof_req_ref_message(&payload.msg, None, &msg_id)?;
+                        payload.msg = json!(proof_request).to_string();
+                    }
+                    _ => {}
+                }
+            }
+            Payloads::PayloadV2(ref mut payload) => {
+                let message_type: MessageTypeV2 = serde_json::from_value(json!(payload.type_))
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse message type: {:?}", err)))?;
+                let type_ = message_type.type_.as_str();
+                trace!("_set_ref_msg_id >>> message type: {:?}", secret!(type_));
+
+                match type_ {
+                    "credential-offer" => {
+                        let offer = set_cred_offer_ref_message(&payload.msg, Some(payload.thread.clone()), &msg_id)?;
+                        payload.msg = json!(offer).to_string();
+                    }
+                    "credential-request" => {
+                        let cred_req = set_cred_req_ref_message(&payload.msg, &msg_id).unwrap();
+                        payload.msg = json!(cred_req).to_string();
+                    }
+                    "presentation-request" => {
+                        let proof_request = set_proof_req_ref_message(&payload.msg, Some(payload.thread.clone()), &msg_id)?;
+                        payload.msg = json!(proof_request).to_string();
+                    }
+                    _ => {}
+                }
+            }
+        };
+        trace!("_set_ref_msg_id <<<");
+        Ok(())
+    }
+
     fn _decrypt_v3_message(&self) -> VcxResult<::messages::payload::PayloadV1> {
-        use v3::messages::a2a::A2AMessage;
-        use v3::utils::encryption_envelope::EncryptionEnvelope;
-        use ::issuer_credential::{CredentialOffer, CredentialMessage};
-        use std::convert::TryInto;
+        trace!("_decrypt_v3_message >>>");
 
         let a2a_message = EncryptionEnvelope::open(self.payload()?)?;
 
         let (kind, msg) = match a2a_message {
-            A2AMessage::PresentationRequest(presentation_request) => {
-                let proof_req: ProofRequestMessage = presentation_request.try_into()?;
-
+            AriesA2AMessage::PresentationRequest(presentation_request) => {
+                let mut proof_req: ProofRequestMessage = presentation_request.try_into()?;
+                proof_req.msg_ref_id = Some(self.uid.clone());
                 (PayloadKinds::ProofRequest, json!(&proof_req).to_string())
             }
-            A2AMessage::CredentialOffer(offer) => {
-                let cred_offer: CredentialOffer = offer.try_into()?;
-
+            AriesA2AMessage::CredentialOffer(offer) => {
+                let mut cred_offer: CredentialOffer = offer.try_into()?;
+                cred_offer.msg_ref_id = Some(self.uid.clone());
                 (PayloadKinds::CredOffer, json!(vec![cred_offer]).to_string())
             }
-            A2AMessage::Credential(credential) => {
+            AriesA2AMessage::Credential(credential) => {
                 let credential: CredentialMessage = credential.try_into()?;
-
                 (PayloadKinds::Cred, json!(&credential).to_string())
+            }
+            AriesA2AMessage::Presentation(presentation) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::PRESENTATION)), json!(&presentation).to_string())
+            }
+            AriesA2AMessage::Ping(ping) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::PING)), json!(&ping).to_string())
+            }
+            AriesA2AMessage::PingResponse(ping_response) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::PING_RESPONSE)), json!(&ping_response).to_string())
+            }
+            AriesA2AMessage::Query(query) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::QUERY)), json!(&query).to_string())
+            }
+            AriesA2AMessage::Disclose(disclose) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::DISCLOSE)), json!(&disclose).to_string())
+            }
+            AriesA2AMessage::HandshakeReuse(reuse) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::OUTOFBAND_HANDSHAKE_REUSE)), json!(&reuse).to_string())
+            }
+            AriesA2AMessage::HandshakeReuseAccepted(reuse) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::OUTOFBAND_HANDSHAKE_REUSE_ACCEPTED)), json!(&reuse).to_string())
+            }
+            AriesA2AMessage::Question(question) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::QUESTION)), json!(&question).to_string())
+            }
+            AriesA2AMessage::Answer(answer) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::ANSWER)), json!(&answer).to_string())
+            }
+            AriesA2AMessage::CommittedQuestion(question) => {
+                (PayloadKinds::Other(String::from("committed-question")), json!(&question).to_string())
+            }
+            AriesA2AMessage::CommittedAnswer(answer) => {
+                (PayloadKinds::Other(String::from("committed-answer")), json!(&answer).to_string())
+            }
+            AriesA2AMessage::BasicMessage(message) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::BASIC_MESSAGE)), json!(&message).to_string())
             }
             msg => {
                 let msg = json!(&msg).to_string();
@@ -382,16 +490,20 @@ impl Message {
             }
         };
 
-        Ok(PayloadV1 {
+        trace!("_decrypt_v3_message <<< kind: {:?}, msg: {:?}", secret!(kind), secret!(msg));
+
+        let payload = PayloadV1 {
             type_: PayloadTypes::build_v1(kind, "json"),
             msg,
-        })
+        };
+
+        Ok(payload)
     }
 }
 
 pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>, status_codes: Option<Vec<MessageStatusCode>>, version: &Option<ProtocolTypes>) -> VcxResult<Vec<Message>> {
     trace!("get_connection_messages >>> pw_did: {}, pw_vk: {}, agent_vk: {}, msg_uid: {:?}",
-           pw_did, pw_vk, agent_vk, msg_uid);
+           secret!(pw_did), secret!(pw_vk), secret!(agent_vk), secret!(msg_uid));
 
     let response = get_messages()
         .to(&pw_did)?
@@ -402,27 +514,27 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .status_codes(status_codes)?
         .version(version)?
         .send_secure()
-        .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, "Cannot get messages"))?;
+        .map_err(|err| err.extend("Cannot get messages"))?;
 
-    trace!("message returned: {:?}", response);
+    trace!("message returned: {:?}", secret!(response));
     Ok(response)
 }
 
 pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> VcxResult<(String, MessagePayload)> {
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
-           msg_id, pw_did, pw_vk, agent_did, agent_vk);
+           msg_id, secret!(pw_did), secret!(pw_vk), secret!(agent_did), secret!(agent_vk));
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &None)?; // TODO: FIXME version should be param
-    trace!("checking for ref_msg: {:?}", message);
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &None)?;
+    trace!("checking for referent for message: {:?}", secret!(message));
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
         Some(ref ref_msg_id) if message[0].status_code == MessageStatusCode::Accepted => ref_msg_id.to_string(),
         _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &None)?;  // TODO: FIXME version should be param
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &None)?;
 
-    trace!("checking for pending message: {:?}", message);
+    trace!("receivedpending messages: {:?}", secret!(message));
 
     // this will work for both credReq and proof types
     match message.get(0).as_ref().and_then(|message| message.payload.as_ref()) {
@@ -430,7 +542,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
             // TODO: check returned verkey
             Ok((message[0].uid.clone(), payload.to_owned()))
         }
-        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message"))
+        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Cannot find referent message"))
     }
 }
 
@@ -451,7 +563,8 @@ fn _parse_status_code(status_codes: Option<Vec<String>>) -> VcxResult<Option<Vec
 
 pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> VcxResult<Vec<MessageByConnection>> {
     trace!("download_messages >>> pairwise_dids: {:?}, status_codes: {:?}, uids: {:?}",
-           pairwise_dids, status_codes, uids);
+           secret!(pairwise_dids), status_codes, uids);
+    debug!("Agency: Downloading messages");
 
     AgencyMock::set_next_response(constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
 
@@ -465,12 +578,14 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
             .version(&Some(::settings::get_protocol_type()))?
             .download_messages()?;
 
-    trace!("message returned: {:?}", response);
+    debug!("Agency: received messages: {:?}", secret!(response));
+    trace!("download_messages <<< messages: {:?}", secret!(response));
     Ok(response)
 }
 
 pub fn download_agent_messages(status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> VcxResult<Vec<Message>> {
-    trace!("download_messages >>> status_codes: {:?}, uids: {:?}", status_codes, uids);
+    trace!("download_agent_messages >>> status_codes: {:?}, uids: {:?}", status_codes, secret!(uids));
+    debug!("Agency: Downloading Agent messages");
 
     AgencyMock::set_next_response(constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
 
@@ -486,8 +601,42 @@ pub fn download_agent_messages(status_codes: Option<Vec<String>>, uids: Option<V
             .status_codes(status_codes)?
             .send_secure()?;
 
-    trace!("message returned: {:?}", response);
+    debug!("Agency: received Agent messages: {:?}", secret!(response));
+    trace!("download_agent_messages <<< messages: {:?}", secret!(response));
     Ok(response)
+}
+
+pub fn download_message(uid: String) -> VcxResult<Message> {
+    trace!("download_message >>> uid: {:?}", uid);
+    debug!("Agency: Downloading message {:?}", uid);
+
+    AgencyMock::set_next_response(constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
+
+    let mut messages: Vec<Message> =
+        get_messages()
+            .uid(Some(vec![uid.clone()]))?
+            .version(&Some(::settings::get_protocol_type()))?
+            .download_messages()?
+            .into_iter()
+            .flat_map(|msgs_by_connection| msgs_by_connection.msgs)
+            .collect();
+
+    if messages.is_empty() {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse,
+                                      format!("Message for the given uid:\"{}\" not found.", uid)));
+    }
+
+    if messages.len() > 1 {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse,
+                                      format!("More than one message was received for the given uid:\"{}\". \
+                                      Please, use `vcx_messages_download` function to retrieve several messages.", uid)));
+    }
+
+    let message = messages.remove(0);
+
+    debug!("Agency: received message: {:?}", secret!(message));
+    trace!("download_message <<< message: {:?}", secret!(message));
+    Ok(message)
 }
 
 #[cfg(test)]
@@ -590,6 +739,35 @@ mod tests {
         // Agency returns a bad request response for invalid dids
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);
-        assert_eq!(bad_req.unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
+        assert_eq!(bad_req.unwrap_err().kind(), VcxErrorKind::InvalidAgencyRequest);
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_download_message() {
+        let _setup = SetupLibraryAgencyV1::init();
+
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
+
+        let message = "hello";
+        let message_options = json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string();
+        let hello_uid = ::connection::send_generic_message(alice, message, &message_options).unwrap();
+
+        // AS CONSUMER GET MESSAGE
+        ::utils::devsetup::set_consumer();
+
+        thread::sleep(Duration::from_secs(5));
+        // download hello message
+        let retrieved_message = download_message(hello_uid).unwrap();
+
+        let expected_payload = json!({"@type":{"name":"hello","ver":"1.0","fmt":"json"},"@msg":"hello"});
+        let retrieved_payload: serde_json::Value = serde_json::from_str(&retrieved_message.decrypted_payload.unwrap()).unwrap();
+        assert_eq!(retrieved_payload, expected_payload);
+
+        // download unknown message
+        let unknown_uid = "unknown";
+        let res = download_message(unknown_uid.to_string()).unwrap_err();
+        assert_eq!(VcxErrorKind::InvalidAgencyResponse, res.kind())
     }
 }

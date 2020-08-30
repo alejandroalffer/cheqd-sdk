@@ -68,18 +68,26 @@ impl CreateSchema {
     fn get_state(&self) -> u32 { self.state as u32 }
 }
 
+fn handle_err(err: VcxError) -> VcxError {
+    if err.kind() == VcxErrorKind::InvalidHandle {
+        VcxError::from(VcxErrorKind::InvalidSchemaHandle)
+    } else {
+        err
+    }
+}
+
 pub fn create_and_publish_schema(source_id: &str,
                                  issuer_did: String,
                                  name: String,
                                  version: String,
                                  data: String) -> VcxResult<u32> {
-    trace!("create_new_schema >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}", source_id, issuer_did, name, version, data);
-    debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
+    trace!("create_new_schema >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}", source_id, secret!(issuer_did), secret!(name), secret!(version), secret!(data));
+    debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, secret!(name), secret!(issuer_did));
 
     let (schema_id, schema) = anoncreds::create_schema(&name, &version, &data)?;
     let payment_txn = anoncreds::publish_schema(&schema)?;
 
-    debug!("created schema on ledger with id: {}", schema_id);
+    debug!("created schema on ledger with id: {}", secret!(schema_id));
 
     let schema_handle = _store_schema(source_id, name, version, schema_id, data, payment_txn, PublicEntityStateType::Published)?;
 
@@ -92,14 +100,15 @@ pub fn prepare_schema_for_endorser(source_id: &str,
                                    version: String,
                                    data: String,
                                    endorser: String) -> VcxResult<(u32, String)> {
-    trace!("create_schema_for_endorser >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}, endorser: {}", source_id, issuer_did, name, version, data, endorser);
-    debug!("preparing schema for endorser with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
+    trace!("create_schema_for_endorser >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}, endorser: {}",
+           source_id, secret!(issuer_did), secret!(name), secret!(version), secret!(data), secret!(endorser));
+    debug!("preparing schema for endorser with source_id: {}, name: {}, issuer_did: {}", source_id, secret!(name), secret!(issuer_did));
 
     let (schema_id, schema) = anoncreds::create_schema(&name, &version, &data)?;
     let schema_request = anoncreds::build_schema_request(&schema)?;
     let schema_request = ledger::set_endorser(&schema_request, &endorser)?;
 
-    debug!("prepared schema for endorser with id: {}", schema_id);
+    debug!("prepared schema for endorser with id: {}", secret!(schema_id));
 
     let schema_handle = _store_schema(source_id, name, version, schema_id, data, None, PublicEntityStateType::Built)?;
 
@@ -161,25 +170,25 @@ pub fn is_valid_handle(handle: u32) -> bool {
 pub fn to_string(handle: u32) -> VcxResult<String> {
     SCHEMA_MAP.get(handle, |s| {
         s.to_string()
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
     SCHEMA_MAP.get(handle, |s| {
         Ok(s.get_source_id().to_string())
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_schema_id(handle: u32) -> VcxResult<String> {
     SCHEMA_MAP.get(handle, |s| {
         Ok(s.get_schema_id().to_string())
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_payment_txn(handle: u32) -> VcxResult<PaymentTxn> {
     SCHEMA_MAP.get(handle, |s| {
         s.get_payment_txn()
-    })
+    }).map_err(handle_err)
 }
 
 pub fn from_string(schema_data: &str) -> VcxResult<u32> {
@@ -188,8 +197,7 @@ pub fn from_string(schema_data: &str) -> VcxResult<u32> {
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
-    SCHEMA_MAP.release(handle)
-        .or(Err(VcxError::from(VcxErrorKind::InvalidSchemaHandle)))
+    SCHEMA_MAP.release(handle).map_err(handle_err)
 }
 
 pub fn release_all() {
@@ -199,13 +207,13 @@ pub fn release_all() {
 pub fn update_state(handle: u32) -> VcxResult<u32> {
     SCHEMA_MAP.get_mut(handle, |s| {
         s.update_state()
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
     SCHEMA_MAP.get_mut(handle, |s| {
         Ok(s.get_state())
-    })
+    }).map_err(handle_err)
 }
 
 #[cfg(test)]
@@ -401,7 +409,7 @@ pub mod tests {
     fn test_handle_errors() {
         let _setup = SetupEmpty::init();
 
-        assert_eq!(to_string(13435178).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
+        assert_eq!(to_string(13435178).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
     }
 
     #[cfg(feature = "pool_tests")]
