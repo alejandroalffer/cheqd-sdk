@@ -17,10 +17,6 @@ pub mod test {
     use utils::plugins::init_plugin;
     use messages::payload::PayloadV1;
     use api::VcxStateType;
-    use v3::messages::a2a::A2AMessage;
-    use v3::handlers::connection::types::OutofbandMeta;
-    use utils::libindy::anoncreds::prover_get_credentials;
-    use utils::libindy::types::CredentialInfo;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -704,6 +700,7 @@ pub mod test {
 
     #[cfg(feature = "aries")]
     use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
+    use messages::get_message::Message;
 
     #[cfg(feature = "aries")]
     #[test]

@@ -476,9 +476,8 @@ pub fn config_str_to_bool(key: &str) -> VcxResult<bool> {
         .map_err(|_|VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("{} - config supposed to be true | false", key)))
 }
 
-pub fn get_payment_method() -> VcxResult<String> {
-    get_config_value(CONFIG_PAYMENT_METHOD)
-        .map_err(|_|VcxError::from_msg(VcxErrorKind::MissingPaymentMethod, "Payment Method is not set."))
+pub fn get_payment_method() -> String {
+    get_config_value(CONFIG_PAYMENT_METHOD).unwrap_or(DEFAULT_PAYMENT_METHOD.to_string())
 }
 
 pub fn get_communication_method() -> VcxResult<String> {
