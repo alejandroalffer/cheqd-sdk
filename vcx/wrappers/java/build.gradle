@@ -31,6 +31,9 @@ test {
     useJUnitPlatform()
 }
 
+static def versionMajor() {
+    return '0.9.4'
+}
 // Disabled until fix
 // task("buildJavadoc", type: Javadoc) {
 //    title = "VCX SDK ${version()}"

@@ -93,21 +93,32 @@ vcx_error_t vcx_agent_update_info(vcx_command_handle_t command_handle,
                                const char *json,
                                void (*cb)(vcx_command_handle_t, vcx_error_t));
 
-// Establishes connection between institution and its user
-//
-// #Params
-// command_handle: command handle to map callback to user context.
-//
-// connection_handle: Connection handle that identifies connection object
-//
-// connection_options: Provides details indicating if the connection will be established by text or QR Code
-//
-// # Examples connection_options -> "{"connection_type":"SMS","phone":"123"}" OR: "{"connection_type":"QR","phone":""}"
-//
-// cb: Callback that provides error status of request
-//
-// #Returns
-// Error code as a u32
+/// Establishes connection between institution and its user
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: Connection handle that identifies connection object
+///
+/// connection_options: Provides details about establishing connection
+///     {
+///         "connection_type": Option<"string"> - one of "SMS", "QR",
+///         "phone": "string": Option<"string"> - phone number in case "connection_type" is set into "SMS",
+///         "update_agent_info": Option<bool> - whether agent information needs to be updated.
+///                                             default value for `update_agent_info`=true
+///                                             if agent info does not need to be updated, set `update_agent_info`=false
+///         "use_public_did": Option<bool> - whether to use public DID for an establishing connection
+///                                          default value for `use_public_did`=false
+///     }
+/// # Examples connection_options ->
+/// "{"connection_type":"SMS","phone":"123","use_public_did":true, "update_agent_info": Option<true>}"
+///     OR:
+/// "{"connection_type":"QR","phone":"","use_public_did":false}"
+///
+/// cb: Callback that provides error status of request
+///
+/// #Returns
+/// Error code as a u32
 vcx_error_t vcx_connection_connect(vcx_command_handle_t command_handle,
                                 vcx_connection_handle_t connection_handle,
                                 const char *connection_options,

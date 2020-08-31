@@ -145,6 +145,8 @@ mod tests {
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
             "protocol_type": protocol_type,
+            "use_public_did": false
+
         }).to_string();
 
         let com_method = ComMethod {
