@@ -21,6 +21,9 @@ pub struct Invitation {
     #[serde(rename = "request~attach")]
     pub request_attach: Attachments,
     pub service: Vec<Service>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "profileUrl")]
+    pub profile_url: Option<String>,
 }
 
 impl Invitation {
@@ -90,6 +93,11 @@ impl Invitation {
         Ok(self)
     }
 
+    pub fn set_opt_profile_url(mut self, profile_url: Option<String>) -> Invitation {
+        self.profile_url = profile_url;
+        self
+    }
+
     pub fn validate(&self) -> VcxResult<()> {
         if self.service.is_empty() {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidRedirectDetail,
@@ -143,6 +151,7 @@ pub mod tests {
             handshake_protocols: vec![_handshake_protocol()],
             request_attach: attachment,
             service: vec![_service()],
+            profile_url: None
         }
     }
 
@@ -158,6 +167,7 @@ pub mod tests {
             handshake_protocols: vec![],
             request_attach: attachment,
             service: vec![_service()],
+            profile_url: None
         }
     }
 

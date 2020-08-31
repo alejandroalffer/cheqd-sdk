@@ -306,11 +306,13 @@ impl InitializedState {
         debug!("preparing invitation for connection {}", source_id);
 
         let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
+        let profile_url = settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).ok();
 
         let state = match self.outofband_meta.clone() {
             None => {
                 let invite: Invitation = Invitation::create()
                     .set_label(label)
+                    .set_opt_profile_url(profile_url)
                     .set_service_endpoint(agent_info.agency_endpoint()?)
                     .set_recipient_keys(agent_info.recipient_keys())
                     .set_routing_keys(agent_info.routing_keys()?);
@@ -320,6 +322,7 @@ impl InitializedState {
             Some(outofband_meta) => {
                 let invite: OutofbandInvitation = OutofbandInvitation::create()
                     .set_label(label)
+                    .set_opt_profile_url(profile_url)
                     .set_opt_goal_code(outofband_meta.goal_code)
                     .set_opt_goal(outofband_meta.goal)
                     .set_handshake(outofband_meta.handshake)

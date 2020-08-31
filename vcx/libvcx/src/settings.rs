@@ -2,7 +2,7 @@ extern crate url;
 extern crate serde_json;
 
 use std::collections::HashMap;
-use std::sync::{RwLock, Once};
+use std::sync::RwLock;
 use utils::{get_temp_dir_path, error};
 use std::path::Path;
 use url::Url;
@@ -54,6 +54,7 @@ pub static CONFIG_POOL_CONFIG: &'static str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
 pub static COMMUNICATION_METHOD: &str = "communication_method";// proprietary or aries
 pub static CONFIG_ACTORS: &str = "actors"; // inviter, invitee, issuer, holder, prover, verifier, sender, receiver
+pub static CONFIG_USE_PUBLIC_DID: &str = "use_public_did"; // Updates Agent to use public did in relationships
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
@@ -83,6 +84,7 @@ pub static DEFAULT_PAYMENT_METHOD: &str = "sov";
 pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
 pub static DEFAULT_COMMUNICATION_METHOD: &str = "evernym";
+pub static DEFAULT_USE_PUBLIC_DID: bool = false;
 
 lazy_static! {
     static ref SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::new());
@@ -100,6 +102,10 @@ impl ToString for HashMap<String, String> {
     }
 }
 
+#[cfg(all(feature="mysql"))]
+use std::sync::Once;
+
+#[cfg(all(feature="mysql"))]
 static START: Once = Once::new();
 
 #[cfg(all(feature="mysql"))]
@@ -153,6 +159,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
     settings.insert(CONFIG_USE_LATEST_PROTOCOLS.to_string(), DEFAULT_USE_LATEST_PROTOCOLS.to_string());
     settings.insert(COMMUNICATION_METHOD.to_string(), DEFAULT_COMMUNICATION_METHOD.to_string());
+    settings.insert(CONFIG_USE_PUBLIC_DID.to_string(), DEFAULT_USE_PUBLIC_DID.to_string());
 
     error::SUCCESS.code_num
 }
@@ -508,6 +515,12 @@ pub fn get_connecting_protocol_version() -> ProtocolTypes {
     protocol
 }
 
+pub fn config_str_to_bool(key: &str) -> VcxResult<bool> {
+    get_config_value(key)?
+        .parse::<bool>()
+        .map_err(|_|VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("{} - config supposed to be true | false", key)))
+}
+
 pub fn get_payment_method() -> VcxResult<String> {
     get_config_value(CONFIG_PAYMENT_METHOD)
         .map_err(|_|VcxError::from_msg(VcxErrorKind::MissingPaymentMethod, "Payment Method is not set."))
@@ -649,6 +662,16 @@ pub mod tests {
 
         let path = "garbage.txt";
         assert_eq!(process_config_file(&path).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
+    }
+
+    #[test]
+    fn test_config_str_to_bool() {
+        let _setup = SetupDefaults::init();
+
+        set_config_value(CONFIG_USE_PUBLIC_DID, "true");
+        assert!(config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap());
+        set_config_value(CONFIG_USE_PUBLIC_DID, "false");
+        assert!(!config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap());
     }
 
     #[test]
