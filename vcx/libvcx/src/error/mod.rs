@@ -15,7 +15,7 @@ pub mod prelude {
     pub use super::{err_msg, VcxError, VcxErrorExt, VcxErrorKind, VcxResult, VcxResultExt, get_current_error_c_json};
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail, Serialize, Deserialize)]
 pub enum VcxErrorKind {
     // Common
     #[fail(display = "Object is in invalid state for requested operation")]

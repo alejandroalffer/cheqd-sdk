@@ -943,7 +943,7 @@ impl DidExchangeSM {
                                             .set_thread(thread.clone());
 
                                         agent_info.send_message(&problem_report.to_a2a_message(), &request.connection.did_doc).ok(); // IS is possible?
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -970,8 +970,8 @@ impl DidExchangeSM {
                                         ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ack, thread).into()))
                                     }
                                     Err(err) => {
-                                        let (problem_report, thread) = state.send_problem_report(&agent_info, err.to_string())?;
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        state.send_problem_report(&agent_info, err.to_string())?;
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -981,8 +981,8 @@ impl DidExchangeSM {
                                         ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping, thread).into()))
                                     }
                                     Err(err) => {
-                                        let (problem_report, thread) = state.send_problem_report(&agent_info, err.to_string())?;
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        state.send_problem_report(&agent_info, err.to_string())?;
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -1012,8 +1012,8 @@ impl DidExchangeSM {
                                         ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping_response, thread).into()))
                                     }
                                     Err(err) => {
-                                        let (problem_report, thread) = state.send_problem_report(&agent_info, err.to_string())?;
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        state.send_problem_report(&agent_info, err.to_string())?;
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -1099,7 +1099,7 @@ impl DidExchangeSM {
                                             .set_thread(thread.clone());
 
                                         agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc).ok();
-                                        ActorDidExchangeState::Invitee(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -1423,9 +1423,7 @@ pub mod test {
                 let mut request = _request();
                 request.connection.did_doc = DidDoc::default();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(request)).unwrap();
-
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Failed(_)), did_exchange_sm.state);
+                did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(request)).unwrap_err();
             }
 
             #[test]
@@ -1986,9 +1984,7 @@ pub mod test {
                 let mut signed_response = _signed_response();
                 signed_response.connection_sig.signature = String::from("other");
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(signed_response)).unwrap();
-
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Failed(_)), did_exchange_sm.state);
+                did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(signed_response)).unwrap_err();
             }
 
             #[test]

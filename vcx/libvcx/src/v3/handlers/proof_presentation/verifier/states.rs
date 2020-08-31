@@ -230,7 +230,7 @@ impl VerifierSM {
                                         .set_thread(thread.clone());
 
                                 state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
-                                VerifierState::Finished((state, problem_report, thread).into())
+                                return Err(err)
                             }
                         }
                     }

@@ -75,6 +75,8 @@ pub struct PresentationPreparedState {
 pub struct PresentationPreparationFailedState {
     presentation_request: PresentationRequest,
     problem_report: ProblemReport,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error_kind: Option<VcxErrorKind>,
     #[serde(default)]
     thread: Thread,
 }
@@ -109,14 +111,15 @@ impl From<(InitialState, Presentation, Thread)> for PresentationPreparedState {
     }
 }
 
-impl From<(InitialState, ProblemReport, Thread)> for PresentationPreparationFailedState {
-    fn from((state, problem_report, thread): (InitialState, ProblemReport, Thread)) -> Self {
+impl From<(InitialState, ProblemReport, VcxErrorKind, Thread)> for PresentationPreparationFailedState {
+    fn from((state, problem_report, error_kind, thread): (InitialState, ProblemReport, VcxErrorKind, Thread)) -> Self {
         trace!("ProverSM transit state from InitialState to PresentationPreparationFailedState with ProblemReport: {:?}", problem_report);
         trace!("Thread: {:?}", thread);
         PresentationPreparationFailedState {
             presentation_request: state.presentation_request,
             thread,
             problem_report,
+            error_kind: Some(error_kind),
         }
     }
 }
@@ -337,9 +340,9 @@ impl ProverSM {
                                 let problem_report =
                                     ProblemReport::create()
                                         .set_description(ProblemReportCodes::InvalidPresentationRequest)
-                                        .set_comment(format!("error occurred: {:?}", err))
+                                        .set_comment(err.to_string())
                                         .set_thread(thread.clone());
-                                ProverState::PresentationPreparationFailed((state, problem_report, thread).into())
+                                ProverState::PresentationPreparationFailed((state, problem_report, err.kind(), thread).into())
                             }
                         }
                     }
@@ -386,7 +389,7 @@ impl ProverSM {
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
                         let connection = ::connection::get_completed_connection(connection_handle)?;
                         let thread = state.thread.clone().update_received_order(&connection.data.did_doc.id);
-                        let problem_report =Self::_handle_reject_presentation_request(&connection, &reason, &state.presentation_request, &thread)?;
+                        let problem_report = Self::_handle_reject_presentation_request(&connection, &reason, &state.presentation_request, &thread)?;
                         ProverState::Finished((state, thread, problem_report, Reason::Reject).into())
                     }
                     ProverMessages::ProposePresentation((connection_handle, preview)) => {
@@ -407,6 +410,8 @@ impl ProverSM {
                         let connection = ::connection::get_completed_connection(connection_handle)?;
                         let thread = state.thread.clone()
                             .update_received_order(&connection.data.did_doc.id);
+                        let error_kind = state.error_kind
+                            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Prover object state: `error_kind` not found", source_id)))?;
 
                         let problem_report = A2AMessage::PresentationReject(
                             state.problem_report.clone()
@@ -421,7 +426,7 @@ impl ProverSM {
                                 Connection::send_message_to_self_endpoint(&problem_report, &service.into())?;
                             }
                         }
-                        ProverState::Finished((state, thread).into())
+                        return Err(VcxError::from_msg(error_kind, state.problem_report.comment.unwrap_or_default()));
                     }
                     message_ => {
                         warn!("Prover: Unexpected action to update state {:?}", message_);
@@ -448,7 +453,7 @@ impl ProverSM {
                                     .set_thread(thread.clone());
 
                                 state.connection.data.send_message(&A2AMessage::PresentationReject(problem_report.clone()), &state.connection.agent)?;
-                                ProverState::Finished((state, problem_report, thread, Reason::Fail).into())
+                                return Err(err);
                             }
                         }
                     }
@@ -781,9 +786,7 @@ pub mod test {
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation(("invalid".to_string(), _self_attested()))).unwrap();
             assert_match!(ProverState::PresentationPreparationFailed(_), prover_sm.state);
 
-            prover_sm = prover_sm.step(ProverMessages::SendPresentation(mock_connection())).unwrap();
-            assert_match!(ProverState::Finished(_), prover_sm.state);
-            assert_eq!(VcxStateType::VcxStateNone as u32, prover_sm.state());
+            prover_sm.step(ProverMessages::SendPresentation(mock_connection())).unwrap_err();
         }
 
         #[test]
