@@ -38,7 +38,6 @@ use messages::agent_utils::{ComMethod, Config};
 ///    communication_method: Option<String>,
 ///    webhook_url: Option<String>,
 ///    use_latest_protocols: Option<String>,
-///    use_public_did: Option<bool>,
 /// }
 /// token: {
 ///          This can be a push notification endpoint to contact the sponsee or
@@ -198,7 +197,6 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 ///           communication_method: Option<String>,
 ///           webhook_url: Option<String>,
 ///           use_latest_protocols: Option<String>,
-///           use_public_did: Option<bool>,
 ///     }
 ///     sponsee_id: String,
 ///     sponsor_id: String,

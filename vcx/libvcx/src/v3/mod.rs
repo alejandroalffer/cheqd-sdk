@@ -755,6 +755,9 @@ pub mod test {
     }
 
     #[cfg(feature = "aries")]
+    use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
+
+    #[cfg(feature = "aries")]
     #[test]
     fn test_outofband_connection_works() {
         PaymentPlugin::load();
