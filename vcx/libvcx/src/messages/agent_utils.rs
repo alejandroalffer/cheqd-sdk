@@ -7,7 +7,7 @@ use utils::libindy::signus::create_and_store_my_did;
 use utils::option_util::get_or_default;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
-use settings::{ProtocolTypes, CONFIG_USE_PUBLIC_DID, config_str_to_bool};
+use settings::ProtocolTypes;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Connect {
@@ -147,7 +147,6 @@ pub struct Config {
     communication_method: Option<String>,
     webhook_url: Option<String>,
     use_latest_protocols: Option<String>,
-    use_public_did: Option<bool>,
 }
 
 pub fn set_config_values(my_config: &Config) {
@@ -169,7 +168,6 @@ pub fn set_config_values(my_config: &Config) {
     settings::set_opt_config_value(settings::CONFIG_DID_METHOD, &my_config.did_method);
     settings::set_opt_config_value(settings::COMMUNICATION_METHOD, &my_config.communication_method);
     settings::set_opt_config_value(settings::CONFIG_WEBHOOK_URL, &my_config.webhook_url);
-    settings::set_opt_config_value(settings::CONFIG_USE_PUBLIC_DID, &my_config.use_public_did.map(|x| x.to_string()));
 }
 
 fn _create_issuer_keys(my_did: &str, my_vk: &str, my_config: &Config) -> VcxResult<(String, String)> {
@@ -216,6 +214,11 @@ pub fn get_final_config(my_did: &str,
                         my_config: &Config) -> VcxResult<String> {
     let (issuer_did, issuer_vk) = _create_issuer_keys(my_did, my_vk, my_config)?;
 
+    /* Update Agent Info */
+    update_agent_profile(&agent_did,
+                         &Some(issuer_did.to_string()),
+                         my_config.protocol_type.clone())?;
+
     let mut final_config = json!({
         "wallet_key": &my_config.wallet_key,
         "wallet_name": wallet_name,
@@ -232,7 +235,6 @@ pub fn get_final_config(my_did: &str,
         "institution_logo_url": get_or_default(&my_config.logo, "<CHANGE_ME>"),
         "genesis_path": get_or_default(&my_config.path, "<CHANGE_ME>"),
         "protocol_type": &my_config.protocol_type,
-        "use_public_did": &my_config.use_public_did.unwrap_or(false)
     });
 
     if let Some(key_derivation) = &my_config.wallet_key_derivation {
@@ -351,17 +353,6 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of CreateAgentResponse"))
         };
 
-    /* STEP 4 - Update Agent Info */
-    /* Update Agent Info */
-    let mut public_did: Option<String> = None;
-    if config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false) {
-        println!("Use public did");
-        public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
-    };
-    update_agent_profile(&response.from_did,
-                         &public_did,
-                         ProtocolTypes::V1)?;
-
     Ok((response.from_did, response.from_vk))
 }
 
@@ -445,15 +436,6 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of CreateAgentResponse"))
         };
 
-    /* STEP 4 - Update Agent Info */
-    let mut public_did: Option<String> = None;
-    if config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false) {
-        println!("Use public did");
-        public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
-    };
-    update_agent_profile(&response.from_did,
-                         &public_did,
-                         ProtocolTypes::V2)?;
     Ok((response.from_did, response.from_vk))
 }
 
@@ -576,7 +558,6 @@ mod tests {
             "remote_to_sdk_verkey":"5wTKXrdfUiTQ7f3sZJzvHpcS7XHHxiBkFtPCsynZtv4k",
             "sdk_to_remote_did":"FhrSrYtQcw3p9xwf7NYemf",
             "sdk_to_remote_verkey":"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "use_public_did": false,
             "wallet_key":"test_key",
             "wallet_name":"LIBVCX_SDK_WALLET"
         });
