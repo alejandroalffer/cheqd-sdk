@@ -30,8 +30,10 @@ impl CredentialRequest {
 }
 
 pub fn set_cred_req_ref_message(cred_request: &str, msg_id: &str) -> VcxResult<CredentialRequest> {
+    trace!("set_cred_req_ref_message >>> cred_request: {:?}, msg_id: {:?}", secret!(cred_request), msg_id);
+
     let mut request: CredentialRequest = serde_json::from_str(&cred_request)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, format!("Cannot deserialize credential request: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredentialRequest, format!("Cannot deserialize Credential Request: {}", err)))?;
 
     request.msg_ref_id = Some(msg_id.to_owned());
 

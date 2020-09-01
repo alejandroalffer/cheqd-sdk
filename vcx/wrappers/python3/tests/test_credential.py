@@ -239,7 +239,7 @@ async def test_send_request_with_invalid_state():
         await connection.connect(connection_options)
         credential = await Credential.create(source_id, offer)
         await credential.send_request(connection, 0)
-    assert ErrorCode.CreateCredentialFailed == e.value.error_code
+    assert ErrorCode.InvalidCredentialOffer == e.value.error_code
 
 
 @pytest.mark.asyncio

@@ -10,19 +10,24 @@ use v3::messages::connection::problem_report::{ProblemReport, ProblemCode};
 use v3::messages::trust_ping::ping::Ping;
 use v3::messages::trust_ping::ping_response::PingResponse;
 use v3::messages::ack::Ack;
-use v3::messages::connection::did_doc::{DidDoc, Service, SERVICE_ID};
+use v3::messages::connection::did_doc::{DidDoc, Service, SERVICE_ID, OUTOFBAND_SERVICE_TYPE};
 use v3::messages::discovery::query::Query;
 use v3::messages::discovery::disclose::{Disclose, ProtocolDescriptor};
 use v3::messages::a2a::protocol_registry::ProtocolRegistry;
 use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 use v3::messages::outofband::handshake_reuse::HandshakeReuse;
 use v3::messages::outofband::handshake_reuse_accepted::HandshakeReuseAccepted;
+use v3::messages::questionanswer::question::{Question, QuestionResponse};
+use v3::messages::questionanswer::answer::Answer;
+use v3::messages::committedanswer::question::Question as CommittedQuestion;
+use v3::messages::committedanswer::answer::Answer as CommittedAnswer;
+use v3::handlers::connection::types::{CompletedConnection, OutofbandMeta, Invitations};
 
 use std::collections::HashMap;
 
 use error::prelude::*;
 use messages::thread::Thread;
-use v3::handlers::connection::types::{CompletedConnection, OutofbandMeta, Invitations};
+use settings;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeSM {
@@ -86,6 +91,8 @@ pub struct InvitedState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RequestedState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    invitation: Option<Invitations>,
     request: Request,
     did_doc: DidDoc,
     #[serde(default)]
@@ -94,6 +101,8 @@ pub struct RequestedState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RespondedState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    invitation: Option<Invitations>,
     response: SignedResponse,
     did_doc: DidDoc,
     prev_agent_info: AgentInfo,
@@ -103,16 +112,18 @@ pub struct RespondedState {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompleteState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invitation: Option<Invitations>,
     pub did_doc: DidDoc,
     pub protocols: Option<Vec<ProtocolDescriptor>>,
     #[serde(default)]
     pub thread: Thread,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub outofband_invite: Option<OutofbandInvitation>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FailedState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invitation: Option<Invitations>,
     error: Option<ProblemReport>,
     #[serde(default)]
     thread: Thread,
@@ -142,16 +153,20 @@ impl From<(InitializedState, OutofbandInvitation)> for CompleteState {
             did_doc: DidDoc::from(invitation.clone()),
             protocols: None,
             thread,
-            outofband_invite: Some(invitation),
+            invitation: Some(Invitations::OutofbandInvitation(invitation)),
         }
     }
 }
 
 impl From<(InvitedState, ProblemReport, Thread)> for FailedState {
-    fn from((_state, error, thread): (InvitedState, ProblemReport, Thread)) -> FailedState {
+    fn from((state, error, thread): (InvitedState, ProblemReport, Thread)) -> FailedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to FailedState with ProblemReport message: {:?}", error);
         trace!("Thread: {:?}", thread);
-        FailedState { error: Some(error), thread }
+        FailedState {
+            invitation: Some(state.invitation),
+            error: Some(error),
+            thread,
+        }
     }
 }
 
@@ -159,15 +174,26 @@ impl From<(InvitedState, Request, Thread)> for RequestedState {
     fn from((state, request, thread): (InvitedState, Request, Thread)) -> RequestedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
         trace!("Thread: {:?}", thread);
-        RequestedState { request, did_doc: DidDoc::from(state.invitation), thread }
+        RequestedState {
+            invitation: Some(state.invitation.clone()),
+            request,
+            did_doc: DidDoc::from(state.invitation),
+            thread,
+        }
     }
 }
 
 impl From<(InvitedState, Request, SignedResponse, AgentInfo, Thread)> for RespondedState {
-    fn from((_state, request, response, prev_agent_info, thread): (InvitedState, Request, SignedResponse, AgentInfo, Thread)) -> RespondedState {
+    fn from((state, request, response, prev_agent_info, thread): (InvitedState, Request, SignedResponse, AgentInfo, Thread)) -> RespondedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
         trace!("Thread: {:?}", thread);
-        RespondedState { response, did_doc: request.connection.did_doc, prev_agent_info, thread }
+        RespondedState {
+            invitation: Some(state.invitation),
+            response,
+            did_doc: request.connection.did_doc,
+            prev_agent_info,
+            thread,
+        }
     }
 }
 
@@ -175,31 +201,51 @@ impl From<(RespondedState, Ping, Thread)> for RespondedState {
     fn from((state, _ping, thread): (RespondedState, Ping, Thread)) -> RespondedState {
         trace!("DidExchangeStateSM: transit state from RespondedState to RespondedState");
         trace!("Thread: {:?}", thread);
-        RespondedState { response: state.response, did_doc: state.did_doc, prev_agent_info: state.prev_agent_info, thread }
+        RespondedState {
+            invitation: state.invitation,
+            response: state.response,
+            did_doc: state.did_doc,
+            prev_agent_info:
+            state.prev_agent_info,
+            thread,
+        }
     }
 }
 
 impl From<(RequestedState, ProblemReport, Thread)> for FailedState {
-    fn from((_state, error, thread): (RequestedState, ProblemReport, Thread)) -> FailedState {
+    fn from((state, error, thread): (RequestedState, ProblemReport, Thread)) -> FailedState {
         trace!("DidExchangeStateSM: transit state from RequestedState to FailedState with ProblemReport: {:?}", error);
         trace!("Thread: {:?}", thread);
-        FailedState { error: Some(error), thread }
+        FailedState {
+            invitation: state.invitation,
+            error: Some(error),
+            thread,
+        }
     }
 }
 
 impl From<(RequestedState, Response, Thread)> for CompleteState {
-    fn from((_state, response, thread): (RequestedState, Response, Thread)) -> CompleteState {
+    fn from((state, response, thread): (RequestedState, Response, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: response.connection.did_doc, protocols: None, thread, outofband_invite: None }
+        CompleteState {
+            did_doc: response.connection.did_doc,
+            protocols: None,
+            thread,
+            invitation: state.invitation,
+        }
     }
 }
 
 impl From<(RespondedState, ProblemReport, Thread)> for FailedState {
-    fn from((_state, error, thread): (RespondedState, ProblemReport, Thread)) -> FailedState {
+    fn from((state, error, thread): (RespondedState, ProblemReport, Thread)) -> FailedState {
         trace!("DidExchangeStateSM: transit state from RespondedState to FailedState with ProblemReport message: {:?}", error);
         trace!("Thread: {:?}", thread);
-        FailedState { error: Some(error), thread }
+        FailedState {
+            invitation: state.invitation,
+            error: Some(error),
+            thread,
+        }
     }
 }
 
@@ -207,7 +253,12 @@ impl From<(RespondedState, Ack, Thread)> for CompleteState {
     fn from((state, _ack, thread): (RespondedState, Ack, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState with Ack");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: state.did_doc, protocols: None, thread, outofband_invite: None }
+        CompleteState {
+            did_doc: state.did_doc,
+            protocols: None,
+            thread,
+            invitation: state.invitation,
+        }
     }
 }
 
@@ -215,7 +266,12 @@ impl From<(RespondedState, Ping, Thread)> for CompleteState {
     fn from((state, _ping, thread): (RespondedState, Ping, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState with Ping");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: state.did_doc, protocols: None, thread, outofband_invite: None }
+        CompleteState {
+            did_doc: state.did_doc,
+            protocols: None,
+            thread,
+            invitation: state.invitation,
+        }
     }
 }
 
@@ -223,25 +279,40 @@ impl From<(RespondedState, PingResponse, Thread)> for CompleteState {
     fn from((state, _ping_response, thread): (RespondedState, PingResponse, Thread)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState with PingResponse");
         trace!("Thread: {:?}", thread);
-        CompleteState { did_doc: state.did_doc, protocols: None, thread, outofband_invite: None }
+        CompleteState {
+            did_doc: state.did_doc,
+            protocols: None,
+            thread,
+            invitation: state.invitation,
+        }
     }
 }
 
 impl From<(CompleteState, Vec<ProtocolDescriptor>)> for CompleteState {
     fn from((state, protocols): (CompleteState, Vec<ProtocolDescriptor>)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from CompleteState to CompleteState");
-        CompleteState { did_doc: state.did_doc, protocols: Some(protocols), thread: state.thread, outofband_invite: None }
+        CompleteState {
+            did_doc: state.did_doc,
+            protocols: Some(protocols),
+            thread: state.thread,
+            invitation: state.invitation,
+        }
     }
 }
 
 impl InitializedState {
-    fn inviter_handle_connection(self, source_id: &str, agent_info: &AgentInfo) -> VcxResult<ActorDidExchangeState> {
-        trace!("InvitedState:inviter_handle_connection >>> source_id: {:?}", source_id);
+    fn prepare_invitation(self, source_id: &str, agent_info: &AgentInfo) -> VcxResult<ActorDidExchangeState> {
+        trace!("InvitedState:prepare_invitation >>> source_id: {:?}", source_id);
+        debug!("preparing invitation for connection {}", source_id);
+
+        let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
+        let profile_url = settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).ok();
 
         let state = match self.outofband_meta.clone() {
             None => {
                 let invite: Invitation = Invitation::create()
-                    .set_label(source_id.to_string())
+                    .set_label(label)
+                    .set_opt_profile_url(profile_url)
                     .set_service_endpoint(agent_info.agency_endpoint()?)
                     .set_recipient_keys(agent_info.recipient_keys())
                     .set_routing_keys(agent_info.routing_keys()?);
@@ -250,13 +321,15 @@ impl InitializedState {
             }
             Some(outofband_meta) => {
                 let invite: OutofbandInvitation = OutofbandInvitation::create()
-                    .set_label(source_id.to_string())
+                    .set_label(label)
+                    .set_opt_profile_url(profile_url)
                     .set_opt_goal_code(outofband_meta.goal_code)
                     .set_opt_goal(outofband_meta.goal)
                     .set_handshake(outofband_meta.handshake)
                     .set_service(
                         Service::create()
                             .set_id(SERVICE_ID.to_string())
+                            .set_type(OUTOFBAND_SERVICE_TYPE.to_string())
                             .set_service_endpoint(agent_info.agency_endpoint()?)
                             .set_recipient_keys(agent_info.recipient_keys())
                             .set_routing_keys(agent_info.routing_keys()?)
@@ -278,7 +351,8 @@ impl InitializedState {
 impl InvitedState {
     fn handle_connection_request(&self, request: &Request,
                                  agent_info: &AgentInfo) -> VcxResult<(SignedResponse, AgentInfo, Thread)> {
-        trace!("InvitedState:handle_connection_request >>> request: {:?}, agent_info: {:?}", request, agent_info);
+        trace!("InvitedState:handle_connection_request >>> request: {:?}, agent_info: {:?}", secret!(request), secret!(agent_info));
+        debug!("handling received connection request message");
 
         request.connection.did_doc.validate()?;
 
@@ -303,22 +377,24 @@ impl InvitedState {
 
         new_agent_info.send_message(&signed_response.to_a2a_message(), &request.connection.did_doc)?;
 
+        trace!("InvitedState:handle_connection_request <<<");
         Ok((signed_response, new_agent_info, thread))
     }
 }
 
 impl RequestedState {
     fn handle_connection_response(&self, response: SignedResponse, agent_info: &AgentInfo) -> VcxResult<(Response, Thread)> {
-        trace!("RequestedState:handle_connection_response >>> response: {:?}, agent_info: {:?}", response, agent_info);
+        trace!("RequestedState:handle_connection_response >>> response: {:?}, agent_info: {:?}", secret!(response), secret!(agent_info));
+        debug!("handling received connection response message");
 
         let remote_vk: String = self.did_doc.recipient_keys().get(0).cloned()
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot handle Response: Remote Verkey not found"))?;
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, "Cannot handle ConnectionResponse: Recipient Verkey not found in DIDDoc"))?;
 
         let response: Response = response.decode(&remote_vk)?;
 
         if !response.from_thread(&self.request.id.to_string()) {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
-                                          format!("Received Connection Response from different thread: {:?}. Expected Thread: {:?}", response.thread, self.thread)));
+            return Err(VcxError::from_msg(VcxErrorKind::MessageIsOutOfThread,
+                                          format!("Cannot handle Connection Response: thread id does not match. Expected: {:?}, Received: {:?}", response.thread, self.request.id.to_string())));
         }
 
         let thread = self.thread.clone()
@@ -337,31 +413,53 @@ impl RequestedState {
 
         agent_info.send_message(&message, &response.connection.did_doc)?;
 
+        trace!("RequestedState:handle_connection_response <<<");
         Ok((response, thread))
     }
 }
 
 impl RespondedState {
     fn handle_ack(&self, ack: &Ack) -> VcxResult<Thread> {
+        trace!("RespondedState:handle_ack >>> ack: {:?}", secret!(ack));
+        debug!("handling received connection ack message");
+
         self.thread.check_message_order(&self.did_doc.id, &ack.thread)?;
         let thread = self.thread.clone().update_received_order(&self.did_doc.id);
+        self.prev_agent_info.delete()?;
+
+        trace!("RespondedState:handle_ack <<<");
         Ok(thread)
     }
 
     fn handle_ping(&self, ping: &Ping, agent_info: &AgentInfo) -> VcxResult<Thread> {
+        trace!("RespondedState:handle_ping >>> ping: {:?}, agent_info: {:?}", secret!(ping), secret!(agent_info));
+        debug!("sending connection ping message");
+
         self.thread.check_message_order(&self.did_doc.id, &ping.thread.clone().unwrap_or_default())?;
         _handle_ping(ping, agent_info, &self.did_doc)?;
         let thread = self.thread.clone().update_received_order(&self.did_doc.id);
+        self.prev_agent_info.delete()?;
+
+        trace!("RespondedState:handle_ping <<<");
         Ok(thread)
     }
 
     fn handle_ping_response(&self, ping_response: &PingResponse) -> VcxResult<Thread> {
+        trace!("RespondedState:handle_ping_response >>> ping_response: {:?}", secret!(ping_response));
+        debug!("handling received connection ping response message");
+
         self.thread.check_message_order(&self.did_doc.id, &ping_response.thread)?;
         let thread = self.thread.clone().update_received_order(&self.did_doc.id);
+        self.prev_agent_info.delete()?;
+
+        trace!("RespondedState:handle_ping_response <<<");
         Ok(thread)
     }
 
     fn send_problem_report(&self, agent_info: &AgentInfo, err: String) -> VcxResult<(ProblemReport, Thread)> {
+        trace!("RespondedState:send_problem_report >>> err: {:?}, agent_info: {:?}", secret!(err), secret!(agent_info));
+        debug!("sending connection problem report message");
+
         let thread = self.thread.clone()
             .increment_sender_order()
             .update_received_order(&self.did_doc.id);
@@ -372,13 +470,17 @@ impl RespondedState {
 
         agent_info.send_message(&problem_report.to_a2a_message(), &self.did_doc).ok();
 
+        trace!("RespondedState:send_problem_report <<<");
         Ok((problem_report, thread))
     }
 }
 
 impl CompleteState {
     fn handle_message(self, message: DidExchangeMessages, agent_info: &AgentInfo) -> VcxResult<DidExchangeState> {
-        Ok(match message {
+        trace!("CompleteState:handle_message >>> message: {:?}, agent_info: {:?}", secret!(message), secret!(agent_info));
+        debug!("handling message in completed state");
+
+        let state = match message {
             DidExchangeMessages::SendPing(comment) => {
                 self.handle_send_ping(comment, agent_info)?;
                 DidExchangeState::Completed(self)
@@ -387,7 +489,8 @@ impl CompleteState {
                 self.handle_ping(&ping, agent_info)?;
                 DidExchangeState::Completed(self)
             }
-            DidExchangeMessages::PingResponseReceived(_) => {
+            DidExchangeMessages::PingResponseReceived(ping_response) => {
+                self.handle_ping_response(ping_response)?;
                 DidExchangeState::Completed(self)
             }
             DidExchangeMessages::DiscoverFeatures((query_, comment)) => {
@@ -399,6 +502,7 @@ impl CompleteState {
                 DidExchangeState::Completed(self)
             }
             DidExchangeMessages::DiscloseReceived(disclose) => {
+                self.handle_disclosed(&disclose)?;
                 DidExchangeState::Completed((self, disclose.protocols).into())
             }
             DidExchangeMessages::SendHandshakeReuse(invitation) => {
@@ -409,46 +513,94 @@ impl CompleteState {
                 self.handle_reuse(handshake_reuse, agent_info)?;
                 DidExchangeState::Completed(self)
             }
-            _ => {
+            DidExchangeMessages::QuestionReceived(question) => {
+                self.handle_question(&question)?;
                 DidExchangeState::Completed(self)
             }
-        })
+            DidExchangeMessages::AnswerReceived(answer) => {
+                self.handle_answer(answer,  agent_info)?;
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::CommittedQuestionReceived(question) => {
+                self.handle_committed_question(&question)?;
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::CommittedAnswerReceived(answer) => {
+                self.handle_committed_answer(&answer)?;
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::SendAnswer((question, response)) => {
+                self.handle_send_answer(question, response, agent_info)?;
+                DidExchangeState::Completed(self)
+            }
+            message_ => {
+                warn!("DidExchangeSM: Unexpected action to update state {:?}", message_);
+                DidExchangeState::Completed(self)
+            }
+        };
+
+        trace!("CompleteState:handle_message <<<");
+        Ok(state)
     }
 
     fn handle_send_ping(&self, comment: Option<String>, agent_info: &AgentInfo) -> VcxResult<()> {
+        trace!("CompleteState:handle_send_ping >>> comment: {:?}, agent_info: {:?}", secret!(comment), secret!(agent_info));
+        debug!("sending ping message");
+
         let ping =
             Ping::create()
                 .request_response()
                 .set_comment(comment);
 
         agent_info.send_message(&ping.to_a2a_message(), &self.did_doc).ok();
+
+        trace!("CompleteState:handle_send_ping <<<");
         Ok(())
     }
 
     fn handle_ping(&self, ping: &Ping, agent_info: &AgentInfo) -> VcxResult<()> {
-        _handle_ping(ping, agent_info, &self.did_doc)
+        trace!("CompleteState:handle_ping >>> ping: {:?}, agent_info: {:?}", secret!(ping), secret!(agent_info));
+        debug!("handling received connection ping message");
+        _handle_ping(ping, agent_info, &self.did_doc)?;
+        trace!("CompleteState:handle_ping <<<");
+        Ok(())
     }
 
     fn handle_discover_features(&self, query: Option<String>, comment: Option<String>, agent_info: &AgentInfo) -> VcxResult<()> {
+        trace!("CompleteState:handle_discover_features >>> query: {:?}, comment: {:?}, agent_info: {:?}", secret!(query), secret!(comment), secret!(agent_info));
+        debug!("sending discover features message");
+
         let query_ =
             Query::create()
                 .set_query(query)
                 .set_comment(comment);
 
-        agent_info.send_message(&query_.to_a2a_message(), &self.did_doc)
+        agent_info.send_message(&query_.to_a2a_message(), &self.did_doc)?;
+
+        trace!("CompleteState:handle_discover_features <<<");
+        Ok(())
     }
 
     fn handle_discovery_query(&self, query: Query, agent_info: &AgentInfo) -> VcxResult<()> {
+        trace!("CompleteState:handle_discovery_query >>> query: {:?}, agent_info: {:?}", secret!(query), secret!(agent_info));
+        debug!("handling received connection discovery query message");
+
         let protocols = ProtocolRegistry::init().get_protocols_for_query(query.query.as_ref().map(String::as_str));
 
         let disclose = Disclose::create()
             .set_protocols(protocols)
             .set_thread_id(query.id.0.clone());
 
-        agent_info.send_message(&disclose.to_a2a_message(), &self.did_doc)
+        agent_info.send_message(&disclose.to_a2a_message(), &self.did_doc)?;
+
+        trace!("CompleteState:handle_discovery_query <<<");
+        Ok(())
     }
 
     fn handle_send_reuse(&self, invitation: OutofbandInvitation, agent_info: &AgentInfo) -> VcxResult<()> {
+        trace!("CompleteState:handle_send_reuse >>> invitation: {:?}, agent_info: {:?}", secret!(invitation), secret!(agent_info));
+        debug!("sending reuse message for connection");
+
         let handshake_reuse = HandshakeReuse::create();
 
         let thread = Thread::new()
@@ -459,10 +611,15 @@ impl CompleteState {
             .set_thread(thread);
 
         agent_info.send_message(&handshake_reuse.to_a2a_message(), &self.did_doc).ok();
+
+        trace!("CompleteState:handle_send_reuse <<<");
         Ok(())
     }
 
     fn handle_reuse(&self, handshake_reuse: HandshakeReuse, agent_info: &AgentInfo) -> VcxResult<()> {
+        trace!("CompleteState:handle_reuse >>> handshake_reuse: {:?}, agent_info: {:?}", secret!(handshake_reuse), secret!(agent_info));
+        debug!("handling received connection reuse message");
+
         let thread = handshake_reuse.thread.clone()
             .update_received_order(&self.did_doc.id);
 
@@ -470,6 +627,86 @@ impl CompleteState {
             .set_thread(thread);
 
         agent_info.send_message(&handshake_reuse_accepted.to_a2a_message(), &self.did_doc).ok();
+
+        trace!("CompleteState:handle_reuse <<<");
+        Ok(())
+    }
+
+    fn handle_send_answer(&self, question: Question, response: QuestionResponse, agent_info: &AgentInfo) -> VcxResult<()> {
+        trace!("CompleteState:handle_send_answer >>> Question: {:?}, response: {:?}, agent_info: {:?}", secret!(question), secret!(response), secret!(agent_info));
+        debug!("sending answer message for connection");
+
+        let thread = Thread::new()
+            .set_thid(question.id.to_string())
+            .update_received_order(&self.did_doc.id);
+
+        let mut answer = Answer::create()
+            .set_response(response.text)
+            .set_thread(thread);
+
+        if question.signature_required {
+            answer = answer.sign(&question, &agent_info.pw_vk)?;
+        }
+
+        agent_info.send_message(&answer.to_a2a_message(), &self.did_doc).ok();
+
+        trace!("CompleteState:handle_send_answer <<<");
+        Ok(())
+    }
+
+    fn handle_answer(&self, answer: Answer, agent_info: &AgentInfo) -> VcxResult<()> {
+        trace!("CompleteState:handle_answer >>> answer: {:?}, agent_info: {:?}", secret!(answer), secret!(agent_info));
+        debug!("handling received connection question answer message");
+
+        let remote_vk: String = self.did_doc.recipient_keys().get(0).cloned()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot handle Response: Remote Verkey not found"))?;
+
+        match answer.verify(&remote_vk) {
+            Ok(()) => {},
+            Err(_) => {
+                let thread = answer.thread.clone()
+                    .increment_sender_order()
+                    .update_received_order(&self.did_doc.id);
+
+                let problem_report = ProblemReport::create()
+                    .set_explain(format!("Answer signature verification failed for pairwise verkey {:?}", remote_vk))
+                    .set_thread(thread.clone());
+
+                agent_info.send_message(&problem_report.to_a2a_message(), &self.did_doc).ok();
+            }
+        }
+
+        trace!("CompleteState:handle_answer <<<");
+        Ok(())
+    }
+
+    pub fn handle_ping_response(&self, ping_response: PingResponse) -> VcxResult<()> {
+        trace!("CompleteState:handle_ping_response >>> ping_response: {:?}", secret!(ping_response));
+        debug!("handling received connection ping response message");
+        Ok(())
+    }
+
+    pub fn handle_disclosed(&self, disclosed: &Disclose) -> VcxResult<()> {
+        trace!("CompleteState:handle_disclosed >>> disclosed: {:?}", secret!(disclosed));
+        debug!("handling received connection disclosed message");
+        Ok(())
+    }
+
+    pub fn handle_question(&self, question: &Question) -> VcxResult<()> {
+        trace!("CompleteState:handle_question >>> question: {:?}", secret!(question));
+        debug!("handling received connection query message");
+        Ok(())
+    }
+
+    pub fn handle_committed_question(&self, question: &CommittedQuestion) -> VcxResult<()> {
+        trace!("CompleteState:handle_committed_question >>> question: {:?}", secret!(question));
+        debug!("handling received connection committed query message");
+        Ok(())
+    }
+
+    pub fn handle_committed_answer(&self, answer: &CommittedAnswer) -> VcxResult<()> {
+        trace!("CompleteState:handle_committed_answer >>> answer: {:?}", secret!(answer));
+        debug!("handling received connection committed answer message");
         Ok(())
     }
 
@@ -479,8 +716,11 @@ impl CompleteState {
     }
 
     pub fn warn_if_onetime_connection(&self) {
-        if self.outofband_invite.is_some() {
-            warn!("You are using one-time connection. The other side of communication might have erased it already")
+        match self.invitation.as_ref() {
+            Some(Invitations::OutofbandInvitation(invitation)) if invitation.handshake_protocols.is_empty() => {
+                warn!("You are using one-time connection. The other side of communication might have erased it already")
+            }
+            _ => {}
         }
     }
 }
@@ -496,6 +736,7 @@ fn _handle_ping(ping: &Ping, agent_info: &AgentInfo, did_doc: &DidDoc) -> VcxRes
 
 impl DidExchangeSM {
     pub fn new(actor: Actor, source_id: &str, meta: Option<OutofbandMeta>) -> Self {
+        debug!("creating new connection state object");
         match actor {
             Actor::Inviter => {
                 DidExchangeSM {
@@ -549,60 +790,61 @@ impl DidExchangeSM {
     }
 
     pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
-        trace!("DidExchangeSM::find_message_to_handle >>> messages: {:?}", messages);
+        trace!("DidExchangeSM::find_message_to_handle >>> messages: {:?}", secret!(messages));
+        debug!("DidExchangeSM: Finding message to update state");
 
         for (uid, message) in messages {
             match self.state {
                 ActorDidExchangeState::Inviter(DidExchangeState::Invited(_)) => {
                     match message {
                         request @ A2AMessage::ConnectionRequest(_) => {
-                            debug!("Inviter received ConnectionRequest message");
+                            debug!("DidExchangeSM: Inviter received ConnectionRequest message");
                             return Some((uid, request));
                         }
                         problem_report @ A2AMessage::ConnectionProblemReport(_) => {
-                            debug!("Inviter received ProblemReport message");
+                            debug!("DidExchangeSM: Inviter received ProblemReport message");
                             return Some((uid, problem_report));
                         }
                         message @ _ => {
-                            debug!("Inviter received unexpected message: {:?}", message);
+                            warn!("DidExchangeSM: Unexpected message received in Invited state: {:?}", message);
                         }
                     }
                 }
                 ActorDidExchangeState::Invitee(DidExchangeState::Requested(_)) => {
                     match message {
                         response @ A2AMessage::ConnectionResponse(_) => {
-                            debug!("Invitee received ConnectionResponse message");
+                            debug!("DidExchangeSM: Invitee received ConnectionResponse message");
                             return Some((uid, response));
                         }
                         problem_report @ A2AMessage::ConnectionProblemReport(_) => {
-                            debug!("Invitee received ProblemReport message");
+                            debug!("DidExchangeSM: Invitee received ProblemReport message");
                             return Some((uid, problem_report));
                         }
                         message @ _ => {
-                            debug!("Invitee received unexpected message: {:?}", message);
+                            warn!("DidExchangeSM: Unexpected message received in Requested state: {:?}", message);
                         }
                     }
                 }
                 ActorDidExchangeState::Inviter(DidExchangeState::Responded(_)) => {
                     match message {
                         ack @ A2AMessage::Ack(_) => {
-                            debug!("Ack message received");
+                            debug!("DidExchangeSM: Ack message received");
                             return Some((uid, ack));
                         }
                         ping @ A2AMessage::Ping(_) => {
-                            debug!("Ping message received");
+                            debug!("DidExchangeSM: Ping message received");
                             return Some((uid, ping));
                         }
                         ping @ A2AMessage::PingResponse(_) => {
-                            debug!("PingResponse message received");
+                            debug!("DidExchangeSM: PingResponse message received");
                             return Some((uid, ping));
                         }
                         problem_report @ A2AMessage::ConnectionProblemReport(_) => {
-                            debug!("ProblemReport message received");
+                            debug!("DidExchangeSM: ProblemReport message received");
                             return Some((uid, problem_report));
                         }
                         message @ _ => {
-                            debug!("Unexpected message received in Responded state: {:?}", message);
+                            warn!("DidExchangeSM: Unexpected message received in Responded state: {:?}", message);
                         }
                     }
                 }
@@ -610,37 +852,62 @@ impl DidExchangeSM {
                 ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)) => {
                     match message {
                         ping @ A2AMessage::Ping(_) => {
-                            debug!("Ping message received");
+                            debug!("DidExchangeSM: Ping message received");
                             return Some((uid, ping));
                         }
                         ping_response @ A2AMessage::PingResponse(_) => {
-                            debug!("PingResponse message received");
+                            debug!("DidExchangeSM: PingResponse message received");
                             return Some((uid, ping_response));
                         }
                         query @ A2AMessage::Query(_) => {
-                            debug!("Query message received");
+                            debug!("DidExchangeSM: Query message received");
                             return Some((uid, query));
                         }
                         disclose @ A2AMessage::Disclose(_) => {
-                            debug!("Disclose message received");
+                            debug!("DidExchangeSM: Disclose message received");
                             return Some((uid, disclose));
                         }
+                        question @ A2AMessage::Question(_) => {
+                            debug!("DidExchangeSM: Question message received");
+                            return Some((uid, question));
+                        }
+                        answer @ A2AMessage::Answer(_) => {
+                            debug!("DidExchangeSM: Answer message received");
+                            return Some((uid, answer));
+                        }
+                        question @ A2AMessage::CommittedQuestion(_) => {
+                            debug!("CommittedQuestion message received");
+                            return Some((uid, question));
+                        }
+                        answer @ A2AMessage::CommittedAnswer(_) => {
+                            debug!("DidExchangeSM: CommittedAnswer message received");
+                            return Some((uid, answer));
+                        }
+                        reuse @ A2AMessage::HandshakeReuse(_) => {
+                            debug!("DidExchangeSM: HandshakeReuse message received");
+                            return Some((uid, reuse));
+                        }
+                        reuse_accepted @ A2AMessage::HandshakeReuseAccepted(_) => {
+                            debug!("DidExchangeSM: HandshakeReuseAccepted message received");
+                            return Some((uid, reuse_accepted));
+                        }
                         message @ _ => {
-                            debug!("Unexpected message received in Completed state: {:?}", message);
+                            warn!("DidExchangeSM: Unexpected message received in Completed state: {:?}", message);
                         }
                     }
                 }
                 _ => {
-                    debug!("Unexpected message received: message: {:?}", message);
+                    warn!("DidExchangeSM: Unexpected message received: message: {:?}", message);
                 }
             }
         }
-
+        debug!("DidExchangeSM: no message to update state");
         None
     }
 
     pub fn step(self, message: DidExchangeMessages) -> VcxResult<DidExchangeSM> {
-        trace!("DidExchangeStateSM::step >>> message: {:?}", message);
+        trace!("DidExchangeSM::step >>> message: {:?}", secret!(message));
+        debug!("DidExchangeSM: Updating state");
 
         let DidExchangeSM { source_id, mut agent_info, state } = self;
 
@@ -651,9 +918,10 @@ impl DidExchangeSM {
                         match message {
                             DidExchangeMessages::Connect() => {
                                 agent_info = agent_info.create_agent()?;
-                                state.inviter_handle_connection(&source_id, &agent_info)?
+                                state.prepare_invitation(&source_id, &agent_info)?
                             }
-                            _ => {
+                            message_ => {
+                                warn!("DidExchangeSM: Unexpected action to update state {:?}", message_);
                                 ActorDidExchangeState::Inviter(DidExchangeState::Initialized(state))
                             }
                         }
@@ -678,7 +946,7 @@ impl DidExchangeSM {
                                             .set_thread(thread.clone());
 
                                         agent_info.send_message(&problem_report.to_a2a_message(), &request.connection.did_doc).ok(); // IS is possible?
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -688,7 +956,8 @@ impl DidExchangeSM {
 
                                 ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
                             }
-                            _ => {
+                            message_ => {
+                                warn!("DidExchangeSM: Unexpected action to update state {:?}", message_);
                                 ActorDidExchangeState::Inviter(DidExchangeState::Invited(state))
                             }
                         }
@@ -704,8 +973,8 @@ impl DidExchangeSM {
                                         ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ack, thread).into()))
                                     }
                                     Err(err) => {
-                                        let (problem_report, thread) = state.send_problem_report(&agent_info, err.to_string())?;
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        state.send_problem_report(&agent_info, err.to_string())?;
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -715,8 +984,8 @@ impl DidExchangeSM {
                                         ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping, thread).into()))
                                     }
                                     Err(err) => {
-                                        let (problem_report, thread) = state.send_problem_report(&agent_info, err.to_string())?;
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        state.send_problem_report(&agent_info, err.to_string())?;
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -746,12 +1015,13 @@ impl DidExchangeSM {
                                         ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping_response, thread).into()))
                                     }
                                     Err(err) => {
-                                        let (problem_report, thread) = state.send_problem_report(&agent_info, err.to_string())?;
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        state.send_problem_report(&agent_info, err.to_string())?;
+                                        return Err(err)
                                     }
                                 }
                             }
-                            _ => {
+                            message_ => {
+                                warn!("DidExchangeSM: Unexpected action to update state {:?}", message_);
                                 ActorDidExchangeState::Inviter(DidExchangeState::Responded(state))
                             }
                         }
@@ -778,7 +1048,8 @@ impl DidExchangeSM {
                                     ActorDidExchangeState::Invitee(DidExchangeState::Completed((state, invitation).into()))
                                 }
                             }
-                            _ => {
+                            message_ => {
+                                warn!("DidExchangeSM: Unexpected action to update state {:?}", message_);
                                 ActorDidExchangeState::Invitee(DidExchangeState::Initialized(state))
                             }
                         }
@@ -788,8 +1059,10 @@ impl DidExchangeSM {
                             DidExchangeMessages::Connect() => {
                                 agent_info = agent_info.create_agent()?;
 
+                                let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
+
                                 let request = Request::create()
-                                    .set_label(source_id.to_string())
+                                    .set_label(label)
                                     .set_did(agent_info.pw_did.to_string())
                                     .set_service_endpoint(agent_info.agency_endpoint()?)
                                     .set_keys(agent_info.recipient_keys(), agent_info.routing_keys()?);
@@ -805,7 +1078,8 @@ impl DidExchangeSM {
                                 let thread = problem_report.thread.clone();
                                 ActorDidExchangeState::Invitee(DidExchangeState::Failed((state, problem_report, thread).into()))
                             }
-                            _ => {
+                            message_ => {
+                                warn!("DidExchangeSM: Unexpected action to update state {:?}", message_);
                                 ActorDidExchangeState::Invitee(DidExchangeState::Invited(state))
                             }
                         }
@@ -828,7 +1102,7 @@ impl DidExchangeSM {
                                             .set_thread(thread.clone());
 
                                         agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc).ok();
-                                        ActorDidExchangeState::Invitee(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -838,7 +1112,8 @@ impl DidExchangeSM {
 
                                 ActorDidExchangeState::Invitee(DidExchangeState::Failed((state, problem_report, thread).into()))
                             }
-                            _ => {
+                            message_ => {
+                                warn!("DidExchangeSM: Unexpected action to update state {:?}", message_);
                                 ActorDidExchangeState::Invitee(DidExchangeState::Requested(state))
                             }
                         }
@@ -855,10 +1130,13 @@ impl DidExchangeSM {
                 }
             }
         };
+
+        trace!("DidExchangeSM::step <<< state: {:?}", secret!(state));
         Ok(DidExchangeSM { source_id, agent_info, state })
     }
 
     pub fn did_doc(&self) -> Option<DidDoc> {
+        debug!("DidExchangeSM: getting remote DIDDoc");
         match self.state {
             ActorDidExchangeState::Invitee(ref state) | ActorDidExchangeState::Inviter(ref state) =>
                 match state {
@@ -889,10 +1167,14 @@ impl DidExchangeSM {
         match self.state {
             ActorDidExchangeState::Inviter(DidExchangeState::Invited(ref state)) |
             ActorDidExchangeState::Invitee(DidExchangeState::Invited(ref state)) => Some(state.invitation.clone()),
+            ActorDidExchangeState::Inviter(DidExchangeState::Requested(ref state)) |
+            ActorDidExchangeState::Invitee(DidExchangeState::Requested(ref state)) => state.invitation.clone(),
+            ActorDidExchangeState::Inviter(DidExchangeState::Responded(ref state)) |
+            ActorDidExchangeState::Invitee(DidExchangeState::Responded(ref state)) => state.invitation.clone(),
             ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref state)) |
-            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref state)) => {
-                state.outofband_invite.as_ref().map(|invite|Invitations::OutofbandInvitation(invite.clone()))
-            }
+            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref state)) => state.invitation.clone(),
+            ActorDidExchangeState::Inviter(DidExchangeState::Failed(ref state)) |
+            ActorDidExchangeState::Invitee(DidExchangeState::Failed(ref state)) => state.invitation.clone(),
             _ => None
         }
     }
@@ -912,13 +1194,13 @@ impl DidExchangeSM {
     pub fn remote_did(&self) -> VcxResult<String> {
         self.did_doc()
             .map(|did_doc: DidDoc| did_doc.id.clone())
-            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Remote Connection DID is not set"))
+            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Remote Connection DIDDoc is not received yet"))
     }
 
     pub fn remote_vk(&self) -> VcxResult<String> {
         self.did_doc()
             .and_then(|did_doc| did_doc.recipient_keys().get(0).cloned())
-            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Remote Connection Verkey is not set"))
+            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Remote Connection DIDDoc is not received yet"))
     }
 
     pub fn prev_agent_info(&self) -> Option<&AgentInfo> {
@@ -1144,9 +1426,7 @@ pub mod test {
                 let mut request = _request();
                 request.connection.did_doc = DidDoc::default();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(request)).unwrap();
-
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Failed(_)), did_exchange_sm.state);
+                did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(request)).unwrap_err();
             }
 
             #[test]
@@ -1278,6 +1558,8 @@ pub mod test {
 
         mod find_message_to_handle {
             use super::*;
+            use v3::messages::questionanswer::question::tests::_question;
+            use v3::messages::questionanswer::answer::tests::_answer;
 
             #[test]
             fn test_find_message_to_handle_from_null_state() {
@@ -1458,6 +1740,32 @@ pub mod test {
                     assert_eq!("key_3", uid);
                     assert_match!(A2AMessage::Disclose(_), message);
                 }
+
+                // Question
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Question(_question())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Question(_), message);
+                }
+
+                // Answer
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Answer(_answer())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Answer(_), message);
+                }
             }
         }
 
@@ -1589,7 +1897,7 @@ pub mod test {
 
                 match did_exchange_sm.state {
                     ActorDidExchangeState::Invitee(DidExchangeState::Completed(state)) => {
-                        assert!(state.outofband_invite.is_some());
+                        assert!(state.invitation.is_some());
                         assert_eq!(invitation.id.to_string(), state.thread.pthid.unwrap());
                         Ok(())
                     }
@@ -1679,9 +1987,7 @@ pub mod test {
                 let mut signed_response = _signed_response();
                 signed_response.connection_sig.signature = String::from("other");
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(signed_response)).unwrap();
-
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Failed(_)), did_exchange_sm.state);
+                did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(signed_response)).unwrap_err();
             }
 
             #[test]
@@ -1761,6 +2067,8 @@ pub mod test {
 
         mod find_message_to_handle {
             use super::*;
+            use v3::messages::questionanswer::question::tests::_question;
+            use v3::messages::questionanswer::answer::tests::_answer;
 
             #[test]
             fn test_find_message_to_handle_from_invited_state() {
@@ -1885,6 +2193,32 @@ pub mod test {
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_3", uid);
                     assert_match!(A2AMessage::Disclose(_), message);
+                }
+
+                // Question
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Question(_question())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Question(_), message);
+                }
+
+                // Answer
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Answer(_answer())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Answer(_), message);
                 }
             }
         }

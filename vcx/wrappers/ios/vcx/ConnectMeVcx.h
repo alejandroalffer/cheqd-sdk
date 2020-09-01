@@ -82,6 +82,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)initWithConfig:(NSString *)config
             completion:(void (^)(NSError *error))completion;
 
+- (void)initPool:(NSString *)poolConfig
+            completion:(void (^)(NSError *error))completion;
+
 - (void)agentProvisionAsync:(NSString *)config
                  completion:(void (^)(NSError *error, NSString *config))completion;
 
@@ -145,6 +148,11 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                      invite:(NSString *)invite
              withCompletion:(void (^)(NSError *error))completion;
 
+- (void)connectionSendAnswer:(VcxHandle)connectionHandle
+                    question:(NSString *)question
+                      answer:(NSString *)answer
+             withCompletion:(void (^)(NSError *error))completion;
+
 - (void)connectionSignData:(VcxHandle)connectionHandle
                   withData:(NSData *)dataRaw
             withCompletion:(void (^)(NSError *error, NSData *signature_raw, vcx_u32_t signature_len))completion;
@@ -169,6 +177,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 
 - (void)getCredential:(NSInteger )credentailHandle
            completion:(void (^)(NSError *error, NSString *credential))completion;
+
+- (void)deleteCredential:(NSInteger )credentialHandle
+              completion:(void (^)(NSError *error))completion;
 
 - (void)credentialCreateWithOffer:(NSString *)sourceId
                             offer:(NSString *)credentialOffer
@@ -206,6 +217,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
         connectionHandle:(VcxHandle)connectionHandle
                  comment:(NSString *)comment
               completion:(void (^)(NSError *error))completion;
+
+- (void)credentialGetPresentationProposal:(NSInteger )credentialHandle
+                               completion:(void (^)(NSError *error, NSString *presentationProposal))completion;
 
 - (void)credentialSerialize:(NSInteger)credentialHandle
                  completion:(void (^)(NSError *error, NSString *state))completion;
@@ -337,6 +351,24 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                                   withHash:(NSString *)hash
                              withMechanism:(NSString *)mechanism
                              withTimestamp:(long)timestamp;
+
+/**
+ Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+ This function performs two steps:
+     1) Retrieves the list of all credentials stored in the opened wallet.
+     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+        correspondent to received credentials from the connected Ledger.
+
+ This helper function can be used, for instance as a background task, to refresh library cache.
+ This allows us to reduce the time taken for Proof generation by using already cached entities instead of queering the Ledger.
+
+ NOTE: Library must be already initialized (wallet and pool must be opened).
+
+ Returns: void
+*/
+
+- (void)fetchPublicEntities:(void (^)(NSError *error))completion;
+
 - (void) createWalletBackup:(NSString *)sourceID
                   backupKey:(NSString *)backupKey
                  completion:(void (^)(NSError *error, NSInteger walletBackupHandle))completion;

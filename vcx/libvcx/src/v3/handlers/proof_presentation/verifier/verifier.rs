@@ -22,7 +22,8 @@ impl Verifier {
                   revocation_details: String,
                   name: String) -> VcxResult<Verifier> {
         trace!("Verifier::create >>> source_id: {:?}, requested_attrs: {:?}, requested_predicates: {:?}, revocation_details: {:?}, name: {:?}",
-               source_id, requested_attrs, requested_predicates, revocation_details, name);
+               source_id, secret!(requested_attrs), secret!(requested_predicates), secret!(revocation_details), secret!(name));
+        debug!("Verifier {}: Creating Verifier state object", source_id);
 
         let presentation_request =
             PresentationRequestData::create()
@@ -44,10 +45,17 @@ impl Verifier {
         self.verifier_sm.state()
     }
 
-    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
-        trace!("Verifier::update_state >>> message: {:?}", message);
+    pub fn presentation_status(&self) -> u32 {
+        trace!("Verifier::presentation_state >>>");
+        debug!("Verifier {}: Getting presentation status", self.get_source_id());
+        self.verifier_sm.presentation_status()
+    }
 
-        if !self.verifier_sm.has_transitions() { return Ok(()); }
+    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<u32> {
+        trace!("Verifier::update_state >>> message: {:?}", secret!(message));
+        debug!("Verifier {}: Updating state", self.get_source_id());
+
+        if !self.verifier_sm.has_transitions() { return Ok(self.state()); }
 
         if let Some(message_) = message {
             return self.update_state_with_message(message_);
@@ -57,7 +65,7 @@ impl Verifier {
             Some(agent_info) => agent_info.clone(),
             None => {
                 warn!("Could not update Verifier state: no information about Connection.");
-                return Ok(());
+                return Ok(self.state());
             }
         };
 
@@ -68,18 +76,26 @@ impl Verifier {
             agent_info.update_message_status(uid)?;
         };
 
-        Ok(())
+        let state = self.state();
+
+        trace!("Verifier::update_state <<< state: {:?}", state);
+        Ok(state)
     }
 
-    pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
-        trace!("Verifier::update_state_with_message >>> message: {:?}", message);
+    pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<u32> {
+        trace!("Verifier::update_state_with_message >>> message: {:?}", secret!(message));
+        debug!("Verifier {}: Updating state with message", self.get_source_id());
 
         let message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state with message: Message deserialization failed: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                              format!("Cannot updated Prover state with messages: Message deserialization failed with: {:?}", err)))?;
 
         self.handle_message(message.into())?;
 
-        Ok(())
+        let state = self.state();
+
+        trace!("Verifier::update_state_with_message <<< state: {:?}", state);
+        Ok(state)
     }
 
     pub fn handle_message(&mut self, message: VerifierMessages) -> VcxResult<()> {
@@ -88,31 +104,37 @@ impl Verifier {
     }
 
     pub fn verify_presentation(&mut self, presentation: Presentation) -> VcxResult<()> {
-        trace!("Verifier::verify_presentation >>> presentation: {:?}", presentation);
+        trace!("Verifier::verify_presentation >>> presentation: {:?}", secret!(presentation));
+        debug!("Verifier {}: Verifying presentation", self.get_source_id());
         self.step(VerifierMessages::PresentationReceived(presentation))
     }
 
     pub fn send_presentation_request(&mut self, connection_handle: u32) -> VcxResult<()> {
         trace!("Verifier::send_presentation_request >>> connection_handle: {:?}", connection_handle);
+        debug!("Verifier {}: Sending presentation request", self.get_source_id());
         self.step(VerifierMessages::SendPresentationRequest(connection_handle))
     }
 
     pub fn generate_presentation_request_msg(&self) -> VcxResult<String> {
         trace!("Verifier::generate_presentation_request_msg >>>");
+        debug!("Verifier {}: Generating presentation request", self.get_source_id());
 
         let proof_request: ProofRequestMessage = self.verifier_sm.presentation_request()?.try_into()?;
 
         ::serde_json::to_string(&proof_request)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
+                                              format!("Cannot serialize ProofMessage. Err: {:?}", err)))
     }
 
     pub fn get_presentation(&self) -> VcxResult<String> {
         trace!("Verifier::get_presentation >>>");
+        debug!("Verifier {}: Getting presentation", self.get_source_id());
 
         let proof: ProofMessage = self.verifier_sm.presentation()?.try_into()?;
 
         ::serde_json::to_string(&proof)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
+                                              format!("Cannot serialize ProofMessage. Err: {:?}", err)))
     }
 
     pub fn step(&mut self, message: VerifierMessages) -> VcxResult<()> {

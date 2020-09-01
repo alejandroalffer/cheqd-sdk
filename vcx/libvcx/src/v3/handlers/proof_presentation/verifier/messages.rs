@@ -21,7 +21,8 @@ impl From<A2AMessage> for VerifierMessages {
             A2AMessage::PresentationProposal(presentation_proposal) => {
                 VerifierMessages::PresentationProposalReceived(presentation_proposal)
             }
-            A2AMessage::CommonProblemReport(report) => {
+            A2AMessage::CommonProblemReport(report) |
+            A2AMessage::PresentationReject(report)=> {
                 VerifierMessages::PresentationRejectReceived(report)
             }
             _ => {

@@ -31,27 +31,28 @@ test {
     useJUnitPlatform()
 }
 
-task("buildJavadoc", type: Javadoc) {    
-    title = "VCX SDK ${version()}"
-    failOnError = false
-    source = sourceSets.main.java.srcDirs
-    classpath += files(sourceSets.main.runtimeClasspath)
-    destinationDir = file("${project.docsDir}/javadoc-${version()}")
-    options {
-        links("https://docs.oracle.com/javase/8/docs/api/")
-    }
+static def versionMajor() {
+    return '0.9.4'
 }
-
-task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
-    baseName = fullVersionName()
-    classifier = 'javadoc'
-    from tasks["buildJavadoc"].destinationDir
-}
-
-build.finalizedBy(buildJavadocJar)
+// Disabled until fix
+// task("buildJavadoc", type: Javadoc) {
+//    title = "VCX SDK ${version()}"
+//    failOnError = false
+//    source = sourceSets.main.java.srcDirs
+//    classpath += files(sourceSets.main.runtimeClasspath)
+//    destinationDir = file("${project.docsDir}/javadoc-${version()}")
+//}
+//
+//task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
+//    baseName = fullVersionName()
+//    classifier = 'javadoc'
+//    from tasks["buildJavadoc"].destinationDir
+//}
+//
+//build.finalizedBy(buildJavadocJar)
 
 static def version() {
-    String version = "0.9.2"
+    String version = "0.9.3"
     String suffix = System.getenv("CI_PIPELINE_IID")
     String branch = System.getenv("CI_COMMIT_REF_SLUG")
     if (suffix != null && !branch.equals("stable")) {

@@ -92,7 +92,7 @@ class IssuerCredential(VcxStateful):
             Create a Issuer Credential object that provides a credential for an enterprise's user
             Assumes a credential definition has been already written to the ledger.
 
-            :param source_id: Tag associated by user of sdk
+            :param source_id: Enterprise's personal identification for the credential, should be unique.
             :param attrs: attributes that will form the credential
             :param cred_def_handle: Handle from previously created credential def object
             :param name: Name given to the Credential

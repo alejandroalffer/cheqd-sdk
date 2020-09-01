@@ -19,6 +19,8 @@ pub mod test {
     use v3::messages::a2a::A2AMessage;
     use v3::handlers::connection::types::OutofbandMeta;
     use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
+    use utils::libindy::anoncreds::prover_get_credentials;
+    use utils::libindy::types::CredentialInfo;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -429,7 +431,14 @@ pub mod test {
             presentation_request_json
         }
 
+        pub fn get_credentials(&self) -> Vec<CredentialInfo> {
+            self.activate();
+            prover_get_credentials().unwrap()
+        }
+
         pub fn get_credentials_for_presentation(&self) -> serde_json::Value {
+            self.activate();
+
             let credentials = ::disclosed_proof::retrieve_credentials(self.presentation_handle).unwrap();
             let credentials: ::std::collections::HashMap<String, ::serde_json::Value> = ::serde_json::from_str(&credentials).unwrap();
 
@@ -500,6 +509,12 @@ pub mod test {
             let agent_info = ::connection::get_completed_connection(self.connection_handle).unwrap();
             agent_info.agent.update_message_status(uid).unwrap();
         }
+
+        pub fn delete_credential(&self) {
+            self.activate();
+            ::credential::delete_credential(self.credential_handle).unwrap();
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, ::disclosed_proof::get_state(self.presentation_handle).unwrap());
+        }
     }
 
     impl Drop for Faber {
@@ -547,12 +562,17 @@ pub mod test {
         alice.accept_offer();
         faber.send_credential();
         alice.accept_credential();
+        assert_eq!(1, alice.get_credentials().len());
 
         // Credential Presentation
         faber.request_presentation();
         alice.send_presentation();
         faber.verify_presentation();
         alice.ensure_presentation_verified();
+
+        // Alice delete credential
+        alice.delete_credential();
+        assert_eq!(0, alice.get_credentials().len());
     }
 
     #[cfg(feature = "aries")]
@@ -733,6 +753,9 @@ pub mod test {
 
         faber.verify_presentation();
     }
+
+    #[cfg(feature = "aries")]
+    use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 
     #[cfg(feature = "aries")]
     #[test]

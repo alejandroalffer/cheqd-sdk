@@ -53,7 +53,7 @@ public class SchemaApi extends VcxJava.API {
         ParamGuard.notNullOrWhiteSpace(schemaName, "schemaName");
         ParamGuard.notNullOrWhiteSpace(version, "version");
         ParamGuard.notNullOrWhiteSpace(data, "data");
-        logger.debug("schemaCreate() called with: sourceId = [" + sourceId + "], schemaName = [" + schemaName + "], version = [" + version + "]" + " data = <" + data + ">" + " payment_handle = <" + paymentHandle + ">");
+        logger.debug("schemaCreate() called with: sourceId = [" + sourceId + "], schemaName = [****], version = [****]" + " data = <****>" + " payment_handle = <" + paymentHandle + ">");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
@@ -73,7 +73,7 @@ public class SchemaApi extends VcxJava.API {
     private static Callback schemaSerializeHandle = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String serializedData) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], serializedData = [" + serializedData + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], serializedData = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             String result = serializedData;
@@ -127,7 +127,7 @@ public class SchemaApi extends VcxJava.API {
 	 */
     public static CompletableFuture<Integer> schemaDeserialize(String schemaData) throws VcxException {
         ParamGuard.notNull(schemaData, "schemaData");
-        logger.debug("schemaDeserialize() called with: schemaData = [" + schemaData + "]");
+        logger.debug("schemaDeserialize() called with: schemaData = [****]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
@@ -143,7 +143,7 @@ public class SchemaApi extends VcxJava.API {
     private static Callback schemaGetAttributesCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err,int schemaHandle, String schemaAttributes) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], schemaHandle = [" + schemaHandle +  "],  schemaAttributes = [" + schemaAttributes + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], schemaHandle = [" + schemaHandle +  "],  schemaAttributes = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             future.complete(schemaAttributes);
@@ -162,7 +162,7 @@ public class SchemaApi extends VcxJava.API {
 	 */
     public static CompletableFuture<String> schemaGetAttributes( String sourceId, String schemaId) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
-        logger.debug("schemaGetAttributes() called with: sourceId = [" + sourceId + "], schemaHandle = [" + schemaId + "]");
+        logger.debug("schemaGetAttributes() called with: sourceId = [" + sourceId + "], schemaHandle = [****]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
         int result = LibVcx.api.vcx_schema_get_attributes(commandHandle, sourceId,schemaId, schemaGetAttributesCB);
@@ -173,7 +173,7 @@ public class SchemaApi extends VcxJava.API {
     private static Callback schemaGetSchemaID = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String schemaId) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], schemaId = [" + schemaId + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], schemaId = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             future.complete(schemaId);
@@ -223,7 +223,7 @@ public class SchemaApi extends VcxJava.API {
     private static Callback schemaPrepareForEndorserCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int command_handle, int err, int handle, String transaction) {
-            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], handle = [" + handle + "], transaction = [" + transaction + "]");
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], handle = [" + handle + "], transaction = [****]");
             CompletableFuture<SchemaPrepareForEndorserResult> future = (CompletableFuture<SchemaPrepareForEndorserResult>) removeFuture(command_handle);
             if (!checkCallback(future, err)) return;
             SchemaPrepareForEndorserResult result = new SchemaPrepareForEndorserResult(handle, transaction);
@@ -259,7 +259,7 @@ public class SchemaApi extends VcxJava.API {
         ParamGuard.notNull(version, "version");
         ParamGuard.notNull(data, "data");
         ParamGuard.notNull(endorser, "endorserendorser");
-	    logger.debug("schemaCreate() called with: sourceId = [" + sourceId + "], schemaName = [" + schemaName + "], version = [" + version + "]" + " data = <" + data + ">" + " endorser = <" + endorser + ">");
+	    logger.debug("schemaCreate() called with: sourceId = [" + sourceId + "], schemaName = [****], version = [****]" + " data = <****>" + " endorser = <****>");
         CompletableFuture<SchemaPrepareForEndorserResult> future = new CompletableFuture<SchemaPrepareForEndorserResult>();
         int commandHandle = addFuture(future);
 

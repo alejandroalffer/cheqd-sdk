@@ -67,4 +67,10 @@ public class VcxUtilsTest {
         assertNotNull(message);
 
     }
+
+    @Test
+    @DisplayName("fetch public entities")
+    void vcxFetchPublicEntities() throws VcxException, ExecutionException, InterruptedException {
+        TestHelper.getResultFromFuture(UtilsApi.vcxFetchPublicEntities());
+    }
 }

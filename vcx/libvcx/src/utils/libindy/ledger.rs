@@ -47,8 +47,8 @@ pub fn libindy_build_schema_request(submitter_did: &str, data: &str) -> VcxResul
         .map_err(VcxError::from)
 }
 
-pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
-                                               credential_def_json: &str) -> VcxResult<String> {
+pub fn libindy_build_create_credential_def_request(submitter_did: &str,
+                                                   credential_def_json: &str) -> VcxResult<String> {
     ledger::build_cred_def_request(submitter_did, credential_def_json)
         .wait()
         .map_err(VcxError::from)
@@ -65,7 +65,7 @@ pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
     let get_author_agreement_response = libindy_submit_request(&get_author_agreement_request)?;
 
     let get_author_agreement_response = serde_json::from_str::<serde_json::Value>(&get_author_agreement_response)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("Could not parse Ledger response for GET TAA. Err: {:?}", err)))?;
 
     let mut author_agreement_data = get_author_agreement_response["result"]["data"].as_object()
         .map_or(json!({}), |data| json!(data));
@@ -76,7 +76,7 @@ pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
     let get_acceptance_mechanism_response = libindy_submit_request(&get_acceptance_mechanism_request)?;
 
     let get_acceptance_mechanism_response = serde_json::from_str::<serde_json::Value>(&get_acceptance_mechanism_response)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("Could not parse Ledger response for GET TAA AML. Err: {:?}", err)))?;
 
     if let Some(aml) = get_acceptance_mechanism_response["result"]["data"]["aml"].as_object() {
         author_agreement_data["aml"] = json!(aml);
@@ -236,7 +236,7 @@ pub mod auth_rule {
         field: String,
         old_value: Option<String>,
         new_value: Option<String>,
-        constraint: Constraint
+        constraint: Constraint,
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -255,7 +255,7 @@ pub mod auth_rule {
         let auth_rules = AUTH_RULES.lock().unwrap();
 
         let fees: HashMap<String, String> = ::serde_json::from_str(rules_fee)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize fees: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Fees: {:?}", err)))?;
 
         let mut auth_rules: Vec<AuthRule> = auth_rules.clone();
 
@@ -272,19 +272,25 @@ pub mod auth_rule {
 
     fn _send_auth_rules(submitter_did: &str, data: &Vec<AuthRule>) -> VcxResult<()> {
         let data = serde_json::to_string(&data)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize auth rules: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
+                                              format!("Cannot serialize auth rules: {:?}", err)))?;
 
         let auth_rules_request = libindy_build_auth_rules_request(submitter_did, &data)?;
 
-        let response = ledger::sign_and_submit_request(get_pool_handle()?, get_wallet_handle(), submitter_did, &auth_rules_request)
+        let response = ledger::sign_and_submit_request(get_pool_handle()?,
+                                                       get_wallet_handle(),
+                                                       submitter_did,
+                                                       &auth_rules_request)
             .wait()?;
 
         let response: serde_json::Value = ::serde_json::from_str(&response)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
+                                              format!("Could not parse Ledger response for SET AUTH_RULES. Err: {:?}", err)))?;
 
         match response["op"].as_str().unwrap_or_default() {
             "REPLY" => Ok(()),
-            _ => Err(VcxError::from(VcxErrorKind::InvalidLedgerResponse))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
+                                        format!("Could not submit AUTH_RULES transaction on the Ledger. Response: {:?}", response)))?
         }
     }
 
@@ -295,11 +301,17 @@ pub mod auth_rule {
         }
 
         GET_DEFAULT_AUTH_CONSTRAINTS.call_once(|| {
-            let get_auth_rule_request = ::indy::ledger::build_get_auth_rule_request(None, None, None, None, None, None).wait().unwrap();
-            let get_auth_rule_response = ::utils::libindy::ledger::libindy_submit_request(&get_auth_rule_request).unwrap();
+            let get_auth_rule_request = ::indy::ledger::build_get_auth_rule_request(None,
+                                                                                    None,
+                                                                                    None,
+                                                                                    None,
+                                                                                    None,
+                                                                                    None).wait().unwrap();
+            let get_auth_rule_response = libindy_submit_request(&get_auth_rule_request).unwrap();
 
             let response: GetAuthRuleResponse = ::serde_json::from_str(&get_auth_rule_response)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, err)).unwrap();
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
+                                                  format!("Could not parse Ledger response for GET ALL_AUTH_RULES. Err: {:?}", err))).unwrap();
 
             let mut auth_rules = AUTH_RULES.lock().unwrap();
             *auth_rules = response.result.data;
@@ -332,11 +344,13 @@ pub mod auth_rule {
         let response_json = libindy_submit_request(&request)?;
 
         let response: serde_json::Value = ::serde_json::from_str(&response_json)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
+                                              format!("Could not parse Ledger response for GET_AUTH_RULE. Err: {:?}", err)))?;
 
         match response["op"].as_str().unwrap_or_default() {
             "REPLY" => Ok(response_json),
-            _ => Err(VcxError::from(VcxErrorKind::InvalidLedgerResponse))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
+                                        format!("Could not get the list of GET_AUTH_RULE set on the Ledger. Response: {:?}", response)))?
         }
     }
 }
@@ -352,23 +366,29 @@ pub fn get_role(did: &str) -> VcxResult<String> {
 
     let get_nym_resp = get_nym(&did)?;
     let get_nym_resp: serde_json::Value = serde_json::from_str(&get_nym_resp)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
+                                          format!("Could not parse Ledger response for GET_NYM. Err: {:?}", err)))?;
+
     let data: serde_json::Value = serde_json::from_str(&get_nym_resp["result"]["data"].as_str().unwrap_or("{}"))
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
+                                          format!("Could not parse Ledger response for GET_NYM. Err: {:?}", err)))?;
+
     let role = data["role"].as_str().unwrap_or("null").to_string();
     Ok(role)
 }
 
 pub fn parse_response(response: &str) -> VcxResult<Response> {
     serde_json::from_str::<Response>(response)
-        .to_vcx(VcxErrorKind::InvalidJson, "Cannot deserialize transaction response")
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
+                                          format!("Could not parse Ledger response. Err: {:?}", err)))
 }
 
-pub fn libindy_get_schema(submitter_did: &str, schema_id: &str) -> VcxResult<String> {
+pub fn libindy_get_schema(schema_id: &str) -> VcxResult<String> {
     let pool_handle = get_pool_handle()?;
     let wallet_handle = get_wallet_handle();
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    cache::get_schema(pool_handle, wallet_handle, submitter_did, schema_id, "{}")
+    cache::get_schema(pool_handle, wallet_handle, &submitter_did, schema_id, "{}")
         .wait()
         .map_err(VcxError::from)
 }
@@ -395,6 +415,8 @@ pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
 }
 
 pub fn endorse_transaction(transaction_json: &str) -> VcxResult<()> {
+    debug!("Ledger endorsing transaction");
+
     //TODO Potentially VCX should handle case when endorser would like to pay fee
     if settings::indy_mocks_enabled() { return Ok(()); }
 
@@ -407,7 +429,9 @@ pub fn endorse_transaction(transaction_json: &str) -> VcxResult<()> {
 
     match parse_response(&response)? {
         Response::Reply(_) => Ok(()),
-        Response::Reject(res) | Response::ReqNACK(res) => Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("{:?}", res.reason))),
+        Response::Reject(res) | Response::ReqNACK(res) =>
+            Err(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
+                                   format!("Could not submit transaction on the Ledger. Response: {:?}", res)))?
     }
 }
 
@@ -482,7 +506,7 @@ pub struct Request {
     pub identifier: String,
     pub signature: Option<String>,
     pub signatures: Option<HashMap<String, String>>,
-    pub endorser: Option<String>
+    pub endorser: Option<String>,
 }
 
 #[serde(tag = "op")]
@@ -506,7 +530,7 @@ pub struct Reject {
 #[serde(untagged)]
 pub enum Reply {
     ReplyV0(ReplyV0),
-    ReplyV1(ReplyV1)
+    ReplyV1(ReplyV1),
 }
 
 #[derive(Debug, Deserialize)]

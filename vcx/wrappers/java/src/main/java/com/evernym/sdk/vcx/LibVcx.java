@@ -23,6 +23,7 @@ public abstract class LibVcx {
         public int vcx_init_with_config(int command_handle, String config, Callback cb);
         public int vcx_init(int command_handle, String config_path, Callback cb);
         public int vcx_init_minimal(String config);
+        public int vcx_init_pool(int command_handle, String pool_config, Callback cb);
 
         public String vcx_error_c_message(int error_code);
         public String vcx_version();
@@ -30,13 +31,17 @@ public abstract class LibVcx {
         public int vcx_reset();
 
         /**
-         * Sovtoken & nullpay
+         * Init Sovtoken payment library
+         *
+         * @return  error code
          */
         public int sovtoken_init();
 //        public int nullpay_init();
 
         /**
          * Helper API for testing purposes.
+         *
+         * @param msg   message to mock next Agency response in case testing mode is enabled.
          */
         public void vcx_set_next_agency_response(int msg);
 
@@ -233,6 +238,11 @@ public abstract class LibVcx {
         public int vcx_connection_send_reuse(int command_handle, int connection_handle, String invite, Callback cb);
 
         /**
+         * Send answer on received question message according to Aries question-answer protocol.
+         */
+        public int vcx_connection_send_answer(int command_handle, int connection_handle, String question, String answer, Callback cb);
+
+        /**
          * The API represents an Issuer side in credential issuance process.
          * Assumes that pairwise connection between Issuer and Holder is already established.
          */
@@ -291,6 +301,12 @@ public abstract class LibVcx {
          * Create a new Proof object that requests a proof for an enterprise
          */
         public int vcx_proof_create(int command_handle, String source_id, String requested_attrs, String requested_predicates, String revocationInterval, String name, Callback cb);
+
+
+        /**
+         * Create a new Proof object based on the given Presentation Proposal message
+         */
+        public int vcx_proof_create_with_proposal(int command_handle, String source_id, String presentation_proposal, String name, Callback cb);
 
         /**
          * Sends a proof request to pairwise connection.
@@ -542,8 +558,8 @@ public abstract class LibVcx {
         /// submitter_did: DID of the request sender.
         /// aml: a set of new acceptance mechanisms:
         /// {
-        ///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
-        ///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+        ///     "<acceptance mechanism label 1>": { acceptance mechanism description 1},
+        ///     "<acceptance mechanism label 2>": { acceptance mechanism description 2},
         ///     ...
         /// }
         /// version: a version of new acceptance mechanisms. (Note: unique on the Ledger)
@@ -679,6 +695,12 @@ public abstract class LibVcx {
         /** Send a Credential rejection to the connection. */
         public int vcx_credential_reject(int command_handle, int credential_handle, int connection_handle, String comment, Callback cb);
 
+        /** Build Presentation Proposal message for revealing Credential data. */
+        public int vcx_credential_get_presentation_proposal_msg(int command_handle, int credential_handle, Callback cb);
+
+        /** Delete a credential from the wallet and release it from memory. */
+        public int vcx_delete_credential(int command_handle, int credential_handle, Callback cb);
+
         /**
          * wallet object
          *
@@ -767,6 +789,9 @@ public abstract class LibVcx {
         /** Update the status of messages from the specified connection */
         public int vcx_messages_update_status(int command_handle, String messageStatus, String msgJson, Callback cb);
 
+        /** Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials. */
+        public int vcx_fetch_public_entities(int command_handle, Callback cb);
+
         /**
          * Object representing Credential Definition publishing on the Ledger and used for the Issuance.
          */
@@ -843,7 +868,8 @@ public abstract class LibVcx {
     /**
      * Initializes the API with the path to the C-Callable library.
      *
-     * @param searchPath The path to the directory containing the C-Callable library file.
+     * @param searchPath  The path to the directory containing the C-Callable library file.
+     * @param libraryName The name of the library to initialize.
      */
     public static void init(String searchPath, String libraryName) {
 

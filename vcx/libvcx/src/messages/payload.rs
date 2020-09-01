@@ -48,6 +48,8 @@ impl Payloads {
     // Possibly this function moves out of this file.
     // On second thought, this should stick as a ConnectionError.
     pub fn encrypt(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds, thread: Option<Thread>, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
+        trace!("Payloads::encrypt >>> my_vk: {:?}, their_vk: {:?}, msg_type: {:?}, thread: {:?}", secret!(my_vk), secret!(their_vk), secret!(msg_type), secret!(thread));
+
         match (version, thread) {
             (ProtocolTypes::V1, _) => {
                 let payload = PayloadV1 {
@@ -61,7 +63,7 @@ impl Payloads {
                         VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot encrypt  payload: {}", err))
                     })?;
 
-                trace!("Sending payload: {:?}", bytes);
+                trace!("Sending payload: {:?}", secret!(bytes));
                 crypto::prep_msg(&my_vk, &their_vk, &bytes)
             }
             (ProtocolTypes::V2, Some(thread)) |
@@ -70,7 +72,7 @@ impl Payloads {
                     type_: PayloadTypes::build_v2(msg_type),
                     id: String::new(),
                     msg: data.to_string(),
-                    thread,
+                    thread: thread,
                 };
 
                 let message = ::serde_json::to_string(&payload)
@@ -82,7 +84,7 @@ impl Payloads {
                 let receiver_keys = ::serde_json::to_string(&vec![&their_vk])
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize receiver keys: {}", err)))?;
 
-                trace!("Sending payload: {:?}", message.as_bytes());
+                trace!("Sending payload: {:?}", secret!(message.as_bytes()));
                 crypto::pack_message(Some(my_vk), &receiver_keys, message.as_bytes())
             }
             (ProtocolTypes::V2, None) => {
@@ -103,7 +105,7 @@ impl Payloads {
                 let receiver_keys = ::serde_json::to_string(&vec![&their_vk])
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize receiver keys: {}", err)))?;
 
-                trace!("Sending payload: {:?}", message.as_bytes());
+                trace!("Sending payload: {:?}", secret!(message.as_bytes()));
                 crypto::pack_message(Some(my_vk), &receiver_keys, message.as_bytes())
             }
             (ProtocolTypes::V3, None) => {
@@ -113,28 +115,30 @@ impl Payloads {
     }
 
     pub fn decrypt(my_vk: &str, payload: &MessagePayload) -> VcxResult<(String, Option<Thread>)> {
+        trace!("Payloads::decrypt >>> my_vk: {:?}", secret!(my_vk));
+
         match payload {
             MessagePayload::V1(payload) => {
                 if let Ok(payload) = Payloads::decrypt_payload_v1(my_vk, payload) {
-                    trace!("Payloads::decrypt: decrypted V1 >> {:?}", payload);
+                    trace!("Payloads::decrypt: decrypted V1 >> {:?}", secret!(payload));
                     Ok((payload.msg, None))
                 } else {
                     let vec = to_u8(payload);
                     let json: Value = serde_json::from_slice(&vec[..])
-                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize MessagePayload: {}", err)))?;
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize MessagePayload: {}", err)))?;
 
                     let payload = match Payloads::decrypt_payload_v12(&my_vk, &json)?.msg {
                         serde_json::Value::String(_str) => _str,
                         value => value.to_string()
                     };
-                    trace!("Payloads::decrypt: decrypted V12 >> {:?}", payload);
+                    trace!("Payloads::decrypt: decrypted V12 >> {:?}", secret!(payload));
 
                     Ok((payload, None))
                 }
             }
             MessagePayload::V2(payload) => {
                 let payload = Payloads::decrypt_payload_v2(my_vk, payload)?;
-                trace!("Payloads::decrypt: decrypted V2 >> {:?}", payload);
+                trace!("Payloads::decrypt: decrypted V2 >> {:?}", secret!(payload));
                 Ok((payload.msg, Some(payload.thread)))
             }
         }
@@ -147,7 +151,7 @@ impl Payloads {
         let my_payload: PayloadV1 = rmp_serde::from_slice(&data[..])
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot decrypt payload: {}", err)))?;
 
-        debug!("decrypt_payload_v1 <<< payload: {:?}", my_payload);
+        debug!("decrypt_payload_v1 <<< payload: {:?}", secret!(my_payload));
 
         Ok(my_payload)
     }
@@ -156,7 +160,7 @@ impl Payloads {
         debug!("decrypt_payload_v2 >>>");
 
         let payload = ::serde_json::to_vec(&payload)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot represent JSON object as bytes. Err: {:?}", err)))?;
 
         let unpacked_msg = crypto::unpack_message(&payload)?;
 
@@ -176,7 +180,7 @@ impl Payloads {
             my_payload.thread.thid = Some(my_payload.id.clone());
         }
 
-        debug!("decrypt_payload_v2 <<< payload: {:?}", my_payload);
+        debug!("decrypt_payload_v2 <<< payload: {:?}", secret!(my_payload));
 
         Ok(my_payload)
     }
@@ -185,7 +189,7 @@ impl Payloads {
         debug!("decrypt_payload_v12 >>>");
 
         let payload = ::serde_json::to_vec(&payload)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot represent JSON object as bytes. Err: {:?}", err)))?;
 
         let unpacked_msg = crypto::unpack_message(&payload)?;
 
@@ -201,7 +205,7 @@ impl Payloads {
                 VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
             })?;
 
-        debug!("decrypt_payload_v12 <<< payload: {:?}", my_payload);
+        debug!("decrypt_payload_v12 <<< payload: {:?}", secret!(my_payload));
 
         Ok(my_payload)
     }

@@ -95,7 +95,7 @@ class CredentialDef(VcxStateful):
 
 
     @staticmethod
-    async def prepare_for_endorser(source_id: str, name: str, schema_id: str, endorser: str):
+    async def prepare_for_endorser(source_id: str, name: str, schema_id: str, endorser: str, tag: Optional[str] = "tag"):
         """
         Create a new CredentialDef object that will be published on the ledger by Endorser later.
         
@@ -120,13 +120,13 @@ class CredentialDef(VcxStateful):
                 credentialdef.logger.debug("vcx_prepare_for_endorser: Creating callback")
                 CredentialDef.prepare_for_endorser.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32,
                                                                             c_char_p, c_char_p, c_char_p))
-
+            print(tag)
             c_source_id = c_char_p(source_id.encode('utf-8'))
             c_name = c_char_p(name.encode('utf-8'))
             c_schema_id = c_char_p(schema_id.encode('utf-8'))
             c_endorser = c_char_p(endorser.encode('utf-8'))
             c_issuer_did = None
-            c_tag = c_char_p('tag1'.encode('utf-8'))
+            c_tag = c_char_p(tag.encode('utf-8'))
             c_config = c_char_p('{"support_revocation":false}'.encode('utf-8'))
 
             handle, transaction, _, _ = await do_call('vcx_credentialdef_prepare_for_endorser',
@@ -146,7 +146,7 @@ class CredentialDef(VcxStateful):
             credentialdef.transaction = transaction
             return credentialdef
         except KeyError:
-            raise VcxError(ErrorCode.InvalidCredentialDef)
+            raise VcxError(ErrorCode.CredentialDefNotFound)
 
     @staticmethod
     async def create_with_id(source_id: str, cred_def_id: str):
@@ -216,7 +216,7 @@ class CredentialDef(VcxStateful):
                                                               data['data']['id'])
             return credential_def
         except KeyError:
-            raise VcxError(ErrorCode.InvalidCredentialDef)
+            raise VcxError(ErrorCode.CredentialDefNotFound)
 
 
     async def get_cred_def_id(self):

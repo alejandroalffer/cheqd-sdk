@@ -5,7 +5,7 @@ use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::{PresentationRequest, PresentationRequestData};
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::proof_presentation::presentation_ack::PresentationAck;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, ProblemReportCodes};
 use v3::messages::status::Status;
 use proof::Proof;
 
@@ -105,6 +105,9 @@ impl From<(PresentationRequestSentState, ProblemReport, Thread)> for FinishedSta
 
 impl PresentationRequestSentState {
     fn verify_presentation(&self, presentation: &Presentation, thread: &Thread) -> VcxResult<Thread> {
+        trace!("PresentationRequestSentState::verify_presentation >>> presentation: {:?}", secret!(presentation));
+        debug!("verifier verifying received presentation");
+
         let mut thread = thread.clone();
 
         let valid = Proof::validate_indy_proof(&presentation.presentations_attach.content()?,
@@ -123,13 +126,15 @@ impl PresentationRequestSentState {
             self.connection.data.send_message(&A2AMessage::PresentationAck(ack), &self.connection.agent)?;
         }
 
+        trace!("PresentationRequestSentState::verify_presentation <<<");
         Ok(thread)
     }
 }
 
 impl VerifierSM {
     pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
-        trace!("VerifierSM::find_message_to_handle >>> messages: {:?}", messages);
+        trace!("VerifierSM::find_message_to_handle >>> messages: {:?}", secret!(messages));
+        debug!("Verifier: Finding message to update state");
 
         for (uid, message) in messages {
             match self.state {
@@ -140,16 +145,23 @@ impl VerifierSM {
                     match message {
                         A2AMessage::Presentation(presentation) => {
                             if presentation.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Verifier: Presentation message received");
                                 return Some((uid, A2AMessage::Presentation(presentation)));
                             }
                         }
                         A2AMessage::PresentationProposal(proposal) => {
-                            if proposal.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
-                                return Some((uid, A2AMessage::PresentationProposal(proposal)));
+                            match proposal.thread.as_ref() {
+                                Some(thread) if thread.is_reply(&state.thread.thid.clone().unwrap_or_default()) => {
+                                    debug!("Verifier: PresentationProposal message received");
+                                    return Some((uid, A2AMessage::PresentationProposal(proposal)));
+                                }
+                                _ => return None
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::PresentationReject(problem_report) => {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Verifier: PresentationReject message received");
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -161,12 +173,13 @@ impl VerifierSM {
                 }
             };
         }
-
+        debug!("verifier: no message to update state");
         None
     }
 
     pub fn step(self, message: VerifierMessages) -> VcxResult<VerifierSM> {
-        trace!("VerifierSM::step >>> message: {:?}", message);
+        trace!("VerifierSM::step >>> message: {:?}", secret!(message));
+        debug!("verifier updating state");
 
         let VerifierSM { source_id, state } = self;
 
@@ -180,12 +193,9 @@ impl VerifierSM {
                             state.presentation_request_data.clone()
                                 .set_format_version_for_did(&connection.agent.pw_did, &connection.data.did_doc.id)?;
 
-                        let title = format!("{} wants you to share {}",
-                                            ::settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME)?, presentation_request.name);
-
                         let presentation_request =
                             PresentationRequest::create()
-                                .set_comment(title)
+                                .set_comment(presentation_request.name.clone())
                                 .set_request_presentations_attach(&presentation_request)?;
 
                         let thread = Thread::new()
@@ -215,11 +225,12 @@ impl VerifierSM {
 
                                 let problem_report =
                                     ProblemReport::create()
-                                        .set_comment(err.to_string())
+                                        .set_description(ProblemReportCodes::InvalidPresentation)
+                                        .set_comment(format!("error occurred: {:?}", err))
                                         .set_thread(thread.clone());
 
                                 state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
-                                VerifierState::Finished((state, problem_report, thread).into())
+                                return Err(err)
                             }
                         }
                     }
@@ -236,7 +247,8 @@ impl VerifierSM {
 
                         let problem_report =
                             ProblemReport::create()
-                                .set_comment(String::from("PresentationProposal is not supported"))
+                                .set_description(ProblemReportCodes::Unimplemented)
+                                .set_comment(String::from("presentation-proposal message is not supported"))
                                 .set_thread(thread.clone());
 
                         state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
@@ -268,6 +280,13 @@ impl VerifierSM {
         }
     }
 
+    pub fn presentation_status(&self) -> u32 {
+        match self.state {
+            VerifierState::Finished(ref state) => state.status.code(),
+            _ => Status::Undefined.code()
+        }
+    }
+
     pub fn has_transitions(&self) -> bool {
         match self.state {
             VerifierState::Initiated(_) => false,
@@ -287,8 +306,10 @@ impl VerifierSM {
     pub fn presentation_request_data(&self) -> VcxResult<&PresentationRequestData> {
         match self.state {
             VerifierState::Initiated(ref state) => Ok(&state.presentation_request_data),
-            VerifierState::PresentationRequestSent(_) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
-            VerifierState::Finished(_) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
+            VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                                format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
+            VerifierState::Finished(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                 format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
         }
     }
 
@@ -304,11 +325,13 @@ impl VerifierSM {
 
     pub fn presentation(&self) -> VcxResult<Presentation> {
         match self.state {
-            VerifierState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not received yet")),
-            VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not received yet")),
+            VerifierState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                  format!("Verifier object {} in state {} not ready to get Presentation message", self.source_id, self.state()))),
+            VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                                format!("Verifier object {} in state {} not ready to get Presentation message", self.source_id, self.state()))),
             VerifierState::Finished(ref state) => {
                 state.presentation.clone()
-                    .ok_or(VcxError::from(VcxErrorKind::InvalidProofHandle))
+                    .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Verifier object state: `presentation` not found", self.source_id)))
             }
         }
     }
@@ -402,7 +425,6 @@ pub mod test {
 
             assert_match!(VerifierState::Finished(_), verifier_sm.state);
             assert_eq!(VcxStateType::VcxStateAccepted as u32, verifier_sm.state());
-
         }
 
         //    #[test]
@@ -529,6 +551,19 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
                     "key_2".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
+            }
+
+            // Presentation Reject
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_2".to_string() => A2AMessage::PresentationAck(_ack()),
+                    "key_3".to_string() => A2AMessage::PresentationReject(_problem_report())
                 );
 
                 let (uid, message) = verifier.find_message_to_handle(messages).unwrap();

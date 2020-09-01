@@ -21,7 +21,7 @@ public class UtilsApi extends VcxJava.API {
     private static Callback provAsyncCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String config) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], config = [" + config + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], config = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
 
@@ -58,8 +58,6 @@ public class UtilsApi extends VcxJava.API {
      *      }
      *
      * @return                populated config that can be used for library initialization.
-     *
-     * @throws VcxException   If an exception occurred in Libvcx library.
      */
     public static String vcxProvisionAgent(String config) {
         ParamGuard.notNullOrWhiteSpace(config, "config");
@@ -113,39 +111,48 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
-    /** #Params
-     config: configuration
-
-     config = {
-        protocol_type: String
-        agency_url: String,
-        pub agency_did: String,
-        agency_verkey: String,
-        wallet_name: Option(String),
-        wallet_key: String,
-        wallet_type: Option(String),
-        agent_seed: Option(String),
-        enterprise_seed: Option(String),
-        wallet_key_derivation: Option(String),
-        name: Option(String),
-        logo: Option(String),
-        path: Option(String),
-        storage_config: Option(String),
-        storage_credentials: Option(String),
-        pool_config: Option(String),
-        did_method: Option(String),
-        communication_method: Option(String),
-        webhook_url: Option(String),
-        use_latest_protocols: Option(String),
-     },
-     token: {
-           "id": String,
-           "sponsor": String, //Name of Enterprise sponsoring the provisioning
-           "nonce": String,
-           "timestamp": String,
-           "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
-           "sponsor_vk": String,
-         }
+    /**
+     * Provision an agent in the agency, populate configuration and wallet for this agent.
+     *
+     * @param  config           provisioning configuration.
+     *       {
+     *         protocol_type: String
+     *         agency_url: String,
+     *         pub agency_did: String,
+     *         agency_verkey: String,
+     *         wallet_name: Option(String),
+     *         wallet_key: String,
+     *         wallet_type: Option(String),
+     *         agent_seed: Option(String),
+     *         enterprise_seed: Option(String),
+     *         wallet_key_derivation: Option(String),
+     *         name: Option(String),
+     *         logo: Option(String),
+     *         path: Option(String),
+     *         storage_config: Option(String),
+     *         storage_credentials: Option(String),
+     *         pool_config: Option(String),
+     *         did_method: Option(String),
+     *         communication_method: Option(String),
+     *         webhook_url: Option(String),
+     *         use_latest_protocols: Option(String),
+     *      }
+     * @param  token          provisioning token.
+     *      {
+     *          This can be a push notification endpoint to contact the sponsee or
+     *          an id that the sponsor uses to reference the sponsee in its backend system
+     *          "sponsee_id": String,
+     *          "sponsor_id": String, //Persistent Id of the Enterprise sponsoring the provisioning
+     *          "nonce": String,
+     *          "timestamp": String,
+     *          "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
+     *          "sponsor_vk": String,
+     *        }
+     *
+     * @return                populated config that can be used for library initialization.
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     * 
      **/
       public static String vcxAgentProvisionWithToken(String config, String token) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(config, "config");
@@ -157,43 +164,52 @@ public class UtilsApi extends VcxJava.API {
         return result;
     }
 
-    /** config:
-     {
-      vcx_config: VcxConfig // Same config passed to agent provision
-      {
-            protocol_type: String
-            agency_url: String,
-            pub agency_did: String,
-            agency_verkey: String,
-            wallet_name: Option(String),
-            wallet_key: String,
-            wallet_type: Option(String),
-            agent_seed: Option(String),
-            enterprise_seed: Option(String),
-            wallet_key_derivation: Option(String),
-            name: Option(String),
-            logo: Option(String),
-            path: Option(String),
-            storage_config: Option(String),
-            storage_credentials: Option(String),
-            pool_config: Option(String),
-            did_method: Option(String),
-            communication_method: Option(String),
-            webhook_url: Option(String),
-            use_latest_protocols: Option(String),
-      }
-      source_id: String // Customer Id
-      com_method: {
-          type: u32 // 1 means push notifcation, its the only one registered
-          id: String,
-          value: String,
-      }
-      # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
+    /**
+     * Get Provisioning token
+     *
+     * @param  config           provisioning configuration.
+     * {
+     *     vcx_config: VcxConfig // Same config passed to agent provision
+     *     {
+     *           protocol_type: String
+     *           agency_url: String,
+     *           pub agency_did: String,
+     *           agency_verkey: String,
+     *           wallet_name: Option(String),
+     *           wallet_key: String,
+     *           wallet_type: Option(String),
+     *           agent_seed: Option(String),
+     *           enterprise_seed: Option(String),
+     *           wallet_key_derivation: Option(String),
+     *           name: Option(String),
+     *           logo: Option(String),
+     *           path: Option(String),
+     *           storage_config: Option(String),
+     *           storage_credentials: Option(String),
+     *           pool_config: Option(String),
+     *           did_method: Option(String),
+     *           communication_method: Option(String),
+     *           webhook_url: Option(String),
+     *           use_latest_protocols: Option(String),
+     *     }
+     *     sponsee_id: String,
+     *     sponsor_id: String,
+     *     com_method: {
+     *         type: u32 // 1 means push notifcation, its the only one registered
+     *         id: String,
+     *         value: String,
+     *     }
+     * }
+     *
+     * @return                provisioning token
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     *
      **/
-    public static CompletableFuture<Integer> vcxGetProvisionToken(String config) throws VcxException {
+    public static CompletableFuture<Void> vcxGetProvisionToken(String config) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(config, "config");
         logger.debug("vcxGetProvisionToken() called with: config = [****]");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_get_provision_token(
@@ -549,13 +565,51 @@ public class UtilsApi extends VcxJava.API {
      */
     public static CompletableFuture<Void> vcxEndorseTransaction(String transactionJson) throws VcxException {
         ParamGuard.notNull(transactionJson, "transactionJson");
-        logger.debug("vcxEndorseTransaction() called with: transactionJson = [" + transactionJson + "]");
+        logger.debug("vcxEndorseTransaction() called with: transactionJson = [****]");
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_endorse_transaction(
                 commandHandle, transactionJson,
                 vcxEndorseTransactionCb);
+        checkResult(result);
+        return future;
+    }
+
+    private static Callback vcxFetchPublicEntitiesCb = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(null);
+        }
+    };
+
+    /**
+     * Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+     * This function performs two steps:
+     *     1) Retrieves the list of all credentials stored in the opened wallet.
+     *     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+     *        correspondent to received credentials from the connected Ledger.
+     *
+     * This helper function can be used, for instance as a background task, to refresh library cache.
+     * This allows us to reduce the time taken for Proof generation by using already cached entities instead of queering the Ledger.
+     *
+     * NOTE: Library must be already initialized (wallet and pool must be opened).
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Void> vcxFetchPublicEntities() throws VcxException {
+        logger.debug("vcxFetchPublicEntities() called");
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_fetch_public_entities(
+                commandHandle,
+                vcxFetchPublicEntitiesCb);
         checkResult(result);
         return future;
     }

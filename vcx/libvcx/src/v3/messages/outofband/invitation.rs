@@ -9,8 +9,11 @@ const SUPPORTED_HANDSHAKE_PROTOCOL: &str = "connections/1.0";
 pub struct Invitation {
     #[serde(rename = "@id")]
     pub id: MessageId,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub goal_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub goal: Option<String>,
     #[serde(default)]
     pub handshake_protocols: Vec<String>,
@@ -18,6 +21,9 @@ pub struct Invitation {
     #[serde(rename = "request~attach")]
     pub request_attach: Attachments,
     pub service: Vec<Service>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "profileUrl")]
+    pub profile_url: Option<String>,
 }
 
 impl Invitation {
@@ -87,20 +93,25 @@ impl Invitation {
         Ok(self)
     }
 
+    pub fn set_opt_profile_url(mut self, profile_url: Option<String>) -> Invitation {
+        self.profile_url = profile_url;
+        self
+    }
+
     pub fn validate(&self) -> VcxResult<()> {
         if self.service.is_empty() {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidRedirectDetail,
                                           format!("Invalid Out-of-band Invitation: `service` is empty.`")));
         }
 
         if self.handshake_protocols.is_empty() && self.request_attach.0.is_empty() {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidRedirectDetail,
                                           format!("Invalid Out-of-band Invitation: `handshake_protocols` and `request~attach cannot be empty at the same time.`")));
         }
 
         if !self.handshake_protocols.is_empty() &&
             !self.handshake_protocols.iter().any(|protocol|  protocol.contains(SUPPORTED_HANDSHAKE_PROTOCOL)) {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidRedirectDetail,
                                           format!("Invalid Out-of-band Invitation: Could not find a supported `handshake_protocol`.\
                                           Requested: {:?}, Supported: {:?}`", self.handshake_protocols, SUPPORTED_HANDSHAKE_PROTOCOL)));
         }
@@ -140,6 +151,7 @@ pub mod tests {
             handshake_protocols: vec![_handshake_protocol()],
             request_attach: attachment,
             service: vec![_service()],
+            profile_url: None
         }
     }
 
@@ -155,6 +167,7 @@ pub mod tests {
             handshake_protocols: vec![],
             request_attach: attachment,
             service: vec![_service()],
+            profile_url: None
         }
     }
 

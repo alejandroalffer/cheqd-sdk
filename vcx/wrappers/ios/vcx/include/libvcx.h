@@ -70,6 +70,8 @@ vcx_error_t vcx_agent_update_info(vcx_command_handle_t handle, const char *json,
 
 vcx_error_t vcx_init_with_config(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 
+vcx_error_t vcx_init_pool(vcx_command_handle_t command_handle, const char *pool_config, void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 vcx_error_t vcx_init(vcx_command_handle_t handle, const char *config_path, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 //pub extern fn vcx_init (command_handle: u32, config_path:*const c_char, cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32
 
@@ -220,6 +222,13 @@ vcx_error_t vcx_connection_send_reuse(vcx_command_handle_t command_handle,
                                       const char *invite,
                                       void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
+/** Send answer on received question message according to Aries question-answer protocol. */
+vcx_error_t vcx_connection_send_answer(vcx_command_handle_t command_handle,
+                                      vcx_connection_handle_t connection_handle,
+                                      const char *question,
+                                      const char *answer,
+                                      void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+
 /**
  * credential issuer object
  *
@@ -358,8 +367,11 @@ vcx_error_t vcx_disclosed_proof_release(vcx_proof_handle_t proof_handle);
  * Used for accepting and requesting a credential with an identity owner.
  */
 
+/** Retrieve information about a stored credential in user's wallet, including credential id and the credential itself. */
 vcx_error_t vcx_get_credential(vcx_command_handle_t handle, vcx_credential_handle_t credential_handle, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *credential));
-/** pub extern fn vcx_get_credential(command_handle: u32,credential_handle: u32,cb: Option<extern fn(xcommand_handle:u32, err: u32, credential: *const c_char)>) -> u32  */
+
+/** Delete a Credential associated with the state object from the Wallet and release handle of the state object. */
+vcx_error_t vcx_delete_credential(vcx_command_handle_t handle, vcx_credential_handle_t credential_handle, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *credential));
 
 /** Creates a credential object from the specified credentialdef handle. Populates a handle the new credential. */
 vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle, const char *source_id, const char *credential_offer, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));
@@ -396,6 +408,9 @@ vcx_error_t vcx_credential_release(vcx_credential_handle_t credential_handle);
 
 /** Send a Credential rejection to the connection. */
 vcx_error_t vcx_credential_reject(vcx_command_handle_t command_handle, vcx_credential_handle_t handle, vcx_connection_handle_t connection_handle, const char *comment, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+/** Build Presentation Proposal message for revealing Credential data. */
+vcx_error_t vcx_credential_get_presentation_proposal_msg(vcx_command_handle_t handle, vcx_credential_handle_t credential_handle, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *presentation_proposal));
 
 /**
  * wallet object
@@ -448,6 +463,9 @@ vcx_error_t vcx_download_agent_messages( vcx_command_handle_t command_handle, co
 
 /** Update Message status */
 vcx_error_t vcx_messages_update_status( vcx_command_handle_t command_handle, const char *message_status, const char *msg_json, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
+
+/** Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials */
+vcx_error_t vcx_fetch_public_entities( vcx_command_handle_t command_handle, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 
 /**
  * utils object

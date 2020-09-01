@@ -1,6 +1,13 @@
-libvcx (0.8.0) unstable; urgency=medium
+libvcx (0.9.4) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 0.9.4
+* Significantly improved performance of the library by updating Object Cache to use concurrent map instead of the blocking variant.
+* Updating user profile happens during provisioning and optionally during connecting.
+
+## 0.9.3
+* Bugfixes
 
 ## 0.9.2
 * Bugfixes

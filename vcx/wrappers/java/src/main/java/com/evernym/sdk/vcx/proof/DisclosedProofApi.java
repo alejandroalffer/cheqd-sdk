@@ -32,7 +32,7 @@ public class DisclosedProofApi extends VcxJava.API {
     /**
      *  Create a DisclosedProof object based off of a known message id (containing Proof Request) for a given connection.
      *
-     * @param  sourceId             Institution's personal identification for the credential.
+     * @param  sourceId             Institution's personal identification for the proof, should be unique.
      * @param  connectionHandle     handle pointing to a Connection object to query for Proof Request message.
      * @param  msgId                id of the message on Agency that contains the Proof Request.
      *                              
@@ -339,7 +339,7 @@ public class DisclosedProofApi extends VcxJava.API {
     private static Callback vcxProofGetMsgCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String msg) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [" + msg + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             future.complete(msg);
@@ -371,7 +371,7 @@ public class DisclosedProofApi extends VcxJava.API {
     private static Callback vcxProofGetRejectMsgCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String msg) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [" + msg + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             future.complete(msg);
@@ -414,12 +414,16 @@ public class DisclosedProofApi extends VcxJava.API {
     /**
      * Create a DisclosedProof object for fulfilling a corresponding proof request.
      *
-     * @param  sourceId         Institution's personal identification for the credential.
+     * @param  sourceId         Institution's personal identification for the proof, should be unique.
      * @param  proofRequest     received Proof Request message. The format of Proof Request depends on communication method:
+     *                          <pre>
+     *                          {@code
      *                              proprietary:
      *                                  "{"@topic":{"mid":9,"tid":1},"@type":{"name":"PROOF_REQUEST","version":"1.0"},"msg_ref_id":"ymy5nth","proof_request_data":{"name":"AccountCertificate","nonce":"838186471541979035208225","requested_attributes":{"business_2":{"name":"business"},"email_1":{"name":"email"},"name_0":{"name":"name"}},"requested_predicates":{},"version":"0.1"}}"
      *                              aries:
      *                                  "{"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation","@id": "<uuid-request>","comment": "some comment","request_presentations~attach": [{"@id": "libindy-request-presentation-0","mime-type": "application/json","data":  {"base64": "<bytes for base64>"}}]}"
+     *                          }
+     *                          </pre>
      *
      * @return                  handle that should be used to perform actions with the DisclosedProof object.
      *
@@ -542,7 +546,7 @@ public class DisclosedProofApi extends VcxJava.API {
             String proposal
     ) throws VcxException {
         logger.debug("declinePresentationRequest() called with: proofHandle = [" + proofHandle + "], connectionHandle = [" + connectionHandle + "], " +
-                "reason = [" + reason + "], proposal = [" + proposal + "]");
+                "reason = [****], proposal = [****]");
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 

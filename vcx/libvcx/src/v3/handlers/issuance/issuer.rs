@@ -4,7 +4,7 @@ use v3::handlers::issuance::states::{IssuerState, InitialState, RequestReceivedS
 use v3::messages::a2a::A2AMessage;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential::Credential;
-use v3::messages::error::ProblemReport;
+use v3::messages::error::{ProblemReport, ProblemReportCodes};
 use v3::messages::mime_type::MimeType;
 use v3::messages::status::Status;
 use messages::thread::Thread;
@@ -73,7 +73,8 @@ impl IssuerSM {
     }
 
     fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
-        trace!("Issuer::find_message_to_handle >>> messages: {:?}", messages);
+        trace!("Issuer::find_message_to_handle >>> messages: {:?}", secret!(messages));
+        debug!("Issuer: Finding message to update state");
 
         for (uid, message) in messages {
             match self.state {
@@ -84,22 +85,28 @@ impl IssuerSM {
                     match message {
                         A2AMessage::CredentialRequest(credential) => {
                             if credential.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Issuer: CredentialRequest message received");
                                 return Some((uid, A2AMessage::CredentialRequest(credential)));
                             }
                         }
                         A2AMessage::CredentialProposal(credential_proposal) => {
                             if let Some(ref thread) = credential_proposal.thread {
+                                debug!("Issuer: CredentialProposal message received");
                                 if thread.is_reply(&state.thread.thid.clone().unwrap_or_default()) {
                                     return Some((uid, A2AMessage::CredentialProposal(credential_proposal)));
                                 }
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::CredentialReject(problem_report)=> {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
+                                debug!("Issuer: CredentialReject message received");
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
-                        _ => {}
+                        message => {
+                            warn!("Issuer: Unexpected message received in OfferSent state: {:?}", message);
+                        }
                     }
                 }
                 IssuerState::RequestReceived(_) => {
@@ -112,12 +119,15 @@ impl IssuerSM {
                                 return Some((uid, A2AMessage::CredentialAck(ack)));
                             }
                         }
-                        A2AMessage::CommonProblemReport(problem_report) => {
+                        A2AMessage::CommonProblemReport(problem_report) |
+                        A2AMessage::CredentialReject(problem_report) => {
                             if problem_report.from_thread(&state.thread.thid.clone().unwrap_or_default()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
-                        _ => {}
+                        message => {
+                            warn!("Issuer: Unexpected message received in CredentialSent state: {:?}", message);
+                        }
                     }
                 }
                 IssuerState::Finished(_) => {
@@ -125,7 +135,7 @@ impl IssuerSM {
                 }
             };
         }
-
+        debug!("Issuer: no message to update state");
         None
     }
 
@@ -145,7 +155,8 @@ impl IssuerSM {
     }
 
     pub fn handle_message(self, cim: CredentialIssuanceMessage) -> VcxResult<IssuerSM> {
-        trace!("IssuerSM::handle_message >>> cim: {:?}", cim);
+        trace!("Issuer::handle_message >>> cim: {:?}", secret!(cim));
+        debug!("Issuer: Updating state");
 
         let IssuerSM { state, source_id } = self;
         let state = match state {
@@ -153,10 +164,7 @@ impl IssuerSM {
                 CredentialIssuanceMessage::CredentialInit(connection_handle) => {
                     let cred_offer = libindy_issuer_create_credential_offer(&state_data.cred_def_id)?;
                     let cred_offer_msg = CredentialOffer::create()
-                        .set_comment(Some(format!("{} is offering you a credential: {}",
-                                                  ::settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME)?,
-                                                  state_data.credential_name.clone().unwrap_or_default()
-                        )))
+                        .set_comment(state_data.credential_name.clone())
                         .set_offers_attach(&cred_offer)?;
                     let cred_offer_msg = state_data.append_credential_preview(cred_offer_msg)?;
 
@@ -167,7 +175,7 @@ impl IssuerSM {
                         .set_opt_pthid(connection.data.thread.pthid.clone());
 
                     connection.data.send_message(&cred_offer_msg.to_a2a_message(), &connection.agent)?;
-                    IssuerState::OfferSent((state_data, cred_offer, connection, thread).into())
+                    IssuerState::OfferSent((state_data, cred_offer_msg, connection, thread).into())
                 }
                 _ => {
                     warn!("Credential Issuance can only start on issuer side with init");
@@ -176,9 +184,7 @@ impl IssuerSM {
             }
             IssuerState::OfferSent(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequest(request) => {
-                    let thread = state_data.thread.clone()
-                        .update_received_order(&state_data.connection.data.did_doc.id);
-
+                    let thread = state_data.thread.clone();
                     IssuerState::RequestReceived((state_data, request, thread).into())
                 }
                 CredentialIssuanceMessage::CredentialProposal(_) => {
@@ -187,10 +193,11 @@ impl IssuerSM {
                         .update_received_order(&state_data.connection.data.did_doc.id);
 
                     let problem_report = ProblemReport::create()
-                        .set_comment(String::from("CredentialProposal is not supported"))
+                        .set_description(ProblemReportCodes::Unimplemented)
+                        .set_comment(String::from("credential-proposal message is not supported"))
                         .set_thread(thread.clone());
 
-                    state_data.connection.data.send_message(&problem_report.to_a2a_message(), &state_data.connection.agent)?;
+                    state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &state_data.connection.agent)?;
                     IssuerState::Finished((state_data, problem_report, thread).into())
                 }
                 CredentialIssuanceMessage::ProblemReport(problem_report) => {
@@ -222,11 +229,12 @@ impl IssuerSM {
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
-                                .set_comment(err.to_string())
+                                .set_description(ProblemReportCodes::InvalidCredentialRequest)
+                                .set_comment(format!("error occurred: {:?}", err))
                                 .set_thread(thread.clone());
 
-                            state_data.connection.data.send_message(&problem_report.to_a2a_message(), &connection.agent)?;
-                            IssuerState::Finished((state_data, problem_report, thread).into())
+                            state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.agent)?;
+                            return Err(err)
                         }
                     }
                 }
@@ -261,6 +269,7 @@ impl IssuerSM {
             }
         };
 
+        trace!("Issuer::handle_message <<< state: {:?}", secret!(state));
         Ok(IssuerSM::step(state, source_id))
     }
 
@@ -280,17 +289,29 @@ impl IssuerSM {
             IssuerState::Finished(_) => None,
         }
     }
+
+    pub fn get_credential_offer(&self) -> Option<CredentialOffer> {
+        match self.state {
+            IssuerState::Initial(_) => None,
+            IssuerState::OfferSent(ref state) => Some(state.offer.clone()),
+            IssuerState::RequestReceived(ref state) => Some(state.offer.clone()),
+            IssuerState::CredentialSent(ref state) => Some(state.offer.clone()),
+            IssuerState::Finished(ref state) => state.offer.clone(),
+        }
+    }
 }
 
 impl InitialState {
     fn append_credential_preview(&self, cred_offer_msg: CredentialOffer) -> VcxResult<CredentialOffer> {
-        trace!("Issuer::InitialState::append_credential_preview >>> cred_offer_msg: {:?}", cred_offer_msg);
+        trace!("Issuer::InitialState::append_credential_preview >>> cred_offer_msg: {:?}", secret!(cred_offer_msg));
 
         let cred_values: serde_json::Value = serde_json::from_str(&self.credential_json)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Credential Preview Json: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure,
+                                              format!("Cannot parse Credential Preview from JSON string. Err: {:?}", err)))?;
 
         let values_map = cred_values.as_object()
-            .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Preview Json".to_string()))?;
+            .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure,
+                                              "Invalid Credential Preview Json".to_string()))?;
 
         let mut new_offer = cred_offer_msg;
         for item in values_map.iter() {
@@ -298,10 +319,13 @@ impl InitialState {
             new_offer = new_offer.add_credential_preview_data(
                 key,
                 value.as_str()
-                    .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Preview Json".to_string()))?,
+                    .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      "Invalid Credential Preview Json".to_string()))?,
                 MimeType::Plain,
             )?;
         }
+
+        trace!("Issuer::InitialState::append_credential_preview <<<");
         Ok(new_offer)
     }
 }
@@ -316,13 +340,16 @@ impl RequestReceivedState {
 
         let cred_data = encode_attributes(&self.cred_data)?;
 
-        let (credential, _, _) = anoncreds::libindy_issuer_create_credential(&self.offer,
+        let (credential, _, _) = anoncreds::libindy_issuer_create_credential(&self.offer.offers_attach.content()?,
                                                                              &request,
                                                                              &cred_data,
                                                                              self.rev_reg_id.clone(),
                                                                              self.tails_file.clone())?;
-        Credential::create()
-            .set_credential(credential)
+        let credential = Credential::create()
+            .set_credential(credential)?;
+
+        trace!("Issuer::RequestReceivedState::create_credential <<<");
+        Ok(credential)
     }
 }
 
@@ -489,10 +516,8 @@ pub mod test {
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialRequest(CredentialRequest::create())).unwrap();
-            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend(mock_connection())).unwrap();
 
-            assert_match!(IssuerState::Finished(_), issuer_sm.state);
-            assert_eq!(VcxStateType::VcxStateNone as u32, issuer_sm.state());
+            issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend(mock_connection())).unwrap_err();
         }
 
         #[test]
@@ -596,6 +621,19 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
                     "key_2".to_string() => A2AMessage::CredentialAck(_ack()),
                     "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = issuer.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
+            }
+
+            // Credential Reject
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::CredentialAck(_ack()),
+                    "key_3".to_string() => A2AMessage::CredentialReject(_problem_report())
                 );
 
                 let (uid, message) = issuer.find_message_to_handle(messages).unwrap();

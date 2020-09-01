@@ -3,6 +3,7 @@ use serde_json::Value;
 
 use issuer_credential::PaymentInfo;
 use messages::thread::Thread;
+use utils::libindy::anoncreds::ensure_credential_definition_contains_offered_attributes;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct CredentialOffer {
@@ -25,6 +26,8 @@ pub struct CredentialOffer {
 }
 
 pub fn set_cred_offer_ref_message(offer: &str, thread: Option<Thread>, msg_id: &str) -> VcxResult<Vec<Value>> {
+    trace!("set_cred_offer_ref_message >>> offer: {:?}, id: {:?}", secret!(offer), msg_id);
+
     let (mut offer, payment_info) = parse_json_offer(&offer)?;
 
     offer.msg_ref_id = Some(msg_id.to_owned());
@@ -40,8 +43,10 @@ pub fn set_cred_offer_ref_message(offer: &str, thread: Option<Thread>, msg_id: &
 }
 
 pub fn parse_json_offer(offer: &str) -> VcxResult<(CredentialOffer, Option<PaymentInfo>)> {
+    trace!("parse_json_offer >>> offer: {:?}", secret!(offer));
+
     let paid_offer: Value = serde_json::from_str(offer)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize offer: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, format!("Cannot deserialize Credential Offer: {}", err)))?;
 
     let mut payment: Option<PaymentInfo> = None;
     let mut offer: Option<CredentialOffer> = None;
@@ -50,7 +55,7 @@ pub fn parse_json_offer(offer: &str) -> VcxResult<(CredentialOffer, Option<Payme
         for entry in i.iter() {
             if entry.get("libindy_offer").is_some() {
                 offer = Some(serde_json::from_value(entry.clone())
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize offer: {}", err)))?);
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, format!("Cannot deserialize offer: {}", err)))?);
             }
 
             if entry.get("payment_addr").is_some() {
@@ -59,5 +64,18 @@ pub fn parse_json_offer(offer: &str) -> VcxResult<(CredentialOffer, Option<Payme
             }
         }
     }
-    Ok((offer.ok_or(VcxError::from(VcxErrorKind::InvalidJson))?, payment))
+
+    let offer = offer
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidCredentialOffer, "Message does not contain offer"))?;
+
+    trace!("parse_json_offer <<< offer: {:?}", secret!(offer));
+
+    Ok((offer, payment))
+}
+
+impl CredentialOffer {
+    pub fn ensure_match_credential_definition(&self, cred_def_json: &str) -> VcxResult<()> {
+        let cred_offer_attributes = self.credential_attrs.iter().map(|(key, _)| key).collect();
+        ensure_credential_definition_contains_offered_attributes(cred_def_json, cred_offer_attributes)
+    }
 }

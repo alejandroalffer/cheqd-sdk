@@ -159,7 +159,7 @@ class Connection(VcxStateful):
         Create a connection object, represents a single endpoint and can be used for sending and receiving
         credentials and proofs
 
-        :param source_id: Institution's unique ID for the connection
+        :param source_id: User's unique ID for the connection.
         :return: connection object
         Example:
         connection = await Connection.create(source_id)
@@ -183,7 +183,11 @@ class Connection(VcxStateful):
 
         NOTE: this method is EXPERIMENTAL
 
-        :param source_id: Institution's unique ID for the connection
+        WARN: `request_attach` field is not fully supported in the current library state.
+               You can use simple messages like Question but it cannot be used
+               for Credential Issuance and Credential Presentation.
+
+        :param source_id: User's unique ID for the connection.
         :param goal_code: a self-attested code the receiver may want to display to
                           the user or use in automatically deciding what to do with the out-of-band message.
         :param goal: a self-attested string that the receiver may want to display to the user about
@@ -191,7 +195,7 @@ class Connection(VcxStateful):
         :param handshake: whether Inviter wants to establish regular connection using `connections` handshake protocol.
                           if false, one-time connection channel will be created.
         :param request_attach: An additional message as JSON that will be put into attachment decorator
-                            that the receiver can using in responding to the message.
+                            that the receiver can using in responding to the message (for example Question message).
 
         :return: connection object
         Example:
@@ -218,7 +222,7 @@ class Connection(VcxStateful):
         credentials and proofs
 
         Invite details are provided by the entity offering a connection and generally pulled from a provided QRCode.
-        :param source_id: Institution's unique ID for the connection
+        :param source_id: User's unique ID for the connection.
         :param invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
             Invite format depends on communication method:
                 proprietary:
@@ -257,7 +261,7 @@ class Connection(VcxStateful):
             (equal to `vcx_connection_create_with_invite` function).
         2. Replies to the inviting side (equal to `vcx_connection_connect` function).
 
-        :param source_id: Institution's unique ID for the connection
+        :param source_id: User's unique ID for the connection.
         :param invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
             Invite format depends on communication method:
                 proprietary:
@@ -315,7 +319,10 @@ class Connection(VcxStateful):
 
         NOTE: this method can be used when `aries` protocol is set.
 
-        :param source_id: Institution's personal identification for the Connection
+        WARN: The user has to analyze the value of "request~attach" field yourself and
+              create/handle the correspondent state object or send a reply once the connection is established.
+
+        :param source_id: User's unique ID for the connection.
         :param invite_details: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
             {
                 "@type": "https://didcomm.org/out-of-band/%VER/invitation",
@@ -385,7 +392,17 @@ class Connection(VcxStateful):
         """
         Connect securely and privately to the endpoint represented by the object.
 
-        :param options: detailed connection options
+        :param options: Provides details about establishing connection
+                        {
+                            "connection_type": Option<"string"> - one of "SMS", "QR",
+                            "phone": "string": Option<"string"> - phone number in case "connection_type" is set into "SMS",
+                            "update_agent_info": Option<bool> - whether agent information needs to be updated.
+                                                                default value for `update_agent_info`=true
+                                                                if agent info does not need to be updated, set `update_agent_info`=false
+                            "use_public_did": Option<bool> - whether to use public DID for an establishing connection
+                                                             default value for `use_public_did`=false
+                        }
+        
         Example options:
         {"connection_type":"SMS","phone":"5555555555","use_public_did":true}
         or:
@@ -760,6 +777,48 @@ class Connection(VcxStateful):
                       c_connection_handle,
                       c_invite,
                       Connection.send_reuse.cb)
+
+
+    async def send_answer(self, question: str, answer: str,):
+        """
+        Send answer on received question message according to Aries question-answer protocol.
+    
+        Note that this function works in case `aries` communication method is used.
+            In other cases it returns ActionNotSupported error.
+
+        :param question: A JSON string representing Question received via pairwise connection.
+        {
+            "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+            "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+            "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+            "question_detail": "This is optional fine-print giving context to the question and its various answers.",
+            "nonce": "<valid_nonce>",
+            "signature_required": true,
+            "valid_responses" : [
+                {"text": "Yes, it's me"},
+                {"text": "No, that's not me!"}],
+            "~timing": {
+                "expires_time": "2018-12-13T17:29:06+0000"
+            }
+        }
+        :param answer: An answer to use which is a JSON string representing chosen `valid_response` option from Question message.
+            {"text": "Yes, it's me"}
+
+        :return: no value
+        """
+        if not hasattr(Connection.send_answer, "cb"):
+            self.logger.debug("vcx_connection_send_answer: Creating callback")
+            Connection.send_answer.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_connection_handle = c_uint32(self.handle)
+        c_question = c_char_p(question.encode('utf-8'))
+        c_answer = c_char_p(answer.encode('utf-8'))
+
+        await do_call('vcx_connection_send_answer',
+                      c_connection_handle,
+                      c_question,
+                      c_answer,
+                      Connection.send_answer.cb)
 
     async def get_my_pw_did(self) -> str:
         if not hasattr(Connection.get_my_pw_did, "cb"):

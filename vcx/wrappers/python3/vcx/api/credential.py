@@ -91,7 +91,7 @@ class Credential(VcxStateful):
     async def create(source_id: str, credential_offer: str):
         """
         Creates a credential with an offer.
-        :param source_id: user defined id of object.
+        :param source_id: Institution's personal identification for the credential, should be unique.
         :param credential_offer: JSON string representing the offer used as the basis of creation.
         :return: A created credential
         Example:
@@ -158,7 +158,7 @@ class Credential(VcxStateful):
     async def create_with_msgid(source_id: str, connection: Connection, msg_id: str):
         """
         Create a credential based off of a known message id for a given connection.
-        :param source_id: user defined id of object.
+        :param source_id: Institution's personal identification for the credential, should be unique.
         :param connection: connection to receive offer from
         :param msg_id: id of the message that contains the credential offer
         :return: A created credential
@@ -196,7 +196,7 @@ class Credential(VcxStateful):
         2. Prepares Credential Request and replies to the issuer.
             (equal to `vcx_credential_send_request` function).
 
-        :param source_id: institution's personal identification for the credential, should be unique.
+        :param source_id: Institution's personal identification for the credential, should be unique.
         :param credential_offer: JSON string representing the offer used as the basis of creation.
         :param connection: A pairwise connection with the issuer.
         :return: credential object
@@ -423,6 +423,28 @@ class Credential(VcxStateful):
 
         return json.loads(msg.decode())
 
+    async def get_credential(self):
+        """
+        Retrieve information about a stored credential in user's wallet, 
+        including credential id and the credential itself.
+
+        :return:
+        Example:
+        credential = await Credential.create(source_id, offer)
+        await credential.get_credential()
+        """
+        if not hasattr(Credential.get_credential, "cb"):
+            self.logger.debug("vcx_get_credential: Creating callback")
+            Credential.get_credential.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_credential_handle = c_uint32(self.handle)
+
+        msg = await do_call('vcx_get_credential',
+                      c_credential_handle,
+                      Credential.get_credential.cb)
+
+        return json.loads(msg.decode())
+
     async def get_payment_info(self):
         """
         Retrieve Payment Transaction Information for this Credential. Typically this will include
@@ -509,6 +531,54 @@ class Credential(VcxStateful):
                       c_connection_handle,
                       c_comment,
                       Credential.reject.cb)
+
+    async def get_presentation_proposal(self):
+        """
+        Build Presentation Proposal message for revealing Credential data.
+
+        Presentation Proposal is an optional message that can be sent by the Prover to the Verifier to 
+        initiate a Presentation Proof process.
+
+        Presentation Proposal Format: 
+            https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#propose-presentation
+
+        EXPERIMENTAL
+
+        :return:
+        Example:
+        credential = await Credential.create(source_id, offer)
+        await credential.get_presentation_proposal()
+        """
+        if not hasattr(Credential.get_presentation_proposal, "cb"):
+            self.logger.debug("vcx_credential_get_presentation_proposal_msg: Creating callback")
+            Credential.get_presentation_proposal.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_credential_handle = c_uint32(self.handle)
+
+        msg = await do_call('vcx_credential_get_presentation_proposal_msg',
+                      c_credential_handle,
+                      Credential.get_presentation_proposal.cb)
+
+        return json.loads(msg.decode())
+
+    async def delete(self):
+        """
+        Delete a Credential associated with the state object from the Wallet and release handle of the state object.
+
+        :return:
+        Example:
+        credential = await Credential.create(source_id, offer)
+        await credential.delete()
+        """
+        if not hasattr(Credential.delete, "cb"):
+            self.logger.debug("vcx_delete_credential: Creating callback")
+            Credential.delete.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_credential_handle = c_uint32(self.handle)
+
+        await do_call('vcx_delete_credential',
+                      c_credential_handle,
+                      Credential.delete.cb)
 
 
 

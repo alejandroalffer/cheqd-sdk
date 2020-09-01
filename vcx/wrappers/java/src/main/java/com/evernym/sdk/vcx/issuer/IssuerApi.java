@@ -30,7 +30,7 @@ public class IssuerApi extends VcxJava.API {
     /**
      * Create a IssuerCredential object that provides a credential for an enterprise's user
      *
-     * @param  sourceId             Institution's personal identification for the credential.
+     * @param  sourceId             Enterprise's personal identification for the credential, should be unique.
      * @param  credentialDefHandle  handle pointing to CredentialDefinition to use for issuance. 
      *                              It must be already stored in the wallet and written to the ledger.
      * @param  issuerId             DID corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
@@ -53,7 +53,7 @@ public class IssuerApi extends VcxJava.API {
         ParamGuard.notNullOrWhiteSpace(credentialData, "credentialData");
         ParamGuard.notNullOrWhiteSpace(credentialName, "credentialName");
 
-        logger.debug("issuerCreateCredential() called with: sourceId = [" + sourceId + "], credentialDefHandle = [" + credentialDefHandle + "], issuerId = [" + issuerId + "], credentialData = [" + credentialData + "], credentialName = [" + credentialName + "], price = [" + price + "]");
+        logger.debug("issuerCreateCredential() called with: sourceId = [" + sourceId + "], credentialDefHandle = [" + credentialDefHandle + "], issuerId = [****, credentialData = [****], credentialName = [****], price = [****]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
@@ -260,6 +260,7 @@ public class IssuerApi extends VcxJava.API {
      * Gets the Credential message that can be sent to the user.
      *
      * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     * @param  myPwDid              Pairwise key used for Connection set up (use ConnectionApi.connectionGetPwDid to get).
      *
      * @return                      Credential message as JSON string.
      *
@@ -285,7 +286,7 @@ public class IssuerApi extends VcxJava.API {
     private static Callback issuerCredentialStringCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String stringData) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], string = [" + stringData + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], string = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             String result = stringData;
@@ -397,9 +398,12 @@ public class IssuerApi extends VcxJava.API {
     /**
      * Gets the Credential Request message that can be sent to the user.
      *
-     * @param  credentialHandle     handle pointing to a IssuerCredential object.
+     * WARN: Outdated function that MUST NOT be used.
      *
-     * @return                      Credential Request message as JSON string.
+     * @param  credentialHandle     -
+     * @param  credentialRequest    -
+     *
+     * @return                      -
      *
      * @throws VcxException         If an exception occurred in Libvcx library.
      */

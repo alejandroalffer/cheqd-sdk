@@ -1,5 +1,6 @@
 import pytest
 import random
+import json
 from vcx.error import ErrorCode, VcxError
 from vcx.state import State
 from vcx.api.connection import Connection
@@ -85,7 +86,7 @@ async def test_call_to_connect_state_not_initialized():
         data['data']['handle'] = random.randint(900, 99999)
         connection2 = await Connection.deserialize(data)
         await connection2.connect(connection_options)
-    assert ErrorCode.ConnectionError == e.value.error_code
+    assert ErrorCode.NotReady == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -242,4 +243,28 @@ async def test_send_reuse():
 async def test_create_outofband():
     with pytest.raises(VcxError) as e:
         connection = await Connection.create_outofband('Foo', None, 'Foo Goal', True, None)
+    assert ErrorCode.ActionNotSupported == e.value.error_code
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_send_answer():
+    connection = await Connection.create(source_id)
+    with pytest.raises(VcxError) as e:
+        question = {
+            "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+            "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+            "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+            "question_detail": "This is optional fine-print giving context to the question and its various answers.",
+            "nonce": "<valid_nonce>",
+            "signature_required": True,
+            "valid_responses" : [
+                {"text": "Yes, it's me"},
+                {"text": "No, that's not me!"}],
+            "~timing": {
+                "expires_time": "2018-12-13T17:29:06+0000"
+            }
+        }
+        answer = {"text": "Yes, it's me"}
+        await connection.send_answer(json.dumps(question), json.dumps(answer))
     assert ErrorCode.ActionNotSupported == e.value.error_code

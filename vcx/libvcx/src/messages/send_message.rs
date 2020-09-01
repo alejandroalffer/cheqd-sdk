@@ -110,13 +110,15 @@ impl SendMessageBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<SendResponse> {
+        trace!("SendMessage::parse_response >>>");
+
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         let index = match self.version {
             // TODO: THINK better
             settings::ProtocolTypes::V1 => {
                 if response.len() <= 1 {
-                    return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse));
+                    return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Unexpected number of Messages has been received"));
                 }
                 1
             }
@@ -129,7 +131,7 @@ impl SendMessageBuilder {
                 Ok(SendResponse { uid: res.uid, uids: res.uids }),
             A2AMessage::Version2(A2AMessageV2::SendRemoteMessageResponse(res)) =>
                 Ok(SendResponse { uid: Some(res.id.clone()), uids: if res.sent { vec![res.id] } else { vec![] } }),
-            _ => Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of Send Message response "))
         }
     }
 }
@@ -144,6 +146,8 @@ impl GeneralMessage for SendMessageBuilder {
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("SendMessage::prepare_request >>>");
+
         let messages =
             match self.version {
                 settings::ProtocolTypes::V1 => {
@@ -166,7 +170,8 @@ impl GeneralMessage for SendMessageBuilder {
                 settings::ProtocolTypes::V2 |
                 settings::ProtocolTypes::V3 => {
                     let msg: ::serde_json::Value = ::serde_json::from_slice(self.payload.as_slice())
-                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                          format!("Could not parse JSON from bytes. Err: {:?}", err)))?;
 
                     let message = SendRemoteMessage {
                         msg_type: MessageTypes::build_v2(A2AMessageKinds::SendRemoteMessage),
@@ -181,6 +186,8 @@ impl GeneralMessage for SendMessageBuilder {
                     vec![A2AMessage::Version2(A2AMessageV2::SendRemoteMessage(message))]
                 }
             };
+
+        trace!("SendMessage::prepare_request >>> messages: {:?}", secret!(messages));
 
         prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
@@ -197,7 +204,7 @@ impl SendResponse {
         self.uids
             .get(0)
             .map(|uid| uid.to_string())
-            .ok_or(VcxError::from(VcxErrorKind::InvalidJson))
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Invalid Agency response. Cannot get id of sent message")))
     }
 }
 
@@ -210,15 +217,14 @@ pub struct SendMessageOptions {
 
 pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str) -> VcxResult<String> {
     if connection::get_state(connection_handle) != VcxStateType::VcxStateAccepted as u32 {
-        return Err(VcxError::from(VcxErrorKind::NotReady));
+        return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Connection is not completed yet. It cannot be used for message sending."));
     }
 
     let agent_info = get_agent_info()?.pw_info(connection_handle)?;
 
-    let msg_options: SendMessageOptions = serde_json::from_str(msg_options).map_err(|_| {
-        error!("Invalid SendMessage msg_options");
-        VcxError::from(VcxErrorKind::InvalidConfiguration)
-    })?;
+    let msg_options: SendMessageOptions = serde_json::from_str(msg_options)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                          format!("Cannot parse SendMessageOptions from JSON string. Err: {:?}", err)))?;
 
     let response =
         send_message()
@@ -230,7 +236,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
                                 &agent_info.their_pw_vk()?,
                                 &msg,
                                 PayloadKinds::Other(msg_options.msg_type.clone()),
-                                None
+                                None,
             )?
             .agent_did(&agent_info.pw_agent_did()?)?
             .agent_vk(&agent_info.pw_agent_vk()?)?
@@ -312,7 +318,7 @@ mod tests {
         };
 
         let uid = response.get_msg_uid().unwrap_err();
-        assert_eq!(VcxErrorKind::InvalidJson, uid.kind());
+        assert_eq!(VcxErrorKind::InvalidAgencyResponse, uid.kind());
     }
 
     #[cfg(feature = "agency")]

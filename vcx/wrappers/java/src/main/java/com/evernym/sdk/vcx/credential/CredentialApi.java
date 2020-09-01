@@ -31,7 +31,7 @@ public class CredentialApi extends VcxJava.API {
     /**
      * Create a Credential object based off of a known message id (containing Credential Offer) for a given connection.
      *
-     * @param  sourceId             Institution's personal identification for the credential. It'll be used as a label.
+     * @param  sourceId             Institution's personal identification for the credential, should be unique.
      * @param  connectionHandle     handle pointing to a Connection object to query for credential offer message.
      * @param  msgId                id of the message on Agency that contains the credential offer.
      *
@@ -124,7 +124,7 @@ public class CredentialApi extends VcxJava.API {
             String theirPwDid,
             int paymentHandle
     ) throws VcxException {
-        logger.debug("credentialGetRequestMsg() called with: credentialHandle = [" + credentialHandle + "], myPwDid = [" + myPwDid + "], theirPwDid = [" + theirPwDid + "], paymentHandle = [" + paymentHandle + "]");
+        logger.debug("credentialGetRequestMsg() called with: credentialHandle = [" + credentialHandle + "], myPwDid = [****], theirPwDid = [****], paymentHandle = [" + paymentHandle + "]");
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
@@ -144,7 +144,7 @@ public class CredentialApi extends VcxJava.API {
     private static Callback vcxCredentialStringCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int command_handle, int err, String stringData) {
-            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], string = [" + stringData + "]");
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], string = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
             if (!checkCallback(future, err)) return;
             future.complete(stringData);
@@ -241,6 +241,39 @@ public class CredentialApi extends VcxJava.API {
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_get_credential(commandHandle, credentialHandle, vcxGetCredentialCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    private static Callback vcxDeleteCredentialCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int command_handle, int err) {
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(command_handle);
+            if (!checkCallback(future,err)) return;
+            future.complete(null);
+        }
+    };
+
+    /**
+     * Delete a Credential associated with the state object from the Wallet and release handle of the state object.
+     *
+     * @param  credentialHandle     handle pointing to credential state object to delete.
+     *
+     * @return                      void
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Void> deleteCredential(
+            int credentialHandle
+    ) throws VcxException {
+        ParamGuard.notNull(credentialHandle, "credentialHandle");
+        logger.debug("deleteCredential() called with: credentialHandle = [" + credentialHandle + "]");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_delete_credential(commandHandle, credentialHandle, vcxDeleteCredentialCB);
         checkResult(result);
 
         return future;
@@ -417,10 +450,14 @@ public class CredentialApi extends VcxJava.API {
      * @param  sourceId         Institution's personal identification for the credential, should be unique.
      * @param  credentialOffer  Received Credential Offer message.
      *                          The format of Credential Offer depends on communication method:
+     *                          <pre>
+     *                          {@code
      *                              proprietary:
-     *                                  "[{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]"
+     *                                      "[{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]"
      *                              aries:
-     *                                  "{"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential", "@id":"<uuid-of-offer-message>", "comment":"somecomment", "credential_preview":<json-ldobject>, "offers~attach":[{"@id":"libindy-cred-offer-0", "mime-type":"application/json", "data":{"base64":"<bytesforbase64>"}}]}"
+     *                                      "{"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential", "@id":"<uuid-of-offer-message>", "comment":"somecomment", "credential_preview":<json-ldobject>, "offers~attach":[{"@id":"libindy-cred-offer-0", "mime-type":"application/json", "data":{"base64":"<bytesforbase64>"}}]}"
+     *                          }
+     *                          </pre>
      *
      * @return                      handle that should be used to perform actions with the Credential object.
      *
@@ -463,11 +500,15 @@ public class CredentialApi extends VcxJava.API {
      *
      * @param  sourceId         Institution's personal identification for the credential, should be unique.
      * @param  credentialOffer  Received Credential Offer message.
-     *                          The format of Credential Offer depends on communication method:
+     *                          <pre>
+     *                          {@code
      *                              proprietary:
-     *                                  "[{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]"
+     *                                      "[{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]"
      *                              aries:
-     *                                  "{"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential", "@id":"<uuid-of-offer-message>", "comment":"somecomment", "credential_preview":<json-ldobject>, "offers~attach":[{"@id":"libindy-cred-offer-0", "mime-type":"application/json", "data":{"base64":"<bytesforbase64>"}}]}"
+     *                                      "{"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential", "@id":"<uuid-of-offer-message>", "comment":"somecomment", "credential_preview":<json-ldobject>, "offers~attach":[{"@id":"libindy-cred-offer-0", "mime-type":"application/json", "data":{"base64":"<bytesforbase64>"}}]}"
+     *                          }
+     *                          </pre>
+     *
      * @param  connectionHandle     handle pointing to Connection object to send Credential Request.
      *
      * @return                      CredentialAcceptOfferResult object containing:
@@ -485,7 +526,7 @@ public class CredentialApi extends VcxJava.API {
         ParamGuard.notNull(credentialOffer, "credentialOffer");
         ParamGuard.notNull(connectionHandle, "connectionHandle");
 
-        logger.debug("acceptCredentialOffer() called with: sourceId = [" + sourceId + "], credentialOffer = [" + credentialOffer + "], " +
+        logger.debug("acceptCredentialOffer() called with: sourceId = [" + sourceId + "], credentialOffer = [****], " +
                 "connectionHandle = [" + connectionHandle + "]");
         CompletableFuture<CredentialAcceptOfferResult> future = new CompletableFuture<CredentialAcceptOfferResult>();
         int commandHandle = addFuture(future);
@@ -531,7 +572,7 @@ public class CredentialApi extends VcxJava.API {
             int connectionHandle,
             String comment
     ) throws VcxException {
-        logger.debug("credentialReject() called with: sourceId = [ {} ], connectionHandle = [ {} ], comment = [ {} ]", credentialHandle, connectionHandle, comment);
+        logger.debug("credentialReject() called with: credentialHandle = [ {} ], connectionHandle = [ {} ], comment = [****]", credentialHandle, connectionHandle);
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
@@ -544,6 +585,45 @@ public class CredentialApi extends VcxJava.API {
         checkResult(result);
 
         return future;
+    }
 
+    private static Callback vcxGetPresentationProposalCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int command_handle, int err, String presentationProposal) {
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], presentationProposal = [****]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
+            if (!checkCallback(future, err)) return;
+            future.complete(presentationProposal);
+        }
+    };
+
+    /**
+     * Build Presentation Proposal message for revealing Credential data.
+     *
+     * Presentation Proposal is an optional message that can be sent by the Prover to the Verifier to
+     * initiate a Presentation Proof process.
+     *
+     * Presentation Proposal Format: https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#propose-presentation
+     *
+     * EXPERIMENTAL
+     *
+     * @param  credentialHandle     handle pointing to Credential to use for Presentation Proposal message building
+     *
+     * @return                      Presentation Proposal message as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<String> credentialGetPresentationProposal(
+            int credentialHandle
+    ) throws VcxException {
+        ParamGuard.notNull(credentialHandle, "credentialHandle");
+        logger.debug("getPresentationProposal() called with: credentialHandle = [" + credentialHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_credential_get_presentation_proposal_msg(commandHandle, credentialHandle, vcxGetPresentationProposalCB);
+        checkResult(result);
+
+        return future;
     }
 }

@@ -48,7 +48,7 @@ allprojects {
 group = 'com.evernym.sdk'
 
 def versionMajor() {
-    String version = "0.9.2"
+    String version = "0.9.4"
     String suffix = System.getenv("CI_PIPELINE_IID")
     String branch = System.getenv("CI_COMMIT_REF_SLUG")
     if (suffix != null && !branch.equals("stable")) {

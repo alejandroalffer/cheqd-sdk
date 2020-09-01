@@ -162,6 +162,9 @@ export interface IConnectionCreateData {
 
 /**
  * @description Interface that represents the parameters for `Connection.createOutofband` function.
+ * WARN: `requestAttach` field is not fully supported in the current library state.
+ *        You can use simple messages like Question but it cannot be used
+ *        for Credential Issuance and Credential Presentation.
  * @interface
  */
 export interface IConnectionCreateOutofbandData {
@@ -177,7 +180,7 @@ export interface IConnectionCreateOutofbandData {
   // if false, one-time connection channel will be created.
   handshake: boolean,
   // An additional message as JSON that will be put into attachment decorator
-  // that the receiver can using in responding to the message.
+  // that the receiver can using in responding to the message (for example Question message).
   requestAttach?: string,
 }
 
@@ -249,7 +252,18 @@ export interface IRecipientOutofbandInviteInfo extends IConnectionCreateData {
  * @interface
  */
 export interface IConnectOptions {
-  // Provides details indicating if the connection will be established by text or QR Code
+  /**
+  * Provides details about establishing connection
+  *      {
+  *         "connection_type": Option<"string"> - one of "SMS", "QR",
+  *        "phone": "string": Option<"string"> - phone number in case "connection_type" is set into "SMS",
+  *        "update_agent_info": Option<bool> - whether agent information needs to be updated.
+  *                                             default value for `update_agent_info`=true
+  *                                             if agent info does not need to be updated, set `update_agent_info`=false
+  *        "use_public_did": Option<bool> - whether to use public DID for an establishing connection
+  *                                         default value for `use_public_did`=false
+  *    }
+  */
   data: string
 }
 
@@ -307,6 +321,17 @@ export interface ISignatureData {
  *    }
  */
 export type IConnectionInfo = string
+
+/**
+ * @description Interface that represents the parameters for `Connection.sendAnswer` function.
+ * @interface
+ */
+export interface IConnectionAnswerData {
+  // A JSON string representing Question received via pairwise connection.
+  question: object,
+  // An answer to use which is a JSON string representing chosen `valid_response` option from Question message.
+  answer: object,
+}
 
 export function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
   /**
@@ -407,6 +432,9 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    *         Note that on repeated message sending an error will be thrown.
    *
    * NOTE: this method can be used when `aries` protocol is set.
+   *
+   * WARN: The user has to analyze the value of "request~attach" field yourself and
+   *       create/handle the correspondent state object or send a reply once the connection is established.
    *
    * Example:
    * ```
@@ -568,7 +596,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * ```
    * connection = await Connection.create('foobar123')
    * inviteDetails = await connection.connect(
-   *     {data: '{"connection_type":"SMS","phone":"5555555555"}',"use_public_did":true})
+   *     {data: '{"connection_type":"SMS","phone":"5555555555", "use_public_did":true}'})
    * ```
    * @returns {Promise<string}
    */
@@ -840,6 +868,60 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
       return await createFFICallbackPromise<void>(
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_connection_send_reuse(0, this.handle, invite, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Send answer on received question message according to Aries question-answer protocol.
+   *
+   * Note that this function works in case `aries` communication method is used.
+   *     In other cases it returns ActionNotSupported error.
+   *
+   * Example:
+   * ```
+   * const data = {
+   *   question: {
+   *     "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+   *     "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+   *     "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+   *     "valid_responses" : [
+   *             {"text": "Yes, it's me"},
+   *             {"text": "No, that's not me!"}
+   *     ],
+   *     "~timing": {
+   *             "expires_time": "2018-12-13T17:29:06+0000"
+   *     }
+   *   },
+   *   answer: {
+   *    "text": "Yes, it's me"
+   *   }
+   * }
+   * await connection.sendAnswer(invite)
+   * ```
+   */
+  public async sendAnswer (data: IConnectionAnswerData): Promise<void> {
+    try {
+      return await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_send_answer(0, this.handle,
+            JSON.stringify(data.question), JSON.stringify(data.answer), cb)
           if (rc) {
             reject(rc)
           }

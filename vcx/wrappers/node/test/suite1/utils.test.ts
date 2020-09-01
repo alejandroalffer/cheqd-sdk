@@ -6,6 +6,7 @@ import {
   downloadMessage,
   downloadMessages,
   endorseTransaction,
+  fetchPublicEntities,
   getLedgerAuthorAgreement,
   getLedgerFees,
   getVersion,
@@ -75,13 +76,13 @@ describe('utils:', () => {
     it('throws: missing name', async () => {
       const { name, ...data } = updateInstitutionConfigsData
       const error = await shouldThrow(() => updateInstitutionConfigs(data as any))
-      assert.equal(error.vcxCode, VCXCode.INVALID_CONFIGURATION)
+      assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
 
     it('throws: missing logoUrl', async () => {
       const { logoUrl, ...data } = updateInstitutionConfigsData
       const error = await shouldThrow(() => updateInstitutionConfigs(data as any))
-      assert.equal(error.vcxCode, VCXCode.INVALID_CONFIGURATION)
+      assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
   })
 
@@ -141,6 +142,12 @@ describe('utils:', () => {
     it('success', async () => {
       const message = await downloadMessage({ uid: 'asdf' })
       assert.ok(message)
+    })
+  })
+
+  describe('fetchPublicEntities:', () => {
+    it('success', async () => {
+      await fetchPublicEntities()
     })
   })
 

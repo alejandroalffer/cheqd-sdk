@@ -25,6 +25,8 @@ impl ProtocolRegistry {
                 family @ MessageFamilies::TrustPing |
                 family @ MessageFamilies::Basicmessage |
                 family @ MessageFamilies::Outofband |
+                family @ MessageFamilies::QuestionAnswer |
+                family @ MessageFamilies::Committedanswer |
                 family @ MessageFamilies::DiscoveryFeatures => registry.add_protocol(&actors, family),
                 MessageFamilies::Signature => {}
                 MessageFamilies::Unknown(_) => {}
@@ -213,7 +215,7 @@ pub mod tests {
 
         let registry: ProtocolRegistry = ProtocolRegistry::init();
 
-        let protocols = registry.get_protocols_for_query(Some("did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band"));
+        let protocols = registry.get_protocols_for_query(Some("https://didcomm.org/out-of-band"));
         let expected_protocols = vec![
             ProtocolDescriptor { pid: MessageFamilies::Outofband.id(), roles: Some(vec![Actors::Receiver]) },
         ];

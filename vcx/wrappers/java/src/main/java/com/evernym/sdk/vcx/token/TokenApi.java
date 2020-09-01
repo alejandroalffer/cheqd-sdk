@@ -77,7 +77,7 @@ public class TokenApi extends VcxJava.API {
             String tokens,
             String recipient
     ) throws VcxException {
-        logger.debug("sendTokens() called with: paymentHandle = [" + paymentHandle + "], tokens = [" + tokens + "], recipient = [****]");
+        logger.debug("sendTokens() called with: paymentHandle = [" + paymentHandle + "], tokens = [****], recipient = [****]");
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
         int result = LibVcx.api.vcx_wallet_send_tokens(commandHandle, paymentHandle, tokens, recipient, vcxSendTokensCB);

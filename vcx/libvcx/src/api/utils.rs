@@ -13,11 +13,6 @@ use utils::httpclient::AgencyMock;
 use utils::constants::*;
 use messages::agent_utils::{ComMethod, Config};
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct UpdateAgentInfo {
-    id: String,
-    value: String,
-}
 /// Provision an agent in the agency, populate configuration and wallet for this agent.
 ///
 /// #Params
@@ -77,7 +72,7 @@ pub extern fn vcx_provision_agent_with_token(config: *const c_char, token: *cons
         }
     };
 
-    trace!("vcx_provision_agent_with_token(config: {}, token: {})", config, token);
+    trace!("vcx_provision_agent_with_token(config: {}, token: {})", secret!(config), secret!(token));
 
     match messages::agent_provisioning::agent_provisioning_v0_7::provision(&config, &token) {
         Err(e) => {
@@ -114,7 +109,7 @@ pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
         }
     };
 
-    trace!("vcx_provision_agent(config: {})", config);
+    trace!("vcx_provision_agent(config: {})", secret!(config));
 
     match messages::agent_utils::connect_register_provision(&config) {
         Err(e) => {
@@ -153,7 +148,7 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
     check_useful_c_str!(config, VcxErrorKind::InvalidOption);
 
     trace!("vcx_agent_provision_async(command_handle: {}, json: {})",
-           command_handle, config);
+           command_handle, secret!(config));
 
     thread::spawn(move || {
         match messages::agent_utils::connect_register_provision(&config) {
@@ -163,7 +158,7 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
             }
             Ok(s) => {
                 trace!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: {})",
-                       command_handle, error::SUCCESS.message, s);
+                       command_handle, error::SUCCESS.message, secret!(s));
                 let msg = CStringUtils::string_to_cstring(s);
                 cb(command_handle, 0, msg.as_ptr());
             }
@@ -228,40 +223,40 @@ pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
     check_useful_c_str!(config, VcxErrorKind::InvalidOption);
 
     trace!("vcx_get_provision_token(command_handle: {}, config: {})",
-           command_handle, config );
+           command_handle, secret!(config));
 
     let configs: serde_json::Value = match serde_json::from_str(&config) {
         Ok(x) => x,
         Err(e) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Config: {}", e)).into();
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot parse Config from JSON string. Err: {}", e)).into();
         }
     };
 
     let vcx_config: Config = match serde_json::from_value(configs["vcx_config"].clone()) {
         Ok(x) => x,
         Err(_) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing vcx_config").into();
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "missing vcx_config").into();
         }
     };
 
     let com_method: ComMethod = match serde_json::from_value(configs["com_method"].clone()) {
         Ok(x) => x,
         Err(e) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ComMethod: {}", e)).into();
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot parse ComMethod from JSON string. Err: {}", e)).into();
         }
     };
 
     let sponsee_id: String = match serde_json::from_value(configs["sponsee_id"].clone()) {
         Ok(x) => x,
         Err(_) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing sponsee_id").into();
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "missing sponsee_id").into();
         }
     };
 
     let sponsor_id: String = match serde_json::from_value(configs["sponsor_id"].clone()) {
         Ok(x) => x,
         Err(_) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, "missing sponsor_id").into();
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "missing sponsor_id").into();
         }
     };
 
@@ -291,6 +286,11 @@ pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
 /// command_handle: command handle to map callback to user context.
 ///
 /// json: updated configuration
+///     {
+///         "id": "string", 1 means push notifications, its the only one registered
+///         "type": Optional(int), notifications type (1 is used by default).
+///         "value": "string",
+///     }
 ///
 /// cb: Callback that provides configuration or error status
 ///
@@ -308,17 +308,17 @@ pub extern fn vcx_agent_update_info(command_handle: CommandHandle,
     check_useful_c_str!(json, VcxErrorKind::InvalidOption);
 
     trace!("vcx_agent_update_info(command_handle: {}, json: {})",
-           command_handle, json);
+           command_handle, secret!(json));
 
-    let agent_info: UpdateAgentInfo = match serde_json::from_str(&json) {
+    let com_method: ComMethod = match serde_json::from_str(&json) {
         Ok(x) => x,
         Err(e) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize agent info: {}", e)).into();
+            return VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse AgentInfo from JSON string. Err: {}", e)).into();
         }
     };
 
     spawn(move || {
-        match messages::agent_utils::update_agent_info(&agent_info.id, &agent_info.value) {
+        match messages::agent_utils::update_agent_info(com_method) {
             Ok(()) => {
                 trace!("vcx_agent_update_info_cb(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
@@ -450,13 +450,13 @@ pub extern fn vcx_download_agent_messages(command_handle: u32,
                 match serde_json::to_string(&x) {
                     Ok(x) => {
                         trace!("vcx_download_agent_messages(command_handle: {}, rc: {}, messages: {})",
-                               command_handle, error::SUCCESS.message, x);
+                               command_handle, error::SUCCESS.message, secret!(x));
 
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
                     }
                     Err(e) => {
-                        let err = VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize messages: {}", e));
+                        let err = VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize downloaded messages as JSON. Error: {}", e));
                         warn!("vcx_download_agent_messages(command_handle: {}, rc: {}, messages: {})",
                               command_handle, err, "null");
 
@@ -546,8 +546,8 @@ pub extern fn vcx_messages_download(command_handle: CommandHandle,
         None
     };
 
-    trace!("vcx_messages_download(command_handle: {}, message_status: {:?}, uids: {:?})",
-           command_handle, message_status, uids);
+    trace!("vcx_messages_download(command_handle: {}, message_status: {:?}, uids: {:?}, pw_dids: {:?})",
+           command_handle, message_status, uids, secret!(pw_dids));
 
     spawn(move || {
         match ::messages::get_message::download_messages(pw_dids, message_status, uids) {
@@ -555,13 +555,13 @@ pub extern fn vcx_messages_download(command_handle: CommandHandle,
                 match serde_json::to_string(&x) {
                     Ok(x) => {
                         trace!("vcx_messages_download_cb(command_handle: {}, rc: {}, messages: {})",
-                               command_handle, error::SUCCESS.message, x);
+                               command_handle, error::SUCCESS.message, secret!(x));
 
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
                     }
                     Err(e) => {
-                        let err = VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize messages: {}", e));
+                        let err = VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize downloaded messages as JSON. Error: {}", e));
                         warn!("vcx_messages_download_cb(command_handle: {}, rc: {}, messages: {})",
                               command_handle, err, "null");
 
@@ -614,7 +614,7 @@ pub extern fn vcx_download_message(command_handle: CommandHandle,
         match ::messages::get_message::download_message(uid) {
             Ok(message) => {
                 trace!("vcx_download_message_cb(command_handle: {}, rc: {}, message: {:?})",
-                       command_handle, error::SUCCESS.message, message);
+                       command_handle, error::SUCCESS.message, secret!(message));
 
                 let message_json = json!(message).to_string();
                 let msg = CStringUtils::string_to_cstring(message_json);
@@ -667,7 +667,7 @@ pub extern fn vcx_messages_update_status(command_handle: CommandHandle,
     check_useful_c_str!(msg_json, VcxErrorKind::InvalidOption);
 
     trace!("vcx_messages_set_status(command_handle: {}, message_status: {:?}, uids: {:?})",
-           command_handle, message_status, msg_json);
+           command_handle, message_status, secret!(msg_json));
 
     spawn(move || {
         match ::messages::update_message::update_agency_messages(&message_status, &msg_json) {
@@ -778,7 +778,7 @@ pub extern fn vcx_endorse_transaction(command_handle: CommandHandle,
     check_useful_c_str!(transaction, VcxErrorKind::InvalidOption);
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     trace!("vcx_endorse_transaction(command_handle: {}, transaction: {})",
-           command_handle, transaction);
+           command_handle, secret!(transaction));
 
     spawn(move || {
         match ::utils::libindy::ledger::endorse_transaction(&transaction) {
@@ -790,6 +790,55 @@ pub extern fn vcx_endorse_transaction(command_handle: CommandHandle,
             }
             Err(e) => {
                 warn!("vcx_endorse_transaction(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+/// This function performs two steps:
+///     1) Retrieves the list of all credentials stored in the opened wallet.
+///     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+///        correspondent to received credentials from the connected Ledger.
+///
+/// This helper function can be used, for instance as a background task, to refresh library cache.
+/// This allows us to reduce the time taken for Proof generation by using already cached entities instead of queering the Ledger.
+///
+/// NOTE: Library must be already initialized (wallet and pool must be opened).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides result code
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_fetch_public_entities(command_handle: CommandHandle,
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                             err: u32)>) -> u32 {
+    info!("vcx_fetch_public_entities >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    trace!("vcx_fetch_public_entities(command_handle: {})", command_handle);
+
+    spawn(move || {
+        match ::utils::libindy::anoncreds::fetch_public_entities() {
+            Ok(()) => {
+                trace!("vcx_fetch_public_entities_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_fetch_public_entities_cb(command_handle: {}, rc: {})",
                       command_handle, e);
 
                 cb(command_handle, e.into());
@@ -851,7 +900,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         let rc = vcx_get_provision_token(cb.command_handle, c_json, Some(cb.get_callback()));
-        assert_eq!(rc, error::INVALID_OPTION.code_num)
+        assert_eq!(rc, error::INVALID_CONFIGURATION.code_num)
     }
 
     #[test]
@@ -921,6 +970,18 @@ mod tests {
     }
 
     #[test]
+    fn test_update_agent_info_with_type() {
+        let _setup = SetupMocks::init();
+
+        let json_string = r#"{"id":"123","value":"value", "type":1}"#;
+        let c_json = CString::new(json_string).unwrap().into_raw();
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        let _result = vcx_agent_update_info(cb.command_handle, c_json, Some(cb.get_callback()));
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
+    }
+
+    #[test]
     fn test_update_agent_fails() {
         let _setup = SetupMocks::init();
 
@@ -933,7 +994,7 @@ mod tests {
         assert_eq!(vcx_agent_update_info(cb.command_handle,
                                          c_json,
                                          Some(cb.get_callback())),
-                   error::INVALID_OPTION.code_num);
+                   error::INVALID_JSON.code_num);
     }
 
     #[test]

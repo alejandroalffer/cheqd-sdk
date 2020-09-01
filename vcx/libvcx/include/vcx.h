@@ -93,21 +93,32 @@ vcx_error_t vcx_agent_update_info(vcx_command_handle_t command_handle,
                                const char *json,
                                void (*cb)(vcx_command_handle_t, vcx_error_t));
 
-// Establishes connection between institution and its user
-//
-// #Params
-// command_handle: command handle to map callback to user context.
-//
-// connection_handle: Connection handle that identifies connection object
-//
-// connection_options: Provides details indicating if the connection will be established by text or QR Code
-//
-// # Examples connection_options -> "{"connection_type":"SMS","phone":"123"}" OR: "{"connection_type":"QR","phone":""}"
-//
-// cb: Callback that provides error status of request
-//
-// #Returns
-// Error code as a u32
+/// Establishes connection between institution and its user
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: Connection handle that identifies connection object
+///
+/// connection_options: Provides details about establishing connection
+///     {
+///         "connection_type": Option<"string"> - one of "SMS", "QR",
+///         "phone": "string": Option<"string"> - phone number in case "connection_type" is set into "SMS",
+///         "update_agent_info": Option<bool> - whether agent information needs to be updated.
+///                                             default value for `update_agent_info`=true
+///                                             if agent info does not need to be updated, set `update_agent_info`=false
+///         "use_public_did": Option<bool> - whether to use public DID for an establishing connection
+///                                          default value for `use_public_did`=false
+///     }
+/// # Examples connection_options ->
+/// "{"connection_type":"SMS","phone":"123","use_public_did":true, "update_agent_info": Option<true>}"
+///     OR:
+/// "{"connection_type":"QR","phone":"","use_public_did":false}"
+///
+/// cb: Callback that provides error status of request
+///
+/// #Returns
+/// Error code as a u32
 vcx_error_t vcx_connection_connect(vcx_command_handle_t command_handle,
                                 vcx_connection_handle_t connection_handle,
                                 const char *connection_options,
@@ -152,6 +163,10 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
 ///
 /// NOTE: this method is EXPERIMENTAL
 ///
+/// WARN: `request_attach` field is not fully supported in the current library state.
+///        You can use simple messages like Question but it cannot be used
+///         for Credential Issuance and Credential Presentation.
+///
 /// # Params
 /// command_handle: command handle to map callback to user context.
 ///
@@ -167,7 +182,7 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
 ///            if false, one-time connection channel will be created.
 ///
 /// request_attach: Optional<string> - An additional message as JSON that will be put into attachment decorator
-///                                     that the receiver can using in responding to the message.
+///                                    that the receiver can using in responding to the message (for example Question message).
 ///
 /// cb: Callback that provides
 ///     - error status of function
@@ -264,6 +279,9 @@ vcx_error_t vcx_connection_accept_connection_invite(vcx_command_handle_t command
 ///         Note that on repeated message sending an error will be thrown.
 ///
 /// NOTE: this method can be used when `aries` protocol is set.
+///
+/// NOTE: The user has to analyze the value of "request~attach" field yourself and
+///       create/handle the correspondent state object or send a reply once the connection is established.
 ///
 /// # Params
 /// command_handle: command handle to map callback to user context.
@@ -577,6 +595,52 @@ vcx_error_t vcx_connection_send_reuse(vcx_u32_t command_handle,
                                       const char* invite,
                                       void (*cb)(vcx_command_handle_t, vcx_error_t));
 
+/// Send answer on received question message according to Aries question-answer protocol.
+///
+/// The related protocol can be found here: https://github.com/hyperledger/aries-rfcs/tree/master/features/0113-question-answer
+///
+/// Note that this function works in case `aries` communication method is used.
+///     In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: handle pointing to Connection to use for sending answer message.
+///
+/// question: A JSON string representing Question received via pairwise connection.
+///
+/// answer: An answer to use which is a JSON string representing chosen `valid_response` option from Question message.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// # Examples
+/// question ->
+///     {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+///         "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+///         "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+///         "question_detail": "This is optional fine-print giving context to the question and its various answers.",
+///         "nonce": "<valid_nonce>",
+///         "signature_required": true,
+///         "valid_responses" : [
+///             {"text": "Yes, it's me"},
+///             {"text": "No, that's not me!"}],
+///         "~timing": {
+///             "expires_time": "2018-12-13T17:29:06+0000"
+///         }
+///     }
+/// answer ->
+///     {"text": "Yes, it's me"}
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_send_answer(vcx_u32_t command_handle,
+                                       vcx_connection_handle_t connection_handle,
+                                       const char* question,
+                                       const char* answer,
+                                       void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 // Takes the Connection object and returns callers pw_did associated with this connection
 //
 // #Params
@@ -801,7 +865,29 @@ vcx_error_t vcx_credential_reject(vcx_command_handle_t command_handle,
                                   vcx_credential_handle_t handle,
                                   connection_handle handle,
                                   const char *comment,
-                                  void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+                                  void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Build Presentation Proposal message for revealing Credential data.
+///
+/// Presentation Proposal is an optional message that can be sent by the Prover to the Verifier to
+/// initiate a Presentation Proof process.
+///
+/// Presentation Proposal Format: https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#propose-presentation
+///
+/// EXPERIMENTAL
+///
+/// #params
+/// command_handle: command handle to map callback to user context
+///
+/// credential_handle: handle pointing to Credential to use for Presentation Proposal message building
+///
+/// cb: Callback that provides Presentation Proposal as json string and provides error status
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_credential_get_presentation_proposal_msg(vcx_command_handle_t command_handle,
+                                                         vcx_credential_handle_t handle,
+                                                         void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 // Get the current state of the credential object
 //
@@ -1481,6 +1567,21 @@ vcx_error_t vcx_get_credential(vcx_command_handle_t command_handle,
                             vcx_credential_handle_t credential_handle,
                             void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+// Delete a Credential associated with the state object from the Wallet and release handle of the state object.
+//
+// # Params
+// command_handle: command handle to map callback to user context.
+//
+// credential_handle: handle pointing to credential state object to delete.
+//
+// cb: Callback that provides error status of delete credential request
+//
+// # Returns
+// Error code as a u32
+vcx_error_t vcx_delete_credential(vcx_command_handle_t command_handle,
+                            vcx_credential_handle_t credential_handle,
+                            void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 // Get Proof
 //
 // #Params
@@ -1530,6 +1631,49 @@ vcx_error_t vcx_init(vcx_command_handle_t command_handle, const char *config_pat
 vcx_error_t vcx_init_with_config(vcx_command_handle_t command_handle,
                               const char *config,
                               void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Connect to a Pool Ledger
+///
+/// You can deffer connecting to the Pool Ledger during library initialization (vcx_init or vcx_init_with_config)
+/// to decrease the taken time by omitting `genesis_path` field in config JSON.
+/// Next, you can use this function (for instance as a background task) to perform a connection to the Pool Ledger.
+///
+/// Note: Pool must be already initialized before sending any request to the Ledger.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// pool_config: string - the configuration JSON containing pool related settings:
+///                 {
+///                     genesis_path: string - path to pool ledger genesis transactions,
+///                     pool_name: Optional[string] - name of the pool ledger configuration will be created.
+///                                                   If no value specified, the default pool name pool_name will be used.
+///                     pool_config: Optional[string] - runtime pool configuration json:
+///                             {
+///                                 "timeout": int (optional), timeout for network request (in sec).
+///                                 "extended_timeout": int (optional), extended timeout for network request (in sec).
+///                                 "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
+///                                         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+///                                         This can be useful if a user prefers querying specific nodes.
+///                                         Assume that `Node1` and `Node2` nodes reply faster.
+///                                         If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
+///                                         Note: Nodes not specified will be placed randomly.
+///                                 "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+///                                         By default Libindy sends a read requests to 2 nodes in the pool.
+///                             }
+///                 }
+///
+///
+/// cb: Callback that provides no value
+///
+/// #Returns
+/// Error code as u32
+vcx_error_t vcx_init_pool(vcx_command_handle_t command_handle,
+                          const char *pool_config,
+                          void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 // Create a Issuer Credential object that provides a credential for an enterprise's user
 // Assumes a credential definition has been written to the ledger.
@@ -1870,6 +2014,50 @@ vcx_error_t vcx_proof_create(vcx_command_handle_t command_handle,
                           const char *requested_predicates,
                           const char *name,
                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_proof_handle_t));
+
+/// Create a new Proof object based on the given Presentation Proposal message
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the proof, should be unique..
+///
+/// presentation_proposal: Message sent by the Prover to the verifier to initiate a proof presentation process:
+///     {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/propose-presentation",
+///         "@id": "<uuid-propose-presentation>",
+///         "comment": "some comment",
+///         "presentation_proposal": {
+///             "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview",
+///             "attributes": [
+///                 {
+///                     "name": "<attribute_name>", - name of the attribute.
+///                     "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+///                     "mime-type": Optional"<type>", - optional type of value. if mime-type is missing (null), then value is a string.
+///                     "value": "<value>", - value of the attribute to reveal in presentation
+///                 },
+///                 // more attributes
+///               ],
+///              "predicates": [
+///                 {
+///                     "name": "<attribute_name>", - name of the attribute.
+///                     "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+///                     "predicate": "<predicate>", - predicate operator: "<", "<=", ">=", ">"
+///                     "threshold": <threshold> - threshold value for the predicate.
+///                 },
+///                 // more predicates
+///             ]
+///         }
+///     }
+///
+/// cb: Callback that provides proof handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_proof_create_with_proposal(vcx_command_handle_t command_handle,
+                                           const char *source_id,
+                                           const char *presentation_proposal,
+                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_proof_handle_t));
 
 // Takes a json string representing a proof object and recreates an object matching the json
 //
@@ -2353,7 +2541,7 @@ vcx_error_t vcx_wallet_verify_with_address(vcx_command_handle_t command_handle,
 // cb: Callback that any errors or a receipt of transfer
 //
 // #Returns
-// Error code as a u32
+// Error code as a
 // Error will be a libindy error code
 //
 vcx_error_t vcx_wallet_delete_record(vcx_command_handle_t command_handle,
@@ -2835,6 +3023,27 @@ vcx_error_t vcx_wallet_backup_restore(vcx_command_handle_t command_handle, const
 vcx_error_t vcx_endorse_transaction(vcx_u32_t command_handle,
                                     const char* transaction
                                     void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+/// This function performs two steps:
+///     1) Retrieves the list of all credentials stored in the opened wallet.
+///     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+///        correspondent to received credentials from the connected Ledger.
+///
+/// This helper function can be used, for instance as a background task, to refresh library cache.
+/// This allows us to reduce the time taken for Proof generation by using already cached entities instead of queering the Ledger.
+///
+/// NOTE: Library must be already initialized (wallet and pool must be opened).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides result code
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_fetch_public_entities(vcx_u32_t command_handle,
+                                      void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 #ifdef __cplusplus
 } // extern "C"

@@ -414,6 +414,45 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
     }
   }
 
+  /**
+   * Retrieve information about a stored credential in user's wallet,
+   * including credential id and the credential itself.
+   *
+   * ```
+   * credential = Credential.create(data)
+   * await credential.getCredential()
+   * ```
+   *
+   */
+  public async getCredential (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_get_credential(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`Credential ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
   get credOffer (): string {
     return this._credOffer
   }
@@ -481,6 +520,82 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
             }
             resolve()
           })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Delete a Credential associated with the state object from the Wallet and release handle of the state object.
+   *
+   * ```
+   * credential = Credential.create(data)
+   * await credential.delete()
+   * ```
+   */
+  public async delete (): Promise<void> {
+    try {
+      await createFFICallbackPromise<void>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_delete_credential(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Build Presentation Proposal message for revealing Credential data.
+   *
+   * Presentation Proposal is an optional message that can be sent by the Prover to the Verifier to 
+   * initiate a Presentation Proof process.
+   *
+   * Presentation Proposal Format:
+   *   https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#propose-presentation
+   *
+   * EXPERIMENTAL
+   *
+   * ```
+   * credential = Credential.create(data)
+   * await credential.getPresentationProposal()
+   * ```
+   *
+   */
+  public async getPresentationProposal (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credential_get_presentation_proposal_msg(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`Credential ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
         )
     } catch (err) {
       throw new VCXInternalError(err)

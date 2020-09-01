@@ -169,8 +169,7 @@ public class ConnectionApi extends VcxJava.API {
 	/**
 	 * Create a Connection object that provides a pairwise connection for an institution's user.
 	 *
-	 * @param  sourceId     institution's personal identification for the connection.
-	 *                      It'll be used as a label for Connection Invitation.
+	 * @param  sourceId     user personal identification for the connection, should be unique.
 	 *
 	 * @return              handle that should be used to perform actions with the Connection object.
 	 *
@@ -195,9 +194,11 @@ public class ConnectionApi extends VcxJava.API {
 	 * Create a Connection object that provides an Out-of-Band Connection for an institution's user.
 	 * NOTE: this method can be used when `aries` protocol is set.
 	 * NOTE: this method is EXPERIMENTAL
+	 * WARN: `requestAttach` field is not fully supported in the current library state.
+	 *        You can use simple messages like Question but it cannot be used
+	 *        for Credential Issuance and Credential Presentation.
 	 *
-	 * @param  sourceId     institution's personal identification for the connection.
-	 *                      It'll be used as a label for Connection Invitation.
+	 * @param  sourceId     user personal identification for the connection, should be unique.
 	 * @param  goalCode     a self-attested code the receiver may want to display to
 	 *                      the user or use in automatically deciding what to do with the out-of-band message.
 	 * @param  goal         a self-attested string that the receiver may want to display to the user about
@@ -205,7 +206,7 @@ public class ConnectionApi extends VcxJava.API {
 	 * @param  handshake    whether Inviter wants to establish regular connection using `connections` handshake protocol.
 	 *                      if false, one-time connection channel will be created.
 	 * @param  requestAttach  An additional message as JSON that will be put into attachment decorator
-	 *                        that the receiver can using in responding to the message.
+	 *                        that the receiver can using in responding to the message (for example Question message).
 	 *
 	 * @return              handle that should be used to perform actions with the Connection object.
 	 *
@@ -215,8 +216,8 @@ public class ConnectionApi extends VcxJava.API {
 	                                                                      String goal, boolean handshake,
 	                                                                      String requestAttach) throws VcxException {
 		ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
-		logger.debug("vcxConnectionCreateOutofband() called with: sourceId = [ {} ], goalCode = [ {} ], " +
-				"goal = [ {} ], handshake = [ {} ], requestAttach = [ {} ]", sourceId, goalCode, goal, handshake, requestAttach);
+		logger.debug("vcxConnectionCreateOutofband() called with: sourceId = [ {} ], goalCode = [****], " +
+				"goal = [****], handshake = [****], requestAttach = [****]", sourceId);
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
@@ -368,8 +369,10 @@ public class ConnectionApi extends VcxJava.API {
 	 *
 	 * NOTE: this method can be used when `aries` protocol is set.
 	 *
-	 * @param  sourceId  institution's personal identification for the connection.
-	 *                      It'll be used as a connection response label.
+	 * WARN: The user has to analyze the value of "request~attach" field yourself and
+	 *       create/handle the correspondent state object or send a reply once the connection is established.
+	 *
+	 * @param  sourceId  user personal identification for the connection, should be unique.
 	 * @param  invite    A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
 	 *                  {
 	 *                      "@type": "https://didcomm.org/out-of-band/%VER/invitation",
@@ -468,7 +471,7 @@ public class ConnectionApi extends VcxJava.API {
 	public static CompletableFuture<String> vcxConnectionConnect(int connectionHandle, String connectionType) throws VcxException {
 		ParamGuard.notNull(connectionHandle, "connectionHandle");
 		ParamGuard.notNullOrWhiteSpace(connectionType, "connectionType");
-		logger.debug("vcxAcceptInvitation() called with: connectionHandle = [" + connectionHandle + "], connectionType = [" + connectionType + "]");
+		logger.debug("vcxAcceptInvitation() called with: connectionHandle = [" + connectionHandle + "], connectionType = [****]");
 		CompletableFuture<String> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
@@ -524,7 +527,7 @@ public class ConnectionApi extends VcxJava.API {
 		ParamGuard.notNull(invitationId, "invitationId");
 		ParamGuard.notNull(inviteDetails, "inviteDetails");
 		logger.debug("vcxConnectionAcceptConnectionInvite() called with: invitationId = [" + invitationId + "], " +
-				"inviteDetails = [" + inviteDetails + "], connectionType = [" + connectionType + "]");
+				"inviteDetails = [****], connectionType = [****]");
 		CompletableFuture<AcceptConnectionResult> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
@@ -615,7 +618,7 @@ public class ConnectionApi extends VcxJava.API {
 	private static Callback vcxConnectionSerializeCB = new Callback() {
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int commandHandle, int err, String serializedData) {
-			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], serializedData = [" + serializedData + "]");
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], serializedData = [****]");
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
 			if (! checkCallback(future, err)) return;
 			future.complete(serializedData);
@@ -820,7 +823,7 @@ public class ConnectionApi extends VcxJava.API {
 			int connectionHandle,
 			String comment
 	) throws VcxException {
-		logger.debug("sendPing() called with: connectionHandle = [" + connectionHandle + "], comment = [" + comment + "]");
+		logger.debug("sendPing() called with: connectionHandle = [" + connectionHandle + "], comment = [****]");
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
@@ -849,7 +852,7 @@ public class ConnectionApi extends VcxJava.API {
 			String query,
 			String comment
 	) throws VcxException {
-		logger.debug("connectionSendDiscoveryFeatures() called with: connectionHandle = [" + connectionHandle + "], query = [" + query + "], comment = [" + comment + "]");
+		logger.debug("connectionSendDiscoveryFeatures() called with: connectionHandle = [" + connectionHandle + "], query = [****], comment = [****]");
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
@@ -886,7 +889,7 @@ public class ConnectionApi extends VcxJava.API {
 	 * @throws VcxException         If an exception occurred in Libvcx library.
 	 */
     public static CompletableFuture<String> connectionSendMessage(int connectionHandle, String message, String sendMessageOptions) throws VcxException {
-        logger.debug("connectionSendMessage() called with: connectionHandle = [" + connectionHandle + "], message = [****], sendMessageOptions = [" + sendMessageOptions + "]");
+        logger.debug("connectionSendMessage() called with: connectionHandle = [" + connectionHandle + "], message = [****], sendMessageOptions = [****]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
         int result = LibVcx.api.vcx_connection_send_message(commandHandle, connectionHandle, message, sendMessageOptions, vcxConnectionSendMessageCB);
@@ -1027,7 +1030,7 @@ public class ConnectionApi extends VcxJava.API {
 
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_connection_get_pw_did(commandHandle, connectionHandle, vcxConnectionGetTheirPwDidCB);
+        int result = LibVcx.api.vcx_connection_get_their_pw_did(commandHandle, connectionHandle, vcxConnectionGetTheirPwDidCB);
         checkResult(result);
 
         return future;
@@ -1036,7 +1039,7 @@ public class ConnectionApi extends VcxJava.API {
 	private static Callback vcxConnectionInfoCB = new Callback() {
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int commandHandle, int err, String info) {
-			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], info = [" + info + "]");
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], info = [****]");
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
 			if (! checkCallback(future, err)) return;
 			future.complete(info);
@@ -1060,13 +1063,13 @@ public class ConnectionApi extends VcxJava.API {
 	 *                                      "serviceEndpoint": string, - Endpoint
 	 *                                      "protocols": array[string], - The set of protocol supported by current side.
 	 *                                  },
-	 *                                      "remote: { <Option> - details about remote connection side
+	 *                                  "remote: Optional({ - details about remote connection side
 	 *                                      "did": string - DID of remote side
 	 *                                      "recipientKeys": array[string] - Recipient keys of remote side
 	 *                                      "routingKeys": array[string] - Routing keys of remote side
 	 *                                      "serviceEndpoint": string - Endpoint of remote side
 	 *                                      "protocols": array[string] - The set of protocol supported by side. Is filled after DiscoveryFeatures process was completed.
-	 *                                  }
+	 *                                  })
 	 *                              }
 	 *
 	 * @throws VcxException         If an exception occurred in Libvcx library.
@@ -1136,6 +1139,55 @@ public class ConnectionApi extends VcxJava.API {
 		int commandHandle = addFuture(future);
 
 		int result = LibVcx.api.vcx_connection_send_reuse(commandHandle, connectionHandle, invite, voidCb);
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Send answer on received question message according to Aries question-answer protocol.
+	 * <p>
+	 * Note that this function works in case `aries` communication method is used.
+	 * In other cases it returns ActionNotSupported error.
+	 *
+	 * @param  connectionHandle handle pointing to a Connection object to send answer message.
+	 * @param  question         A JSON string representing Question received via pairwise connection.
+	 *                          {
+	 *                              "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+	 *                              "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+	 *                              "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+	 *                              "question_detail": "This is optional fine-print giving context to the question and its various answers.",
+	 *                              "nonce": "<valid_nonce>",
+	 *                              "signature_required": true,
+	 *                              "valid_responses" : [
+	 *                                  {"text": "Yes, it's me"},
+	 *                                  {"text": "No, that's not me!"}],
+	 *                              "~timing": {
+	 *                                  "expires_time": "2018-12-13T17:29:06+0000"
+	 *                              }
+	 *                          }
+	 * @param  answer           An answer to use which is a JSON string representing chosen `valid_response` option from Question message.
+	 *                          {
+	 *                              "text": "Yes, it's me"
+	 *                          }
+	 *
+	 * @return                  void
+	 *
+	 * @throws VcxException     If an exception occurred in Libvcx library.
+	 */
+	public static CompletableFuture<Void> connectionSendAnswer(
+			int connectionHandle,
+			String question,
+			String answer
+	) throws VcxException {
+		ParamGuard.notNull(question, "question");
+		ParamGuard.notNull(answer, "answer");
+
+		logger.debug("connectionSendAnswer() called with: connectionHandle = [" + connectionHandle + "],  question = [****],  answer = [****]");
+		CompletableFuture<Void> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_send_answer(commandHandle, connectionHandle, question, answer, voidCb);
 		checkResult(result);
 
 		return future;
