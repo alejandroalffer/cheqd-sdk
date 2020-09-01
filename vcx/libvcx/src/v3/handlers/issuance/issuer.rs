@@ -234,7 +234,7 @@ impl IssuerSM {
                                 .set_thread(thread.clone());
 
                             state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.agent)?;
-                            IssuerState::Finished((state_data, problem_report, thread).into())
+                            return Err(err)
                         }
                     }
                 }
@@ -516,10 +516,8 @@ pub mod test {
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialRequest(CredentialRequest::create())).unwrap();
-            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend(mock_connection())).unwrap();
 
-            assert_match!(IssuerState::Finished(_), issuer_sm.state);
-            assert_eq!(VcxStateType::VcxStateNone as u32, issuer_sm.state());
+            issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend(mock_connection())).unwrap_err();
         }
 
         #[test]

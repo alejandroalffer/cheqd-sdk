@@ -146,7 +146,7 @@ impl HolderSM {
                                 .set_thread(thread.clone());
 
                             connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &connection.agent)?;
-                            HolderState::Finished((state_data, problem_report, thread, Reason::Fail).into())
+                            return Err(err)
                         }
                     }
                 }
@@ -186,7 +186,7 @@ impl HolderSM {
                                 .set_thread(thread.clone());
 
                             state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &state_data.connection.agent)?;
-                            HolderState::Finished((state_data, problem_report, thread, Reason::Fail).into())
+                            return Err(err)
                         }
                     }
                 }
@@ -449,10 +449,7 @@ mod test {
             let credential_offer = CredentialOffer::create().set_offers_attach(r#"{"credential offer": {}}"#).unwrap();
 
             let mut holder_sm = HolderSM::new(credential_offer, "test source".to_string());
-            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
-
-            assert_match!(HolderState::Finished(_), holder_sm.state);
-            assert_eq!(VcxStateType::VcxStateNone as u32, holder_sm.state());
+            holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap_err();
         }
 
         #[test]
@@ -502,10 +499,8 @@ mod test {
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
-            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Credential(Credential::create())).unwrap();
 
-            assert_match!(HolderState::Finished(_), holder_sm.state);
-            assert_eq!(VcxStateType::VcxStateNone as u32, holder_sm.state());
+            holder_sm.handle_message(CredentialIssuanceMessage::Credential(Credential::create())).unwrap_err();
         }
 
         #[test]
