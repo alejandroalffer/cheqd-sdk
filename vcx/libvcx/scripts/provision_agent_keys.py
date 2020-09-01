@@ -20,6 +20,8 @@ def parse_args():
     parser.add_argument("--enterprise-seed", help="optional seed used to create enterprise DID/VK")
     parser.add_argument("--pool-config", help="optional additional config for connection to pool nodes ({timeout: Opt<int>, extended_timeout: Opt<int>, preordered_nodes: Opt<array<string>>})")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--institution-logo-url", default="<NO_LOGO_URL>")
+    parser.add_argument("--institution-name", default="<NO_INSTITUTION_NAME>")
     return parser.parse_args()
 
 def get_agency_info(agency_url):
@@ -62,6 +64,8 @@ def register_agent(args):
 
     agency_info = get_agency_info(args.AGENCY_URL)
     json_str = json.dumps({'agency_url':args.AGENCY_URL,
+        'name':args.institution_name,
+        'logo':args.institution_logo_url,
         'agency_did':agency_info['DID'],
         'agency_verkey':agency_info['verKey'],
         'wallet_key':args.WALLET_KEY,
