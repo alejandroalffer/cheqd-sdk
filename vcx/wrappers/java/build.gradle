@@ -34,22 +34,22 @@ test {
 static def versionMajor() {
     return '0.9.4'
 }
-
-task("buildJavadoc", type: Javadoc) {
-   title = "VCX SDK ${version()}"
-   failOnError = false
-   source = sourceSets.main.java.srcDirs
-   classpath += files(sourceSets.main.runtimeClasspath)
-   destinationDir = file("${project.docsDir}/javadoc-${version()}")
-}
-
-task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
-   baseName = fullVersionName()
-   classifier = 'javadoc'
-   from tasks["buildJavadoc"].destinationDir
-}
-
-build.finalizedBy(buildJavadocJar)
+// Disabled until fix
+// task("buildJavadoc", type: Javadoc) {
+//    title = "VCX SDK ${version()}"
+//    failOnError = false
+//    source = sourceSets.main.java.srcDirs
+//    classpath += files(sourceSets.main.runtimeClasspath)
+//    destinationDir = file("${project.docsDir}/javadoc-${version()}")
+//}
+//
+//task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
+//    baseName = fullVersionName()
+//    classifier = 'javadoc'
+//    from tasks["buildJavadoc"].destinationDir
+//}
+//
+//build.finalizedBy(buildJavadocJar)
 
 static def version() {
     String version = "0.9.3"
