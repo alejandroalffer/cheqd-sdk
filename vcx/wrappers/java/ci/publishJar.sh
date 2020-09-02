@@ -2,7 +2,7 @@
 
 set -e
 JAR_FOLDER=vcx/wrappers/java/artifacts/jar
-JAR_VERSION=$(find ${JAR_FOLDER} -type f -name 'com.evernym-vcx-*.jar'| perl -nle 'print $& if m{(?<=vcx-)(.*)(?<!-javadoc)(?=.jar)}' | head -1 | awk '{print $1}')
+JAR_VERSION=$(find ${JAR_FOLDER} -type f -name 'com.evernym-vcx-*.jar'| perl -nle 'print $& if m{(?<=vcx-)(.*)(?=.jar)}' | head -1 | awk '{print $1}')
 echo "Uploading .jar with version number ==> ${JAR_VERSION}"
 cp -v settings.xml ${JAR_FOLDER}
 pushd ${JAR_FOLDER}
