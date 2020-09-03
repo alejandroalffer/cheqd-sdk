@@ -14,7 +14,7 @@ pub mod devsetup;
 #[cfg(debug_assertions)]
 #[macro_export]
 macro_rules! secret {
-    ($val:expr) => {{ $val }};
+    ($val:expr) => {{ &$val }};
 }
 
 #[cfg(not(debug_assertions))]
@@ -23,6 +23,7 @@ macro_rules! secret {
     ($val:expr) => {{ "_" }};
 }
 
+#[cfg(test)]
 macro_rules! map (
     { $($key:expr => $value:expr),+ } => {
         {

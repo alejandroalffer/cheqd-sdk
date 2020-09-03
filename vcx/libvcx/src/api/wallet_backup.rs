@@ -34,7 +34,8 @@ pub extern fn vcx_wallet_backup_create(command_handle: CommandHandle,
     check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
     check_useful_c_str!(wallet_encryption_key, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_backup_create(command_handle: {}, source_id: {}, wallet_backup_key: ***)", command_handle, source_id);
+    trace!("vcx_wallet_backup_create(command_handle: {}, source_id: {}, wallet_backup_key: {})",
+           command_handle, source_id, secret!(wallet_encryption_key));
 
     spawn(move || {
         match create_wallet_backup(&source_id, &wallet_encryption_key) {
@@ -85,7 +86,7 @@ pub extern fn vcx_wallet_backup_backup(command_handle: CommandHandle,
     check_useful_c_str!(path,  VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_backup_backup(command_handle: {}, wallet_backup_handle: {}, path: {})",
-           command_handle, wallet_backup_handle, path);
+           command_handle, wallet_backup_handle, secret!(path));
 
     spawn(move || {
         trace!("vcx_wallet_backup_backup(command_handle: {}, wallet_backup_handle: {}, path: {})",
@@ -175,8 +176,8 @@ pub extern fn vcx_wallet_backup_update_state_with_message(command_handle: Comman
     check_useful_c_str!(message, VcxErrorKind::InvalidOption);
 
     let source_id = get_source_id(wallet_backup_handle).unwrap_or_default();
-    trace!("vcx_wallet_backup_update_state_with_message(command_handle: {}, wallet_backup: {}), source_id: {:?}",
-           command_handle, wallet_backup_handle, source_id);
+    trace!("vcx_wallet_backup_update_state_with_message(command_handle: {}, wallet_backup: {}, message: {}), source_id: {:?}",
+           command_handle, wallet_backup_handle, secret!(message), source_id);
 
     let message: Message = match serde_json::from_str(&message) {
         Ok(x) => x,
@@ -230,7 +231,7 @@ pub extern fn vcx_wallet_backup_serialize(command_handle: CommandHandle,
         match to_string(wallet_backup_handle) {
             Ok(x) => {
                 trace!("vcx_wallet_backup_serialize_cb(command_handle: {}, rc: {}, data: {}) source_id: {}",
-                       command_handle, error::SUCCESS.message, x, source_id);
+                       command_handle, error::SUCCESS.message, secret!(x), source_id);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             }
@@ -269,7 +270,7 @@ pub extern fn vcx_wallet_backup_deserialize(command_handle: CommandHandle,
     check_useful_c_str!(wallet_backup_str, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_backup_deserialize(command_handle: {}, proof_data: {})",
-           command_handle, wallet_backup_str);
+           command_handle, secret!(wallet_backup_str));
 
     spawn(move || {
         match from_string(&wallet_backup_str) {
@@ -309,11 +310,10 @@ pub extern fn vcx_wallet_backup_restore(command_handle: u32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(config,  VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_backup_recovery(command_handle: {}, config: ****)",
-           command_handle);
+    trace!("vcx_wallet_backup_recovery(command_handle: {}, config: {})",
+           command_handle, secret!(config));
 
     spawn(move || {
-        trace!("vcx_wallet_backup_recovery(command_handle: {}, config: ****)", command_handle);
         match restore_wallet(&config) {
             Ok(_) => {
                 trace!("vcx_wallet_backup_recovery(command_handle: {}, rc: {})", command_handle, error::SUCCESS.message);

@@ -48,7 +48,7 @@ export async function provisionAgent (configAgent: string, options: IInitVCXOpti
   }
 }
 
-export async function provisionAgentWithToken (configAgent: string, token: String, options: IInitVCXOptions = {}): Promise<string> {
+export async function provisionAgentWithToken (configAgent: string, token: string, options: IInitVCXOptions = {}): Promise<string> {
   /**
    * Provision an agent in the agency, populate configuration and wallet for this agent.
    *
@@ -353,6 +353,76 @@ export async function endorseTransaction (transaction: string): Promise<void> {
     return await createFFICallbackPromise<void>(
       (resolve, reject, cb) => {
         const rc = rustAPI().vcx_endorse_transaction(0, transaction, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32'],
+        (xhandle: number, err: number) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve()
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}
+
+export interface IDownloadMessage {
+  uid: string, // id of the message to query.
+}
+
+export async function downloadMessage ({ uid }: IDownloadMessage): Promise<string> {
+  /**
+   *  Retrieves single message from the agency by the given uid.
+   */
+  try {
+    return await createFFICallbackPromise<string>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_download_message(0, uid, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32','string'],
+        (xhandle: number, err: number, message: string) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(message)
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}
+
+export async function fetchPublicEntities (): Promise<void> {
+  /**
+   * Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials.
+   * This function performs two steps:
+   *     1) Retrieves the list of all credentials stored in the opened wallet.
+   *     2) Fetch and cache Schemas / Credential Definitions / Revocation Registry Definitions
+   *        correspondent to received credentials from the connected Ledger.
+   *
+   * This helper function can be used, for instance as a background task, to refresh library cache.
+   * This allows us to reduce the time taken for Proof generation by using already cached entities
+   * instead of queering the Ledger.
+   *
+   * NOTE: Library must be already initialized (wallet and pool must be opened).
+   */
+  try {
+    return await createFFICallbackPromise<void>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_fetch_public_entities(0, cb)
         if (rc) {
           reject(rc)
         }

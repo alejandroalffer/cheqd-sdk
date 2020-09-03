@@ -23,6 +23,7 @@ use messages::proofs::proof_message::get_credential_info;
 
 use v3::handlers::proof_presentation::verifier::verifier::Verifier;
 use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
+use v3::messages::proof_presentation::presentation_proposal::PresentationProposal;
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Proofs> = Default::default();
@@ -80,15 +81,16 @@ impl Proof {
                   requested_predicates: String,
                   revocation_details: String,
                   name: String) -> VcxResult<Proof> {
-        trace!("create >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}", source_id, requested_attrs, requested_predicates, name);
+        trace!("Proof::create >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}",
+               source_id, secret!(requested_attrs), secret!(requested_predicates), secret!(name));
 
         // TODO: Get this to actually validate as json, not just check length.
-        if requested_attrs.len() <= 0 { return Err(VcxError::from(VcxErrorKind::InvalidJson)); }
+        if requested_attrs.len() <= 0 { return Err(VcxError::from(VcxErrorKind::InvalidAttributesStructure)); }
 
         let revocation_details: RevocationInterval = serde_json::from_str(&revocation_details)
-            .or(Err(VcxError::from(VcxErrorKind::InvalidJson)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse RevocationInterval from JSON string. Err: {:?}", err)))?;
 
-        debug!("creating proof with source_id: {}, name: {}, requested_attrs: {}, requested_predicates: {}", source_id, name, requested_attrs, requested_predicates);
+        debug!("Proof {}: Creating state object", source_id);
 
         let mut new_proof = Proof {
             source_id,
@@ -117,6 +119,8 @@ impl Proof {
 
         new_proof.state = VcxStateType::VcxStateInitialized;
 
+        trace!("Proof::create <<<");
+
         Ok(new_proof)
     }
 
@@ -129,10 +133,13 @@ impl Proof {
 
 
     pub fn validate_proof_revealed_attributes(proof_json: &str) -> VcxResult<()> {
+        trace!("Proof::validate_proof_revealed_attributes >>> proof_json: {}", secret!(proof_json));
+        debug!("Proof: Validating proof revealed attributes");
+
         if settings::indy_mocks_enabled() { return Ok(()); }
 
         let proof: Value = serde_json::from_str(proof_json)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize libndy proof: {}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProof, format!("Cannot parse libndy proof from JSON string. Err: {}", err)))?;
 
         let revealed_attrs = match proof["requested_proof"]["revealed_attrs"].as_object() {
             Some(revealed_attrs) => revealed_attrs,
@@ -150,11 +157,14 @@ impl Proof {
             }
         }
 
+        trace!("Proof::validate_proof_revealed_attributes <<<");
+
         Ok(())
     }
 
     pub fn build_credential_defs_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("building credential_def_json for proof validation");
+        trace!("Proof::build_credential_defs_json >>> credential_data: {:?}", secret!(credential_data));
+        debug!("Proof: Building credential definitions for proof validation");
         let mut credential_json = json!({});
 
         for ref cred_info in credential_data.iter() {
@@ -162,37 +172,42 @@ impl Proof {
                 let (id, credential_def) = anoncreds::get_cred_def_json(&cred_info.cred_def_id)?;
 
                 let credential_def = serde_json::from_str(&credential_def)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, format!("Cannot deserialize credential definition: {}", err)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::CredentialDefinitionNotFound, format!("Cannot parse CredentialDefinition received from the Ledger. Err: {}", err)))?;
 
                 credential_json[id] = credential_def;
             }
         }
 
+        trace!("Proof::build_credential_defs_json >>> cred_defs: {}", secret!(credential_json));
+
         Ok(credential_json.to_string())
     }
 
     pub fn build_schemas_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("building schemas json for proof validation");
+        trace!("Proof::build_schemas_json >>> credential_data: {:?}", secret!(credential_data));
+        debug!("Proof: Building schemas for proof validation");
 
         let mut schemas_json = json!({});
 
         for ref cred_info in credential_data.iter() {
             if schemas_json.get(&cred_info.schema_id).is_none() {
-                let (id, schema_json) = anoncreds::get_schema_json(&cred_info.schema_id)
-                    .map_err(|err| err.map(VcxErrorKind::InvalidSchema, "Cannot get schema"))?;
+                let (id, schema_json) = anoncreds::get_schema_json(&cred_info.schema_id)?;
 
                 let schema_val = serde_json::from_str(&schema_json)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidSchema, format!("Cannot deserialize schema: {}", err)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidSchema, format!("Cannot parse Schema received from the Ledger. Err: {}", err)))?;
 
                 schemas_json[id] = schema_val;
             }
         }
 
+        trace!("Proof::build_schemas_json >>> schemas_json: {}", secret!(schemas_json));
+
         Ok(schemas_json.to_string())
     }
 
     pub fn build_rev_reg_defs_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("building rev_reg_def_json for proof validation");
+        trace!("Proof::build_rev_reg_defs_json >>> credential_data: {:?}", secret!(credential_data));
+        debug!("Proof: Building revocation registry definitions for proof validation");
 
         let mut rev_reg_defs_json = json!({});
 
@@ -207,17 +222,21 @@ impl Proof {
                     .or(Err(VcxError::from(VcxErrorKind::InvalidRevocationDetails)))?;
 
                 let rev_reg_def_json = serde_json::from_str(&json)
-                    .or(Err(VcxError::from(VcxErrorKind::InvalidSchema)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidRevocationDetails,
+                                                      format!("Cannot parse RevocationRegistryDefinition received from the Ledger. Err: {}", err)))?;
 
                 rev_reg_defs_json[id] = rev_reg_def_json;
             }
         }
 
+        trace!("Proof::build_rev_reg_defs_json >>> rev_reg_defs_json: {}", secret!(rev_reg_defs_json));
+
         Ok(rev_reg_defs_json.to_string())
     }
 
     pub fn build_rev_reg_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("building rev_reg_json for proof validation");
+        trace!("Proof::build_rev_reg_json >>> credential_data: {:?}", secret!(credential_data));
+        debug!("Proof: building revocation registries for proof validation");
 
         let mut rev_regs_json = json!({});
 
@@ -237,33 +256,39 @@ impl Proof {
                     .or(Err(VcxError::from(VcxErrorKind::InvalidRevocationDetails)))?;
 
                 let rev_reg_json: Value = serde_json::from_str(&json)
-                    .or(Err(VcxError::from(VcxErrorKind::InvalidJson)))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidRevocationDetails,
+                                                      format!("Cannot parse RevocationRegistry received from the Ledger. Err: {}", err)))?;
 
                 let rev_reg_json = json!({timestamp.to_string(): rev_reg_json});
                 rev_regs_json[id] = rev_reg_json;
             }
         }
 
+        trace!("Proof::build_rev_reg_defs_json >>> rev_regs_json: {}", secret!(rev_regs_json));
+
         Ok(rev_regs_json.to_string())
     }
 
     fn build_proof_json(&self) -> VcxResult<String> {
-        debug!("{} building proof json for proof validation", self.source_id);
+        debug!("Proof {}: Vuilding proof json for proof validation", self.source_id);
         match self.proof {
             Some(ref x) => Ok(x.libindy_proof.clone()),
-            None => Err(VcxError::from(VcxErrorKind::InvalidProof)),
+            None => Err(VcxError::from_msg(VcxErrorKind::InvalidState,  format!("Invalid {} Proof object state: `libindy_proof` not found", self.source_id)))?
         }
     }
 
     fn build_proof_req_json(&self) -> VcxResult<String> {
-        debug!("{} building proof request json for proof validation", self.source_id);
-        if let Some(ref x) = self.proof_request {
-            return Ok(x.get_proof_request_data());
+        debug!("Proof {}: Building proof request json for proof validation", self.source_id);
+        match self.proof_request {
+            Some(ref x) => Ok(x.get_proof_request_data()),
+            None => Err(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Proof object state: `proof_request` not found", self.source_id)))?
         }
-        Err(VcxError::from(VcxErrorKind::InvalidProof))
     }
 
     fn proof_validation(&mut self) -> VcxResult<u32> {
+        trace!("Proof::proof_validation >>>");
+        debug!("Proof {}: Validating received proof", self.source_id);
+
         let proof_json = self.build_proof_json()?;
         let proof_req_json = self.build_proof_req_json()?;
 
@@ -281,10 +306,16 @@ impl Proof {
 
         debug!("Indy validated proof: {}", self.source_id);
         self.proof_state = ProofStateType::ProofValidated;
+
+        trace!("Proof::proof_validation <<< proof_state: {:?}", self.proof_state);
+
         Ok(error::SUCCESS.code_num)
     }
 
     pub fn validate_indy_proof(proof_json: &str, proof_req_json: &str) -> VcxResult<bool> {
+        trace!("Proof::validate_indy_proof >>> proof_json: {:?}, proof_req_json: {:?}", secret!(proof_json), secret!(proof_req_json));
+        debug!("Proof: Validating indy proof");
+
         if settings::indy_mocks_enabled() { return Ok(true); }
 
         Proof::validate_proof_revealed_attributes(&proof_json)?;
@@ -300,25 +331,31 @@ impl Proof {
         let rev_regs_json = Proof::build_rev_reg_json(&credential_data)
             .unwrap_or(json!({}).to_string());
 
-        debug!("*******\n{}\n********", credential_defs_json);
-        debug!("*******\n{}\n********", schemas_json);
-        debug!("*******\n{}\n********", proof_json);
-        debug!("*******\n{}\n********", proof_req_json);
-        debug!("*******\n{}\n********", rev_reg_defs_json);
-        debug!("*******\n{}\n********", rev_regs_json);
-        anoncreds::libindy_verifier_verify_proof(proof_req_json,
+        debug!("*******\n{}\n********", secret!(credential_defs_json));
+        debug!("*******\n{}\n********", secret!(schemas_json));
+        debug!("*******\n{}\n********", secret!(proof_json));
+        debug!("*******\n{}\n********", secret!(proof_req_json));
+        debug!("*******\n{}\n********", secret!(rev_reg_defs_json));
+        debug!("*******\n{}\n********", secret!(rev_regs_json));
+        let valid = anoncreds::libindy_verifier_verify_proof(proof_req_json,
                                                  proof_json,
                                                  &schemas_json,
                                                  &credential_defs_json,
                                                  &rev_reg_defs_json,
-                                                 &rev_regs_json)
+                                                 &rev_regs_json)?;
+
+        trace!("Proof::validate_indy_proof >>> valid: {:?}", valid);
+        Ok(valid)
     }
 
     fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
+        trace!("Proof::generate_proof_request_msg >>>");
+        debug!("Proof {}: Generating proof request message", self.source_id);
+
         let their_did = self.their_did.clone().unwrap_or_default();
         let version = if qualifier::is_fully_qualified(&their_did) {
-            Some(ProofRequestVersion::V2) }
-        else { None };
+            Some(ProofRequestVersion::V2)
+        } else { None };
 
         let data_version = "0.1";
         let mut proof_obj = messages::proof_request();
@@ -332,26 +369,26 @@ impl Proof {
             .requested_predicates(&self.requested_predicates)?
             .from_timestamp(self.revocation_interval.from)?
             .to_timestamp(self.revocation_interval.to)?
-            .serialize_message()?;
+            .to_string()?;
 
         self.proof_request = Some(proof_obj);
+
+        trace!("Proof::generate_proof_request_msg <<< proof_request: {:?}", secret!(self.proof_request ));
+
         Ok(proof_request)
     }
 
     fn send_proof_request(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("Proof::send_proof_request >>> connection_handle: {}", connection_handle);
+        debug!("Proof {}: Snding proof request", self.source_id);
 
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("proof {} has invalid state {} for sending proofRequest", self.source_id, self.state as u32);
-            return Err(VcxError::from(VcxErrorKind::NotReady));
+            return Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                          format!("Proof object {} has invalid state {} for sending ProofRequest", self.source_id, self.state as u32)));
         }
-        debug!("sending proof request with proof: {}, and connection {}", self.source_id, connection_handle);
         let agent_info = get_agent_info()?.pw_info(connection_handle)?;
         apply_agent_info(self, &agent_info);
-
-        let title = format!("{} wants you to share: {}",
-                            settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?,
-                            self.name);
 
         let proof_request = self.generate_proof_request_msg()?;
 
@@ -361,29 +398,37 @@ impl Proof {
             .msg_type(&RemoteMessageType::ProofReq)?
             .agent_did(&agent_info.pw_agent_did()?)?
             .agent_vk(&agent_info.pw_agent_vk()?)?
-            .set_title(&title)?
-            .set_detail(&title)?
+            .set_title(&self.name)?
+            .set_detail(&self.name)?
             .version(agent_info.version.clone())?
             .edge_agent_payload(&agent_info.my_pw_vk()?,
                                 &agent_info.their_pw_vk()?,
                                 &proof_request,
                                 PayloadKinds::ProofRequest,
-                                self.thread.clone())
-            .or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))?
+                                self.thread.clone())?
             .send_secure()
             .map_err(|err| err.extend("Cannot send proof request"))?;
 
+
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateOfferSent;
+
+        debug!("Proof {}: Proof request sent", self.source_id);
+        trace!("Proof::send_proof_request <<<");
+
         Ok(error::SUCCESS.code_num)
     }
 
     fn get_proof(&self) -> VcxResult<String> {
-        Ok(self.proof.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidProofHandle))?.libindy_proof.clone())
+        let proof = self.proof.as_ref()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState,  format!("Invalid {} Proof object state: `proof` not found", self.source_id)))?;
+        Ok(proof.libindy_proof.clone())
     }
 
     fn get_proof_request_status(&mut self, message: Option<String>) -> VcxResult<u32> {
-        debug!("updating state for proof {} with msg_id {:?}", self.source_id, self.msg_uid);
+        trace!("Proof::get_proof_request_status >>> message: {:?}", secret!(message));
+        debug!("Proof {}: Updating state", self.source_id);
+
         if self.state == VcxStateType::VcxStateAccepted {
             return Ok(self.get_state());
         } else if message.is_none() &&
@@ -402,7 +447,7 @@ impl Proof {
 
                 let (payload, thread) = Payloads::decrypt(
                     &get_agent_attr(&self.my_vk)?,
-                    &message
+                    &message,
                 )?;
 
                 if let Some(_) = thread {
@@ -414,7 +459,6 @@ impl Proof {
             }
             Some(ref message) => message.clone(),
         };
-        debug!("proof: {}", payload);
 
         self.proof = match parse_proof_payload(&payload) {
             Err(_) => return Ok(self.get_state()),
@@ -440,7 +484,10 @@ impl Proof {
             };
         }
 
-        Ok(self.get_state())
+        let state = self.get_state();
+
+        trace!("Proof::get_proof_request_status <<< state: {}", state);
+        Ok(state)
     }
 
     fn update_state(&mut self, message: Option<String>) -> VcxResult<u32> {
@@ -450,11 +497,22 @@ impl Proof {
 
     fn get_state(&self) -> u32 {
         trace!("Proof::get_state >>>");
-        self.state as u32
+
+        let state = self.state as u32;
+
+        debug!("Proof {} is in state {}", self.source_id, self.state as u32);
+        trace!("Proof::get_state <<< state: {:?}", state);
+        state
     }
 
     fn get_proof_state(&self) -> u32 {
-        self.proof_state as u32
+        trace!("Proof::get_proof_state >>>");
+
+        let state = self.proof_state as u32;
+
+        debug!("Proof {} is in state {}", self.source_id, self.state as u32);
+        trace!("Proof::get_proof_state <<< state: {:?}", state);
+        state
     }
 
     fn get_proof_uuid(&self) -> &String { &self.msg_uid }
@@ -470,6 +528,14 @@ impl Proof {
     }
 }
 
+fn handle_err(err: VcxError) -> VcxError {
+    if err.kind() == VcxErrorKind::InvalidHandle {
+        VcxError::from(VcxErrorKind::InvalidProofHandle)
+    } else {
+        err
+    }
+}
+
 pub fn create_proof(source_id: String,
                     requested_attrs: String,
                     requested_predicates: String,
@@ -482,9 +548,38 @@ pub fn create_proof(source_id: String,
 //            .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
 //    }
 
-    trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}", source_id, requested_attrs, requested_predicates, name);
+    trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}",
+           source_id, secret!(requested_attrs), secret!(requested_predicates), secret!(name));
+    debug!("creating proof state object {}", source_id);
 
     let proof = Proof::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
+
+    let handle = PROOF_MAP.add(Proofs::Pending(proof))
+        .or(Err(VcxError::from(VcxErrorKind::CreateProof)))?;
+
+    debug!("created proof {} with handle {}", get_source_id(handle).unwrap_or_default(), handle);
+    trace!("create_proof <<< handle: {:?}", handle);
+
+    Ok(handle)
+}
+
+pub fn create_proof_with_proposal(source_id: String,
+                                  name: String,
+                                  presentation_proposal: String) -> VcxResult<u32> {
+    debug!("create_proof >>> source_id: {}, name: {}, presentation_proposal: {}", source_id, secret!(name), secret!(presentation_proposal));
+    debug!("creating proof state object with presentation proposal");
+
+    let presentation_proposal: PresentationProposal = serde_json::from_str(&presentation_proposal)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse PresentationProposal from JSON string. Err: {:?}", err)))?;
+
+    let requested_attributes = presentation_proposal.to_proof_request_requested_attributes();
+    let requested_predicates = presentation_proposal.to_proof_request_requested_predicates();
+
+    let proof = Proof::create(source_id,
+                              json!(requested_attributes).to_string(),
+                              json!(requested_predicates).to_string(),
+                              String::from("{}"),
+                              name)?;
 
     PROOF_MAP.add(Proofs::Pending(proof))
         .or(Err(VcxError::from(VcxErrorKind::CreateProof)))
@@ -515,11 +610,10 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
                     .or_else(|_| Ok(obj.get_state()))
             }
             Proofs::V3(ref mut obj) => {
-                obj.update_state(message.as_ref().map(String::as_str))?;
-                Ok(obj.state())
+                obj.update_state(message.as_ref().map(String::as_str))
             }
         }
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
@@ -529,7 +623,7 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
             Proofs::V1(ref obj) => Ok(obj.get_state()),
             Proofs::V3(ref obj) => Ok(obj.state())
         }
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_proof_state(handle: u32) -> VcxResult<u32> {
@@ -539,11 +633,11 @@ pub fn get_proof_state(handle: u32) -> VcxResult<u32> {
             Proofs::V1(ref obj) => Ok(obj.get_proof_state()),
             Proofs::V3(ref obj) => Ok(obj.presentation_status())
         }
-    })
+    }).map_err(handle_err)
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
-    PROOF_MAP.release(handle).or(Err(VcxError::from(VcxErrorKind::InvalidProofHandle)))
+    PROOF_MAP.release(handle).map_err(handle_err)
 }
 
 pub fn release_all() {
@@ -553,8 +647,8 @@ pub fn release_all() {
 pub fn to_string(handle: u32) -> VcxResult<String> {
     PROOF_MAP.get(handle, |obj| {
         serde_json::to_string(obj)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("cannot serialize Proof object: {:?}", err)))
-    })
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize Proof object. Err: {:?}", err)))
+    }).map_err(handle_err)
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
@@ -564,12 +658,12 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
             Proofs::V1(ref obj) => Ok(obj.get_source_id()),
             Proofs::V3(ref obj) => Ok(obj.get_source_id())
         }
-    })
+    }).map_err(handle_err)
 }
 
 pub fn from_string(proof_data: &str) -> VcxResult<u32> {
     let proof: Proofs = serde_json::from_str(proof_data)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("cannot deserialize Proofs object: {:?}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse Proofs object from JSON string. Err: {:?}", err)))?;
 
     PROOF_MAP.add(proof)
 }
@@ -581,7 +675,7 @@ pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
             Proofs::V1(ref mut obj) => obj.generate_proof_request_msg(),
             Proofs::V3(ref obj) => obj.generate_presentation_request_msg()
         }
-    })
+    }).map_err(handle_err)
 }
 
 pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {
@@ -590,8 +684,10 @@ pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32>
             Proofs::Pending(ref mut obj) => {
                 // if Aries connection is established --> Convert Pending object to V3 Aries proof
                 if ::connection::is_v3_connection(connection_handle)? {
+                    debug!("converting pending proof into aries object");
+
                     let revocation_details = serde_json::to_string(&obj.revocation_interval)
-                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("Can not serialize RevocationDetails: {:?}", err)))?;
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize RevocationDetails. Err: {:?}", err)))?;
 
                     let mut verifier = Verifier::create(obj.source_id.to_string(),
                                                         obj.requested_attrs.to_string(),
@@ -617,7 +713,7 @@ pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32>
         };
         *proof = new_proof;
         Ok(error::SUCCESS.code_num)
-    })
+    }).map_err(handle_err)
 }
 
 pub fn get_proof_uuid(handle: u32) -> VcxResult<String> {
@@ -627,12 +723,12 @@ pub fn get_proof_uuid(handle: u32) -> VcxResult<String> {
             Proofs::V1(ref obj) => Ok(obj.get_proof_uuid().clone()),
             Proofs::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle))
         }
-    })
+    }).map_err(handle_err)
 }
 
 fn parse_proof_payload(payload: &str) -> VcxResult<ProofMessage> {
     let my_credential_req = ProofMessage::from_str(&payload)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ProofMessage: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse ProofMessage from JSON string. Err: {}", err)))?;
     Ok(my_credential_req)
 }
 
@@ -643,7 +739,7 @@ pub fn get_proof(handle: u32) -> VcxResult<String> {
             Proofs::V1(ref obj) => obj.get_proof(),
             Proofs::V3(ref obj) => obj.get_presentation()
         }
-    })
+    }).map_err(handle_err)
 }
 
 // TODO: This doesnt feel like it should be here (maybe utils?)
@@ -664,6 +760,7 @@ pub mod tests {
     use utils::devsetup::*;
     use utils::httpclient::AgencyMock;
     use connection;
+    use messages::proofs::proof_request::{AttrInfo, PredicateInfo};
 
     fn default_agent_info(connection_handle: Option<u32>) -> MyAgentInfo {
         if let Some(h) = connection_handle { get_agent_info().unwrap().pw_info(h).unwrap() } else {
@@ -1169,7 +1266,7 @@ pub mod tests {
         // TODO: Do something to guarantee that this handle is bad
         assert_eq!(proof.send_proof_request(bad_handle).unwrap_err().kind(), VcxErrorKind::NotReady);
         // TODO: Add test that returns a INVALID_PROOF_CREDENTIAL_DATA
-        assert_eq!(proof.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
+        assert_eq!(proof.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::WalletRecordNotFound);
 
 
         let empty = r#""#;
@@ -1178,17 +1275,17 @@ pub mod tests {
                                 empty.to_string(),
                                 "{}".to_string(),
                                 r#"{"support_revocation":false}"#.to_string(),
-                                "my name".to_string()).unwrap_err().kind(), VcxErrorKind::InvalidJson);
+                                "my name".to_string()).unwrap_err().kind(), VcxErrorKind::InvalidAttributesStructure);
 
 
-        assert_eq!(to_string(bad_handle).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
+        assert_eq!(to_string(bad_handle).unwrap_err().kind(), VcxErrorKind::InvalidProofHandle);
 
-        assert_eq!(get_source_id(bad_handle).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
+        assert_eq!(get_source_id(bad_handle).unwrap_err().kind(), VcxErrorKind::InvalidProofHandle);
 
         assert_eq!(from_string(empty).unwrap_err().kind(), VcxErrorKind::InvalidJson);
 
         let mut proof_good = create_boxed_proof(None, None, None);
-        assert_eq!(proof_good.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
+        assert_eq!(proof_good.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::WalletRecordNotFound);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -1339,5 +1436,53 @@ pub mod tests {
             rc.unwrap_err(); //FIXME check error code also
             assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
         }
+    }
+
+    #[test]
+    fn test_create_proof_with_proposal() {
+        let _setup = SetupMocks::init();
+
+        let proposal = json!({
+            "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation",
+            "@id": "<uuid-presentation>",
+            "comment": "some comment",
+            "presentation_proposal": {
+                "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview",
+                "attributes": [
+                    {
+                        "name": "account",
+                        "cred_def_id": "BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag",
+                        "value": "12345678",
+                        "referent": "0"
+                    },
+                    {
+                        "name": "streetAddress",
+                        "cred_def_id": "BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag",
+                        "value": "123 Main Street",
+                        "referent": "0"
+                    },
+                ],
+                "predicates": [
+                ]
+            }
+        }).to_string();
+
+        let proof_handle = create_proof_with_proposal("1".to_string(),
+                                               "Optional".to_owned(),
+                                               proposal).unwrap();
+
+        PROOF_MAP.get_mut(proof_handle, |proof| {
+            match proof {
+                Proofs::V3(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending")),
+                Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending")),
+                Proofs::Pending(proof) => {
+                    let requested_attrs: Vec<AttrInfo> = serde_json::from_str(&proof.requested_attrs).unwrap();
+                    let requested_predicates: Vec<PredicateInfo> = serde_json::from_str(&proof.requested_predicates).unwrap();
+                    assert_eq!(2, requested_attrs.len());
+                    assert_eq!(0, requested_predicates.len());
+                    Ok(())
+                },
+            }
+        }).unwrap();
     }
 }

@@ -1,5 +1,6 @@
 import pytest
 import random
+import json
 from vcx.error import ErrorCode, VcxError
 from vcx.state import State
 from vcx.api.connection import Connection
@@ -8,6 +9,7 @@ from vcx.api.connection import Connection
 source_id = '123'
 connection_options = '{"connection_type":"SMS","phone":"8019119191","use_public_did":true}'
 details = '{"connReqId":"njjmmdg","senderAgencyDetail":{"DID":"YRuVCckY6vfZfX9kcQZe3u","endpoint":"52.38.32.107:80/agency/msg","verKey":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"senderDetail":{"DID":"JZho9BzVAEk8jJ1hwrrDiZ","agentKeyDlgProof":{"agentDID":"JDF8UHPBTXigvtJWeeMJzx","agentDelegatedKey":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","signature":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"logoUrl":"https://robohash.org/123","name":"Evernym","verKey":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"statusCode":"MS-101","statusMsg":"message created","targetName":"there"}'
+outofband_invite = '{"@type":"https://didcomm.org/out-of-band/%VER/invitation","@id":"<idusedforcontextaspthid>","label":"FaberCollege","handshake_protocols":["https://didcomm.org/connections/1.0"],"service":[{"id":"#inline","type":"did-communication","recipientKeys":["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],"routingKeys":[],"serviceEndpoint":"https://example.com:5000"}]}'
 
 
 @pytest.mark.asyncio
@@ -84,7 +86,7 @@ async def test_call_to_connect_state_not_initialized():
         data['data']['handle'] = random.randint(900, 99999)
         connection2 = await Connection.deserialize(data)
         await connection2.connect(connection_options)
-    assert ErrorCode.ConnectionError == e.value.error_code
+    assert ErrorCode.NotReady == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -207,4 +209,62 @@ async def test_connection_info():
     connection = await Connection.create(source_id)
     with pytest.raises(VcxError) as e:
         await connection.info()
+    assert ErrorCode.ActionNotSupported == e.value.error_code
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_accept_connection_invite():
+    connection = await Connection.accept_connection_invite(source_id, details)
+    assert connection.handle > 0
+    assert State.Accepted == await connection.get_state()
+    assert connection.serialized == await connection.serialize()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_create_with_outofband_invite():
+    connection = await Connection.create_with_outofband_invite(source_id, outofband_invite)
+    assert connection.handle > 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_send_reuse():
+    connection = await Connection.create(source_id)
+    with pytest.raises(VcxError) as e:
+        await connection.send_reuse(outofband_invite)
+    assert ErrorCode.ActionNotSupported == e.value.error_code
+    assert connection.handle > 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_create_outofband():
+    with pytest.raises(VcxError) as e:
+        connection = await Connection.create_outofband('Foo', None, 'Foo Goal', True, None)
+    assert ErrorCode.ActionNotSupported == e.value.error_code
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_send_answer():
+    connection = await Connection.create(source_id)
+    with pytest.raises(VcxError) as e:
+        question = {
+            "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+            "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+            "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+            "question_detail": "This is optional fine-print giving context to the question and its various answers.",
+            "nonce": "<valid_nonce>",
+            "signature_required": True,
+            "valid_responses" : [
+                {"text": "Yes, it's me"},
+                {"text": "No, that's not me!"}],
+            "~timing": {
+                "expires_time": "2018-12-13T17:29:06+0000"
+            }
+        }
+        answer = {"text": "Yes, it's me"}
+        await connection.send_answer(json.dumps(question), json.dumps(answer))
     assert ErrorCode.ActionNotSupported == e.value.error_code

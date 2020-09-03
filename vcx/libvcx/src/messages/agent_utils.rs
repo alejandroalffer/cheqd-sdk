@@ -1,13 +1,13 @@
 use settings;
 use messages::{A2AMessage, A2AMessageV1, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
 use messages::message_type::MessageTypes;
-use utils::{error, httpclient, constants};
+use utils::{httpclient, constants};
 use utils::libindy::{wallet, anoncreds};
 use utils::libindy::signus::create_and_store_my_did;
 use utils::option_util::get_or_default;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
-use settings::{ProtocolTypes, CONFIG_USE_PUBLIC_DID, config_str_to_bool};
+use settings::ProtocolTypes;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Connect {
@@ -147,7 +147,6 @@ pub struct Config {
     communication_method: Option<String>,
     webhook_url: Option<String>,
     use_latest_protocols: Option<String>,
-    use_public_did: Option<bool>,
 }
 
 pub fn set_config_values(my_config: &Config) {
@@ -169,7 +168,6 @@ pub fn set_config_values(my_config: &Config) {
     settings::set_opt_config_value(settings::CONFIG_DID_METHOD, &my_config.did_method);
     settings::set_opt_config_value(settings::COMMUNICATION_METHOD, &my_config.communication_method);
     settings::set_opt_config_value(settings::CONFIG_WEBHOOK_URL, &my_config.webhook_url);
-    settings::set_opt_config_value(settings::CONFIG_USE_PUBLIC_DID, &my_config.use_public_did.map(|x| x.to_string()));
 }
 
 fn _create_issuer_keys(my_did: &str, my_vk: &str, my_config: &Config) -> VcxResult<(String, String)> {
@@ -216,6 +214,11 @@ pub fn get_final_config(my_did: &str,
                         my_config: &Config) -> VcxResult<String> {
     let (issuer_did, issuer_vk) = _create_issuer_keys(my_did, my_vk, my_config)?;
 
+    /* Update Agent Info */
+    update_agent_profile(&agent_did,
+                         &Some(issuer_did.to_string()),
+                         my_config.protocol_type.clone())?;
+
     let mut final_config = json!({
         "wallet_key": &my_config.wallet_key,
         "wallet_name": wallet_name,
@@ -232,7 +235,6 @@ pub fn get_final_config(my_did: &str,
         "institution_logo_url": get_or_default(&my_config.logo, "<CHANGE_ME>"),
         "genesis_path": get_or_default(&my_config.path, "<CHANGE_ME>"),
         "protocol_type": &my_config.protocol_type,
-        "use_public_did": &my_config.use_public_did.unwrap_or(false)
     });
 
     if let Some(key_derivation) = &my_config.wallet_key_derivation {
@@ -268,23 +270,23 @@ pub fn parse_config(config: &str) -> VcxResult<Config> {
         .map_err(|err|
             VcxError::from_msg(
                 VcxErrorKind::InvalidConfiguration,
-                format!("Cannot parse config: {}", err),
+                format!("Cannot parse config from JSON. Err: {}", err),
             )
         )?;
     Ok(my_config)
 }
 
 pub fn connect_register_provision(config: &str) -> VcxResult<String> {
-    trace!("connect_register_provision >>> config: {:?}", config);
+    trace!("connect_register_provision >>> config: {:?}", secret!(config));
     let my_config = parse_config(config)?;
 
-    trace!("***Configuring Library");
+    debug!("***Configuring Library");
     set_config_values(&my_config);
 
-    trace!("***Configuring Wallet");
+    debug!("***Configuring Wallet");
     let (my_did, my_vk, wallet_name) = configure_wallet(&my_config)?;
 
-    trace!("Connecting to Agency");
+    debug!("Connecting to Agency");
     let (agent_did, agent_vk) = match my_config.protocol_type {
         settings::ProtocolTypes::V1 => onboarding_v1(&my_did, &my_vk, &my_config.agency_did)?,
         settings::ProtocolTypes::V2 |
@@ -299,7 +301,10 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
 }
 
 fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
+    trace!("Running Onboarding V1");
+
     /* STEP 1 - CONNECT */
+    trace!("Sending CONNECT message");
     AgencyMock::set_next_response(constants::CONNECTED_RESPONSE.to_vec());
 
     let message = A2AMessage::Version1(
@@ -311,12 +316,13 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     let ConnectResponse { from_vk: agency_pw_vk, from_did: agency_pw_did, .. } =
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::ConnectResponse(resp)) => resp,
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectResponse"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of ConnectResponse"))
         };
 
     settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agency_pw_vk);
 
     /* STEP 2 - REGISTER */
+    trace!("Sending REGISTER message");
     AgencyMock::set_next_response(constants::REGISTER_RESPONSE.to_vec());
 
     let message = A2AMessage::Version1(
@@ -328,10 +334,11 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     let _response: SignUpResponse =
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::SignUpResponse(resp)) => resp,
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of SignUpResponse"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of SignUpResponse"))
         };
 
     /* STEP 3 - CREATE AGENT */
+    trace!("Sending CREATE_AGENT message");
     AgencyMock::set_next_response(constants::AGENT_CREATED.to_vec());
 
     let message = A2AMessage::Version1(
@@ -343,19 +350,8 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     let response: CreateAgentResponse =
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::CreateAgentResponse(resp)) => resp,
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of CreateAgentResponse"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of CreateAgentResponse"))
         };
-
-    /* STEP 4 - Update Agent Info */
-    /* Update Agent Info */
-    let mut public_did: Option<String> = None;
-    if config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false) {
-        println!("Use public did");
-        public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
-    };
-    update_agent_profile(&response.from_did,
-                         &public_did,
-                         ProtocolTypes::V1)?;
 
     Ok((response.from_did, response.from_vk))
 }
@@ -384,6 +380,7 @@ pub fn update_agent_profile(agent_did: &str,
 
 pub fn connect_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
     /* STEP 1 - CONNECT */
+    trace!("Sending CONNECT message");
     let message = A2AMessage::Version2(
         A2AMessageV2::Connect(Connect::build(my_did, my_vk))
     );
@@ -396,7 +393,7 @@ pub fn connect_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Str
                 resp,
             _ => return
                 Err(VcxError::from_msg(
-                    VcxErrorKind::InvalidHttpResponse,
+                    VcxErrorKind::InvalidAgencyResponse,
                     "Message does not match any variant of ConnectResponse")
                 )
         };
@@ -407,9 +404,12 @@ pub fn connect_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Str
 
 // it will be changed next
 fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
+    trace!("Running Onboarding V2");
+
     let (agency_pw_did, _) = connect_v2(my_did, my_vk, agency_did)?;
 
     /* STEP 2 - REGISTER */
+    trace!("Sending REGISTER message");
     let message = A2AMessage::Version2(
         A2AMessageV2::SignUp(SignUp::build())
     );
@@ -419,10 +419,11 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     let _response: SignUpResponse =
         match response.remove(0) {
             A2AMessage::Version2(A2AMessageV2::SignUpResponse(resp)) => resp,
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of SignUpResponse"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of SignUpResponse"))
         };
 
     /* STEP 3 - CREATE AGENT */
+    trace!("Sending CREATE AGENT message");
     let message = A2AMessage::Version2(
         A2AMessageV2::CreateAgent(CreateAgent::build())
     );
@@ -432,23 +433,15 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     let response: CreateAgentResponse =
         match response.remove(0) {
             A2AMessage::Version2(A2AMessageV2::CreateAgentResponse(resp)) => resp,
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of CreateAgentResponse"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of CreateAgentResponse"))
         };
 
-    /* STEP 4 - Update Agent Info */
-    let mut public_did: Option<String> = None;
-    if config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false) {
-        println!("Use public did");
-        public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
-    };
-    update_agent_profile(&response.from_did,
-                         &public_did,
-                         ProtocolTypes::V2)?;
     Ok((response.from_did, response.from_vk))
 }
 
 pub fn update_agent_info(com_method: ComMethod) -> VcxResult<()> {
-    trace!("update_agent_info >>> com_method: {:?}", com_method);
+    trace!("update_agent_info >>> com_method: {:?}", secret!(com_method));
+    debug!("Updating agent information");
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
@@ -464,6 +457,8 @@ pub fn update_agent_info(com_method: ComMethod) -> VcxResult<()> {
 }
 
 fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
+    trace!("Updating agent information V1");
+
     AgencyMock::set_next_response(constants::REGISTER_RESPONSE.to_vec());
 
     let message = A2AMessage::Version1(
@@ -474,6 +469,8 @@ fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
 }
 
 fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
+    trace!("Updating agent information V2");
+
     let message = A2AMessage::Version2(
         A2AMessageV2::UpdateComMethod(UpdateComMethod::build(com_method))
     );
@@ -484,8 +481,7 @@ fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
 pub fn send_message_to_agency(message: &A2AMessage, did: &str) -> VcxResult<Vec<A2AMessage>> {
     let data = prepare_message_for_agency(message, &did, &settings::get_protocol_type())?;
 
-    let response = httpclient::post_u8(&data)
-        .map_err(|err| err.map(VcxErrorKind::InvalidHttpResponse, error::INVALID_HTTP_RESPONSE.message))?;
+    let response = httpclient::post_u8(&data)?;
 
     parse_response_from_agency(&response, &settings::get_protocol_type())
 }
@@ -562,7 +558,6 @@ mod tests {
             "remote_to_sdk_verkey":"5wTKXrdfUiTQ7f3sZJzvHpcS7XHHxiBkFtPCsynZtv4k",
             "sdk_to_remote_did":"FhrSrYtQcw3p9xwf7NYemf",
             "sdk_to_remote_verkey":"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-            "use_public_did": false,
             "wallet_key":"test_key",
             "wallet_name":"LIBVCX_SDK_WALLET"
         });

@@ -5,6 +5,7 @@ use utils::httpclient;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
 use utils::constants::DELETE_CONNECTION_RESPONSE;
+use settings::ProtocolTypes;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -73,7 +74,7 @@ impl DeleteConnectionBuilder {
             status_code: ConnectionStatus::Deleted,
             agent_did: String::new(),
             agent_vk: String::new(),
-            version: settings::get_protocol_type(),
+            version: ProtocolTypes::V1,
         }
     }
 
@@ -98,14 +99,14 @@ impl DeleteConnectionBuilder {
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
-        trace!("parse_create_keys_response >>>");
+        trace!("DeleteConnection::parse_response >>>");
 
         let mut response = parse_response_from_agency(response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(_)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateConnectionResponse(_)) => Ok(()),
-            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConnectionResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of UpdateConnectionResponse"))
         }
     }
 }
@@ -136,6 +137,8 @@ impl GeneralMessage for DeleteConnectionBuilder {
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("DeleteConnection::prepare_request >>>");
+
         let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -157,6 +160,8 @@ impl GeneralMessage for DeleteConnectionBuilder {
                     )
                 )
         };
+
+        trace!("DeleteConnection::prepare_request >>> messages: {:?}", secret!(message));
 
         prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }

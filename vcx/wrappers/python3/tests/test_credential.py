@@ -239,7 +239,7 @@ async def test_send_request_with_invalid_state():
         await connection.connect(connection_options)
         credential = await Credential.create(source_id, offer)
         await credential.send_request(connection, 0)
-    assert ErrorCode.CreateCredentialFailed == e.value.error_code
+    assert ErrorCode.InvalidCredentialOffer == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -258,3 +258,25 @@ async def test_credential_get_payment_txn():
         credential = await Credential.create(source_id, offer)
         await credential.get_payment_txn()
     assert ErrorCode.NoPaymentInformation == e.value.error_code
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_credential_accept_offer():
+    connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
+
+    offer[0]['msg_ref_id'] = 'asqwr'
+    credential = await Credential.accept_offer(source_id, offer, connection)
+    assert credential.source_id == source_id
+    assert credential.handle > 0
+    assert await credential.get_state() == State.OfferSent
+    assert credential.serialized == await credential.serialize()
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_reject_credential():
+    connection = await Connection.create(source_id)
+    credential = await Credential.create(source_id, offer)
+    with pytest.raises(VcxError) as e:
+        await credential.reject(connection, None)
+    assert ErrorCode.ActionNotSupported == e.value.error_code

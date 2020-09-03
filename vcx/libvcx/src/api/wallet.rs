@@ -38,7 +38,7 @@ pub extern fn vcx_wallet_get_token_info(command_handle: CommandHandle,
         match get_wallet_token_info() {
             Ok(x) => {
                 trace!("vcx_wallet_get_token_info_cb(command_handle: {}, rc: {}, info: {})",
-                       command_handle, 0, x);
+                       command_handle, 0, secret!(x));
 
                 let msg = CStringUtils::string_to_cstring(x.to_string());
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
@@ -82,14 +82,14 @@ pub extern fn vcx_wallet_create_payment_address(command_handle: CommandHandle,
         None
     };
 
-    trace!("vcx_wallet_create_payment_address(command_handle: {})",
-           command_handle);
+    trace!("vcx_wallet_create_payment_address(command_handle: {}, seed: {:?})",
+           command_handle, secret!(seed));
 
     spawn(move || {
         match create_address(seed) {
             Ok(x) => {
                 trace!("vcx_wallet_create_payment_address_cb(command_handle: {}, rc: {}, address: {})",
-                       command_handle, error::SUCCESS.message, x);
+                       command_handle, error::SUCCESS.message, secret!(x));
 
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
@@ -134,7 +134,7 @@ pub extern fn vcx_wallet_sign_with_address(command_handle: CommandHandle,
     check_useful_c_byte_array!(message_raw, message_len, VcxErrorKind::InvalidOption, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_sign_with_address(command_handle: {}, payment_address: {}, message_raw: {:?})",
-           command_handle, payment_address, message_raw);
+           command_handle, secret!(payment_address), secret!(message_raw));
 
     spawn(move || {
         match sign_with_address(&payment_address, message_raw.as_slice()) {
@@ -190,7 +190,7 @@ pub extern fn vcx_wallet_verify_with_address(command_handle: CommandHandle,
     check_useful_c_byte_array!(signature_raw, signature_len, VcxErrorKind::InvalidOption, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_verify_with_address(command_handle: {}, payment_address: {}, message_raw: {:?}, signature_raw: {:?})",
-           command_handle, payment_address, message_raw, signature_raw);
+           command_handle, secret!(payment_address), secret!(message_raw), signature_raw);
 
     spawn(move || {
         match verify_with_address(&payment_address, message_raw.as_slice(), signature_raw.as_slice()) {
@@ -496,7 +496,7 @@ pub extern fn vcx_wallet_get_record(command_handle: CommandHandle,
         match wallet::get_record(&type_, &id, &options_json) {
             Ok(x) => {
                 trace!("vcx_wallet_get_record(command_handle: {}, rc: {}, record_json: {})",
-                       command_handle, error::SUCCESS.message, x);
+                       command_handle, error::SUCCESS.message, secret!(x));
 
                 let msg = CStringUtils::string_to_cstring(x);
 
@@ -603,13 +603,13 @@ pub extern fn vcx_wallet_send_tokens(command_handle: CommandHandle,
         Err(e) => return VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot parse tokens: {}", e)).into(),
     };
     trace!("vcx_wallet_send_tokens(command_handle: {}, payment_handle: {}, tokens: {}, recipient: {})",
-           command_handle, payment_handle, tokens, recipient);
+           command_handle, payment_handle, secret!(tokens), secret!(recipient));
 
     spawn(move || {
         match pay_a_payee(tokens, &recipient) {
             Ok((_payment, msg)) => {
                 trace!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, receipt: {})",
-                       command_handle, error::SUCCESS.message, msg);
+                       command_handle, error::SUCCESS.message, secret!(msg));
                 let msg = CStringUtils::string_to_cstring(msg);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             }
@@ -775,12 +775,11 @@ pub extern fn vcx_wallet_export(command_handle: CommandHandle,
     check_useful_c_str!(path,  VcxErrorKind::InvalidOption);
     check_useful_c_str!(backup_key, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_export(command_handle: {}, path: {}, backup_key: ****)",
-           command_handle, path);
+    trace!("vcx_wallet_export(command_handle: {}, path: {}, backup_key: {})",
+           command_handle, path, secret!(backup_key));
 
 
     spawn(move || {
-        trace!("vcx_wallet_export(command_handle: {}, path: {}, backup_key: ****)", command_handle, path);
         match export(get_wallet_handle(), &path, &backup_key) {
             Ok(()) => {
                 let return_code = error::SUCCESS.code_num;
@@ -824,11 +823,10 @@ pub extern fn vcx_wallet_import(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(config,  VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_import(command_handle: {}, config: ****)",
-           command_handle);
+    trace!("vcx_wallet_import(command_handle: {}, config: {})",
+           command_handle, secret!(config));
 
     thread::spawn(move || {
-        trace!("vcx_wallet_import(command_handle: {}, config: ****)", command_handle);
         match import(&config) {
             Ok(()) => {
                 trace!("vcx_wallet_import(command_handle: {}, rc: {})", command_handle, error::SUCCESS.message);
@@ -867,7 +865,7 @@ pub  extern fn vcx_wallet_validate_payment_address(command_handle: i32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_validate_payment_address(command_handle: {}, payment_address: {})",
-           command_handle, payment_address);
+           command_handle, secret!(payment_address));
 
     spawn(move || {
         cb(command_handle, error::SUCCESS.code_num);

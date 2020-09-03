@@ -135,7 +135,7 @@ pub struct ConnectionRequestRedirect {
     pub thread: Thread,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct KeyDlgProof {
     #[serde(rename = "agentDID")]
@@ -146,7 +146,7 @@ pub struct KeyDlgProof {
     signature: String,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SenderDetail {
     pub name: Option<String>,
@@ -161,7 +161,7 @@ pub struct SenderDetail {
     pub public_did: Option<String>,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SenderAgencyDetail {
     #[serde(rename = "DID")]
@@ -171,7 +171,7 @@ pub struct SenderAgencyDetail {
     pub endpoint: String,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteDetail {
     pub status_code: String,
@@ -303,7 +303,6 @@ impl SendInviteBuilder {
     }
 
     pub fn key_delegate(&mut self, key: &str) -> VcxResult<&mut Self> {
-        validation::validate_key_delegate(key)?;
         self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
         Ok(self)
     }
@@ -317,8 +316,7 @@ impl SendInviteBuilder {
     }
 
     pub fn phone_number(&mut self, phone_number: Option<&str>) -> VcxResult<&mut Self> {
-        if let Some(ref p_num) = phone_number {
-            validation::validate_phone_number(p_num)?;
+        if let Some(_) = phone_number {
             self.payload.phone_no = phone_number.map(String::from);
         }
         Ok(self)
@@ -366,6 +364,8 @@ impl SendInviteBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<(InviteDetail, String)> {
+        trace!("SendInvite::parse_response >>>");
+
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         let index = match self.version {
@@ -380,7 +380,7 @@ impl SendInviteBuilder {
                 Ok((res.invite_detail, res.url_to_invite_detail)),
             A2AMessage::Version2(A2AMessageV2::ConnectionRequestResponse(res)) =>
                 Ok((res.invite_detail, res.url_to_invite_detail)),
-            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionRequestResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of ConnectionRequestResponse"))
         }
     }
 }
@@ -420,7 +420,6 @@ impl AcceptInviteBuilder {
     }
 
     pub fn key_delegate(&mut self, key: &str) -> VcxResult<&mut Self> {
-        validation::validate_key_delegate(key)?;
         self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
         Ok(self)
     }
@@ -485,12 +484,14 @@ impl AcceptInviteBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<String> {
+        trace!("AcceptInvite::parse_response >>>");
+
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
             A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(res)) => Ok(res.id),
-            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionAnswerResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of ConnectionAnswerResponse"))
         }
     }
 }
@@ -531,7 +532,6 @@ impl RedirectConnectionBuilder {
     }
 
     pub fn key_delegate(&mut self, key: &str) -> VcxResult<&mut Self> {
-        validation::validate_key_delegate(key)?;
         self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
         Ok(self)
     }
@@ -602,12 +602,14 @@ impl RedirectConnectionBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<String> {
+        trace!("RedirectConnection::parse_response >>>");
+
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
             A2AMessage::Version2(A2AMessageV2::ConnectionRequestRedirectResponse(res)) => Ok(res.id),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionRequestRedirectResponse"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of ConnectionRequestRedirectResponse"))
         }
     }
 }
@@ -632,6 +634,8 @@ impl GeneralMessage for SendInviteBuilder {
     }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("SendInvite::prepare_request >>>");
+
         self.generate_signature()?;
 
         let messages =
@@ -668,6 +672,8 @@ impl GeneralMessage for SendInviteBuilder {
                 }
             };
 
+        trace!("SendInvite::prepare_request >>> messages: {:?}", secret!(messages));
+
         prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
 }
@@ -689,6 +695,8 @@ impl GeneralMessage for AcceptInviteBuilder {
     }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("AcceptInvite::prepare_request >>>");
+
         self.generate_signature()?;
 
         let messages =
@@ -723,6 +731,8 @@ impl GeneralMessage for AcceptInviteBuilder {
                 }
             };
 
+        trace!("AcceptInvite::prepare_request >>> messages: {:?}", secret!(messages));
+
         prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
 }
@@ -744,6 +754,8 @@ impl GeneralMessage for RedirectConnectionBuilder {
     }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        trace!("RedirectConnection::prepare_request >>>");
+
         self.generate_signature()?;
 
         let messages =
@@ -778,6 +790,8 @@ impl GeneralMessage for RedirectConnectionBuilder {
                     vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestRedirect(msg))]
                 }
             };
+
+        trace!("RedirectConnection::prepare_request >>> messages: {:?}", secret!(messages));
 
         prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }

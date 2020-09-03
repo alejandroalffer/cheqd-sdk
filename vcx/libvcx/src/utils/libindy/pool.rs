@@ -88,6 +88,11 @@ pub fn init_pool() -> VcxResult<()> {
 
     if settings::indy_mocks_enabled() { return Ok(()); }
 
+    if get_pool_handle().is_ok(){
+        debug!("Pool is already initialized.");
+        return Ok(())
+    }
+
     let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME)
         .unwrap_or(settings::DEFAULT_POOL_NAME.to_string());
 
@@ -110,9 +115,7 @@ pub fn init_pool() -> VcxResult<()> {
 pub fn close() -> VcxResult<()> {
     let handle = get_pool_handle()?;
 
-    //TODO there was timeout here (before future-based Rust wrapper)
     pool::close_pool_ledger(handle).wait()?;
-
     reset_pool_handle();
 
     Ok(())

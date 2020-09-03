@@ -1,11 +1,9 @@
 use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
 use utils::libindy::wallet;
 use error::prelude::*;
-use messages::agent_utils::{parse_config, set_config_values, configure_wallet, get_final_config, connect_v2, send_message_to_agency, update_agent_profile};
+use messages::agent_utils::{parse_config, set_config_values, configure_wallet, get_final_config, connect_v2, send_message_to_agency};
 use serde_json::from_str;
 use messages::message_type::MessageTypes;
-use settings::{config_str_to_bool, ProtocolTypes, CONFIG_USE_PUBLIC_DID};
-use settings;
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -65,34 +63,25 @@ impl ProvisionAgent {
     }
 }
 pub fn provision(config: &str, token: &str) -> VcxResult<String> {
-    trace!("connect_register_provision >>> config: {:?}", config);
+    trace!("connect_register_provision >>> config: {:?}", secret!(config));
     let my_config = parse_config(config)?;
     let token: ProvisionToken = from_str(token).map_err(|err| VcxError::from_msg(
         VcxErrorKind::InvalidProvisioningToken,
         format!("Cannot parse config: {}", err)
     ))?;
 
-    trace!("***Configuring Library");
+    debug!("***Configuring Library");
     set_config_values(&my_config);
 
-    trace!("***Configuring Wallet");
+    debug!("***Configuring Wallet");
     let (my_did, my_vk, wallet_name) = configure_wallet(&my_config)?;
 
-    trace!("Connecting to Agency");
+    debug!("Connecting to Agency");
     let (agent_did, agent_vk) = create_agent(&my_did, &my_vk, &my_config.agency_did, token)?;
-
-
-    /* Update Agent Info */
-    let mut public_did: Option<String> = None;
-    if config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap_or(false) {
-        public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
-    };
-    update_agent_profile(&agent_did,
-                         &public_did,
-                         ProtocolTypes::V2)?;
 
     wallet::close_wallet()?;
 
+    debug!("Building config");
     get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)
 }
 
@@ -118,7 +107,7 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
             A2AMessage::Version2(A2AMessageV2::ProblemReport(resp)) => {
                 return Err(VcxError::from_msg(VcxErrorKind::InvalidProvisioningToken, format!("provisioning failed: {:?}", resp)))
             },
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of AgentCreated"))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of AgentCreated"))
         };
 
     Ok((response.self_did, response.agent_vk))
@@ -163,7 +152,6 @@ mod tests {
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
             "protocol_type": protocol_type,
-            "use_public_did": false
             }).to_string();
 
         let token = json!( {

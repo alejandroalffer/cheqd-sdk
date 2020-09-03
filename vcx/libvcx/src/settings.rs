@@ -54,7 +54,6 @@ pub static CONFIG_POOL_CONFIG: &'static str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
 pub static COMMUNICATION_METHOD: &str = "communication_method";// proprietary or aries
 pub static CONFIG_ACTORS: &str = "actors"; // inviter, invitee, issuer, holder, prover, verifier, sender, receiver
-pub static CONFIG_USE_PUBLIC_DID: &str = "use_public_did"; // Updates Agent to use public did in relationships
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
@@ -84,7 +83,6 @@ pub static DEFAULT_PAYMENT_METHOD: &str = "sov";
 pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
 pub static DEFAULT_COMMUNICATION_METHOD: &str = "evernym";
-pub static DEFAULT_USE_PUBLIC_DID: bool = false;
 
 lazy_static! {
     static ref SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::new());
@@ -122,7 +120,7 @@ pub fn init_mysql_wallet() {
 
 
 pub fn set_defaults() -> u32 {
-    trace!("set_defaults >>>");
+    trace!("set default settings >>>");
 
     // if this fails the program should exit
     let mut settings = SETTINGS.write().unwrap();
@@ -159,7 +157,6 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
     settings.insert(CONFIG_USE_LATEST_PROTOCOLS.to_string(), DEFAULT_USE_LATEST_PROTOCOLS.to_string());
     settings.insert(COMMUNICATION_METHOD.to_string(), DEFAULT_COMMUNICATION_METHOD.to_string());
-    settings.insert(CONFIG_USE_PUBLIC_DID.to_string(), DEFAULT_USE_PUBLIC_DID.to_string());
 
     error::SUCCESS.code_num
 }
@@ -176,13 +173,13 @@ pub fn get_wallet_type() -> String {
 
 #[cfg(all(not(feature="mysql")))]
 pub fn get_wallet_storage_config() -> String {
-    trace!("setting default conf");
+    trace!("setting default storage confing");
     DEFAULT_WALLET_STORAGE_CONFIG.to_string()
 }
 
 #[cfg(all(feature="mysql"))]
 pub fn get_wallet_storage_config() -> String {
-    trace!("setting mysql conf");
+    trace!("setting mysql storage config");
     json!({
         "db_name": "wallet",
         "port": get_port(),
@@ -238,7 +235,8 @@ fn get_pass() -> String {
 }
 
 pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
-    trace!("validate_config >>> config: {:?}", config);
+    trace!("validate_config >>> config: {:?}", secret!(config));
+    debug!("validating config");
 
     //Mandatory parameters
     if ::utils::libindy::wallet::get_wallet_handle() == INVALID_WALLET_HANDLE && config.get(CONFIG_WALLET_KEY).is_none() {
@@ -263,11 +261,14 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
 
     validate_optional_config_val(config.get(CONFIG_WEBHOOK_URL), VcxErrorKind::InvalidUrl, Url::parse)?;
 
-    validate_optional_config_val(config.get(CONFIG_ACTORS), VcxErrorKind::InvalidOption, validation::validate_actors)?;
+    validate_optional_config_val(config.get(CONFIG_ACTORS), VcxErrorKind::InvalidConfiguration, validation::validate_actors)?;
+
+    trace!("validate_config <<<");
 
     Ok(error::SUCCESS.code_num)
 }
 
+#[allow(dead_code)]
 fn validate_mandatory_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKind, closure: F) -> VcxResult<u32>
     where F: Fn(&str) -> Result<S, E> {
     closure(val.as_ref().ok_or(VcxError::from(err))?)
@@ -276,24 +277,21 @@ fn validate_mandatory_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKin
     Ok(error::SUCCESS.code_num)
 }
 
-fn validate_optional_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKind, closure: F) -> VcxResult<u32>
+fn validate_optional_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKind, closure: F) -> VcxResult<()>
     where F: Fn(&str) -> Result<S, E> {
-    if val.is_none() { return Ok(error::SUCCESS.code_num); }
-
-    closure(val.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConfiguration))?)
-        .or(Err(VcxError::from(err)))?;
-
-    Ok(error::SUCCESS.code_num)
-}
-
-pub fn validate_payment_method() -> VcxResult<u32> {
-    validate_mandatory_config_val(get_config_value(CONFIG_PAYMENT_METHOD).ok().as_ref(),
-                                  VcxErrorKind::MissingPaymentMethod, validation::validate_payment_method)
+    match val {
+        Some(val_) => {
+            closure(val_)
+                .or(Err(VcxError::from(err)))?;
+            Ok(())
+        },
+        None => Ok(())
+    }
 }
 
 pub fn log_settings() {
     let settings = SETTINGS.read().unwrap();
-    trace!("loaded settings: {:?}", settings.to_string());
+    trace!("loaded settings: {:?}", secret!(settings.to_string()));
 }
 
 pub fn indy_mocks_enabled() -> bool {
@@ -315,10 +313,11 @@ pub fn agency_mocks_enabled() -> bool {
 }
 
 pub fn process_config_string(config: &str, do_validation: bool) -> VcxResult<u32> {
-    trace!("process_config_string >>> config {}", config);
+    trace!("process_config_string >>> config {}", secret!(config));
+    debug!("processing config");
 
     let configuration: Value = serde_json::from_str(config)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse config: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot parse config from JSON. Err: {}", err)))?;
 
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {
@@ -327,7 +326,7 @@ pub fn process_config_string(config: &str, do_validation: bool) -> VcxResult<u32
                 Value::Array(value_) => set_config_value(key, &json!(value_).to_string()),
                 Value::Object(value_) => set_config_value(key, &json!(value_).to_string()),
                 Value::Bool(value_) => set_config_value(key, &json!(value_).to_string()),
-                _ => return Err(VcxError::from(VcxErrorKind::InvalidJson)),
+                _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Unsupported type of the value {} is used for \"{}\" key.", value, key))),
             }
         }
     }
@@ -335,22 +334,45 @@ pub fn process_config_string(config: &str, do_validation: bool) -> VcxResult<u32
     if do_validation {
         let setting = SETTINGS.read()
             .or(Err(VcxError::from(VcxErrorKind::InvalidConfiguration)))?;
-        validate_config(&setting.borrow())
-    } else {
-        Ok(error::SUCCESS.code_num)
+        validate_config(&setting.borrow())?;
     }
+
+    trace!("process_config_string <<<");
+
+    Ok(error::SUCCESS.code_num)
 }
 
 pub fn process_config_file(path: &str) -> VcxResult<u32> {
-    trace!("process_config_file >>> path: {}", path);
+    trace!("process_config_file >>> path: {}", secret!(path));
 
     if !Path::new(path).is_file() {
         error!("Configuration path was invalid");
-        Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot find config file"))
-    } else {
-        let config = read_file(path)?;
-        process_config_string(&config, true)
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot find config file by specified path: {:?}", path)))
     }
+
+    let config = read_file(path)?;
+    process_config_string(&config, true)
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+struct PoolConfig {
+    genesis_path: String,
+    pool_name: Option<String>,
+    pool_config: Option<serde_json::Value>,
+}
+
+pub fn process_pool_config_string(config: &str) -> VcxResult<u32> {
+    trace!("process_pool_config_string >>> config {}", secret!(config));
+    debug!("processing pool config");
+
+    let _config: PoolConfig = serde_json::from_str(config)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Invalid Pool configuration JSON. Err: {:?}", err)))?;
+
+    let res = process_config_string(config, false)?;
+
+    trace!("process_pool_config_string <<<");
+    Ok(res)
 }
 
 pub fn get_wallet_name() -> VcxResult<String> {
@@ -393,32 +415,40 @@ pub fn get_protocol_version() -> usize {
 
 pub fn get_opt_config_value(key: &str) -> Option<String> {
     trace!("get_opt_config_value >>> key: {}", key);
-    match SETTINGS.read() {
+    let value = match SETTINGS.read() {
         Ok(x) => x,
         Err(_) => return None
     }
         .get(key)
-        .map(|v| v.to_string())
+        .map(|v| v.to_string());
+
+    trace!("get_opt_config_value <<< value: {:?}", secret!(value));
+    value
 }
 
 pub fn get_config_value(key: &str) -> VcxResult<String> {
     trace!("get_config_value >>> key: {}", key);
 
-    get_opt_config_value(key)
+    let get_config_value = get_opt_config_value(key)
         .ok_or(VcxError::from_msg(
             VcxErrorKind::InvalidConfiguration,
-            format!("Cannot read \"{}\" from settings", key)
-        ))
+            format!("Cannot read the value for \"{}\" key from library settings", key)
+        ))?;
+
+    trace!("get_config_value <<< value: {}", secret!(get_config_value));
+    Ok(get_config_value)
 }
 
 pub fn set_opt_config_value(key: &str, value: &Option<String>) {
+    trace!("set_opt_config_value >>> key: {}, key: {:?}", key, secret!(value));
+
     if let Some(v) = value {
        set_config_value(key, v.as_str())
     }
 }
 
 pub fn set_config_value(key: &str, value: &str) {
-    trace!("set_config_value >>> key: {}, value: {}", key, value);
+    trace!("set_config_value >>> key: {}, key: {}", key, secret!(value));
     SETTINGS
         .write().unwrap()
         .insert(key.to_string(), value.to_string());
@@ -432,6 +462,8 @@ pub fn unset_config_value(key: &str) {
 }
 
 pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>) -> String { // TODO: _storage_config must be used
+    trace!("get_wallet_config >>> wallet_name: {}, wallet_type: {:?}", wallet_name, secret!(wallet_type));
+
     let mut config = json!({
         "id": wallet_name,
     });
@@ -446,10 +478,14 @@ pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_
         config["storage_config"] = serde_json::from_str(&_config).unwrap();
     }
 
+    trace!("get_wallet_config >>> config: {:?}", secret!(config));
+
     config.to_string()
 }
 
 pub fn get_wallet_credentials(_storage_creds: Option<&str>) -> String { // TODO: storage_creds must be used?
+    trace!("get_wallet_credentials >>> ");
+
     let key = get_config_value(CONFIG_WALLET_KEY).unwrap_or(UNINITIALIZED_WALLET_KEY.to_string());
     let mut credentials = json!({"key": key});
 
@@ -459,25 +495,32 @@ pub fn get_wallet_credentials(_storage_creds: Option<&str>) -> String { // TODO:
     let storage_creds = get_config_value(CONFIG_WALLET_STORAGE_CREDS).ok();
     if let Some(_creds) = storage_creds { credentials["storage_credentials"] = serde_json::from_str(&_creds).unwrap(); }
 
+    trace!("get_wallet_credentials >>> credentials: {:?}", secret!(credentials));
+
     credentials.to_string()
 }
 
 pub fn get_connecting_protocol_version() -> ProtocolTypes {
+    trace!("get_connecting_protocol_version >>> ");
+
     let protocol = get_config_value(CONFIG_USE_LATEST_PROTOCOLS).unwrap_or(DEFAULT_USE_LATEST_PROTOCOLS.to_string());
-    match protocol.as_ref() {
-        "true" | "TRUE" | "True" => return ProtocolTypes::V2,
-        "false" | "FALSE" | "False" | _ => return ProtocolTypes::V1,
-    }
+    let protocol = match protocol.as_ref() {
+        "true" | "TRUE" | "True" => ProtocolTypes::V2,
+        "false" | "FALSE" | "False" | _ => ProtocolTypes::V1,
+    };
+    trace!("get_connecting_protocol_version >>> protocol: {:?}", protocol);
+    protocol
 }
 
-pub fn config_str_to_bool(key: &str) -> VcxResult<bool> {
+pub fn _config_str_to_bool(key: &str) -> VcxResult<bool> {
     get_config_value(key)?
         .parse::<bool>()
         .map_err(|_|VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("{} - config supposed to be true | false", key)))
 }
 
-pub fn get_payment_method() -> String {
-    get_config_value(CONFIG_PAYMENT_METHOD).unwrap_or(DEFAULT_PAYMENT_METHOD.to_string())
+pub fn get_payment_method() -> VcxResult<String> {
+    get_config_value(CONFIG_PAYMENT_METHOD)
+        .map_err(|_|VcxError::from_msg(VcxErrorKind::MissingPaymentMethod, "Payment Method is not set."))
 }
 
 pub fn get_communication_method() -> VcxResult<String> {
@@ -485,15 +528,20 @@ pub fn get_communication_method() -> VcxResult<String> {
 }
 
 pub fn is_aries_protocol_set() -> bool {
-    get_protocol_type() == ProtocolTypes::V2 && ARIES_COMMUNICATION_METHOD == get_communication_method().unwrap_or_default() ||
-        get_protocol_type() == ProtocolTypes::V3
+    trace!("is_aries_protocol_set >>> ");
+
+    let res = get_protocol_type() == ProtocolTypes::V2 && ARIES_COMMUNICATION_METHOD == get_communication_method().unwrap_or_default() ||
+        get_protocol_type() == ProtocolTypes::V3;
+
+    trace!("is_aries_protocol_set >>> res: {:?}", res);
+    res
 }
 
 pub fn get_actors() -> Vec<Actors> {
     get_config_value(CONFIG_ACTORS)
         .and_then(|actors|
             ::serde_json::from_str(&actors)
-                .map_err(|_| VcxError::from(VcxErrorKind::InvalidOption))
+                .map_err(|_| VcxError::from(VcxErrorKind::InvalidConfiguration))
         ).unwrap_or_else(|_| Actors::iter().collect())
 }
 
@@ -554,8 +602,13 @@ impl ::std::string::ToString for ProtocolTypes {
 }
 
 pub fn get_protocol_type() -> ProtocolTypes {
-    ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE)
-        .unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()))
+    trace!("get_protocol_type >>> ");
+
+    let protocol_type = ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE)
+        .unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()));
+
+    trace!("get_protocol_type >>> protocol_type: {:?}", protocol_type);
+    protocol_type
 }
 
 pub fn clear_config() {
@@ -606,16 +659,6 @@ pub mod tests {
 
         let path = "garbage.txt";
         assert_eq!(process_config_file(&path).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
-    }
-
-    #[test]
-    fn test_config_str_to_bool() {
-        let _setup = SetupDefaults::init();
-
-        set_config_value(CONFIG_USE_PUBLIC_DID, "true");
-        assert!(config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap());
-        set_config_value(CONFIG_USE_PUBLIC_DID, "false");
-        assert!(!config_str_to_bool(CONFIG_USE_PUBLIC_DID).unwrap());
     }
 
     #[test]
@@ -724,12 +767,10 @@ pub mod tests {
         config.insert("invalid".to_string(), "invalid_url".to_string());
 
         //Success
-        assert_eq!(validate_optional_config_val(config.get("valid"), VcxErrorKind::InvalidUrl, closure).unwrap(),
-                   error::SUCCESS.code_num);
+        validate_optional_config_val(config.get("valid"), VcxErrorKind::InvalidUrl, closure).unwrap();
 
         // Success with No config
-        assert_eq!(validate_optional_config_val(config.get("unknown"), VcxErrorKind::InvalidUrl, closure).unwrap(),
-                   error::SUCCESS.code_num);
+        validate_optional_config_val(config.get("unknown"), VcxErrorKind::InvalidUrl, closure).unwrap();
 
         // Fail with failed fn call
         assert_eq!(validate_optional_config_val(config.get("invalid"),
@@ -797,6 +838,48 @@ pub mod tests {
 
         // passed invalid actor
         config["actors"] = json!(["wrong"]);
-        assert_eq!(process_config_string(&config.to_string(), true).unwrap_err().kind(), VcxErrorKind::InvalidOption);
+        assert_eq!(process_config_string(&config.to_string(), true).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
+    }
+
+    #[test]
+    fn test_process_pool_config() {
+        let _setup = SetupDefaults::init();
+
+        let path = "path/test/";
+        let name = "pool1";
+
+        // Only required field
+        let config = json!({
+            "genesis_path": path
+        }).to_string();
+
+        process_pool_config_string(&config.to_string()).unwrap();
+
+        assert_eq!(get_config_value(CONFIG_GENESIS_PATH).unwrap(), path.to_string());
+
+        // With optional fields
+        let config = json!({
+            "genesis_path": path,
+            "pool_name": name,
+            "pool_config": {
+                 "number_read_nodes": 2
+            }
+        }).to_string();
+
+        process_pool_config_string(&config.to_string()).unwrap();
+
+        assert_eq!(get_config_value(CONFIG_GENESIS_PATH).unwrap(), path.to_string());
+        assert_eq!(get_config_value(CONFIG_POOL_NAME).unwrap(), name.to_string());
+
+        // Empty
+        let config = json!({}).to_string();
+        assert_eq!(process_pool_config_string(&config.to_string()).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
+
+        // Unexpected fields
+        let config = json!({
+            "genesis_path": "path/test/",
+            "other_field": "pool1",
+        }).to_string();
+        assert_eq!(process_pool_config_string(&config.to_string()).unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
     }
 }

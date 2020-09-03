@@ -43,7 +43,8 @@ class Connection(VcxStateful):
 
     aries:
         Inviter:
-            VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+            VcxStateType::VcxStateInitialized - 1) once `vcx_connection_create` (create Connection object) is called.
+                                                2) once `vcx_connection_create_with_outofband_invitation` (create OutofbandConnection object) is called with `handshake:true`.
 
             VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (prepared Connection invite) is called.
 
@@ -51,21 +52,26 @@ class Connection(VcxStateful):
                                                     accept `ConnectionRequest` and send `ConnectionResponse` message.
                                                     use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
 
-            VcxStateType::VcxStateAccepted - once `Ack` messages is received.
-                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+            VcxStateType::VcxStateAccepted - 1) once `Ack` messages is received.
+                                                use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+                                             2) once `vcx_connection_connect` is called for Outoband Connection created with `handshake:false`.
 
             VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
                                             OR
                                         `ConnectionProblemReport` messages is received on state updates.
 
         Invitee:
-            VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+            VcxStateType::VcxStateOfferSent - 1) once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+                                              2) once `vcx_connection_create_with_outofband_invitation`
+                                                 (create Connection object with Out-of-Band Invitation containing `handshake_protocols`) is called.
 
             VcxStateType::VcxStateRequestReceived - once `vcx_connection_connect` (accept `ConnectionInvite` and send `ConnectionRequest` message) is called.
 
-            VcxStateType::VcxStateAccepted - once `ConnectionResponse` messages is received.
-                                             send `Ack` message if requested.
-                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+            VcxStateType::VcxStateAccepted - 1) once `ConnectionResponse` messages is received.
+                                                send `Ack` message if requested.
+                                                use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+                                             2) once `vcx_connection_create_with_outofband_invitation`
+                                                (create one-time Connection object with Out-of-Band Invitation does not containing `handshake_protocols`) is called.
 
             VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
                                             OR
@@ -88,8 +94,10 @@ class Connection(VcxStateful):
     aries - RFC: https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
         Inviter:
             VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` - VcxStateType::VcxStateInitialized
 
             VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+            VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateAccepted (Out-ob-Band Connection created with `handshake:false`)
 
             VcxStateType::VcxStateOfferSent - received `ConnectionRequest` - VcxStateType::VcxStateRequestReceived
             VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
@@ -104,6 +112,8 @@ class Connection(VcxStateful):
 
         Invitee:
             VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateOfferSent
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` (invite contains `handshake_protocols`) - VcxStateType::VcxStateOfferSent
+            VcxStateType::None - `vcx_connection_create_with_outofband_invitation` (no `handshake_protocols`) - VcxStateType::VcxStateAccepted
 
             VcxStateType::VcxStateOfferSent - `vcx_connection_connect` - VcxStateType::VcxStateRequestReceived
             VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
@@ -131,6 +141,7 @@ class Connection(VcxStateful):
         PingResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
         Query - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#query-message-type
         Disclose - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#disclose-message-type
+        Out-of-Band Invitation - https://github.com/hyperledger/aries-rfcs/tree/master/features/0434-outofband#message-type-httpsdidcommorgout-of-bandverinvitation
 
     TODO: document attributes
     """
@@ -148,7 +159,7 @@ class Connection(VcxStateful):
         Create a connection object, represents a single endpoint and can be used for sending and receiving
         credentials and proofs
 
-        :param source_id: Institution's unique ID for the connection
+        :param source_id: User's unique ID for the connection.
         :return: connection object
         Example:
         connection = await Connection.create(source_id)
@@ -163,13 +174,55 @@ class Connection(VcxStateful):
                                         c_params)
 
     @staticmethod
+    async def create_outofband(source_id: str, goal_code: Optional[str], goal: Optional[str], 
+                               handshake: bool, request_attach: Optional[str]):
+        """
+        Create a Connection object that provides an Out-of-Band Connection for an institution's user.
+
+        NOTE: this method can be used when `aries` protocol is set.
+
+        NOTE: this method is EXPERIMENTAL
+
+        WARN: `request_attach` field is not fully supported in the current library state.
+               You can use simple messages like Question but it cannot be used
+               for Credential Issuance and Credential Presentation.
+
+        :param source_id: User's unique ID for the connection.
+        :param goal_code: a self-attested code the receiver may want to display to
+                          the user or use in automatically deciding what to do with the out-of-band message.
+        :param goal: a self-attested string that the receiver may want to display to the user about
+                     the context-specific goal of the out-of-band message.
+        :param handshake: whether Inviter wants to establish regular connection using `connections` handshake protocol.
+                          if false, one-time connection channel will be created.
+        :param request_attach: An additional message as JSON that will be put into attachment decorator
+                            that the receiver can using in responding to the message (for example Question message).
+
+        :return: connection object
+        Example:
+        connection = await Connection.create_outofband('Foo', None, 'Foo Goal', True, None)
+        """
+        constructor_params = (source_id,)
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_goal_code = c_char_p(goal_code.encode('utf-8')) if goal_code is not None else None
+        c_goal = c_char_p(goal.encode('utf-8')) if goal is not None else None
+        c_handshake = c_bool(handshake)
+        c_request_attach= c_char_p(request_attach.encode('utf-8')) if request_attach is not None else None
+
+        c_params = (c_source_id, c_goal_code, c_goal, c_handshake, c_request_attach, )
+
+        return await Connection._create( "vcx_connection_create_outofband",
+                                        constructor_params,
+                                        c_params)
+
+    @staticmethod
     async def create_with_details(source_id: str, invite_details: str):
         """
         Create a connection object with a provided invite, represents a single endpoint and can be used for sending and receiving
         credentials and proofs
 
         Invite details are provided by the entity offering a connection and generally pulled from a provided QRCode.
-        :param source_id: Institution's unique ID for the connection
+        :param source_id: User's unique ID for the connection.
         :param invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
             Invite format depends on communication method:
                 proprietary:
@@ -195,6 +248,128 @@ class Connection(VcxStateful):
         c_params = (c_source_id, c_invite_details, )
 
         return await Connection._create( "vcx_connection_create_with_invite",
+                                        constructor_params,
+                                        c_params)
+
+    @staticmethod
+    async def accept_connection_invite(source_id: str, invite_details: str, connection_options: Optional[str] = None):
+        """
+        Accept connection for the given invitation.
+    
+        This function performs the following actions:
+        1. Creates Connection state object from the given invite_details
+            (equal to `vcx_connection_create_with_invite` function).
+        2. Replies to the inviting side (equal to `vcx_connection_connect` function).
+
+        :param source_id: User's unique ID for the connection.
+        :param invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
+            Invite format depends on communication method:
+                proprietary:
+                    {"targetName": "", "statusMsg": "message created", "connReqId": "mugIkrWeMr", "statusCode": "MS-101", "threadId": null, "senderAgencyDetail": {"endpoint": "http://localhost:8080", "verKey": "key", "DID": "did"}, "senderDetail": {"agentKeyDlgProof": {"agentDID": "8f6gqnT13GGMNPWDa2TRQ7", "agentDelegatedKey": "5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1", "signature": "TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/7Cyteep7U3m9Gw6ilu8SOOW59YR1rft+D8ZDg=="}, "publicDID": "7YLxxEfHRiZkCMVNii1RCy", "name": "Faber", "logoUrl": "http://robohash.org/234", "verKey": "CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx", "DID": "Ney2FxHT4rdEyy6EDCCtxZ"}}
+                aries: https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+                 {
+                    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
+                    "label": "Alice",
+                    "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+                    "serviceEndpoint": "https://example.com/endpoint",
+                    "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
+                 }
+        :param connection_options: Provides details indicating if the connection will be established by text or QR Code.
+            {"connection_type":"SMS","phone":"123","use_public_did":true}
+            {"connection_type":"QR","phone":"","use_public_did":false}
+
+        :return
+            connection_handle: the handle associated with the create Connection object.
+            connection_serialized: the json string representing the created Connection object.
+
+        Example:
+        (connection_handle, ) = await Connection.create_with_details('MyBank', invite_details)
+        :return: connection object
+        """
+        if not hasattr(Connection.accept_connection_invite, "cb"):
+            Connection.accept_connection_invite.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32, c_char_p))
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_invite_details = c_char_p(invite_details.encode('utf-8'))
+        c_connection_options = c_char_p(connection_options.encode('utf-8')) if connection_options is not None else None
+
+        connection_handle, connection_serialized = await do_call('vcx_connection_accept_connection_invite',
+                                                                c_source_id,
+                                                                c_invite_details,
+                                                                c_connection_options,
+                                                                Connection.accept_connection_invite.cb)
+
+        connection = Connection(source_id)
+        connection.handle = connection_handle
+        connection.serialized = json.loads(connection_serialized.decode())
+
+        return connection
+
+
+    @staticmethod
+    async def create_with_outofband_invite(source_id: str, invite: str):
+        """
+        Create a Connection object from the given Out-of-Band Invitation.
+        Depending on the format of Invitation there are two way of follow interaction:
+            * Invitation contains `handshake_protocols`: regular Connection process will be ran.
+                Follow steps as for regular Connection establishment.
+            * Invitation does not contain `handshake_protocols`: one-time completed Connection object will be created.
+                You can use `vcx_connection_send_message` or specific function to send a response message.
+                Note that on repeated message sending an error will be thrown.
+
+        NOTE: this method can be used when `aries` protocol is set.
+
+        WARN: The user has to analyze the value of "request~attach" field yourself and
+              create/handle the correspondent state object or send a reply once the connection is established.
+
+        :param source_id: User's unique ID for the connection.
+        :param invite_details: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
+            {
+                "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+                "@id": "<id used for context as pthid>", -  the unique ID of the message.
+                "label": Optional<string>, - a string that the receiver may want to display to the user,
+                                            likely about who sent the out-of-band message.
+                "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+                                                the user or use in automatically deciding what to do with the out-of-band message.
+                "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+                                            about the context-specific goal of the out-of-band message.
+                "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+                                                            that the receiver can use in responding to the message in order to create or reuse a connection with the sender.
+                                                            One or both of handshake_protocols and request~attach MUST be included in the message.
+                "request~attach": Optional<[
+                    {
+                        "@id": "request-0",
+                        "mime-type": "application/json",
+                        "data": {
+                            "json": "<json of protocol message>"
+                        }
+                    }
+                ]>, - an attachment decorator containing an array of request messages in order of preference that the receiver can using in responding to the message.
+                    One or both of handshake_protocols and request~attach MUST be included in the message.
+                "service": [
+                    {
+                        "id": string
+                        "type": string,
+                        "recipientKeys": [string],
+                        "routingKeys": [string],
+                        "serviceEndpoint": string
+                    }
+                ] - an item that is the equivalent of the service block of a DIDDoc that the receiver is to use in responding to the message.
+            }
+
+        Example:
+        connection2 = await Connection.create_with_outofband_invite('MyBank', invite)
+
+        :return: connection object
+        """
+        constructor_params = (source_id,)
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_invite = c_char_p(invite.encode('utf-8'))
+
+        c_params = (c_source_id, c_invite, )
+
+        return await Connection._create( "vcx_connection_create_with_outofband_invitation",
                                         constructor_params,
                                         c_params)
 
@@ -545,6 +720,105 @@ class Connection(VcxStateful):
                       c_query,
                       c_comment,
                       Connection.send_discovery_features.cb)
+
+
+    async def send_reuse(self, invite: str,):
+        """
+        Send a message to reuse existing Connection instead of setting up a new one
+        as response on received Out-of-Band Invitation.
+    
+        Note that this function works in case `aries` communication method is used.
+            In other cases it returns ActionNotSupported error.
+
+        :param invite: A JSON string representing Out-of-Band Invitation provided by an entity that wishes interaction.
+            {
+                "@type": "https://didcomm.org/out-of-band/%VER/invitation",
+                "@id": "<id used for context as pthid>", -  the unique ID of the message.
+                "label": Optional<string>, - a string that the receiver may want to display to the user,
+                                            likely about who sent the out-of-band message.
+                "goal_code": Optional<string>, - a self-attested code the receiver may want to display to
+                                                the user or use in automatically deciding what to do with the out-of-band message.
+                "goal": Optional<string>, - a self-attested string that the receiver may want to display to the user
+                                            about the context-specific goal of the out-of-band message.
+                "handshake_protocols": Optional<[string]>, - an array of protocols in the order of preference of the sender
+                                                            that the receiver can use in responding to the message in order to create or reuse a connection with the sender.
+                                                            One or both of handshake_protocols and request~attach MUST be included in the message.
+                "request~attach": Optional<[
+                    {
+                        "@id": "request-0",
+                        "mime-type": "application/json",
+                        "data": {
+                            "json": "<json of protocol message>"
+                        }
+                    }
+                ]>, - an attachment decorator containing an array of request messages in order of preference that the receiver can using in responding to the message.
+                    One or both of handshake_protocols and request~attach MUST be included in the message.
+                "service": [
+                    {
+                        "id": string
+                        "type": string,
+                        "recipientKeys": [string],
+                        "routingKeys": [string],
+                        "serviceEndpoint": string
+                    }
+                ] - an item that is the equivalent of the service block of a DIDDoc that the receiver is to use in responding to the message.
+            }
+
+        :return: no value
+        """
+        if not hasattr(Connection.send_reuse, "cb"):
+            self.logger.debug("vcx_connection_send_discovery_features: Creating callback")
+            Connection.send_reuse.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_connection_handle = c_uint32(self.handle)
+        c_invite = c_char_p(invite.encode('utf-8'))
+
+        await do_call('vcx_connection_send_reuse',
+                      c_connection_handle,
+                      c_invite,
+                      Connection.send_reuse.cb)
+
+
+    async def send_answer(self, question: str, answer: str,):
+        """
+        Send answer on received question message according to Aries question-answer protocol.
+    
+        Note that this function works in case `aries` communication method is used.
+            In other cases it returns ActionNotSupported error.
+
+        :param question: A JSON string representing Question received via pairwise connection.
+        {
+            "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question",
+            "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+            "question_text": "Alice, are you on the phone with Bob from Faber Bank right now?",
+            "question_detail": "This is optional fine-print giving context to the question and its various answers.",
+            "nonce": "<valid_nonce>",
+            "signature_required": true,
+            "valid_responses" : [
+                {"text": "Yes, it's me"},
+                {"text": "No, that's not me!"}],
+            "~timing": {
+                "expires_time": "2018-12-13T17:29:06+0000"
+            }
+        }
+        :param answer: An answer to use which is a JSON string representing chosen `valid_response` option from Question message.
+            {"text": "Yes, it's me"}
+
+        :return: no value
+        """
+        if not hasattr(Connection.send_answer, "cb"):
+            self.logger.debug("vcx_connection_send_answer: Creating callback")
+            Connection.send_answer.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_connection_handle = c_uint32(self.handle)
+        c_question = c_char_p(question.encode('utf-8'))
+        c_answer = c_char_p(answer.encode('utf-8'))
+
+        await do_call('vcx_connection_send_answer',
+                      c_connection_handle,
+                      c_question,
+                      c_answer,
+                      Connection.send_answer.cb)
 
     async def get_my_pw_did(self) -> str:
         if not hasattr(Connection.get_my_pw_did, "cb"):

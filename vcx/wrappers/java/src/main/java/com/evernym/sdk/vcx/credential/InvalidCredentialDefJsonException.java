@@ -15,6 +15,6 @@ public class InvalidCredentialDefJsonException extends VcxException
 
     public InvalidCredentialDefJsonException()
     {
-        super(message, ErrorCode.INVALID_CREDENTIAL_DEF_JSON.value());
+        super(message, ErrorCode.CREDENTIAL_DEFINITION_NOT_FOUND.value());
     }
 }

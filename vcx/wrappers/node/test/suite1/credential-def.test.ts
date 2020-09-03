@@ -54,7 +54,7 @@ describe('CredentialDef:', () => {
 
     it('throws: incorrect data', async () => {
       const error = await shouldThrow(async () => CredentialDef.deserialize({ data: { source_id: 'Invalid' } } as any))
-      assert.equal(error.vcxCode, VCXCode.CREATE_CREDENTIAL_DEF_ERR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
     })
   })
 

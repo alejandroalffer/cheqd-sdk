@@ -12,7 +12,8 @@ impl EncryptionEnvelope {
     pub fn create(message: &A2AMessage,
                   pw_verkey: Option<&str>,
                   did_doc: &DidDoc) -> VcxResult<EncryptionEnvelope> {
-        trace!("EncryptionEnvelope::create >>> message: {:?}, pw_verkey: {:?}, did_doc: {:?}", message, pw_verkey, did_doc);
+        trace!("EncryptionEnvelope::create >>> message: {:?}, pw_verkey: {:?}, did_doc: {:?}", secret!(message), secret!(pw_verkey), secret!(did_doc));
+        debug!("EncryptionEnvelope: Creating encryption envelop");
 
         if ::settings::indy_mocks_enabled() { return Ok(EncryptionEnvelope(vec![])); }
 
@@ -24,6 +25,9 @@ impl EncryptionEnvelope {
     fn encrypt_for_pairwise(message: &A2AMessage,
                             pw_verkey: Option<&str>,
                             did_doc: &DidDoc) -> VcxResult<Vec<u8>> {
+        trace!("EncryptionEnvelope::encrypt_for_pairwise >>> pw_verkey: {:?}, did_doc: {:?}", secret!(pw_verkey), secret!(did_doc));
+        debug!("EncryptionEnvelope: Encryption for recipient");
+
         let message = match message {
             A2AMessage::Generic(message_) => message_.to_string(),
             message => json!(message).to_string()
@@ -36,11 +40,14 @@ impl EncryptionEnvelope {
 
     fn wrap_into_forward_messages(mut message: Vec<u8>,
                                   did_doc: &DidDoc) -> VcxResult<Vec<u8>> {
+        trace!("EncryptionEnvelope::encrypt_for_pairwise >>> did_doc: {:?}", secret!(did_doc));
+        debug!("EncryptionEnvelope: Encryption for routing");
+
         let (recipient_keys, routing_keys) = did_doc.resolve_keys();
 
         let mut to = recipient_keys.get(0)
             .map(String::from)
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConnectionHandle, format!("Recipient Key not found in DIDDoc: {:?}", did_doc)))?;
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidDIDDoc, format!("Recipient Key not found in DIDDoc: {:?}", did_doc)))?;
 
         for routing_key in routing_keys.iter() {
             message = EncryptionEnvelope::wrap_into_forward(message, &to, &routing_key)?;
@@ -53,6 +60,9 @@ impl EncryptionEnvelope {
     fn wrap_into_forward(message: Vec<u8>,
                          to: &str,
                          routing_key: &str) -> VcxResult<Vec<u8>> {
+        trace!("EncryptionEnvelope::wrap_into_forward >>> to: {:?}", secret!(to));
+        debug!("EncryptionEnvelope: Wrapping into Forward");
+
         let message = A2AMessage::Forward(Forward::new(to.to_string(), message)?);
 
         let message = json!(message).to_string();
@@ -62,18 +72,23 @@ impl EncryptionEnvelope {
     }
 
     pub fn open(payload: Vec<u8>) -> VcxResult<A2AMessage> {
+        trace!("EncryptionEnvelope::open >>>");
+        debug!("EncryptionEnvelope: Opening");
+
         let unpacked_msg = crypto::unpack_message(&payload)?;
 
         let message: ::serde_json::Value = ::serde_json::from_slice(unpacked_msg.as_slice())
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize message: {}", err)))?;
 
         let message = message["message"].as_str()
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Cannot find `message` field"))?.to_string();
 
         let message: A2AMessage = ::serde_json::from_str(&message)
             .map_err(|err| {
-                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err))
+                VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, format!("Cannot deserialize A2A message: {}", err))
             })?;
+
+        trace!("EncryptionEnvelope::open <<< message: {:?}", secret!(message));
 
         Ok(message)
     }
