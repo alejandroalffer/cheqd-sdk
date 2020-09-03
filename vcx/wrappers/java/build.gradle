@@ -52,7 +52,7 @@ static def versionMajor() {
 //build.finalizedBy(buildJavadocJar)
 
 static def version() {
-    String version = "0.9.3"
+    String version = "0.10.0"
     String suffix = System.getenv("CI_PIPELINE_IID")
     String branch = System.getenv("CI_COMMIT_REF_SLUG")
     if (suffix != null && !branch.equals("stable")) {
