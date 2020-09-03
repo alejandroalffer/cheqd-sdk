@@ -7,14 +7,14 @@
 #
 
 # NOTE: UPDATE ME: versions of libraries in this cocoapod
-# libindy 1.15.0 stable
-# libnullpay 1.15.0 stable
+# libindy 1.15.0-1560 master
+# libnullpay 1.15.0-1560 master
 # libsovtoken 1.0.3-201910091207-1c7ff32 stable
-# libvcx 0.9.4-6c4059903
+# libvcx 0.10.0
 
 Pod::Spec.new do |s|
   s.name             = 'vcx'
-  s.version          = '0.0.174'
+  s.version          = '0.0.176'
   s.summary          = 'The Objective-C wrapper around the libvcx shared library.'
 
 # This description is used to generate tags and improve search results.
@@ -32,7 +32,7 @@ through to the libvcx shared library.
   s.homepage         = 'https://www.evernym.com/'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'evernym-ios-dev' => 'iosdev@evernym.com' }
-  s.source           = { :http => 'https://repo.corp.evernym.com/filely/ios/vcx.libvcxall_0.9.4-6c4059903_universal.zip' }
+  s.source           = { :http => 'https://repo.corp.evernym.com/filely/ios/vcx.libvcxall_0.10.0-546dd721f_universal.zip' }
 
   s.ios.deployment_target = '8.0'
 
