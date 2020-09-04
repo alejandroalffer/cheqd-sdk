@@ -62,6 +62,13 @@ pub struct Service {
     pub service_endpoint: String,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum Services {
+    InlineService(Service),
+    PublicDidService(String),
+}
+
 impl Default for DidDoc {
     fn default() -> DidDoc {
         DidDoc {
@@ -369,7 +376,7 @@ impl From<Service> for Invitation {
 
 impl From<OutofbandInvitation> for DidDoc {
     fn from(invite: OutofbandInvitation) -> DidDoc {
-        DidDoc::from(invite.service.clone().remove(0))
+        DidDoc::from(invite.get_service().clone().unwrap_or_default())
     }
 }
 

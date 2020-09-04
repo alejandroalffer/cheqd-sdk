@@ -85,7 +85,7 @@ impl Invitations {
             Invitations::ConnectionInvitation(invitation_)=>
                 invitation_.recipient_keys.get(0).cloned(),
             Invitations::OutofbandInvitation(invitation_)=>
-                invitation_.service.get(0).and_then(|service| service.recipient_keys.get(0).cloned()),
+                invitation_.get_service().and_then(|service| service.recipient_keys.get(0).cloned()),
         }
     }
 

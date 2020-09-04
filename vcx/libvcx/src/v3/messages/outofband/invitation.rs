@@ -1,6 +1,6 @@
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::attachment::{Attachments, AttachmentId};
-use v3::messages::connection::did_doc::Service;
+use v3::messages::connection::did_doc::{Service, Services};
 use error::prelude::*;
 
 const SUPPORTED_HANDSHAKE_PROTOCOL: &str = "connections/1.0";
@@ -20,7 +20,7 @@ pub struct Invitation {
     #[serde(default)]
     #[serde(rename = "request~attach")]
     pub request_attach: Attachments,
-    pub service: Vec<Service>,
+    pub service: Vec<Services>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "profileUrl")]
     pub profile_url: Option<String>,
@@ -77,8 +77,17 @@ impl Invitation {
     }
 
     pub fn set_service(mut self, service: Service) -> Invitation {
-        self.service = vec![service];
+        self.service = vec![Services::InlineService(service)];
         self
+    }
+
+    pub fn get_service(&self) -> Option<Service> {
+        for service in self.service.iter() {
+            if let Services::InlineService(service_) = service {
+                return Some(service_.clone())
+            }
+        }
+        None
     }
 
     pub fn set_request_attach(mut self, attachment: String) -> VcxResult<Invitation> {
