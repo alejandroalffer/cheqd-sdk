@@ -25,7 +25,7 @@ publish() {
             -DgroupId="com.evernym" \
             --settings settings.xml
 
-        mv com.evernym-vcx_*-javadoc.jar com.evernym-vcx_${VCX_VERSION}_javadoc.jar
+        mv com.evernym-vcx_*-javadoc.jar com.evernym-vcx_${VCX_VERSION}-javadoc.jar
 
         mvn deploy:deploy-file \
             -Durl="https://evernym.mycloudrepo.io/repositories/libvcx-android" \
