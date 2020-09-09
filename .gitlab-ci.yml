@@ -544,6 +544,7 @@ test-node-wrapper-ubuntu18-from-latest:
     expire_in: 1 week
     paths:
       - vcx/wrappers/java/artifacts/aar/*.aar
+      - vcx/wrappers/java/artifacts/aar/*.jar
   script:
     - ls -al vcx/ci/scripts/androidPackage.sh
     - sudo chmod +x vcx/ci/scripts/androidPackage.sh

@@ -11,7 +11,7 @@ pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
     PACKAGE_VERSION=$version ./gradlew --no-daemon clean build -x test #skipping tests because they already run in jenkins CI
     mkdir -p artifacts/jar
     pushd build/libs
-        cp $(ls -t1 |  head -n 1) ${SCRIPT_DIR}/../artifacts/jar
+        cp $(ls -t1 |  head -n 2) ${SCRIPT_DIR}/../artifacts/jar
     popd
 
 popd
