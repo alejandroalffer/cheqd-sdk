@@ -1,9 +1,10 @@
 import asyncio
 import json
+import logging
 import os
 from time import sleep
 
-from demo.faber import INVITATION_FILE
+from faber import INVITATION_FILE
 from vcx.api.connection import Connection
 from vcx.api.credential import Credential
 from vcx.api.disclosed_proof import DisclosedProof
@@ -14,6 +15,16 @@ from vc_auth_oidc.alice_vc_auth import handle_challenge
 
 
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
+logging.basicConfig(level=50)
+
+log = logging.getLogger("faber")
+log.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s|%(name)s|%(levelname)s| %(message)s")
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(formatter)
+log.addHandler(ch)
+log.propagate = False
 
 provisionConfig = {
     'agency_url': 'https://eas-team1.pdev.evernym.com',
@@ -29,29 +40,29 @@ provisionConfig = {
 
 async def main():
     await init()
-    await work()
+    await asyncio.wait([work(i) for i in range(10)])
 
 
-async def work():
-    connection_to_faber = await connect()
+async def work(idx):
+    idx = str(idx)
+    connection_to_faber = await connect(idx)
 
-    print("Check agency for a credential offer")
+    log.info("Check agency for a credential offer " + str(idx))
     credential = None
 
     while True:
-        print("Check for offer")
+        log.info("Check for offer "+ str(idx))
         offers = await Credential.get_offers(connection_to_faber)
         if len(offers) > 0:
             credential = await Credential.create('credential', offers[0])
-            break
+            # break
+            await accept_offer(connection_to_faber, credential, idx)
 
-    await accept_offer(connection_to_faber, credential)
-
-    print("Finished")
+    log.info("Finished")
 
 
 async def init():
-    print("#7 Provision an agent and wallet, get back configuration details")
+    log.info("#7 Provision an agent and wallet, get back configuration details ")
     config = await vcx_agent_provision(json.dumps(provisionConfig))
     config = json.loads(config)
     # Set some additional configuration options specific to alice
@@ -62,44 +73,49 @@ async def init():
 
     config = json.dumps(config)
 
-    print("#8 Initialize libvcx with new configuration")
+    log.info("#8 Initialize libvcx with new configuration ")
     await vcx_init_with_config(config)
 
 
-async def connect():
-    print("#9 Input faber.py invitation details")
+async def connect(idx):
+    idx = str(idx)
+    log.info("#9 Input faber.py invitation details "+ idx)
     details = None
 
     while True:
-        print("Check for Connection Invite")
-        if os.path.exists(INVITATION_FILE):
-            f = open(INVITATION_FILE)
+        log.info("Check for Connection Invite "+idx)
+        if os.path.exists(INVITATION_FILE+idx):
+            f = open(INVITATION_FILE+idx)
             details = f.read()
             break
-        sleep(2)
+        await asyncio.sleep(2)
 
-    print("#10 Convert to valid json and string and create a connection to faber")
+    log.info("#10 Convert to valid json and string and create a connection to faber "+ idx)
     jdetails = json.loads(details)
     connection_to_faber = await Connection.create_with_details('faber', json.dumps(jdetails))
     await connection_to_faber.connect('{"use_public_did": true}')
     connection_state = await connection_to_faber.update_state()
+    timer = 2
     while connection_state != State.Accepted:
-        sleep(2)
+        await asyncio.sleep(timer)
+        timer = timer + 2
         await connection_to_faber.update_state()
         connection_state = await connection_to_faber.get_state()
 
-    print("Connection is established")
+    log.info("Connection is established "+ idx)
     return connection_to_faber
 
 
-async def accept_offer(connection_to_faber, credential):
-    print("#15 After receiving credential offer, send credential request")
+async def accept_offer(connection_to_faber, credential, idx):
+    log.info("#15 After receiving credential offer, send credential request "+ idx)
     await credential.send_request(connection_to_faber, 0)
 
-    print("#16 Poll agency and accept credential offer from faber")
+    log.info("#16 Poll agency and accept credential offer from faber "+ idx)
     credential_state = await credential.get_state()
+    timer = 2
     while credential_state != State.Accepted:
-        sleep(2)
+        await asyncio.sleep(timer)
+        timer = timer + 2
         await credential.update_state()
         credential_state = await credential.get_state()
 
