@@ -1,7 +1,9 @@
 import asyncio
 import json
+import os
 from time import sleep
 
+from demo.faber import INVITATION_FILE
 from vcx.api.connection import Connection
 from vcx.api.credential import Credential
 from vcx.api.disclosed_proof import DisclosedProof
@@ -14,49 +16,36 @@ from vc_auth_oidc.alice_vc_auth import handle_challenge
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
 provisionConfig = {
-    'agency_url': 'http://localhost:8080',
-    'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
-    'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
+    'agency_url': 'https://eas-team1.pdev.evernym.com',
+    'agency_did': 'CV65RFpeCtPu82hNF9i61G',
+    'agency_verkey': '7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2',
     'wallet_name': 'alice_wallet',
     'wallet_key': '123',
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
-    'protocol_type': '3.0',
+    'protocol_type': '1.0',
 }
 
 
 async def main():
     await init()
-    connection_to_faber = None
+    await work()
+
+
+async def work():
+    connection_to_faber = await connect()
+
+    print("Check agency for a credential offer")
+    credential = None
+
     while True:
-        answer = input(
-            "Would you like to do? \n "
-            "0 - establish connection \n "
-            "1 - check for credential offer \n "
-            "2 - check for proof request \n "
-            "3 - pass vc_auth_oidc-challenge \n "
-            "else finish \n") \
-            .lower().strip()
-        if answer == '0':
-            connection_to_faber = await connect()
-        elif answer == '1':
-            print("Check agency for a credential offer")
-            offers = await Credential.get_offers(connection_to_faber)
+        print("Check for offer")
+        offers = await Credential.get_offers(connection_to_faber)
+        if len(offers) > 0:
             credential = await Credential.create('credential', offers[0])
-            await accept_offer(connection_to_faber, credential)
-        elif answer == '2':
-            print("Check agency for a proof request")
-            requests = await DisclosedProof.get_requests(connection_to_faber)
-            print("#23 Create a Disclosed proof object from proof request")
-            proof = await DisclosedProof.create('proof', requests[0])
-            await create_proof(connection_to_faber, proof)
-        elif answer == '3':
-            request = await handle_challenge()
-            print("#23 Create a Disclosed proof object from proof request")
-            proof = await DisclosedProof.create('proof', request)
-            await create_proof(None, proof)
-        else:
             break
+
+    await accept_offer(connection_to_faber, credential)
 
     print("Finished")
 
@@ -79,7 +68,15 @@ async def init():
 
 async def connect():
     print("#9 Input faber.py invitation details")
-    details = input('invite details: ')
+    details = None
+
+    while True:
+        print("Check for Connection Invite")
+        if os.path.exists(INVITATION_FILE):
+            f = open(INVITATION_FILE)
+            details = f.read()
+            break
+        sleep(2)
 
     print("#10 Convert to valid json and string and create a connection to faber")
     jdetails = json.loads(details)
@@ -105,31 +102,6 @@ async def accept_offer(connection_to_faber, credential):
         sleep(2)
         await credential.update_state()
         credential_state = await credential.get_state()
-
-
-async def create_proof(connection_to_faber, proof):
-    print("#24 Query for credentials in the wallet that satisfy the proof request")
-    credentials = await proof.get_creds()
-
-    # Use the first available credentials to satisfy the proof request
-    for attr in credentials['attrs']:
-        credentials['attrs'][attr] = {
-            'credential': credentials['attrs'][attr][0]
-        }
-
-    print("#25 Generate the proof")
-    await proof.generate_proof(credentials, {})
-
-    print("#26 Send the proof")
-    await proof.send_proof(connection_to_faber)
-
-    proof_state = await proof.get_state()
-    while proof_state != State.Accepted:
-        sleep(2)
-        await proof.update_state()
-        proof_state = await proof.get_state()
-
-    print("proof is verified!!")
 
 
 if __name__ == '__main__':
