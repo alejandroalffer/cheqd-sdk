@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import random
 import os
 import time
@@ -18,7 +19,11 @@ from vcx.state import State, ProofState
 
 TAA_ACCEPT = bool(os.getenv("TAA_ACCEPT", "0") == "1")
 
-# logging.basicConfig(level=logging.DEBUG) uncomment to get logs
+logging.basicConfig(
+    format='%(asctime)s %(message)s',
+    level=logging.DEBUG,
+    datefmt='%Y-%m-%d %H:%M:%S')
+
 
 # 'agency_url': URL of the agency
 # 'agency_did':  public DID of the agency
