@@ -5,6 +5,8 @@ import os
 from time import sleep
 
 from faber import INVITATION_FILE
+
+from demo_utils import update_message_as_read
 from vcx.api.connection import Connection
 from vcx.api.credential import Credential
 from vcx.api.disclosed_proof import DisclosedProof
@@ -50,12 +52,18 @@ async def work(idx):
     log.info("Check agency for a credential offer " + str(idx))
     credential = None
 
+    processed_offers = []
+
     while True:
         log.info("Check for offer "+ str(idx))
         offers = await Credential.get_offers(connection_to_faber)
+        offers = [offer for offer in offers if offer[0]['msg_ref_id'] not in processed_offers]
+        print('Offers ' + str(idx))
+        print(offers)
         if len(offers) > 0:
-            credential = await Credential.create('credential', offers[0])
-            # break
+            offer = offers[0]
+            processed_offers.append(offer[0]['msg_ref_id'])
+            credential = await Credential.create('credential', offer)
             await accept_offer(connection_to_faber, credential, idx)
 
     log.info("Finished")
@@ -95,10 +103,9 @@ async def connect(idx):
     connection_to_faber = await Connection.create_with_details('faber', json.dumps(jdetails))
     await connection_to_faber.connect('{"use_public_did": true}')
     connection_state = await connection_to_faber.update_state()
-    timer = 2
+    timer = 4
     while connection_state != State.Accepted:
         await asyncio.sleep(timer)
-        timer = timer + 2
         await connection_to_faber.update_state()
         connection_state = await connection_to_faber.get_state()
 
@@ -112,10 +119,9 @@ async def accept_offer(connection_to_faber, credential, idx):
 
     log.info("#16 Poll agency and accept credential offer from faber "+ idx)
     credential_state = await credential.get_state()
-    timer = 2
+    timer = 4
     while credential_state != State.Accepted:
         await asyncio.sleep(timer)
-        timer = timer + 2
         await credential.update_state()
         credential_state = await credential.get_state()
 

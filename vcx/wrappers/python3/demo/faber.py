@@ -64,8 +64,11 @@ async def main():
     payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
     payment_plugin.nullpay_init()
 
-    for i in range(10):
-        os.remove(INVITATION_FILE +str(i))
+    for i in range(20):
+        try:
+            os.remove(INVITATION_FILE + str(i))
+        except:
+            pass
 
 
     log.info("#1 Provision an agent and wallet, get back configuration details")
@@ -92,7 +95,7 @@ async def main():
     cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0)
     cred_def_handle = cred_def.handle
 
-    
+
     await asyncio.wait([work(cred_def_handle, i) for i in range(10)])
 
 
@@ -101,10 +104,7 @@ async def work(cred_def_handle, idx):
     # spawn 20 connections
     log.info("#5 Create a connection to alice and print out the invite details "+ idx)
     connection_to_alice = await Connection.create('alice')
-    start = time.time()
     await connection_to_alice.connect('{"use_public_did": true}')
-    end = time.time()
-    log.info(f"Connection connect time:{end - start} {idx}")
     await connection_to_alice.update_state()
     details = await connection_to_alice.invite_details(False)
     log.info("**invite details** " + idx)
@@ -115,12 +115,11 @@ async def work(cred_def_handle, idx):
     f.write(json.dumps(details))
     f.close()
 
-    log.info("#6 Poll agency and wait for alice to accept the invitation (start alice.py now) "+ idx)
     connection_state = await connection_to_alice.get_state()
-    timer = 1
+    timer = 4
     while connection_state != State.Accepted:
+        log.info("#6 Poll agency and wait for alice to accept the invitation (start alice.py now) " + idx)
         await asyncio.sleep(timer)
-        timer = timer + 2
         await connection_to_alice.update_state()
         connection_state = await connection_to_alice.get_state()
 
@@ -145,13 +144,13 @@ async def issue_credential(connection_to_alice, cred_def_handle, idx1, idx2):
     credential = await IssuerCredential.create('alice_degree', schema_attrs, cred_def_handle, 'cred', '0')
 
     log.info("#13 Issue credential offer to alice "+ idx)
-    await credential.send_offer(connection_to_alice)
-    await credential.update_state()
 
-    log.info("#14 Poll agency and wait for alice to send a credential request "+ idx)
+    await credential.send_offer(connection_to_alice)
+
     credential_state = await credential.get_state()
     timer = 2
     while credential_state != State.RequestReceived:
+        log.info("#14 Poll agency and wait for alice to send a credential request " + idx)
         await asyncio.sleep(timer)
         timer = timer + 2
         await credential.update_state()
@@ -159,16 +158,17 @@ async def issue_credential(connection_to_alice, cred_def_handle, idx1, idx2):
 
     log.info("#17 Issue credential to alice "+ idx)
     await credential.send_credential(connection_to_alice)
+    end = time.time()
 
-    log.info("#18 Wait for alice to accept credential "+ idx)
     await credential.update_state()
     credential_state = await credential.get_state()
-    timer = 2
+    timer = 4
     while credential_state != State.Accepted:
+        log.info("#18 Poll agency and wait for alice to accept credential " + idx)
         await asyncio.sleep(timer)
-        timer = timer + 2
         await credential.update_state()
         credential_state = await credential.get_state()
+    log.info("#19 Credential accepted "+ idx)
 
 
 if __name__ == '__main__':
