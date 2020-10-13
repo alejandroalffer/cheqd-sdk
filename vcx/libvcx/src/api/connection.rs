@@ -7,6 +7,7 @@ use connection::*;
 use error::prelude::*;
 use messages::get_message::Message;
 use indy_sys::CommandHandle;
+use v3::messages::invite_action::invite::InviteActionData;
 
 /*
     Tha API represents a pairwise connection with another identity owner.
@@ -1610,6 +1611,76 @@ pub extern fn vcx_connection_send_answer(command_handle: u32,
 
     error::SUCCESS.code_num
 }
+
+/// Send a message to invite another side to take a particular action.
+/// The action is represented as a `goal_code` and should be described in a way that can be automated.
+///
+/// The related protocol can be found here:
+///     https://github.com/hyperledger/aries-rfcs/blob/ecf4090b591b1d424813b6468f5fc391bf7f495b/features/0547-invite-action-protocol
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: handle pointing to Connection to send invite action.
+///
+/// data: string - JSON containing information to build message
+///     {
+///         goal_code: string - A code the receiver may want to display to the user or use in automatically deciding what to do after receiving the message.
+///         ack_on: Optional<array<string>> - Specify when ACKs message need to be sent back from invitee to inviter:
+///             * not needed - None or empty array
+///             * at the time the invitation is accepted - ["ACCEPT"]
+///             * at the time out outcome for the action is known - ["OUTCOME"]
+///             * both - ["ACCEPT", "OUTCOME"]
+///     }
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_send_invite_action(command_handle: u32,
+                                                connection_handle: u32,
+                                                data: *const c_char,
+                                                cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_connection_send_invite_action >>>");
+
+    check_useful_c_str!(data, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    let data: InviteActionData = match serde_json::from_str(&data) {
+        Ok(x) => x,
+        Err(err) => {
+            return VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse InviteData from `msg_options` JSON string. Err: {:?}", err)).into();
+        }
+    };
+
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+
+    trace!("vcx_connection_send_invite_action(command_handle: {}, connection_handle: {}, data: {:?}), source_id: {:?}",
+           command_handle, connection_handle, secret!(data), source_id);
+
+    spawn(move || {
+        match send_invite_action(connection_handle, data) {
+            Ok(()) => {
+                trace!("vcx_connection_send_invite_action_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_connection_send_invite_action_cb(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 
 /// Get the information about the connection state.
 ///

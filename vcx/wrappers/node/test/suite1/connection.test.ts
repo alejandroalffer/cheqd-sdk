@@ -281,4 +281,12 @@ describe('Connection:', () => {
       assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
     })
   })
+
+  describe('sendInviteAction:', () => {
+    it('success: send invite action', async () => {
+      const connection = await connectionCreate()
+      const error = await shouldThrow(() => connection.sendInviteAction({goal_code: 'automotive.inspect.tire'}))
+      assert.equal(error.vcxCode, VCXCode.NOT_READY)
+    })
+  })
 })
