@@ -15,9 +15,9 @@ from vc_auth_oidc.alice_vc_auth import handle_challenge
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
 provisionConfig = {
-    'agency_url': 'http://localhost:8080',
-    'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
-    'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
+    'agency_url': 'https://agency-team1.pdev.evernym.com',
+    'agency_did': 'TGLBMTcW9fHdkSqown9jD8',
+    'agency_verkey': 'FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR',
     'wallet_name': 'alice_wallet',
     'wallet_key': '123',
     'payment_method': 'null',

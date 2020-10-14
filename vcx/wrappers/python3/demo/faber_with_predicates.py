@@ -9,6 +9,7 @@ from time import sleep
 from demo_utils import file_ext
 
 from demo.demo_utils import download_message
+from demo.faber import accept_taa, connect
 from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
@@ -34,7 +35,7 @@ provisionConfig = {
     'wallet_key': '123',
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
-    'protocol_type': '1.0',
+    'protocol_type': '3.0',
 }
 
 
@@ -75,78 +76,10 @@ async def main():
             await issue_credential(connection_to_alice)
         elif answer == '2':
             await ask_for_proof(connection_to_alice, config['institution_did'])
-        elif answer == '3':
-            await connection_to_alice.send_ping(None)
-            connection_state = await connection_to_alice.get_state()
-            while connection_state != State.Accepted:
-                sleep(5)
-                await connection_to_alice.update_state()
-                connection_state = await connection_to_alice.get_state()
-                print("State: " + str(connection_state))
-        elif answer == '4':
-            pw_did = await connection_to_alice.get_my_pw_did()
-            uid, offer, _ = await download_message(pw_did, 'handshake-reuse')
-            await connection_to_alice.update_state()
-        elif answer == '5':
-            connection_to_alice = await outofband_connect()
         else:
             break
 
     print("Finished")
-
-
-async def connect():
-    print("#5 Create a connection to alice and print out the invite details")
-    connection_to_alice = await Connection.create('alice')
-    await connection_to_alice.connect('{"use_public_did": true}')
-    await connection_to_alice.update_state()
-    details = await connection_to_alice.invite_details(False)
-    print("**invite details**")
-    print(json.dumps(details))
-    print("******************")
-
-    print("#6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
-    connection_state = await connection_to_alice.get_state()
-    while connection_state != State.Accepted:
-        sleep(2)
-        await connection_to_alice.update_state()
-        connection_state = await connection_to_alice.get_state()
-
-    print("Connection is established")
-    return connection_to_alice
-
-
-async def outofband_connect():
-    print("#5 Create a connection to alice and print out the invite details")
-    connection_to_alice = await Connection.create_outofband('alice', None, None, True, None)
-    await connection_to_alice.connect('{"use_public_did": true}')
-    await connection_to_alice.update_state()
-    details = await connection_to_alice.invite_details(False)
-    print("**invite details**")
-    print(json.dumps(details))
-    print("******************")
-
-    print("#6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
-    connection_state = await connection_to_alice.get_state()
-    while connection_state != State.Accepted:
-        sleep(2)
-        await connection_to_alice.update_state()
-        connection_state = await connection_to_alice.get_state()
-
-    print("Connection is established")
-    return connection_to_alice
-
-
-async def accept_taa():
-    # To support ledger which transaction author agreement accept needed
-    print("#2.1 Accept transaction author agreement")
-    txn_author_agreement = await vcx_get_ledger_author_agreement()
-    txn_author_agreement_json = json.loads(txn_author_agreement)
-    first_acc_mech_type = list(txn_author_agreement_json['aml'].keys())[0]
-    vcx_set_active_txn_author_agreement_meta(text=txn_author_agreement_json['text'],
-                                             version=txn_author_agreement_json['version'],
-                                             hash=None,
-                                             acc_mech_type=first_acc_mech_type, time_of_acceptance=int(time.time()))
 
 
 async def issue_credential(connection_to_alice):
@@ -154,7 +87,7 @@ async def issue_credential(connection_to_alice):
 
     print("#3 Create a new schema on the ledger")
     version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))
-    schema = await Schema.create('schema_uuid', 'degree schema', version, ['Email', 'First Name', 'Last Name', 'Age', 'Sex', 'DateofBirth'], 0)
+    schema = await Schema.create('schema_uuid', 'degree schema', version, ['Email', 'First Name', 'Last Name', 'Age', 'Sex', 'DateofBirth', 'Height', 'Width'], 0)
     schema_id = await schema.get_schema_id()
 
     print("#4 Create a new credential definition on the ledger")
@@ -165,9 +98,11 @@ async def issue_credential(connection_to_alice):
         'Email': '003',
         'First Name': 'Faber',
         'Last Name': 'Test',
-        'Age': '22',
+        'Age': '24',
         'Sex': 'male',
         'DateofBirth':'2000-02-04',
+        'Height':'50',
+        'Width':'150',
     }
 
     print("#12 Create an IssuerCredential object using the schema and credential definition")
@@ -207,12 +142,17 @@ async def issue_credential(connection_to_alice):
 
 async def ask_for_proof(connection_to_alice, institution_did):
     proof_attrs = [
-        {'name': 'Email', 'restrictions': {'issuer_did': institution_did}},
-        {'names': ['First Name', 'Last Name'], 'restrictions': {'issuer_did': institution_did}},
+        {'name': ' email', 'restrictions': {'issuer_did': institution_did}},
+        {'names': ['first name', 'Last Name'], 'restrictions': {'issuer_did': institution_did}},
+    ]
+
+    proof_predicates = [
+        {'name': 'Height', 'p_type': '>=', 'p_value': 30},
+        {'name': 'Width', 'p_type': '<', 'p_value': 200},
     ]
 
     print("#19 Create a Proof object")
-    proof = await Proof.create('proof_uuid', 'Person Proving', proof_attrs, {})
+    proof = await Proof.create('proof_uuid', 'Person Proving', proof_attrs, {}, proof_predicates)
 
     print("#20 Request proof of degree from alice")
     await proof.request_proof(connection_to_alice)
@@ -230,7 +170,8 @@ async def ask_for_proof(connection_to_alice, institution_did):
         return
 
     print("#27 Process the proof provided by alice")
-    await proof.get_proof(connection_to_alice)
+    proof_message = await proof.get_proof(connection_to_alice)
+    print(proof_message)
 
     print("#28 Check if proof is valid")
     if proof.proof_state == ProofState.Verified:
