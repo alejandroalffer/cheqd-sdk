@@ -156,5 +156,8 @@ pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
         pushd android/build/outputs/aar
             cp $(ls -t1 |  head -n 1) ${SCRIPT_DIR}/../artifacts/aar
         popd
+        pushd android/build/libs
+            cp $(ls -t1 |  head -n 1) ${SCRIPT_DIR}/../artifacts/aar
+        popd
     popd
 popd

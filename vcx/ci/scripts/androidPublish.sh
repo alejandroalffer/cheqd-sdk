@@ -24,6 +24,19 @@ publish() {
             -Dpackaging="aar" \
             -DgroupId="com.evernym" \
             --settings settings.xml
+
+        mv com.evernym-vcx_*-javadoc.jar com.evernym-vcx_${VCX_VERSION}-javadoc.jar
+
+        mvn deploy:deploy-file \
+            -Durl="https://evernym.mycloudrepo.io/repositories/libvcx-android" \
+            -DrepositoryId="io.cloudrepo" \
+            -Dversion=${VCX_VERSION} \
+            -Dfile="com.evernym-vcx_${VCX_VERSION}-javadoc.jar" \
+            -DartifactId="vcx" \
+            -Dpackaging="jar" \
+            -DgroupId="com.evernym" \
+            -Dclassifier=javadoc \
+            --settings settings.xml
     popd
 }
 

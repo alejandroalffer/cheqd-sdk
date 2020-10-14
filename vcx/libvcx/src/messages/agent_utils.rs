@@ -7,6 +7,7 @@ use utils::libindy::signus::create_and_store_my_did;
 use utils::option_util::get_or_default;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
+use settings::ProtocolTypes;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Connect {
@@ -213,6 +214,11 @@ pub fn get_final_config(my_did: &str,
                         my_config: &Config) -> VcxResult<String> {
     let (issuer_did, issuer_vk) = _create_issuer_keys(my_did, my_vk, my_config)?;
 
+    /* Update Agent Info */
+    update_agent_profile(&agent_did,
+                         &Some(issuer_did.to_string()),
+                         my_config.protocol_type.clone())?;
+
     let mut final_config = json!({
         "wallet_key": &my_config.wallet_key,
         "wallet_name": wallet_name,
@@ -348,6 +354,28 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
         };
 
     Ok((response.from_did, response.from_vk))
+}
+
+pub fn update_agent_profile(agent_did: &str,
+                            public_did: &Option<String>,
+                            protocol_type: ProtocolTypes) -> VcxResult<u32> {
+    let webhook_url = settings::get_config_value(settings::CONFIG_WEBHOOK_URL).ok();
+
+    if let Ok(name) = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME) {
+        ::messages::update_data()
+            .to(agent_did)?
+            .name(&name)?
+            .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL)?)?
+            .webhook_url(&webhook_url)?
+            .use_public_did(public_did)?
+            .version(&Some(protocol_type))?
+            .send_secure()
+            .map_err(|err| err.extend("Cannot update agent profile"))?;
+    }
+
+    trace!("Connection::create_agent_pairwise <<<");
+
+    Ok(::utils::error::SUCCESS.code_num)
 }
 
 pub fn connect_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {

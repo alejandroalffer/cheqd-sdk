@@ -306,11 +306,13 @@ impl InitializedState {
         debug!("preparing invitation for connection {}", source_id);
 
         let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
+        let profile_url = settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).ok();
 
         let state = match self.outofband_meta.clone() {
             None => {
                 let invite: Invitation = Invitation::create()
                     .set_label(label)
+                    .set_opt_profile_url(profile_url)
                     .set_service_endpoint(agent_info.agency_endpoint()?)
                     .set_recipient_keys(agent_info.recipient_keys())
                     .set_routing_keys(agent_info.routing_keys()?);
@@ -320,6 +322,7 @@ impl InitializedState {
             Some(outofband_meta) => {
                 let invite: OutofbandInvitation = OutofbandInvitation::create()
                     .set_label(label)
+                    .set_opt_profile_url(profile_url)
                     .set_opt_goal_code(outofband_meta.goal_code)
                     .set_opt_goal(outofband_meta.goal)
                     .set_handshake(outofband_meta.handshake)
@@ -943,7 +946,7 @@ impl DidExchangeSM {
                                             .set_thread(thread.clone());
 
                                         agent_info.send_message(&problem_report.to_a2a_message(), &request.connection.did_doc).ok(); // IS is possible?
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -970,8 +973,8 @@ impl DidExchangeSM {
                                         ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ack, thread).into()))
                                     }
                                     Err(err) => {
-                                        let (problem_report, thread) = state.send_problem_report(&agent_info, err.to_string())?;
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        state.send_problem_report(&agent_info, err.to_string())?;
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -981,8 +984,8 @@ impl DidExchangeSM {
                                         ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping, thread).into()))
                                     }
                                     Err(err) => {
-                                        let (problem_report, thread) = state.send_problem_report(&agent_info, err.to_string())?;
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        state.send_problem_report(&agent_info, err.to_string())?;
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -1012,8 +1015,8 @@ impl DidExchangeSM {
                                         ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping_response, thread).into()))
                                     }
                                     Err(err) => {
-                                        let (problem_report, thread) = state.send_problem_report(&agent_info, err.to_string())?;
-                                        ActorDidExchangeState::Inviter(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        state.send_problem_report(&agent_info, err.to_string())?;
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -1099,7 +1102,7 @@ impl DidExchangeSM {
                                             .set_thread(thread.clone());
 
                                         agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc).ok();
-                                        ActorDidExchangeState::Invitee(DidExchangeState::Failed((state, problem_report, thread).into()))
+                                        return Err(err)
                                     }
                                 }
                             }
@@ -1423,9 +1426,7 @@ pub mod test {
                 let mut request = _request();
                 request.connection.did_doc = DidDoc::default();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(request)).unwrap();
-
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Failed(_)), did_exchange_sm.state);
+                did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(request)).unwrap_err();
             }
 
             #[test]
@@ -1986,9 +1987,7 @@ pub mod test {
                 let mut signed_response = _signed_response();
                 signed_response.connection_sig.signature = String::from("other");
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(signed_response)).unwrap();
-
-                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Failed(_)), did_exchange_sm.state);
+                did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(signed_response)).unwrap_err();
             }
 
             #[test]

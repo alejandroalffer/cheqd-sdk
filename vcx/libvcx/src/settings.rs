@@ -2,7 +2,7 @@ extern crate url;
 extern crate serde_json;
 
 use std::collections::HashMap;
-use std::sync::{RwLock, Once};
+use std::sync::RwLock;
 use utils::{get_temp_dir_path, error};
 use std::path::Path;
 use url::Url;
@@ -100,6 +100,10 @@ impl ToString for HashMap<String, String> {
     }
 }
 
+#[cfg(all(feature="mysql"))]
+use std::sync::Once;
+
+#[cfg(all(feature="mysql"))]
 static START: Once = Once::new();
 
 #[cfg(all(feature="mysql"))]
@@ -506,6 +510,12 @@ pub fn get_connecting_protocol_version() -> ProtocolTypes {
     };
     trace!("get_connecting_protocol_version >>> protocol: {:?}", protocol);
     protocol
+}
+
+pub fn _config_str_to_bool(key: &str) -> VcxResult<bool> {
+    get_config_value(key)?
+        .parse::<bool>()
+        .map_err(|_|VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("{} - config supposed to be true | false", key)))
 }
 
 pub fn get_payment_method() -> VcxResult<String> {

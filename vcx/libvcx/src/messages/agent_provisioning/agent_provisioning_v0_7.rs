@@ -78,6 +78,7 @@ pub fn provision(config: &str, token: &str) -> VcxResult<String> {
 
     debug!("Connecting to Agency");
     let (agent_did, agent_vk) = create_agent(&my_did, &my_vk, &my_config.agency_did, token)?;
+
     wallet::close_wallet()?;
 
     debug!("Building config");
@@ -121,13 +122,15 @@ mod tests {
     use utils::plugins::init_plugin;
 
     fn get_provisioning_inputs(time: Option<String>, seed: Option<String>) -> (String, String, String) {
+        let enterprise_wallet_name = format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
+        wallet::delete_wallet(&enterprise_wallet_name, None, None, None).err();
+
         let id = "id";
         let sponsor_id = "evernym-test-sponsorabc123";
         let nonce = "nonce";
         let time = time.unwrap_or(chrono::offset::Utc::now().to_rfc3339());
         let seed = seed.unwrap_or("000000000000000000000000Trustee1".to_string());
         println!("Time: {:?}", time);
-        let enterprise_wallet_name = format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
         wallet::init_wallet(&enterprise_wallet_name, None, None, None).unwrap();
         let keys = ::utils::libindy::crypto::create_key(Some(&seed)).unwrap();
         let encoded_val = sign_provision_token(&keys, &nonce, &time, &id, &sponsor_id);
@@ -149,7 +152,7 @@ mod tests {
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
             "protocol_type": protocol_type,
-        }).to_string();
+            }).to_string();
 
         let token = json!( {
             "sponseeId": id.to_string(),

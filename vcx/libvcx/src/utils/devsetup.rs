@@ -487,8 +487,8 @@ pub fn setup_agency_env(protocol_type: &str, use_zero_fees: bool) {
             "name": "institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
-            "protocol_type": protocol_type
-        });
+            "protocol_type": protocol_type,
+            });
 
     if protocol_type == "2.0" {
         config["use_latest_protocols"] = json!("true");
@@ -512,7 +512,7 @@ pub fn setup_agency_env(protocol_type: &str, use_zero_fees: bool) {
             "name": "consumer".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
-            "protocol_type": protocol_type
+            "protocol_type": protocol_type,
         });
 
     if protocol_type == "2.0" {
@@ -601,7 +601,7 @@ pub fn setup_agency_env_new_protocol(protocol_type: &str, use_zero_fees: bool) {
             "name": "institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
-            "protocol_type": protocol_type
+            "protocol_type": protocol_type,
         });
 
     if protocol_type == "2.0" {
@@ -626,7 +626,7 @@ pub fn setup_agency_env_new_protocol(protocol_type: &str, use_zero_fees: bool) {
             "name": "consumer".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
-            "protocol_type": protocol_type
+            "protocol_type": protocol_type,
         });
 
     if protocol_type == "2.0" {
@@ -707,7 +707,7 @@ pub fn setup_consumer_env(protocol_type: &str) {
             "name": "consumer".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
-            "protocol_type": protocol_type
+            "protocol_type": protocol_type,
         });
 
     if protocol_type == "2.0" {

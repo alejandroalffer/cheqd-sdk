@@ -924,6 +924,7 @@ mod tests {
         assert_eq!(proof::get_state(proof_handle).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
 
+    #[allow(deprecated)]
     #[test]
     fn test_get_proof_fails_when_not_ready_with_proof() {
         let _setup = SetupMocks::init();
@@ -939,6 +940,7 @@ mod tests {
         let _ = cb.receive(TimeoutUtils::some_medium()).is_err();
     }
 
+    #[allow(deprecated)]
     #[test]
     fn test_get_proof_returns_proof_with_proof_state_invalid() {
         let _setup = SetupMocks::init();

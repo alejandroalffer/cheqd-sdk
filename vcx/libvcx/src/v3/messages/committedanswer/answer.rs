@@ -1,10 +1,10 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
 use messages::thread::Thread;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Answer {
     #[serde(rename = "@id")]
-    pub id: MessageId,
+    pub id: Option<MessageId>,
     #[serde(rename = "response.@sig")]
     pub signature: ResponseSignature,
     #[serde(rename = "~thread")]
@@ -31,9 +31,19 @@ impl Answer {
         self.signature = signature;
         self
     }
-    
+
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::CommittedAnswer(self.clone())
+    }
+}
+
+impl Default for Answer {
+    fn default() -> Answer {
+        Answer {
+            id: Some(MessageId::default()),
+            signature: Default::default(),
+            thread: Default::default()
+        }
     }
 }
 
@@ -54,9 +64,9 @@ pub mod tests {
 
     fn _answer() -> Answer {
         Answer {
-            id: Default::default(),
+            id: Some(MessageId::default()),
             thread: _thread(),
-            signature: Default::default()
+            signature: Default::default(),
         }
     }
 

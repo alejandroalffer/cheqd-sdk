@@ -58,7 +58,8 @@ export interface ICredentialDefPrepareForEndorserData {
   name: string,
   schemaId: string,
   revocationDetails: IRevocationDetails,
-  endorser: string
+  endorser: string,
+  tag?: string
 }
 
 export interface ICredentialDefData {
@@ -229,7 +230,8 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     endorser,
     revocationDetails,
     schemaId,
-    sourceId
+    sourceId,
+    tag
   }: ICredentialDefPrepareForEndorserData): Promise<CredentialDef> {
     // Todo: need to add params for tag and config
     try {
@@ -250,7 +252,7 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
                                                                         name,
                                                                         schemaId,
                                                                         issuerDid,
-                                                                        'tag1',
+                                                                        tag || 'tag1',
                                                                         JSON.stringify(revocation),
                                                                         endorser,
                                                                       cb)
