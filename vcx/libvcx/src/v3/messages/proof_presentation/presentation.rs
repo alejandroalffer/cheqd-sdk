@@ -86,7 +86,7 @@ pub mod tests {
             comment: Some(_comment()),
             presentations_attach: attachment,
             thread: thread(),
-            please_ack: Some(PleaseAck {}),
+            please_ack: Some(PleaseAck { on: None }),
         }
     }
 

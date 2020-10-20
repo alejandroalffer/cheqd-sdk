@@ -327,4 +327,14 @@ class ConnectionApiTest {
 			TestHelper.getResultFromFuture(ConnectionApi.connectionSendAnswer(connectionHandle, question, answer));
 		});
 	}
+
+	@Test
+	@DisplayName("send invite action")
+	void sendInviteAction() {
+		Assertions.assertThrows(ExecutionException.class, () -> {
+			int connectionHandle = _createConnection();
+			String data = "{\"goal_code\": \"automotive.inspect.tire\"}";
+			TestHelper.getResultFromFuture(ConnectionApi.connectionSendInviteAction(connectionHandle, data));
+		});
+	}
 }
