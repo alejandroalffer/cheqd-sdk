@@ -97,6 +97,8 @@ export interface IFFIEntryPoint {
   vcx_wallet_set_handle: (handle: number) => void,
   vcx_ledger_get_fees: (commandId: number, cb: any) => number,
   vcx_agent_provision_async: (commandId: number, config: string, cb: any) => number,
+  vcx_provision_agent_with_token: (commandId: number, config: string, data: string, cb: any) => number,
+  vcx_get_provision_token: (commandId: number, config: string, cb: any) => number,
   vcx_agent_update_info: (commandId: number, config: string, cb: any) => number,
   vcx_wallet_import: (commandId: number, config: string, cb: any) => number,
   vcx_wallet_export: (commandId: number, importPath: string, backupKey: string, cb: any) => number,

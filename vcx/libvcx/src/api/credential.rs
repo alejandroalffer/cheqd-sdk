@@ -489,20 +489,11 @@ pub extern fn vcx_credential_update_state(command_handle: CommandHandle,
 
     spawn(move || {
         match credential::update_state(credential_handle, None) {
-            Ok(_) => (),
-            Err(e) => {
-                error!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
-                       command_handle, e, 0, source_id);
-                cb(command_handle, e.into(), 0)
-            }
-        }
-
-        match credential::get_state(credential_handle) {
-            Ok(s) => {
+            Ok(state) => {
                 trace!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
-                       command_handle, error::SUCCESS.message, s, source_id);
-                cb(command_handle, error::SUCCESS.code_num, s)
-            }
+                       command_handle, error::SUCCESS.message, state, source_id);
+                cb(command_handle, error::SUCCESS.code_num, state)
+            },
             Err(e) => {
                 error!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, e, 0, source_id);
@@ -549,22 +540,13 @@ pub extern fn vcx_credential_update_state_with_message(command_handle: CommandHa
 
     spawn(move || {
         match credential::update_state(credential_handle, Some(message)) {
-            Ok(_) => (),
-            Err(e) => {
-                error!("vcx_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
-                       command_handle, e, 0, source_id);
-                cb(command_handle, e.into(), 0)
-            }
-        }
-
-        match credential::get_state(credential_handle) {
             Ok(s) => {
                 trace!("vcx_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, s, source_id);
                 cb(command_handle, error::SUCCESS.code_num, s)
             }
             Err(e) => {
-                error!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                error!("vcx_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, e, 0, source_id);
                 cb(command_handle, e.into(), 0)
             }

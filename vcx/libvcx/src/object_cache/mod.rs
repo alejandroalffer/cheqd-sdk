@@ -74,6 +74,11 @@ impl<T> ObjectCache<T> {
 
     }
 
+    pub fn update(&self, handle: u32, obj: T) -> VcxResult<()> {
+        self.store.insert(handle, obj);
+        Ok(())
+    }
+
     pub fn release(&self, handle: u32) -> VcxResult<()> {
         match self.store.remove(&handle) {
             Some(_) => Ok(()),

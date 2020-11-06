@@ -504,22 +504,32 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    PROOF_MAP.get_mut(handle, |obj| {
+    let (proof, state) = PROOF_MAP.get(handle, |obj| {
         match obj {
-            Proofs::Pending(ref mut obj) => {
-                obj.update_state(message.clone())
-                    .or_else(|_| Ok(obj.get_state()))
+            Proofs::Pending(ref obj) => {
+                let mut obj = obj.clone();
+                obj.update_state(message.clone()).ok();
+                let state = obj.get_state();
+                Ok((Proofs::Pending(obj), state))
             }
-            Proofs::V1(ref mut obj) => {
-                obj.update_state(message.clone())
-                    .or_else(|_| Ok(obj.get_state()))
+            Proofs::V1(ref obj) => {
+                let mut obj = obj.clone();
+                obj.update_state(message.clone()).ok();
+                let state = obj.get_state();
+                Ok((Proofs::V1(obj), state))
             }
-            Proofs::V3(ref mut obj) => {
-                obj.update_state(message.as_ref().map(String::as_str))?;
-                Ok(obj.state())
+            Proofs::V3(ref obj) => {
+                let mut obj = obj.clone();
+                obj.update_state(message.as_ref().map(String::as_str)).ok();
+                let state = obj.state();
+                Ok((Proofs::V3(obj), state))
             }
         }
-    })
+    }).or(Err(VcxError::from(VcxErrorKind::InvalidProofHandle)))?;
+
+    PROOF_MAP.update(handle, proof)?;
+
+    Ok(state)
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
@@ -575,19 +585,36 @@ pub fn from_string(proof_data: &str) -> VcxResult<u32> {
 }
 
 pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
-    PROOF_MAP.get_mut(handle, |obj| {
+    let (proof, proof_request) = PROOF_MAP.get(handle, |obj| {
         match obj {
-            Proofs::Pending(ref mut obj) => obj.generate_proof_request_msg(),
-            Proofs::V1(ref mut obj) => obj.generate_proof_request_msg(),
-            Proofs::V3(ref obj) => obj.generate_presentation_request_msg()
+            Proofs::Pending(ref obj) => {
+                let mut obj = obj.clone();
+                let proof_request = obj.generate_proof_request_msg()?;
+                Ok((Proofs::Pending(obj), proof_request))
+            },
+            Proofs::V1(ref obj) => {
+                let mut obj = obj.clone();
+                let proof_request = obj.generate_proof_request_msg()?;
+                Ok((Proofs::V1(obj), proof_request))
+            },
+            Proofs::V3(ref obj) => {
+                let obj = obj.clone();
+                let proof_request = obj.generate_presentation_request_msg()?;
+                Ok((Proofs::V3(obj), proof_request))
+            }
         }
-    })
+    }).or(Err(VcxError::from(VcxErrorKind::InvalidProofHandle)))?;
+
+    PROOF_MAP.update(handle, proof)?;
+
+    Ok(proof_request)
 }
 
 pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    PROOF_MAP.get_mut(handle, |proof| {
+    let proof = PROOF_MAP.get(handle, |proof| {
         let new_proof = match proof {
-            Proofs::Pending(ref mut obj) => {
+            Proofs::Pending(ref obj) => {
+                let mut obj= obj.clone();
                 // if Aries connection is established --> Convert Pending object to V3 Aries proof
                 if ::connection::is_v3_connection(connection_handle)? {
                     let revocation_details = serde_json::to_string(&obj.revocation_interval)
@@ -603,21 +630,26 @@ pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32>
                     Proofs::V3(verifier)
                 } else { // else - Convert Pending object to V1 proof
                     obj.send_proof_request(connection_handle)?;
-                    Proofs::V1(obj.clone())
+                    Proofs::V1(obj)
                 }
             }
-            Proofs::V1(ref mut obj) => {
+            Proofs::V1(ref obj) => {
+                let mut obj= obj.clone();
                 obj.send_proof_request(connection_handle)?;
-                Proofs::V1(obj.clone())
+                Proofs::V1(obj)
             }
-            Proofs::V3(ref mut obj) => {
+            Proofs::V3(ref obj) => {
+                let mut obj= obj.clone();
                 obj.send_presentation_request(connection_handle)?;
-                Proofs::V3(obj.clone())
+                Proofs::V3(obj)
             }
         };
-        *proof = new_proof;
-        Ok(error::SUCCESS.code_num)
-    })
+        Ok(new_proof)
+    }).or(Err(VcxError::from(VcxErrorKind::InvalidProofHandle)))?;
+
+    PROOF_MAP.update(handle, proof)?;
+
+    Ok(error::SUCCESS.code_num)
 }
 
 pub fn get_proof_uuid(handle: u32) -> VcxResult<String> {
