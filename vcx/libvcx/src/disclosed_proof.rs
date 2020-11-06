@@ -718,22 +718,33 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    HANDLE_MAP.get_mut(handle, |obj| {
+    let (proof, state) = HANDLE_MAP.get(handle, |obj| {
         match obj {
             DisclosedProofs::Pending(obj) => {
                 // update_state is just the same as get_state for disclosed_proof
-                Ok(obj.get_state())
+                let obj = obj.clone();
+                let state = obj.get_state();
+                Ok((DisclosedProofs::Pending(obj), state))
             }
             DisclosedProofs::V1(obj) => {
                 // update_state is just the same as get_state for disclosed_proof
-                Ok(obj.get_state())
+                let obj = obj.clone();
+                let state = obj.get_state();
+                Ok((DisclosedProofs::V1(obj), state))
             }
-            DisclosedProofs::V3(ref mut obj) => {
+            DisclosedProofs::V3(ref obj) => {
+                let mut obj = obj.clone();
                 obj.update_state(message.as_ref().map(String::as_str))?;
-                Ok(obj.state())
+                let state = obj.state();
+                Ok((DisclosedProofs::V3(obj), state))
             }
         }
-    }).map_err(handle_err)
+    })
+        .map_err(handle_err)?;
+
+    HANDLE_MAP.update(handle, proof)?;
+
+    Ok(state)
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
@@ -769,9 +780,10 @@ pub fn generate_proof_msg(handle: u32) -> VcxResult<String> {
 }
 
 pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    HANDLE_MAP.get_mut(handle, |proof| {
+    let proof = HANDLE_MAP.get(handle, |proof| {
         let new_proof = match proof {
-            DisclosedProofs::Pending(ref mut obj) => {
+            DisclosedProofs::Pending(ref obj) => {
+                let mut obj = obj.clone();
                 // if Aries connection is established --> Convert DisclosedProofs object to Aries presentation
                 if ::connection::is_v3_connection(connection_handle)? {
                     debug!("Convert pending proof into aries proof");
@@ -794,27 +806,33 @@ pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
                     DisclosedProofs::V1(obj.clone())
                 }
             }
-            DisclosedProofs::V1(ref mut obj) => {
+            DisclosedProofs::V1(ref obj) => {
+                let mut obj = obj.clone();
                 obj.send_proof(connection_handle)?;
-                DisclosedProofs::V1(obj.clone())
+                DisclosedProofs::V1(obj)
             }
-            DisclosedProofs::V3(ref mut obj) => {
+            DisclosedProofs::V3(ref obj) => {
+                let mut obj = obj.clone();
                 obj.send_presentation(connection_handle)?;
-                DisclosedProofs::V3(obj.clone())
+                DisclosedProofs::V3(obj)
             }
         };
-        *proof = new_proof;
-        Ok(error::SUCCESS.code_num)
-    }).map_err(handle_err)
+        Ok(new_proof)
+    })
+        .map_err(handle_err)?;
+
+    HANDLE_MAP.update(handle, proof)?;
+
+    Ok(error::SUCCESS.code_num)
 }
 
 pub fn generate_reject_proof_msg(handle: u32) -> VcxResult<String> {
-    HANDLE_MAP.get_mut(handle, |obj| {
+    HANDLE_MAP.get(handle, |obj| {
         match obj {
-            DisclosedProofs::Pending(ref mut obj) => {
+            DisclosedProofs::Pending(ref obj) => {
                 obj.generate_reject_proof_msg()
             }
-            DisclosedProofs::V1(ref mut obj) => {
+            DisclosedProofs::V1(ref obj) => {
                 obj.generate_reject_proof_msg()
             }
             DisclosedProofs::V3(_) => {
@@ -825,9 +843,10 @@ pub fn generate_reject_proof_msg(handle: u32) -> VcxResult<String> {
 }
 
 pub fn reject_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    HANDLE_MAP.get_mut(handle, |proof| {
+    let proof = HANDLE_MAP.get(handle, |proof| {
         let new_proof = match proof {
-            DisclosedProofs::Pending(ref mut obj) => {
+            DisclosedProofs::Pending(ref obj) => {
+                let mut obj = obj.clone();
                 // if Aries connection is established --> Convert DisclosedProofs object to Aries presentation
                 if ::connection::is_v3_connection(connection_handle)? {
                     debug!("Convert pending proof into aries proof");
@@ -844,43 +863,57 @@ pub fn reject_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
                     DisclosedProofs::V1(obj.clone())
                 }
             }
-            DisclosedProofs::V1(ref mut obj) => {
+            DisclosedProofs::V1(ref obj) => {
+                let mut obj = obj.clone();
                 obj.reject_proof(connection_handle)?;
-                DisclosedProofs::V1(obj.clone())
+                DisclosedProofs::V1(obj)
             }
-            DisclosedProofs::V3(ref mut obj) => {
+            DisclosedProofs::V3(ref obj) => {
+                let mut obj = obj.clone();
                 obj.decline_presentation_request(connection_handle, Some(String::from("Presentation Request was rejected")), None)?;
-                DisclosedProofs::V3(obj.clone())
+                DisclosedProofs::V3(obj)
             }
         };
-        *proof = new_proof;
-        Ok(error::SUCCESS.code_num)
-    }).map_err(handle_err)
+        Ok(new_proof)
+    }).map_err(handle_err)?;
+
+    HANDLE_MAP.update(handle, proof)?;
+
+    Ok(error::SUCCESS.code_num)
 }
 
 pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: String) -> VcxResult<u32> {
-    HANDLE_MAP.get_mut(handle, |obj| {
+    let proof = HANDLE_MAP.get(handle, |obj| {
         match obj {
-            DisclosedProofs::Pending(ref mut obj) => {
-                obj.generate_proof(&credentials, &self_attested_attrs)
+            DisclosedProofs::Pending(ref obj) => {
+                let mut obj = obj.clone();
+                obj.generate_proof(&credentials, &self_attested_attrs)?;
+                Ok(DisclosedProofs::Pending(obj))
             }
-            DisclosedProofs::V1(ref mut obj) => {
-                obj.generate_proof(&credentials, &self_attested_attrs)
+            DisclosedProofs::V1(ref obj) => {
+                let mut obj = obj.clone();
+                obj.generate_proof(&credentials, &self_attested_attrs)?;
+                Ok(DisclosedProofs::V1(obj))
             }
-            DisclosedProofs::V3(ref mut obj) => {
+            DisclosedProofs::V3(ref obj) => {
+                let mut obj = obj.clone();
                 obj.generate_presentation(credentials.clone(), self_attested_attrs.clone())?;
-                Ok(error::SUCCESS.code_num)
+                Ok(DisclosedProofs::V3(obj))
             }
         }
-    })
-        .map(|_| error::SUCCESS.code_num)
-        .map_err(handle_err)
+    }).map_err(handle_err)?;
+
+    HANDLE_MAP.update(handle, proof)?;
+
+    Ok(error::SUCCESS.code_num)
 }
 
 pub fn decline_presentation_request(handle: u32, connection_handle: u32, reason: Option<String>, proposal: Option<String>) -> VcxResult<u32> {
-    HANDLE_MAP.get_mut(handle, |proof| {
+    let proof = HANDLE_MAP.get(handle, |proof| {
         let new_proof = match proof {
-            DisclosedProofs::Pending(ref mut obj) => {
+            DisclosedProofs::Pending(ref obj) => {
+                let mut obj = obj.clone();
+
                 // if Aries connection is established --> Convert DisclosedProofs object to Aries presentation
                 if ::connection::is_v3_connection(connection_handle)? {
                     debug!("Convert pending proof into aries proof");
@@ -894,27 +927,30 @@ pub fn decline_presentation_request(handle: u32, connection_handle: u32, reason:
                     DisclosedProofs::V3(prover)
                 } else { // else --> Convert DisclosedProofs object to Proprietary proof object
                     obj.reject_proof(connection_handle)?;
-                    DisclosedProofs::V1(obj.clone())
+                    DisclosedProofs::V1(obj)
                 }
             }
-            DisclosedProofs::V1(ref mut obj) => {
+            DisclosedProofs::V1(ref obj) => {
+                let mut obj = obj.clone();
                 obj.reject_proof(connection_handle)?;
-                DisclosedProofs::V1(obj.clone())
+                DisclosedProofs::V1(obj)
             }
-            DisclosedProofs::V3(ref mut obj) => {
+            DisclosedProofs::V3(ref obj) => {
+                let mut obj = obj.clone();
                 obj.decline_presentation_request(connection_handle, reason.clone(), proposal.clone())?;
-                DisclosedProofs::V3(obj.clone())
+                DisclosedProofs::V3(obj)
             }
         };
-        *proof = new_proof;
-        Ok(error::SUCCESS.code_num)
-    })
-        .map(|_| error::SUCCESS.code_num)
-        .map_err(handle_err)
+        Ok(new_proof)
+    }).map_err(handle_err)?;
+
+    HANDLE_MAP.update(handle, proof)?;
+
+    Ok(error::SUCCESS.code_num)
 }
 
 pub fn retrieve_credentials(handle: u32) -> VcxResult<String> {
-    HANDLE_MAP.get_mut(handle, |obj| {
+    HANDLE_MAP.get(handle, |obj| {
         match obj {
             DisclosedProofs::Pending(ref obj) => obj.retrieve_credentials(),
             DisclosedProofs::V1(ref obj) => obj.retrieve_credentials(),
