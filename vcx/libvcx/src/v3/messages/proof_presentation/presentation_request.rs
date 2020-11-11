@@ -3,6 +3,7 @@ use v3::messages::attachment::{Attachments, AttachmentId};
 use v3::messages::connection::service::Service;
 use error::prelude::*;
 use std::convert::TryInto;
+use messages::thread::Thread;
 
 pub use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData, ProofRequestVersion};
 
@@ -17,6 +18,9 @@ pub struct PresentationRequest {
     #[serde(rename = "~service")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub service: Option<Service>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "~thread")]
+    pub thread: Option<Thread>,
 }
 
 impl PresentationRequest {
@@ -44,6 +48,12 @@ impl PresentationRequest {
         self
 
     }
+
+    pub fn set_thread_id(mut self, id: &str) -> Self {
+        self.thread = Some(Thread::new().set_thid(id.to_string()));
+        self
+    }
+
     pub fn to_json(&self) -> VcxResult<String> {
         serde_json::to_string(self)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize PresentationRequest: {}", err)))
@@ -121,6 +131,7 @@ pub mod tests {
             comment: Some(_comment()),
             request_presentations_attach: _attachment(),
             service: None,
+            thread: None
         }
     }
 
@@ -130,6 +141,7 @@ pub mod tests {
             comment: Some(_comment()),
             request_presentations_attach: _attachment(),
             service: Some(_service()),
+            thread: None
         }
     }
 
