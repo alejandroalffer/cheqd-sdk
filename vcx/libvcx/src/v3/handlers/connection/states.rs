@@ -645,9 +645,16 @@ impl CompleteState {
         trace!("CompleteState:handle_send_answer >>> Question: {:?}, response: {:?}, agent_info: {:?}", secret!(question), secret!(response), secret!(agent_info));
         debug!("sending answer message for connection");
 
-        let thread = Thread::new()
-            .set_thid(question.id.to_string())
-            .update_received_order(&self.did_doc.id);
+        let thread = match question.thread.as_ref() {
+            Some(thread_) =>
+                thread_
+                    .clone()
+                    .update_received_order(&self.did_doc.id),
+            None =>
+                Thread::new()
+                    .set_thid(question.id.to_string())
+                    .update_received_order(&self.did_doc.id)
+        };
 
         let mut answer = Answer::create()
             .set_response(response.text)
