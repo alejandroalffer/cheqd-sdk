@@ -465,7 +465,7 @@ impl Connection {
     }
 
 
-    pub fn send_invite_action(&self, data: InviteActionData) -> VcxResult<()> {
+    pub fn send_invite_action(&self, data: InviteActionData) -> VcxResult<String> {
         trace!("Connection::send_invite_action >>> data: {:?}", secret!(data));
         debug!("Connection {}: Sending invitation for action", self.source_id);
 
@@ -473,10 +473,12 @@ impl Connection {
             return Err(VcxError::from_msg(VcxErrorKind::NotReady, format!("Connection {} is not in Accepted state. Not ready to send message", self.source_id)));
         }
 
-        let invite = InviteForAction::create()
-            .set_goal_code(data.goal_code)
-            .set_ack_on(data.ack_on)
-            .to_a2a_message();
+        let invite = json!(
+                InviteForAction::create()
+                .set_goal_code(data.goal_code)
+                .set_ack_on(data.ack_on)
+                .to_a2a_message()
+            ).to_string();
 
         ::messages::send_message()
             .to(&self.get_pw_did())?
@@ -486,7 +488,7 @@ impl Connection {
             .edge_agent_payload(
                 &self.get_pw_verkey(),
                 &self.get_their_pw_verkey(),
-                &json!(invite).to_string(),
+                &invite,
                 PayloadKinds::Other(String::from("inviteAction")),
                 None)?
             .agent_did(&self.get_agent_did())?
@@ -499,7 +501,7 @@ impl Connection {
 
         debug!("Connection {}: Sent send invite action", self.source_id);
         trace!("Connection::send_invite_action <<<");
-        return Ok(());
+        return Ok(invite);
     }
 }
 
@@ -1487,25 +1489,25 @@ pub fn send_ping(connection_handle: u32, comment: Option<String>) -> VcxResult<(
     Ok(())
 }
 
-pub fn send_invite_action(connection_handle: u32, data: InviteActionData) -> VcxResult<()> {
-    let connection = CONNECTION_MAP.get(connection_handle, |connection| {
+pub fn send_invite_action(connection_handle: u32, data: InviteActionData) -> VcxResult<String> {
+    let (connection, message) = CONNECTION_MAP.get(connection_handle, |connection| {
         match connection {
             Connections::V1(ref connection) => {
                 let connection = connection.clone();
-                connection.send_invite_action(data.clone())?;
-                Ok(Connections::V1(connection))
+                let message = connection.send_invite_action(data.clone())?;
+                Ok((Connections::V1(connection), message))
             },
             Connections::V3(ref connection) => {
                 let mut connection = connection.clone();
-                connection.send_invite_action(data.clone())?;
-                Ok(Connections::V3(connection))
+                let message = connection.send_invite_action(data.clone())?;
+                Ok((Connections::V3(connection), message))
             }
         }
     }).map_err(handle_err)?;
 
     CONNECTION_MAP.update(connection_handle, connection)?;
 
-    Ok(())
+    Ok(message)
 }
 
 pub fn send_discovery_features(connection_handle: u32, query: Option<String>, comment: Option<String>) -> VcxResult<()> {

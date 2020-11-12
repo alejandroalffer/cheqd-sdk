@@ -233,7 +233,7 @@ vcx_error_t vcx_connection_send_answer(vcx_command_handle_t command_handle,
 vcx_error_t vcx_connection_send_invite_action(vcx_command_handle_t command_handle,
                                               vcx_connection_handle_t connection_handle,
                                               const char *goal_code,
-                                              void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+                                              void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *message));
 
 /**
  * credential issuer object
