@@ -117,7 +117,6 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::connection::response::tests::*;
     use utils::constants::CRED_DEF_JSON;
 
     fn _attachment() -> ::serde_json::Value {

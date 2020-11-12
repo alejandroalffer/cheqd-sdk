@@ -79,7 +79,7 @@ async def vcx_provision_agent_with_token(config: str, token: str) -> None:
     logger.debug("vcx_provision_agent_with_token completed")
     return result.decode()
 
-async def vcx_get_provision_token(config: str) -> None:
+async def vcx_get_provision_token(config: str) -> str:
     """
     Get token used in vcx_provision_agent_with_token
     :param config:
@@ -96,22 +96,22 @@ async def vcx_get_provision_token(config: str) -> None:
         'source_id': "123",
         'com_method': {'type': 1,'id':'123','value':'FCM:Value'}
       }
-    :return:
+    :return: provisioning token
     """
     logger = logging.getLogger(__name__)
 
-    if not hasattr(vcx_agent_update_info, "cb"):
+    if not hasattr(vcx_get_provision_token, "cb"):
         logger.debug("vcx_agent_update_info: Creating callback")
-        vcx_agent_update_info.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+        vcx_get_provision_token.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
     c_config = c_char_p(config.encode('utf-8'))
 
     result = await do_call('vcx_get_provision_token',
                            c_config,
-                           vcx_agent_update_info.cb)
+                           vcx_get_provision_token.cb)
 
     logger.debug("vcx_get_provision_token completed")
-    return result
+    return result.decode()
 
 async def vcx_agent_update_info(config: str) -> None:
     """

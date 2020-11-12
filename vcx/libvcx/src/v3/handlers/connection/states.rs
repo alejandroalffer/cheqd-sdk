@@ -1459,7 +1459,7 @@ pub mod test {
             fn test_did_exchange_handle_invalid_exchange_request_message_from_invited_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
+                let did_exchange_sm = inviter_sm().to_inviter_invited_state();
 
                 let mut request = _request();
                 request.connection.did_doc = DidDoc::default();
@@ -2020,7 +2020,7 @@ pub mod test {
             fn test_did_exchange_handle_invalid_response_message_from_requested_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = invitee_sm().to_invitee_requested_state();
+                let did_exchange_sm = invitee_sm().to_invitee_requested_state();
 
                 let mut signed_response = _signed_response();
                 signed_response.connection_sig.signature = String::from("other");
