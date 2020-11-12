@@ -663,14 +663,14 @@ vcx_error_t vcx_connection_send_answer(vcx_u32_t command_handle,
 ///             * both - ["ACCEPT", "OUTCOME"]
 ///     }
 ///
-/// cb: Callback that provides success or failure of request
+/// cb: Callback that provides sent message
 ///
 /// #Returns
 /// Error code as a u32
 vcx_error_t vcx_connection_send_invite_action(vcx_u32_t command_handle,
                                               vcx_connection_handle_t connection_handle,
                                               const char* data,
-                                              void (*cb)(vcx_command_handle_t, vcx_error_t));
+                                              void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 // Takes the Connection object and returns callers pw_did associated with this connection
 //

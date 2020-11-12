@@ -43,7 +43,7 @@ use v3::messages::committedanswer::answer::Answer as CommitedAnswer;
 
 use v3::messages::invite_action::invite::Invite as InviteForAction;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum A2AMessage {
     /// routing
     Forward(Forward),

@@ -1634,7 +1634,7 @@ pub extern fn vcx_connection_send_answer(command_handle: u32,
 ///             * both - ["ACCEPT", "OUTCOME"]
 ///     }
 ///
-/// cb: Callback that provides success or failure of request
+/// cb: Callback that provides sent message
 ///
 /// #Returns
 /// Error code as a u32
@@ -1642,7 +1642,7 @@ pub extern fn vcx_connection_send_answer(command_handle: u32,
 pub extern fn vcx_connection_send_invite_action(command_handle: u32,
                                                 connection_handle: u32,
                                                 data: *const c_char,
-                                                cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, message: *const c_char)>) -> u32 {
     info!("vcx_connection_send_invite_action >>>");
 
     check_useful_c_str!(data, VcxErrorKind::InvalidOption);
@@ -1662,16 +1662,16 @@ pub extern fn vcx_connection_send_invite_action(command_handle: u32,
 
     spawn(move || {
         match send_invite_action(connection_handle, data) {
-            Ok(()) => {
-                trace!("vcx_connection_send_invite_action_cb(command_handle: {}, rc: {})",
-                       command_handle, error::SUCCESS.message);
-                cb(command_handle, error::SUCCESS.code_num);
+            Ok(message) => {
+                trace!("vcx_connection_send_invite_action_cb(command_handle: {}, rc: {}, message: {})",
+                       command_handle, error::SUCCESS.message, secret!(message));
+                let msg = CStringUtils::string_to_cstring(message);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             }
             Err(e) => {
                 warn!("vcx_connection_send_invite_action_cb(command_handle: {}, rc: {})",
                       command_handle, e);
-
-                cb(command_handle, e.into());
+                cb(command_handle, e.into(), ptr::null_mut());
             }
         };
 

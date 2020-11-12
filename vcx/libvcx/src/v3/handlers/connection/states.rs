@@ -22,7 +22,7 @@ use v3::messages::questionanswer::answer::Answer;
 use v3::messages::committedanswer::question::Question as CommittedQuestion;
 use v3::messages::committedanswer::answer::Answer as CommittedAnswer;
 use v3::handlers::connection::types::{CompletedConnection, OutofbandMeta, Invitations};
-use v3::messages::invite_action::invite::{Invite as InviteForAction, InviteActionData};
+use v3::messages::invite_action::invite::{Invite as InviteForAction};
 
 use std::collections::HashMap;
 
@@ -726,15 +726,10 @@ impl CompleteState {
         Ok(())
     }
 
-    fn handle_send_invite_action(&self, data: InviteActionData, agent_info: &AgentInfo) -> VcxResult<()> {
-        trace!("CompleteState:handle_send_invite_action >>> data: {:?}, agent_info: {:?}",
-               secret!(data), secret!(agent_info));
+    fn handle_send_invite_action(&self, invite: A2AMessage, agent_info: &AgentInfo) -> VcxResult<()> {
+        trace!("CompleteState:handle_send_invite_action >>> invite: {:?}, agent_info: {:?}",
+               secret!(invite), secret!(agent_info));
         debug!("sending invite to take action for connection");
-
-        let invite = InviteForAction::create()
-            .set_goal_code(data.goal_code)
-            .set_ack_on(data.ack_on)
-            .to_a2a_message();
 
         agent_info.send_message(&invite, &self.did_doc).ok();
 

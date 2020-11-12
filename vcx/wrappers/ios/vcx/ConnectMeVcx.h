@@ -155,7 +155,7 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 
 - (void)connectionSendInviteAction:(VcxHandle)connectionHandle
                               data:(NSString *)data
-                    withCompletion:(void (^)(NSError *error))completion;
+                    withCompletion:(void (^)(NSError *error, NSString *message))completion;
 
 - (void)connectionSignData:(VcxHandle)connectionHandle
                   withData:(NSData *)dataRaw
