@@ -485,7 +485,12 @@ impl Message {
                 (PayloadKinds::Other(String::from(AriesA2AMessage::BASIC_MESSAGE)), json!(&message).to_string())
             }
             invite @ AriesA2AMessage::InviteForAction(_) => {
-                (PayloadKinds::Other(String::from("inviteAction")), json!(&invite).to_string())
+                (PayloadKinds::Other(String::from("invite-action")), json!(&invite).to_string())
+            }
+            reject @ AriesA2AMessage::InviteForActionReject(_) |
+            reject @ AriesA2AMessage::CredentialReject(_) |
+            reject @ AriesA2AMessage::PresentationReject(_) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::PROBLEM_REPORT)), json!(&reject).to_string())
             }
             msg => {
                 let msg = json!(&msg).to_string();
