@@ -489,7 +489,7 @@ impl Connection {
                 &self.get_pw_verkey(),
                 &self.get_their_pw_verkey(),
                 &invite,
-                PayloadKinds::Other(String::from("inviteAction")),
+                PayloadKinds::Other(String::from("invite-action")),
                 None)?
             .agent_did(&self.get_agent_did())?
             .agent_vk(&self.get_agent_verkey())?
