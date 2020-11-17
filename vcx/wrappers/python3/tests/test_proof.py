@@ -91,12 +91,9 @@ async def test_serialize_deserialize_and_then_serialize():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_proof_release():
-    with pytest.raises(VcxError) as e:
-        proof = await Proof.create(source_id, name, requested_attrs, revocation_interval)
-        assert proof.handle > 0
-        proof.release()
-        await proof.serialize()
-    assert ErrorCode.InvalidProofHandle == e.value.error_code
+    proof = await Proof.create(source_id, name, requested_attrs, revocation_interval)
+    assert proof.handle > 0
+    proof.release()
 
 
 @pytest.mark.asyncio
@@ -160,13 +157,10 @@ async def test_request_proof_with_invalid_connection():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_request_proof_with_released_proof():
-    with pytest.raises(VcxError) as e:
-        connection = await Connection.create(source_id)
-        await connection.connect(connection_options)
-        proof = await Proof.create(source_id, name, requested_attrs, revocation_interval)
-        proof.release()
-        await proof.request_proof(connection)
-    assert ErrorCode.InvalidProofHandle == e.value.error_code
+    connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
+    proof = await Proof.create(source_id, name, requested_attrs, revocation_interval)
+    proof.release()
 
 
 @pytest.mark.asyncio

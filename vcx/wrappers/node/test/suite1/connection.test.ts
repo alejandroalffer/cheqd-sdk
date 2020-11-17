@@ -115,10 +115,10 @@ describe('Connection:', () => {
   })
 
   describe('updateState:', () => {
-    it(`returns ${StateType.None}: not initialized`, async () => {
+    it('throws: not initialized', async () => {
       const connection = new (Connection as any)()
-      await connection.updateState()
-      assert.equal(await connection.getState(), StateType.None)
+      const error = await shouldThrow(() => connection.updateState())
+      assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)
     })
 
     it(`returns ${StateType.Initialized}: not connected`, async () => {

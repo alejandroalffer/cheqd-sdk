@@ -2,7 +2,6 @@ use libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
 use proof;
-use connection;
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
@@ -152,15 +151,15 @@ pub extern fn vcx_proof_create(command_handle: CommandHandle,
           command_handle, source_id, secret!(requested_attrs), secret!(requested_predicates), secret!(revocation_interval), secret!(name));
 
     spawn(move || {
-        let (rc, handle) = match proof::create_proof(source_id, requested_attrs, requested_predicates, revocation_interval, name) {
+        let (rc, handle) = match proof::create_proof(source_id.clone(), requested_attrs, requested_predicates, revocation_interval, name) {
             Ok(x) => {
                 trace!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                       command_handle, error::SUCCESS.message, x, proof::get_source_id(x).unwrap_or_default());
+                       command_handle, error::SUCCESS.message, x, source_id);
                 (error::SUCCESS.code_num, x)
             }
             Err(x) => {
                 warn!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                      command_handle, x, 0, x);
+                      command_handle, x, 0, source_id);
                 (x.into(), 0)
             }
         };
@@ -228,15 +227,15 @@ pub extern fn vcx_proof_create_with_proposal(command_handle: CommandHandle,
            command_handle, source_id, secret!(name), secret!(presentation_proposal));
 
     spawn(move || {
-        let (rc, handle) = match proof::create_proof_with_proposal(source_id, name, presentation_proposal) {
+        let (rc, handle) = match proof::create_proof_with_proposal(source_id.clone(), name, presentation_proposal) {
             Ok(x) => {
                 trace!("vcx_proof_create_with_proposal_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                       command_handle, error::SUCCESS.message, x, proof::get_source_id(x).unwrap_or_default());
+                       command_handle, error::SUCCESS.message, x, source_id);
                 (error::SUCCESS.code_num, x)
             }
             Err(x) => {
                 warn!("vcx_proof_create_with_proposal_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                      command_handle, x, 0, x);
+                      command_handle, x, 0, source_id);
                 (x.into(), 0)
             }
         };
@@ -273,25 +272,19 @@ pub extern fn vcx_proof_update_state(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
-
-    trace!("vcx_proof_update_state(command_handle: {}, proof_handle: {}) source_id: {}",
-          command_handle, proof_handle, source_id);
-
-    if !proof::is_valid_handle(proof_handle) {
-        return VcxError::from(VcxErrorKind::InvalidProofHandle).into()
-    }
+    trace!("vcx_proof_update_state(command_handle: {}, proof_handle: {})",
+          command_handle, proof_handle);
 
     spawn(move|| {
         match proof::update_state(proof_handle, None) {
             Ok(state) => {
-                trace!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}",
-                      command_handle, error::SUCCESS.message, proof_handle, state, source_id);
+                trace!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {})",
+                      command_handle, error::SUCCESS.message, proof_handle, state);
                 cb(command_handle, error::SUCCESS.code_num, state);
             },
             Err(x) => {
-                warn!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}",
-                      command_handle, x, proof_handle, 0, source_id);
+                warn!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {})",
+                      command_handle, x, proof_handle, 0);
                 cb(command_handle, x.into(), 0);
             }
         }
@@ -330,24 +323,19 @@ pub extern fn vcx_proof_update_state_with_message(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(message, VcxErrorKind::InvalidOption);
 
-    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
-    trace!("vcx_proof_update_state_with_message(command_handle: {}, proof_handle: {}) source_id: {}",
-          command_handle, proof_handle, source_id);
-
-    if !proof::is_valid_handle(proof_handle) {
-        return VcxError::from(VcxErrorKind::InvalidProofHandle).into()
-    }
+    trace!("vcx_proof_update_state_with_message(command_handle: {}, proof_handle: {})",
+          command_handle, proof_handle);
 
     spawn(move|| {
         match proof::update_state(proof_handle, Some(message)) {
             Ok(x) => {
-                trace!("vcx_proof_update_state_with_message_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}",
-                      command_handle, error::SUCCESS.message, proof_handle, x, source_id);
+                trace!("vcx_proof_update_state_with_message_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {})",
+                      command_handle, error::SUCCESS.message, proof_handle, x);
                 cb(command_handle, error::SUCCESS.code_num, x);
             },
             Err(x) => {
-                warn!("vcx_proof_update_state_with_message_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}",
-                      command_handle, x, proof_handle, 0, source_id);
+                warn!("vcx_proof_update_state_with_message_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {})",
+                      command_handle, x, proof_handle, 0);
                 cb(command_handle, x.into(), 0);
             }
         }
@@ -382,25 +370,18 @@ pub extern fn vcx_proof_get_state(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
-
-    trace!("vcx_proof_get_state(command_handle: {}, proof_handle: {}), source_id: {}",
-          command_handle, proof_handle, source_id);
-
-    if !proof::is_valid_handle(proof_handle) {
-        return VcxError::from(VcxErrorKind::InvalidProofHandle).into()
-    }
+    trace!("vcx_proof_get_state(command_handle: {}, proof_handle: {})", command_handle, proof_handle);
 
     spawn(move|| {
         match proof::get_state(proof_handle) {
             Ok(x) => {
-                trace!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}",
-                      command_handle, error::SUCCESS.message, proof_handle, x, source_id);
+                trace!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {})",
+                      command_handle, error::SUCCESS.message, proof_handle, x);
                 cb(command_handle, error::SUCCESS.code_num, x);
             },
             Err(x) => {
-                warn!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}",
-                      command_handle, x, proof_handle, 0, source_id);
+                warn!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {})",
+                      command_handle, x, proof_handle, 0);
                 cb(command_handle, x.into(), 0);
             }
         }
@@ -430,25 +411,19 @@ pub extern fn vcx_proof_serialize(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
-
-    trace!("vcx_proof_serialize(command_handle: {}, proof_handle: {}) source_id: {}", command_handle, proof_handle, source_id);
-
-    if !proof::is_valid_handle(proof_handle) {
-        return VcxError::from(VcxErrorKind::InvalidProofHandle).into()
-    };
+    trace!("vcx_proof_serialize(command_handle: {}, proof_handle: {})", command_handle, proof_handle);
 
     spawn(move|| {
         match proof::to_string(proof_handle) {
             Ok(x) => {
-                trace!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {}) source_id: {}",
-                      command_handle, proof_handle, error::SUCCESS.message, secret!(x), source_id);
+                trace!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {})",
+                      command_handle, proof_handle, error::SUCCESS.message, secret!(x));
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {}) source_id: {}",
-                      command_handle, proof_handle, x, "null", source_id);
+                warn!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {})",
+                      command_handle, proof_handle, x, "null");
                 cb(command_handle, x.into(), ptr::null_mut());
             },
         };
@@ -485,13 +460,13 @@ pub extern fn vcx_proof_deserialize(command_handle: CommandHandle,
     spawn(move|| {
         let (rc, handle) = match proof::from_string(&proof_data) {
             Ok(x) => {
-                trace!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                      command_handle, error::SUCCESS.message, x, proof::get_source_id(x).unwrap_or_default());
+                trace!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error::SUCCESS.message, x);
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                      command_handle, x, 0, "");
+                warn!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, x, 0);
                 (x.into(), 0)
             },
         };
@@ -514,19 +489,20 @@ pub extern fn vcx_proof_deserialize(command_handle: CommandHandle,
 pub extern fn vcx_proof_release(proof_handle: u32) -> u32 {
     info!("vcx_proof_release >>>");
 
-    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
-    match proof::release(proof_handle) {
-        Ok(()) => {
-            trace!("vcx_proof_release(proof_handle: {}, rc: {}), source_id: {}",
-                       proof_handle, error::SUCCESS.message, source_id);
-            error::SUCCESS.code_num
-        },
-        Err(e) => {
-            warn!("vcx_proof_release(proof_handle: {}, rc: {}), source_id: {}",
-                       proof_handle, e, source_id);
-            e.into()
-        },
-    }
+    spawn(move || {
+        match proof::release(proof_handle) {
+            Ok(()) => {
+                trace!("vcx_proof_release(proof_handle: {}, rc: {})",
+                       proof_handle, error::SUCCESS.message);
+            }
+            Err(e) => {
+                warn!("vcx_proof_release(proof_handle: {}), rc: {})",
+                      proof_handle, e);
+            }
+        };
+        Ok(())
+    });
+    error::SUCCESS.code_num
 }
 
 /// Sends a proof request to pairwise connection
@@ -551,28 +527,19 @@ pub extern fn vcx_proof_send_request(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
-
-    trace!("vcx_proof_send_request(command_handle: {}, proof_handle: {}, connection_handle: {}) source_id: {}",
-          command_handle, proof_handle, connection_handle, source_id);
-    if !proof::is_valid_handle(proof_handle) {
-        return VcxError::from(VcxErrorKind::InvalidProofHandle).into()
-    }
-
-    if !connection::is_valid_handle(connection_handle) {
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
-    }
+    trace!("vcx_proof_send_request(command_handle: {}, proof_handle: {}, connection_handle: {})",
+          command_handle, proof_handle, connection_handle);
 
     spawn(move|| {
         let err = match proof::send_proof_request(proof_handle, connection_handle) {
             Ok(x) => {
-                trace!("vcx_proof_send_request_cb(command_handle: {}, rc: {}, proof_handle: {}) source_id: {}",
-                      command_handle, 0, proof_handle, source_id);
+                trace!("vcx_proof_send_request_cb(command_handle: {}, rc: {}, proof_handle: {})",
+                      command_handle, 0, proof_handle);
                 x
             },
             Err(x) => {
-                warn!("vcx_proof_send_request_cb(command_handle: {}, rc: {}, proof_handle: {}) source_id: {}",
-                      command_handle, x, proof_handle, source_id);
+                warn!("vcx_proof_send_request_cb(command_handle: {}, rc: {}, proof_handle: {})",
+                      command_handle, x, proof_handle);
                 x.into()
             },
         };
@@ -607,25 +574,20 @@ pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
-
-    trace!("vcx_proof_get_request_msg(command_handle: {}, proof_handle: {}) source_id: {}",
-          command_handle, proof_handle, source_id);
-    if !proof::is_valid_handle(proof_handle) {
-        return VcxError::from(VcxErrorKind::InvalidProofHandle).into()
-    }
+    trace!("vcx_proof_get_request_msg(command_handle: {}, proof_handle: {})",
+          command_handle, proof_handle);
 
     spawn(move|| {
         match proof::generate_proof_request_msg(proof_handle) {
             Ok(msg) => {
-                trace!("vcx_proof_get_request_msg_cb(command_handle: {}, rc: {}, proof_handle: {}, msg: {}) source_id: {}",
-                       command_handle, error::SUCCESS.code_num, proof_handle, secret!(msg), source_id);
+                trace!("vcx_proof_get_request_msg_cb(command_handle: {}, rc: {}, proof_handle: {}, msg: {})",
+                       command_handle, error::SUCCESS.code_num, proof_handle, secret!(msg));
                 let msg = CStringUtils::string_to_cstring(msg);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_proof_get_request_msg_cb(command_handle: {}, rc: {}, proof_handle: {}) source_id: {}",
-                      command_handle, x, proof_handle, source_id);
+                warn!("vcx_proof_get_request_msg_cb(command_handle: {}, rc: {}, proof_handle: {})",
+                      command_handle, x, proof_handle);
                 cb(command_handle, x.into(), ptr::null_mut())
             },
         };
@@ -696,10 +658,8 @@ fn proof_to_cb(command_handle: CommandHandle,
                proof_handle: u32,
                cb: extern fn(xcommand_handle: CommandHandle, err: u32, proof_state:u32, response_data: *const c_char))
                -> VcxResult<()>{
-    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
-
-    trace!("vcx_get_proof(command_handle: {}, proof_handle: {}) source_id: {}",
-           command_handle, proof_handle, source_id);
+    trace!("vcx_get_proof(command_handle: {}, proof_handle: {})",
+           command_handle, proof_handle);
 
     spawn(move|| {
         //update the state to see if proof has come, ignore any errors
@@ -707,13 +667,13 @@ fn proof_to_cb(command_handle: CommandHandle,
 
         match proof::get_proof(proof_handle) {
             Ok(x) => {
-                trace!("vcx_get_proof_cb(command_handle: {}, proof_handle: {}, rc: {}, proof: {}) source_id: {}",
-                       command_handle, proof_handle, 0, secret!(x), source_id);
+                trace!("vcx_get_proof_cb(command_handle: {}, proof_handle: {}, rc: {}, proof: {})",
+                       command_handle, proof_handle, 0, secret!(x));
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, proof::get_proof_state(proof_handle).unwrap_or(0), msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_get_proof_cb(command_handle: {}, proof_handle: {}, rc: {}, proof: {}) source_id: {}", command_handle, proof_handle, x, "null", source_id);
+                warn!("vcx_get_proof_cb(command_handle: {}, proof_handle: {}, rc: {}, proof: {})", command_handle, proof_handle, x, "null");
                 cb(command_handle, x.into(), proof::get_proof_state(proof_handle).unwrap_or(0), ptr::null_mut());
             },
         };
@@ -914,7 +874,6 @@ mod tests {
         assert_eq!(state, ProofStateType::ProofInvalid as u32);
 
         vcx_proof_release(proof_handle);
-        assert_eq!(vcx_proof_release(proof_handle), error::INVALID_PROOF_HANDLE.code_num);
     }
 
     #[test]
