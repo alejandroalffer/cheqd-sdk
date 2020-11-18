@@ -1,4 +1,4 @@
-use serde_json;
+use ::{serde_json, credential_def};
 
 use std::collections::HashMap;
 use api::VcxStateType;
@@ -655,6 +655,8 @@ pub fn issuer_credential_create(cred_def_handle: u32,
                                 credential_name: String,
                                 credential_data: String,
                                 price: u64) -> VcxResult<u32> {
+    credential_def::check_is_published(cred_def_handle)?;
+
     trace!("issuer_credential_create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
            cred_def_handle, source_id, secret!(issuer_did), secret!(credential_name), secret!(&credential_data), price);
     debug!("creating issuer credential {} state object", source_id);
@@ -675,32 +677,21 @@ pub fn issuer_credential_create(cred_def_handle: u32,
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    let (credential, state) = ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
-            IssuerCredentials::Pending(ref obj) => {
-                let mut obj = obj.clone();
-                obj.update_state(message.clone()).ok();
-                let state= obj.get_state();
-                Ok((IssuerCredentials::V1(obj), state))
+            IssuerCredentials::Pending(ref mut obj) => {
+                obj.update_state(message.clone())
+                    .or_else(|_| Ok(obj.get_state()))
             }
-            IssuerCredentials::V1(ref obj) => {
-                let mut obj = obj.clone();
-                obj.update_state(message.clone()).ok();
-                let state= obj.get_state();
-                Ok((IssuerCredentials::V1(obj), state))
+            IssuerCredentials::V1(ref mut obj) => {
+                obj.update_state(message.clone())
+                    .or_else(|_| Ok(obj.get_state()))
             }
-            IssuerCredentials::V3(ref obj) => {
-                let mut obj = obj.clone();
-                obj.update_status(message.clone())?;
-                let state = obj.get_state()?;
-                Ok((IssuerCredentials::V3(obj), state))
+            IssuerCredentials::V3(ref mut obj) => {
+                obj.update_status(message.clone())
             }
         }
-    }).map_err(handle_err)?;
-
-    ISSUER_CREDENTIAL_MAP.update(handle, credential)?;
-
-    Ok(state)
+    }).map_err(handle_err)
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
@@ -740,115 +731,75 @@ pub fn from_string(credential_data: &str) -> VcxResult<u32> {
 }
 
 pub fn generate_credential_offer_msg(handle: u32) -> VcxResult<String> {
-    let (credential, offer) = ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
-            IssuerCredentials::Pending(ref obj) => {
-                let mut obj = obj.clone();
-                let offer = obj.generate_credential_offer_msg()?;
-                Ok((IssuerCredentials::Pending(obj), offer))
-            },
-            IssuerCredentials::V1(ref obj) => {
-                let mut obj = obj.clone();
-                let req = obj.generate_credential_offer_msg()?;
-                Ok((IssuerCredentials::V1(obj), req))
-            },
+            IssuerCredentials::Pending(ref mut obj) => obj.generate_credential_offer_msg(),
+            IssuerCredentials::V1(ref mut obj) => obj.generate_credential_offer_msg(),
             IssuerCredentials::V3(ref obj) =>  {
-                let obj = obj.clone();
                 let cred_offer = obj.get_credential_offer()?;
                 let cred_offer: CredentialOffer = cred_offer.try_into()?;
                 let cred_offer = json!(vec![cred_offer]).to_string();
-                Ok((IssuerCredentials::V3(obj), cred_offer))
+                return Ok(cred_offer);
             },
         }
-    }).map_err(handle_err)?;
-
-    ISSUER_CREDENTIAL_MAP.update(handle, credential)?;
-
-    Ok(offer)
+    }).map_err(handle_err)
 }
 
 pub fn send_credential_offer(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    let credential = ISSUER_CREDENTIAL_MAP.get(handle, |credential| {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |credential| {
         let new_credential = match credential {
-            IssuerCredentials::Pending(ref obj) => {
-                let mut obj = obj.clone();
-
+            IssuerCredentials::Pending(ref mut obj) => {
                 // if Aries connection is established --> Convert Pending object to Aries credential
                 if ::connection::is_v3_connection(connection_handle)? {
                     debug!("converting pending issuer credential into aries object");
                     let mut issuer = Issuer::create(obj.cred_def_handle, &obj.credential_attributes, &obj.source_id, &obj.credential_name)?;
                     issuer.send_credential_offer(connection_handle)?;
+
                     IssuerCredentials::V3(issuer)
                 } else { // else - Convert Pending object to Proprietary credential
                     obj.send_credential_offer(connection_handle)?;
-                    IssuerCredentials::V1(obj)
+                    IssuerCredentials::V1(obj.clone())
                 }
             }
-            IssuerCredentials::V1(ref obj) => {
-                let mut obj = obj.clone();
+            IssuerCredentials::V1(ref mut obj) => {
                 obj.send_credential_offer(connection_handle)?;
-                IssuerCredentials::V1(obj)
+                IssuerCredentials::V1(obj.clone())
             }
-            IssuerCredentials::V3(ref obj) => {
-                let mut obj = obj.clone();
+            IssuerCredentials::V3(ref mut obj) => {
                 obj.send_credential_offer(connection_handle)?;
-                IssuerCredentials::V3(obj)
+                IssuerCredentials::V3(obj.clone())
             }
         };
-        Ok(new_credential)
-    }).map_err(handle_err)?;
-
-    ISSUER_CREDENTIAL_MAP.update(handle, credential)?;
-
-    Ok(error::SUCCESS.code_num)
+        *credential = new_credential;
+        Ok(error::SUCCESS.code_num)
+    }).map_err(handle_err)
 }
 
 pub fn generate_credential_msg(handle: u32, my_pw_did: &str) -> VcxResult<String> {
-    let (obj, credential) = ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
-            IssuerCredentials::Pending(ref obj) => {
-                let mut obj = obj.clone();
-                let credential = obj.generate_credential_msg(my_pw_did)?;
-                Ok((IssuerCredentials::Pending(obj), credential))
-            },
-            IssuerCredentials::V1(ref obj) => {
-                let mut obj = obj.clone();
-                let credential = obj.generate_credential_msg(my_pw_did)?;
-                Ok((IssuerCredentials::V1(obj), credential))
-            },
+            IssuerCredentials::Pending(ref mut obj) => obj.generate_credential_msg(my_pw_did),
+            IssuerCredentials::V1(ref mut obj) => obj.generate_credential_msg(my_pw_did),
             IssuerCredentials::V3(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries IssuerCredential type doesn't support this action: `generate_credential_msg`.")) // TODO: implement
         }
-    }).map_err(handle_err)?;
-
-    ISSUER_CREDENTIAL_MAP.update(handle, obj)?;
-
-    Ok(credential)
+    }).map_err(handle_err)
 }
 
 pub fn send_credential(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    let credential = ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
-            IssuerCredentials::Pending(ref obj) => {
-                let mut obj = obj.clone();
-                obj.send_credential(connection_handle)?;
-                Ok(IssuerCredentials::V1(obj))
+            IssuerCredentials::Pending(ref mut obj) => {
+                obj.send_credential(connection_handle)
             }
-            IssuerCredentials::V1(ref obj) => {
-                let mut obj = obj.clone();
-                obj.send_credential(connection_handle)?;
-                Ok(IssuerCredentials::V1(obj))
+            IssuerCredentials::V1(ref mut obj) => {
+                obj.send_credential(connection_handle)
             }
-            IssuerCredentials::V3(ref obj) => {
-                let mut obj = obj.clone();
+            IssuerCredentials::V3(ref mut obj) => {
                 obj.send_credential(connection_handle)?;
-                Ok(IssuerCredentials::V3(obj))
+                Ok(error::SUCCESS.code_num)
             }
         }
-    }).map_err(handle_err)?;
-
-    ISSUER_CREDENTIAL_MAP.update(handle, credential)?;
-
-    Ok(error::SUCCESS.code_num)
+    }).map_err(handle_err)
 }
 
 pub fn revoke_credential(handle: u32) -> VcxResult<()> {

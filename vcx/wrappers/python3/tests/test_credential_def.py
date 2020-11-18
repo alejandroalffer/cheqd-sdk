@@ -66,13 +66,9 @@ async def test_serialize_deserialize_and_then_serialize():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_release():
-    with pytest.raises(VcxError) as e:
-        credential_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
-        assert credential_def.handle > 0
-        credential_def.release()
-        await credential_def.serialize()
-    assert ErrorCode.InvalidCredentialDefHandle == e.value.error_code
-    assert 'Invalid Credential Definition handle' == e.value.error_msg
+    credential_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
+    assert credential_def.handle > 0
+    credential_def.release()
 
 
 @pytest.mark.asyncio

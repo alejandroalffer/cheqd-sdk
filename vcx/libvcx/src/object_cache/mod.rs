@@ -1,125 +1,89 @@
 use rand::Rng;
-use std::sync::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use std::collections::HashMap;
-use std::ops::Deref;
-use std::ops::DerefMut;
 
 use error::prelude::*;
+use dashmap::DashMap;
 
 pub struct ObjectCache<T> {
-    pub store: RwLock<HashMap<u32, Mutex<T>>>,
+    store: DashMap<u32, T>
 }
 
 impl<T> Default for ObjectCache<T> {
     fn default() -> ObjectCache<T>
     {
         ObjectCache {
-            store: Default::default()
+            store: Default::default(),
         }
     }
 }
 
 impl<T> ObjectCache<T> {
-    fn _read_lock_store(&self) -> VcxResult<RwLockReadGuard<HashMap<u32, Mutex<T>>>> {
-        match self.store.read() {
-            Ok(g) => Ok(g),
-            Err(e) => {
-                error!("Unable to lock Object Store: {:?}", e);
-                Err(VcxError::from_msg(VcxErrorKind::Common(10), format!("Unable to lock Object Store: {:?}", e)))
-            }
-        }
-    }
-    fn _write_lock_store(&self) -> VcxResult<RwLockWriteGuard<HashMap<u32, Mutex<T>>>> {
-        match self.store.write() {
-            Ok(g) => Ok(g),
-            Err(e) => {
-                error!("Unable to lock Object Store: {:?}", e);
-                Err(VcxError::from_msg(VcxErrorKind::Common(10), format!("Unable to lock Object Store: {:?}", e)))
-            }
-        }
-    }
-
     pub fn has_handle(&self, handle: u32) -> bool {
-        let store = match self._read_lock_store() {
-            Ok(g) => g,
-            Err(_) => return false
-        };
-        store.contains_key(&handle)
+        self.store.contains_key(&handle)
     }
 
     pub fn get<F, R>(&self, handle: u32, closure: F) -> VcxResult<R>
         where F: Fn(&T) -> VcxResult<R> {
-        let store = self._read_lock_store()?;
-        match store.get(&handle) {
-            Some(m) => match m.lock() {
-                Ok(obj) => closure(obj.deref()),
-                Err(_) => Err(VcxError::from_msg(VcxErrorKind::Common(10), "Unable to lock Object Store")) //TODO better error
-            },
-            None => Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
-        }
+        closure(
+            self.store
+            .get(&handle)
+            .ok_or(
+                VcxError::from_msg(
+                    VcxErrorKind::InvalidHandle,
+                    format!("Object not found for handle: {}", handle)
+                )
+            )?
+            .value()
+        )
     }
 
     pub fn get_mut<F, R>(&self, handle: u32, closure: F) -> VcxResult<R>
         where F: Fn(&mut T) -> VcxResult<R> {
-        let mut store = self._write_lock_store()?;
-        match store.get_mut(&handle) {
-            Some(m) => match m.lock() {
-                Ok(mut obj) => closure(obj.deref_mut()),
-                Err(_) => Err(VcxError::from_msg(VcxErrorKind::Common(10), "Unable to lock Object Store")) //TODO better error
-            },
-            None => Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
-        }
+        closure(
+            self.store
+            .get_mut(&handle)
+            .ok_or(
+                VcxError::from_msg(
+                    VcxErrorKind::InvalidHandle,
+                    format!("Object not found for handle: {}", handle)
+                )
+            )?
+            .value_mut()
+        )
     }
 
     pub fn add(&self, obj: T) -> VcxResult<u32> {
-
         let mut new_handle = rand::thread_rng().gen::<u32>();
-        {
-            let store = self._read_lock_store()?;
 
-            loop {
-                if !store.contains_key(&new_handle) {
-                    break;
-                }
-                new_handle = rand::thread_rng().gen::<u32>();
+        loop {
+            if !self.store.contains_key(&new_handle) {
+                break;
             }
+            new_handle = rand::thread_rng().gen::<u32>();
         }
 
-        let mut store = self._write_lock_store()?;
-
-        match store.insert(new_handle, Mutex::new(obj)) {
+        match self.store.insert(new_handle, obj) {
             Some(_) => Ok(new_handle),
             None => Ok(new_handle)
         }
     }
 
     pub fn insert(&self, handle: u32, obj: T) -> VcxResult<()> {
-        let mut store = self._write_lock_store()?;
-
-        match store.insert(handle, Mutex::new(obj)) {
+        match self.store.insert(handle, obj) {
             _ => Ok(()),
         }
+
     }
-
-    pub fn update(&self, handle: u32, obj: T) -> VcxResult<()> {
-        let mut store = self._write_lock_store()?;
-
-        store.insert(handle, Mutex::new(obj));
-        Ok(())
-    }
-
 
     pub fn release(&self, handle: u32) -> VcxResult<()> {
-        let mut store = self._write_lock_store()?;
-        match store.remove(&handle) {
+        match self.store.remove(&handle) {
             Some(_) => Ok(()),
             None => Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
         }
+
     }
 
     pub fn drain(&self) -> VcxResult<()> {
-        let mut store = self._write_lock_store()?;
-        Ok(store.clear())
+        Ok(self.store.clear())
     }
 }
 
@@ -127,6 +91,11 @@ impl<T> ObjectCache<T> {
 mod tests {
     use object_cache::ObjectCache;
     use utils::devsetup::SetupDefaults;
+    use std::thread;
+
+    lazy_static! {
+        static ref TEST_CACHE: ObjectCache<String> = Default::default();
+    }
 
     #[test]
     fn create_test() {
@@ -175,5 +144,33 @@ mod tests {
         }).unwrap();
 
         assert_eq!("TEST", string);
+    }
+
+    #[test]
+    fn multi_thread_get() {
+        for i in 0 .. 2000 {
+            let test_str = format!("TEST_MULTI_{}", i.to_string());
+            let test_str1 = test_str.clone();
+            let handle = TEST_CACHE.add(test_str).unwrap();
+            let t1 = thread::spawn(move || {
+                TEST_CACHE.get_mut(handle, |s| {
+                    s.insert_str(0, "THREAD1_");
+                    Ok(())
+                }).unwrap()
+            });
+            let t2 = thread::spawn(move || {
+                TEST_CACHE.get_mut(handle, |s| {
+                    s.push_str("_THREAD2");
+                    Ok(())
+                }).unwrap()
+            });
+            t1.join().unwrap();
+            t2.join().unwrap();
+            TEST_CACHE.get(handle, |s| {
+                let expected_str = format!("THREAD1_{}_THREAD2", test_str1);
+                assert_eq!(&expected_str, s);
+                Ok(())
+            }).unwrap();
+        }
     }
 }

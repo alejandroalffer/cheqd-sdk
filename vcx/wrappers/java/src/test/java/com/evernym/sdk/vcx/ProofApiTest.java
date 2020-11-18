@@ -1,8 +1,6 @@
 package com.evernym.sdk.vcx;
 
 import com.evernym.sdk.vcx.connection.ConnectionApi;
-import com.evernym.sdk.vcx.connection.InvalidConnectionHandleException;
-import com.evernym.sdk.vcx.proof.InvalidProofHandleException;
 import com.evernym.sdk.vcx.proof.ProofApi;
 import com.evernym.sdk.vcx.vcx.VcxApi;
 import org.junit.jupiter.api.Assertions;
@@ -72,7 +70,7 @@ public class ProofApiTest {
     @Test
     @DisplayName("serialise a bad proof")
     void serialiseBadProof() {
-        Assertions.assertThrows(InvalidProofHandleException.class, () -> {
+        Assertions.assertThrows(ExecutionException.class, () -> {
             TestHelper.getResultFromFuture(ProofApi.proofSerialize(0));
         });
 
@@ -103,7 +101,7 @@ public class ProofApiTest {
         int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
         assert (proofHandle != 0);
         ProofApi.proofRelease(proofHandle);
-        Assertions.assertThrows(InvalidProofHandleException.class, () -> {
+        Assertions.assertThrows(ExecutionException.class, () -> {
             TestHelper.getResultFromFuture(ProofApi.proofSerialize(proofHandle));
         });
     }
@@ -121,7 +119,7 @@ public class ProofApiTest {
     @Test
     @DisplayName("update state of invalid proof")
     void updateStateOfInvalidProof() {
-        Assertions.assertThrows(InvalidProofHandleException.class, () -> {
+        Assertions.assertThrows(ExecutionException.class, () -> {
            TestHelper.getResultFromFuture(ProofApi.proofUpdateState(0));
         });
 
@@ -163,7 +161,7 @@ public class ProofApiTest {
     @Test
     @DisplayName("request proof to invalid connection handle")
     void requestProofToInvalidConnection() {
-        Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {
+        Assertions.assertThrows(ExecutionException.class, () -> {
             int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
             assert (proofHandle != 0);
             TestHelper.getResultFromFuture(ProofApi.proofSendRequest(proofHandle,0));

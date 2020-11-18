@@ -116,8 +116,8 @@ describe('DisclosedProof', () => {
   describe('updateState:', () => {
     it(`returns ${StateType.None}: not initialized`, async () => {
       const disclosedProof = new (DisclosedProof as any)()
-      await disclosedProof.updateState()
-      assert.equal(await disclosedProof.getState(), StateType.None)
+      const error = await shouldThrow(() => disclosedProof.updateState())
+      assert.equal(error.vcxCode, VCXCode.INVALID_DISCLOSED_PROOF_HANDLE)
     })
 
     it(`returns ${StateType.RequestReceived}: created`, async () => {

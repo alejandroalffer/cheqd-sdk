@@ -468,7 +468,7 @@ mod test {
 
             let credential_offer = CredentialOffer::create().set_offers_attach(r#"{"credential offer": {}}"#).unwrap();
 
-            let mut holder_sm = HolderSM::new(credential_offer, "test source".to_string());
+            let holder_sm = HolderSM::new(credential_offer, "test source".to_string());
             holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap_err();
         }
 
