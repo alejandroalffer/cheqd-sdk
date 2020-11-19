@@ -92,7 +92,7 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                           token:(NSString *)token;
 
 - (void)getProvisionToken:(NSString *)config
-                 completion:(void (^)(NSError *error))completion;
+                 completion:(void (^)(NSError *error, NSString *token))completion;
 
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                      inviteDetails:(NSString *)inviteDetails

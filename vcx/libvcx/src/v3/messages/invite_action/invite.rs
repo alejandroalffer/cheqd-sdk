@@ -45,7 +45,6 @@ pub struct InviteActionData {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::connection::response::tests::*;
 
     fn _goal_code() -> String {
         String::from("automotive.inspect.tire")

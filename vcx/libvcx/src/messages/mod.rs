@@ -995,7 +995,7 @@ fn pack_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u
 }
 
 fn parse_response_from_agency(response: &Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<A2AMessage>> {
-    trace!("parse_response_from_agency >>>");
+    trace!("parse_response_from_agency >>> response {:?}", response);
     match version {
         settings::ProtocolTypes::V1 => parse_response_from_agency_v1(response),
         settings::ProtocolTypes::V2 |
