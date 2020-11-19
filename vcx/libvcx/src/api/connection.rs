@@ -5,7 +5,6 @@ use utils::threadpool::spawn;
 use std::ptr;
 use connection::*;
 use error::prelude::*;
-use messages::get_message::Message;
 use indy_sys::CommandHandle;
 use v3::messages::invite_action::invite::InviteActionData;
 
@@ -863,11 +862,6 @@ pub extern fn vcx_connection_update_state_with_message(command_handle: CommandHa
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(message, VcxErrorKind::InvalidOption);
-
-    let message: Message = match serde_json::from_str(&message) {
-        Ok(x) => x,
-        Err(_) => return VcxError::from(VcxErrorKind::InvalidJson).into(),
-    };
 
     spawn(move || {
         match update_state_with_message(connection_handle, message) {
