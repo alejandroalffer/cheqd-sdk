@@ -983,10 +983,14 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
     }).map_err(handle_err)
 }
 
-pub fn update_state_with_message(handle: u32, message: Message) -> VcxResult<u32> {
+pub fn update_state_with_message(handle: u32, message: String) -> VcxResult<u32> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
             Connections::V1(ref mut connection) => {
+                let message: Message = ::serde_json::from_str(&message)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      format!("Cannot updated Connection state with messages: Message deserialization failed with: {:?}", err)))?;
+
                 if message.status_code == MessageStatusCode::Redirected && message.msg_type == RemoteMessageType::ConnReqRedirect {
                     connection.process_redirect_message(&message)?;
                     Ok(connection.get_state())
@@ -996,7 +1000,7 @@ pub fn update_state_with_message(handle: u32, message: Message) -> VcxResult<u32
                 }
             }
             Connections::V3(ref mut connection) => {
-                connection.update_state(Some(&json!(message).to_string()))?;
+                connection.update_state(Some(&message))?;
                 Ok(error::SUCCESS.code_num)
             }
         }
@@ -1896,8 +1900,7 @@ pub mod tests {
         let _setup = SetupMocks::init();
 
         let handle = create_connection("test_process_acceptance_message").unwrap();
-        let message = serde_json::from_str(INVITE_ACCEPTED_RESPONSE).unwrap();
-        assert_eq!(VcxStateType::VcxStateAccepted as u32, update_state_with_message(handle, message).unwrap());
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, update_state_with_message(handle, INVITE_ACCEPTED_RESPONSE.to_string()).unwrap());
     }
 
     #[test]
