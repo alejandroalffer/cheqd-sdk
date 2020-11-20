@@ -1000,8 +1000,7 @@ pub fn update_state_with_message(handle: u32, message: String) -> VcxResult<u32>
                 }
             }
             Connections::V3(ref mut connection) => {
-                connection.update_state(Some(&message))?;
-                Ok(error::SUCCESS.code_num)
+                connection.update_state(Some(&message))
             }
         }
     }).map_err(handle_err)
