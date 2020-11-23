@@ -124,6 +124,8 @@ pub enum VcxErrorKind {
     InvalidProofRequest,
     #[fail(display = "Predicates provided to create a Proof Request are not correct")]
     InvalidPredicatesStructure,
+    #[fail(display = "Proposal provided to create a Proof Was Invalid")]
+    InvalidProofProposal,
 
     // Schema
     #[fail(display = "Could not create schema")]
@@ -361,6 +363,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::InvalidSchema => error::INVALID_SCHEMA.code_num,
             VcxErrorKind::InvalidProofCredentialData => error::INVALID_PROOF_CREDENTIAL_DATA.code_num,
             VcxErrorKind::CreateProof => error::CREATE_PROOF_ERROR.code_num,
+            VcxErrorKind::InvalidProofProposal => error::INVALID_PROOF_PROPOSAL.code_num,
             VcxErrorKind::InvalidRevocationTimestamp => error::INVALID_REVOCATION_TIMESTAMP.code_num,
             VcxErrorKind::CreateSchema => error::INVALID_SCHEMA_CREATION.code_num,
             VcxErrorKind::InvalidSchemaHandle => error::INVALID_SCHEMA_HANDLE.code_num,

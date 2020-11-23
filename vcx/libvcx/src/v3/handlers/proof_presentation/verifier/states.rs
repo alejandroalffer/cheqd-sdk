@@ -14,6 +14,7 @@ use error::prelude::*;
 use v3::handlers::connection::types::CompletedConnection;
 use messages::thread::Thread;
 use v3::handlers::connection::agent::AgentInfo;
+use v3::messages::proof_presentation::presentation_proposal::PresentationProposal;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct VerifierSM {
@@ -26,8 +27,23 @@ impl VerifierSM {
         VerifierSM {
             source_id,
             state: VerifierState::Initiated(
-                InitialState { presentation_request_data: presentation_request }
+                InitialState { presentation_request_data: presentation_request}
             ),
+        }
+    }
+
+    pub fn new_from_proposal(presentation_proposal: PresentationProposal, source_id: String) -> VerifierSM {
+        let thread = presentation_proposal.thread.clone().unwrap_or_default();
+
+        VerifierSM {
+            source_id,
+            state: VerifierState::PresentationProposalReceived(
+                PresentationProposalReceivedState {
+                    presentation_proposal,
+                    connection: None,
+                    thread
+                }
+            )
         }
     }
 }
@@ -40,6 +56,7 @@ impl VerifierSM {
 pub enum VerifierState {
     Initiated(InitialState),
     PresentationRequestSent(PresentationRequestSentState),
+    PresentationProposalReceived(PresentationProposalReceivedState),
     Finished(FinishedState),
 }
 
@@ -52,6 +69,14 @@ pub struct InitialState {
 pub struct PresentationRequestSentState {
     presentation_request: PresentationRequest,
     connection: CompletedConnection,
+    #[serde(default)]
+    thread: Thread,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PresentationProposalReceivedState {
+    presentation_proposal: PresentationProposal,
+    connection: Option<CompletedConnection>,
     #[serde(default)]
     thread: Thread,
 }
@@ -98,6 +123,30 @@ impl From<(PresentationRequestSentState, ProblemReport, Thread)> for FinishedSta
             presentation_request: state.presentation_request,
             presentation: None,
             status: Status::Failed(problem_report),
+            thread,
+        }
+    }
+}
+
+impl From<(PresentationRequestSentState, PresentationProposal, Thread)> for PresentationProposalReceivedState {
+    fn from((state, presentation_proposal, thread): (PresentationRequestSentState, PresentationProposal, Thread)) -> Self {
+        trace!("VerifierSM transit state from PresentationRequestSentState to PresentationProposalReceivedState with PresentationProposal: {:?}", presentation_proposal);
+        trace!("Thread: {:?}", thread);
+        PresentationProposalReceivedState {
+            presentation_proposal,
+            connection: Some(state.connection),
+            thread,
+        }
+    }
+}
+
+impl From<(PresentationProposalReceivedState, PresentationRequest, CompletedConnection, Thread)> for PresentationRequestSentState {
+    fn from((_state, presentation_request, connection, thread): (PresentationProposalReceivedState, PresentationRequest, CompletedConnection, Thread)) -> Self {
+        trace!("VerifierSM transit state from PresentationProposalReceivedState to PresentationRequestSentState");
+        trace!("Thread: {:?}", thread);
+        PresentationRequestSentState {
+            connection,
+            presentation_request,
             thread,
         }
     }
@@ -167,6 +216,9 @@ impl VerifierSM {
                         }
                         _ => {}
                     }
+                }
+                VerifierState::PresentationProposalReceived(_) => {
+                    // do not process message
                 }
                 VerifierState::Finished(_) => {
                     // do not process message
@@ -240,26 +292,58 @@ impl VerifierSM {
 
                         VerifierState::Finished((state, problem_report, thread).into())
                     }
-                    VerifierMessages::PresentationProposalReceived(_) => { // TODO: handle Presentation Proposal
+                    VerifierMessages::PresentationProposalReceived(presentation_proposal) => { // TODO: handle Presentation Proposal
                         let thread = state.thread.clone()
-                            .increment_sender_order()
                             .update_received_order(&state.connection.data.did_doc.id);
 
-                        let problem_report =
-                            ProblemReport::create()
-                                .set_description(ProblemReportCodes::Unimplemented)
-                                .set_comment(String::from("presentation-proposal message is not supported"))
-                                .set_thread(thread.clone());
-
-                        state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
-                        VerifierState::Finished((state, problem_report, thread).into())
+                        VerifierState::PresentationProposalReceived((state, presentation_proposal, thread).into())
+                        // println!("PresentationProposalReceived: {:?}", presentation_proposal);
+                        // let thread = state.thread.clone()
+                        //     .increment_sender_order()
+                        //     .update_received_order(&state.connection.data.did_doc.id);
+                        //
+                        // let problem_report =
+                        //     ProblemReport::create()
+                        //         .set_description(ProblemReportCodes::Unimplemented)
+                        //         .set_comment(String::from("presentation-proposal message is not supported"))
+                        //         .set_thread(thread.clone());
+                        //
+                        // state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
+                        // VerifierState::Finished((state, problem_report, thread).into())
                     }
                     _ => {
                         VerifierState::PresentationRequestSent(state)
                     }
                 }
             }
-            VerifierState::Finished(state) => VerifierState::Finished(state)
+            VerifierState::PresentationProposalReceived(state) => {
+                match message {
+                    VerifierMessages::RequestPresentation(connection_handle, presentation_request_data) => {
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+
+                        let thread = state.thread.clone()
+                            .update_received_order(&connection.data.did_doc.id)
+                            .increment_sender_order();
+
+                        let presentation_request: PresentationRequestData =
+                            presentation_request_data
+                                .set_format_version_for_did(&connection.agent.pw_did, &connection.data.did_doc.id)?;
+
+                        let presentation_request =
+                            PresentationRequest::create()
+                                .set_comment(presentation_request.name.clone())
+                                .set_request_presentations_attach(&presentation_request)?
+                                .set_thread(thread.clone());
+
+                        connection.data.send_message(&presentation_request.to_a2a_message(), &connection.agent)?;
+                        VerifierState::PresentationRequestSent((state, presentation_request, connection, thread).into())
+                    }
+                    _ => {
+                        VerifierState::PresentationProposalReceived(state)
+                    }
+                }
+            }
+            VerifierState::Finished(state) => VerifierState::Finished(state),
         };
 
         Ok(VerifierSM { source_id, state })
@@ -271,6 +355,7 @@ impl VerifierSM {
         match self.state {
             VerifierState::Initiated(_) => VcxStateType::VcxStateInitialized as u32,
             VerifierState::PresentationRequestSent(_) => VcxStateType::VcxStateOfferSent as u32,
+            VerifierState::PresentationProposalReceived(_) => VcxStateType::VcxStateRequestReceived as u32,
             VerifierState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
@@ -291,6 +376,7 @@ impl VerifierSM {
         match self.state {
             VerifierState::Initiated(_) => false,
             VerifierState::PresentationRequestSent(_) => true,
+            VerifierState::PresentationProposalReceived(_) => false,
             VerifierState::Finished(_) => false,
         }
     }
@@ -299,6 +385,7 @@ impl VerifierSM {
         match self.state {
             VerifierState::Initiated(_) => None,
             VerifierState::PresentationRequestSent(ref state) => Some(&state.connection.agent),
+            VerifierState::PresentationProposalReceived(ref state) => None,
             VerifierState::Finished(_) => None,
         }
     }
@@ -307,6 +394,8 @@ impl VerifierSM {
         match self.state {
             VerifierState::Initiated(ref state) => Ok(&state.presentation_request_data),
             VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                                format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
+            VerifierState::PresentationProposalReceived(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
                                                                                 format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
             VerifierState::Finished(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
                                                                  format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
@@ -318,6 +407,8 @@ impl VerifierSM {
             VerifierState::Initiated(ref state) => {
                 PresentationRequest::create().set_request_presentations_attach(&state.presentation_request_data)
             }
+            VerifierState::PresentationProposalReceived(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                                format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
             VerifierState::PresentationRequestSent(ref state) => Ok(state.presentation_request.clone()),
             VerifierState::Finished(ref state) => Ok(state.presentation_request.clone()),
         }
@@ -329,10 +420,24 @@ impl VerifierSM {
                                                                   format!("Verifier object {} in state {} not ready to get Presentation message", self.source_id, self.state()))),
             VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
                                                                                 format!("Verifier object {} in state {} not ready to get Presentation message", self.source_id, self.state()))),
+            VerifierState::PresentationProposalReceived(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                                format!("Verifier object {} in state {} not ready to get Presentation message", self.source_id, self.state()))),
             VerifierState::Finished(ref state) => {
                 state.presentation.clone()
                     .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Verifier object state: `presentation` not found", self.source_id)))
             }
+        }
+    }
+
+    pub fn presentation_proposal(&self) -> VcxResult<PresentationProposal> {
+        match self.state {
+            VerifierState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                  format!("Verifier object {} in state {} not ready to get Presentation proposal message", self.source_id, self.state()))),
+            VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                  format!("Verifier object {} in state {} not ready to get Presentation proposal message", self.source_id, self.state()))),
+            VerifierState::PresentationProposalReceived(ref state) => Ok(state.presentation_proposal.clone()),
+            VerifierState::Finished(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+                                                                  format!("Verifier object {} in state {} not ready to get Presentation proposal message", self.source_id, self.state()))),
         }
     }
 }

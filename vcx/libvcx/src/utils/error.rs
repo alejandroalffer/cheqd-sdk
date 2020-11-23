@@ -97,6 +97,7 @@ pub static RETRIEVE_DEAD_DROP: Error = Error{ code_num: 1099, message: "Failed t
 pub static INVALID_ATTACHMENT_ENCODING: Error = Error { code_num: 1100, message: "Failed to decode attachment"};
 pub static ACTION_NOT_SUPPORTED: Error = Error { code_num: 1103, message: "Action is not supported"};
 pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1104, message: "Invalid redirect details structure"};
+pub static INVALID_PROOF_PROPOSAL: Error = Error{code_num: 1105, message: "Invalid proof proposal"};
 /* EC 1105-1107 is reserved for proprietary forks of libVCX */
 pub static MAX_BACKUP_SIZE: Error = Error{code_num: 1105, message: "Cloud Backup exceeds max size limit"};
 pub static NO_AGENT_INFO: Error = Error{code_num: 1106, message: "Agent pairwise information not found"};

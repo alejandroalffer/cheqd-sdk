@@ -5,6 +5,7 @@ use error::prelude::*;
 use std::convert::TryInto;
 
 pub use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData, ProofRequestVersion};
+use messages::thread::Thread;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct PresentationRequest {
@@ -17,6 +18,7 @@ pub struct PresentationRequest {
     #[serde(rename = "~service")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub service: Option<Service>,
+    pub thread: Thread,
 }
 
 impl PresentationRequest {
@@ -51,6 +53,7 @@ impl PresentationRequest {
 }
 
 a2a_message!(PresentationRequest);
+threadlike!(PresentationRequest);
 
 impl TryInto<PresentationRequest> for ProofRequestMessage {
     type Error = VcxError;
@@ -121,6 +124,7 @@ pub mod tests {
             comment: Some(_comment()),
             request_presentations_attach: _attachment(),
             service: None,
+            thread: Thread::default()
         }
     }
 
@@ -130,6 +134,7 @@ pub mod tests {
             comment: Some(_comment()),
             request_presentations_attach: _attachment(),
             service: Some(_service()),
+            thread: Thread::default()
         }
     }
 

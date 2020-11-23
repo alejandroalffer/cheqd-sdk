@@ -585,6 +585,122 @@ pub extern fn vcx_proof_send_request(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Request a new proof after receiving a proof proposal (this enables negotiation)
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to access proof object
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// requested_attrs: Describes requested attribute
+///     [{
+///         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+///                                              // NOTE: should either be "name" or "names", not both and not none of them.
+///                                              // Use "names" to specify several attributes that have to match a single credential.
+///         "restrictions":  Optional<wql query> - set of restrictions applying to requested credentials. (see below)
+///         "non_revoked": {
+///             "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             "to": Optional<(u64)>
+///                 //Requested time represented as a total number of seconds from Unix Epoch, Optional
+///         }
+///     }]
+///
+/// # Example requested_attrs -> "[{"name":"attrName","restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
+///
+/// requested_predicates: predicate specifications prover must provide claim for
+///          [{ // set of requested predicates
+///             "name": attribute name, (case insensitive and ignore spaces)
+///             "p_type": predicate type (Currently ">=" only)
+///             "p_value": int predicate value
+///             "restrictions":  Optional<wql query> -  set of restrictions applying to requested credentials. (see below)
+///             "non_revoked": Optional<{
+///                 "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///                 "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             }>
+///          }]
+///
+/// # Example requested_predicates -> "[{"name":"attrName","p_type":"GE","p_value":9,"restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
+///
+/// revocation_interval:  Optional<<revocation_interval>>, // see below,
+///                        // If specified, prover must proof non-revocation
+///                        // for date in this interval for each attribute
+///                        // (can be overridden on attribute level)
+///     from: Optional<u64> // timestamp of interval beginning
+///     to: Optional<u64> // timestamp of interval beginning
+///         // Requested time represented as a total number of seconds from Unix Epoch, Optional
+/// # Examples config ->  "{}" | "{"to": 123} | "{"from": 100, "to": 123}"
+///
+/// wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
+///     The list of allowed keys that can be combine into complex queries.
+///         "schema_id": <credential schema id>,
+///         "schema_issuer_did": <credential schema issuer did>,
+///         "schema_name": <credential schema name>,
+///         "schema_version": <credential schema version>,
+///         "issuer_did": <credential issuer did>,
+///         "cred_def_id": <credential definition id>,
+///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+///         // the following keys can be used for every `attribute name` in credential.
+///         "attr::<attribute name>::marker": "1", - to filter based on existence of a specific attribute
+///         "attr::<attribute name>::value": <attribute raw value>, - to filter based on value of a specific attribute
+///
+/// cb: Callback that provides proof handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_proof_request_proof(command_handle: CommandHandle,
+                                      proof_handle: u32,
+                                      connection_handle: u32,
+                                      requested_attrs: *const c_char,
+                                      requested_predicates: *const c_char,
+                                      revocation_interval: *const c_char,
+                                      name: *const c_char,
+                                      cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
+    info!("vcx_proof_request_proof >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(requested_attrs, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(requested_predicates, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(revocation_interval, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(name, VcxErrorKind::InvalidOption);
+
+    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
+
+    trace!("vcx_proof_request_proof(command_handle: {}, proof_handle: {}, connection_handle: {}, source_id: {}, requested_attrs: {}, requested_predicates: {}, revocation_interval: {}, name: {})",
+          command_handle, proof_handle, connection_handle, source_id, secret!(requested_attrs), secret!(requested_predicates), secret!(revocation_interval), secret!(name));
+
+    if !proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidProofHandle).into()
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+    }
+
+    spawn(move|| {
+        let err = match proof::request_proof(proof_handle, connection_handle, requested_attrs, requested_predicates, revocation_interval, name) {
+            Ok(x) => {
+                trace!("vcx_proof_request_proof_cb(command_handle: {}, rc: {}, proof_handle: {}) source_id: {}",
+                      command_handle, 0, proof_handle, source_id);
+                x
+            },
+            Err(x) => {
+                warn!("vcx_proof_request_proof_cb(command_handle: {}, rc: {}, proof_handle: {}) source_id: {}",
+                      command_handle, x, proof_handle, source_id);
+                x.into()
+            },
+        };
+
+        cb(command_handle,err);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
 
 /// Get the proof request message that can be sent to the specified connection
 ///
@@ -637,6 +753,55 @@ pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Get the proof proposal received for deciding whether to accept it
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to access proof object
+///
+/// cb: provides any error status of the proof_request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_get_proof_proposal(command_handle: CommandHandle,
+                                     proof_handle: u32,
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proposal: *const c_char)>) -> u32 {
+    info!("vcx_get_proof_proposal >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidProofHandle).into()
+    }
+
+    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
+
+    trace!("vcx_get_proof_proposal(command_handle: {}, proof_handle: {}) source_id: {}",
+          command_handle, proof_handle, source_id);
+
+    spawn(move|| {
+        match proof::get_presentation_proposal_request(proof_handle) {
+            Ok(msg) => {
+                trace!("vcx_get_proof_proposal_cb(command_handle: {}, rc: {}, proof_handle: {}, msg: {}) source_id: {}",
+                       command_handle, error::SUCCESS.code_num, proof_handle, secret!(msg), source_id);
+                let msg = CStringUtils::string_to_cstring(msg);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(x) => {
+                warn!("vcx_get_proof_proposal_cb(command_handle: {}, rc: {}, proof_handle: {}) source_id: {}",
+                      command_handle, x, proof_handle, source_id);
+                cb(command_handle, x.into(), ptr::null_mut())
+            },
+        };
+
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
 
 /// #Params
 /// command_handle: command handle to map callback to user context.
