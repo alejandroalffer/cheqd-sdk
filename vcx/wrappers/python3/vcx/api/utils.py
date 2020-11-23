@@ -72,7 +72,7 @@ async def vcx_provision_agent_with_token(config: str, token: str) -> None:
     c_result = do_call_sync('vcx_provision_agent_with_token',
                           c_config,
                           c_token)
-	result = cast(c_result, c_char_p).value
+    result = cast(c_result, c_char_p).value
     logger.debug("vcx_provision_agent_with_token completed")
     return result.decode()
 
