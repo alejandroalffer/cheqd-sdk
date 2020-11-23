@@ -37,6 +37,20 @@ request = {
     }
   }
 
+proposal = {
+    "attributes": [
+        {
+            "name": "name",
+            "value": "John Doe"
+        },
+        {
+            "name": "email",
+            "value": "johndoe@example.com"
+        }
+    ],
+    "predicates": []
+}
+
 proof_json = {
     "source_id": "id",
     "my_did": None,
@@ -102,6 +116,14 @@ async def test_create_disclosed_proof_with_msgid():
     assert disclosed_proof.handle > 0
     assert disclosed_proof.proof_request
     assert await disclosed_proof.get_state() == State.RequestReceived
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_create_proposal():
+    disclosed_proof = await DisclosedProof.create_proposal(source_id, proposal, "proposal")
+    assert disclosed_proof.source_id == source_id
+    assert disclosed_proof.handle > 0
+    assert await disclosed_proof.get_state() == State.Initialized
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -195,6 +217,15 @@ async def test_send_proof():
     await disclosed_proof.send_proof(connection)
     assert await disclosed_proof.get_state() == State.Accepted
 
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_send_proposal():
+    connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
+    disclosed_proof = await DisclosedProof.create_proposal(source_id, proposal, "proposal")
+    with pytest.raises(VcxError) as e:
+        await disclosed_proof.send_proposal(connection)
+    assert ErrorCode.ActionNotSupported == e.value.error_code
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')

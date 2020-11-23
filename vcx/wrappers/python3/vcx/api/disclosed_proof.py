@@ -86,7 +86,7 @@ class DisclosedProof(VcxStateful):
         self._proof_req = x
 
     @staticmethod
-    async def create(source_id: str, proof_request: str):
+    async def create(source_id: str, proof_request: dict):
         """
         Create a proof for fulfilling a corresponding proof request
         :param source_id: Institution's personal identification for the proof, should be unique.
@@ -166,6 +166,50 @@ class DisclosedProof(VcxStateful):
                                                 DisclosedProof.create_with_msgid.cb)
 
         proof.proof_request = json.loads(proof_req.decode())
+
+        return proof
+
+    @staticmethod
+    async def create_proposal(source_id: str, proposal: dict, comment: str):
+        """
+        Create a proof for fulfilling a corresponding proof request
+        :param source_id: Institution's personal identification for the proof, should be unique.
+        :param proposal: Proof Request data sent by requester.
+        :param comment: Comment for proposal
+        Example:
+        source_id = 'sourceId'
+        proposal = {
+            "attributes": [
+                {
+                    "name": "name",
+                    "cred_def_id": "2hoqvcwupRTUNkXn6ArYzs:3:CL:2471",
+                    "value": "John Doe"
+                },
+                {
+                    "name": "email",
+                    "cred_def_id": "2hoqvcwupRTUNkXn6ArYzs:3:CL:2471",
+                    "value": "johndoe@gmail.com"
+                }
+            ],
+            "predicates": []
+        }
+        disclosed_proof = await DisclosedProof.create_proposal(source_id, proposal, "My proposal")
+        :return: Disclosed Proof Object
+        """
+        proof = DisclosedProof(source_id)
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_proposal = c_char_p(json.dumps(proposal).encode('utf-8'))
+        c_comment = c_char_p(comment.encode('utf-8'))
+
+        if not hasattr(DisclosedProof.create_proposal, "cb"):
+            DisclosedProof.create_proposal.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32))
+
+        proof.handle = await do_call('vcx_disclosed_proof_create_proposal',
+                                     c_source_id,
+                                     c_proposal,
+                                     c_comment,
+                                     DisclosedProof.create_proposal.cb)
 
         return proof
 
@@ -332,6 +376,48 @@ class DisclosedProof(VcxStateful):
                       c_disclosed_proof_handle,
                       c_connection_handle,
                       DisclosedProof.send_proof.cb)
+
+    async def send_proposal(self, connection: Optional[Connection] = None):
+        """
+        Sends the proposal to the Connection
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+
+        source_id = 'sourceId'
+        proposal = {
+            "attributes": [
+                {
+                    "name": "name",
+                    "cred_def_id": "2hoqvcwupRTUNkXn6ArYzs:3:CL:2471",
+                    "value": "John Doe"
+                },
+                {
+                    "name": "email",
+                    "cred_def_id": "2hoqvcwupRTUNkXn6ArYzs:3:CL:2471",
+                    "value": "johndoe@gmail.com"
+                }
+            ],
+            "predicates": []
+        }
+        disclosed_proof = await DisclosedProof.create_proposal(source_id, proposal, "My proposal")
+        await disclosed_proof.send_proposal(connection)
+        :param connection: Connection
+        :return: None
+        """
+        if not hasattr(DisclosedProof.send_proposal, "cb"):
+            self.logger.debug("vcx_disclosed_proof_send_proposal: Creating callback")
+            DisclosedProof.send_proposal.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_disclosed_proof_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle) if connection else 0
+
+        await do_call('vcx_disclosed_proof_send_proposal',
+                      c_disclosed_proof_handle,
+                      c_connection_handle,
+                      DisclosedProof.send_proposal.cb)
 
     async def reject_proof(self, connection: Connection):
         """

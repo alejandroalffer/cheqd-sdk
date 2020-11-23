@@ -296,6 +296,86 @@ class Proof(VcxStateful):
 
         return json.loads(msg.decode())
 
+    async def get_proof_proposal(self):
+        """
+        Gets the proof proposal received.
+        :return: proof proposal
+        """
+        if not hasattr(Proof.get_proof_proposal, "cb"):
+            self.logger.debug("get_proof_proposal: Creating callback")
+            Proof.get_proof_proposal.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_proof_handle = c_uint32(self.handle)
+
+        msg = await do_call('vcx_get_proof_proposal',
+                            c_proof_handle,
+                            Proof.get_proof_proposal.cb)
+
+        return json.loads(msg.decode())
+
+    async def request_proof_presentation(self, name: str, connection: Connection, requested_attrs: list, revocation_interval: dict, requested_predicates=None):
+        """
+        Respond to proposal with different proof request (enables negotiation).
+
+        :param name: Name of the Proof
+        :param connection: Connection to send proof request
+        :param requested_attrs: Attributes associated with the Proof
+           {
+               "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+               "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                                    // NOTE: should either be "name" or "names", not both and not none of them.
+                                                    // Use "names" to specify several attributes that have to match a single credential.
+               "restrictions":  (filter_json) {
+                  "schema_id": string, (Optional)
+                  "schema_issuer_did": string, (Optional)
+                  "schema_name": string, (Optional)
+                  "schema_version": string, (Optional)
+                  "issuer_did": string, (Optional)
+                  "cred_def_id": string, (Optional)
+              },
+               "non_revoked": {
+                   "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+                   "to": Optional<(u64)>
+                       //Requested time represented as a total number of seconds from Unix Epoch, Optional
+               }
+           }
+        :param requested_predicates: Predicates associated with the Proof
+           { // set of requested predicates
+              "name": attribute name, (case insensitive and ignore spaces)
+              "p_type": predicate type (Currently ">=" only)
+              "p_value": int predicate value
+              "restrictions": Optional<filter_json>, // see above
+              "non_revoked": Optional<{
+                  "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+                  "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+              }>
+           }
+        :param revocation_interval: interval applied to all requested attributes indicating when the claim must be valid (NOT revoked)
+        :return:
+        """
+        if requested_predicates is None:
+            requested_predicates = []
+
+        if not hasattr(Proof.request_proof_presentation, "cb"):
+            self.logger.debug("vcx_proof_request_proof: Creating callback")
+            Proof.request_proof_presentation.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_proof_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+        c_name = c_char_p(name.encode('utf-8'))
+        c_req_attrs = c_char_p(json.dumps(requested_attrs).encode('utf-8'))
+        c_req_predicates = c_char_p(json.dumps(requested_predicates).encode('utf-8'))
+        c_revocation_interval = c_char_p(json.dumps(revocation_interval).encode('utf-8'))
+
+        await do_call('vcx_proof_request_proof',
+                      c_proof_handle,
+                      c_connection_handle,
+                      c_req_attrs,
+                      c_req_predicates,
+                      c_revocation_interval,
+                      c_name,
+                      Proof.request_proof_presentation.cb)
+
     async def request_proof(self, connection: Connection):
         """
         Sends a proof request message to the specified connection
