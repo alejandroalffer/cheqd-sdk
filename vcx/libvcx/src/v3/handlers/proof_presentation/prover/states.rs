@@ -42,12 +42,24 @@ impl ProverSM {
     }
 
     pub fn new_proposal(presentation_proposal: PresentationProposal, source_id: String) -> ProverSM {
+        // ensure thid is set.
+        let thread = match presentation_proposal.thread {
+            Some(ref thread) =>
+                if thread.thid.is_some() {
+                    thread.clone()
+                } else {
+                    thread.clone().set_thid(presentation_proposal.id.0.clone())
+                },
+
+            None => Thread::new().set_thid(presentation_proposal.id.0.clone())
+        };
+
         ProverSM {
             source_id,
             state: ProverState::ProposalPrepared(
                 ProposalPreparedState {
                     presentation_proposal,
-                    thread: Thread::new()
+                    thread
                 }
             )
         }
@@ -577,9 +589,9 @@ impl ProverSM {
             ProverState::ProposalSent(state) => {
                 match message {
                     ProverMessages::PresentationRequestReceived(presentation_request) => {
-                        let thread = state.thread.clone()
-                            .update_received_order(&state.connection.data.did_doc.id)
-                            .set_opt_pthid(state.connection.data.thread.pthid.clone());
+                        let thread = state.thread.clone();
+                        // we do not update received order here, because it will be updated before sending the response to this message.
+                        // It needs to be that way, because there we cannot be sure if that was the first message on that connection.
 
                         ProverState::RequestReceived((state, presentation_request, thread).into())
                     }
@@ -620,7 +632,7 @@ impl ProverSM {
 
         let proposal = PresentationProposal::create()
             .set_presentation_preview(preview)
-            .set_thread_id(&thread.thid.clone().unwrap_or(presentation_request.id.to_string()));
+            .set_thread(thread.clone());
 
         match presentation_request.service.clone() {
             None => connection.data.send_message(&proposal.to_a2a_message(), &connection.agent)?,

@@ -1,4 +1,4 @@
-use ::{serde_json, connection};
+use ::serde_json;
 use serde_json::Value;
 use openssl;
 use openssl::bn::{BigNum, BigNumRef};
@@ -691,8 +691,8 @@ pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
 pub fn get_presentation_proposal_request(handle: u32) -> VcxResult<String> {
     PROOF_MAP.get(handle, |obj| {
         match obj {
-            Proofs::Pending(_) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
-            Proofs::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
+            Proofs::Pending(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Proof protocol doesn't support proposals.")),
+            Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Proof protocol doesn't support proposals.")),
             Proofs::V3(obj) => obj.get_presentation_proposal_request()
         }
     }).map_err(handle_err)

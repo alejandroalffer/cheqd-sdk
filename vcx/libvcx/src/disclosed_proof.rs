@@ -39,7 +39,7 @@ use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
 use messages::proofs::proof_request::parse_proof_req_message;
 use messages::payload::PayloadKinds;
-use v3::messages::proof_presentation::presentation_proposal::{PresentationPreview, PresentationProposal};
+use v3::messages::proof_presentation::presentation_proposal::PresentationProposal;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<DisclosedProofs>  = Default::default();

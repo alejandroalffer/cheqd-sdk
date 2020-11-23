@@ -10,8 +10,6 @@ use v3::handlers::proof_presentation::verifier::states::VerifierSM;
 use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_proposal::{PresentationProposal, PresentationPreview};
-use connection;
-use messages::thread::Thread;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {

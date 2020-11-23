@@ -33,7 +33,16 @@ impl VerifierSM {
     }
 
     pub fn new_from_proposal(presentation_proposal: PresentationProposal, source_id: String) -> VerifierSM {
-        let thread = presentation_proposal.thread.clone().unwrap_or_default();
+        // ensure thid is set.
+        let thread = match presentation_proposal.thread {
+            Some(ref thread) =>
+                if thread.thid.is_some() {
+                    thread.clone()
+                } else {
+                    thread.clone().set_thid(presentation_proposal.id.0.clone())
+                },
+            None => Thread::new().set_thid(presentation_proposal.id.0.clone())
+        };
 
         VerifierSM {
             source_id,
@@ -385,7 +394,11 @@ impl VerifierSM {
         match self.state {
             VerifierState::Initiated(_) => None,
             VerifierState::PresentationRequestSent(ref state) => Some(&state.connection.agent),
-            VerifierState::PresentationProposalReceived(ref state) => None,
+            VerifierState::PresentationProposalReceived(ref state) =>
+                match state.connection {
+                    Some(ref connection) => Some(&connection.agent),
+                    None => None
+                }
             VerifierState::Finished(_) => None,
         }
     }
