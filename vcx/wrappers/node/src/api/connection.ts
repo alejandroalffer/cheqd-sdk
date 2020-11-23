@@ -552,7 +552,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_connection_update_state_with_message(commandHandle, this.handle, message, cb)
           if (rc) {
-            resolve(StateType.None)
+            reject(rc)
           }
         },
         (resolve, reject) => ffi.Callback(

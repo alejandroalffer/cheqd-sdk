@@ -300,7 +300,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   // Evernym extensions
   vcx_pack_message: [FFI_INDY_NUMBER, [FFI_INDY_NUMBER, FFI_INDY_NUMBER, FFI_UNSIGNED_INT, FFI_UNSIGNED_INT,
     FFI_STRING, FFI_STRING, FFI_CALLBACK_PTR]],
-  vcx_unpack_message: [FFI_INDY_NUMBER, [FFI_INDY_NUMBER, FFI_INDY_NUMBER, FFI_UNSIGNED_INT, FFI_UNSIGNED_INT,
+  vcx_unpack_message: [FFI_INDY_NUMBER, [FFI_INDY_NUMBER, FFI_INDY_NUMBER, FFI_UNSIGNED_INT_PTR, FFI_UNSIGNED_INT,
     FFI_CALLBACK_PTR]],
 
   // wallet
