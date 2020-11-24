@@ -1171,7 +1171,7 @@ public class ConnectionApi extends VcxJava.API {
 	 *                              "text": "Yes, it's me"
 	 *                          }
 	 *
-	 * @return                  void
+	 * @return                 Sent message as JSON string.
 	 *
 	 * @throws VcxException     If an exception occurred in Libvcx library.
 	 */
@@ -1188,6 +1188,54 @@ public class ConnectionApi extends VcxJava.API {
 		int commandHandle = addFuture(future);
 
 		int result = LibVcx.api.vcx_connection_send_answer(commandHandle, connectionHandle, question, answer, voidCb);
+		checkResult(result);
+
+		return future;
+	}
+
+	private static Callback connectionSendInviteActionCB = new Callback() {
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int commandHandle, int err, String message) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], message = [" + message + "]");
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+			if (!checkCallback(future, err)) return;
+			future.complete(message);
+		}
+	};
+
+	/**
+	 * Send a message to invite another side to take a particular action.
+	 * The action is represented as a `goal_code` and should be described in a way that can be automated.
+	 * <p>
+	 * The related protocol can be found here:
+	 *     https://github.com/hyperledger/aries-rfcs/blob/ecf4090b591b1d424813b6468f5fc391bf7f495b/features/0547-invite-action-protocol
+	 *
+	 * @param  connectionHandle handle pointing to a Connection object to send answer message.
+	 * @param  data             JSON containing information to build message
+	 *      {
+	 *          goal_code: string - A code the receiver may want to display to the user or use in automatically deciding what to do after receiving the message.
+	 *          ack_on: Optional<array<string>> - Specify when ACKs message need to be sent back from invitee to inviter:
+	 *              * not needed - None or empty array
+	 *              * at the time the invitation is accepted - ["ACCEPT"]
+	 *              * at the time out outcome for the action is known - ["OUTCOME"]
+	 *              * both - ["ACCEPT", "OUTCOME"]
+	 *      }
+	 *
+	 * @return                  s
+	 *
+	 * @throws VcxException     If an exception occurred in Libvcx library.
+	 */
+	public static CompletableFuture<String> connectionSendInviteAction(
+			int connectionHandle,
+			String data
+	) throws VcxException {
+		ParamGuard.notNull(data, "data");
+
+		logger.debug("connectionSendInviteAction() called with: connectionHandle = [" + connectionHandle + "],  data = [****]");
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_send_invite_action(commandHandle, connectionHandle, data, connectionSendInviteActionCB);
 		checkResult(result);
 
 		return future;

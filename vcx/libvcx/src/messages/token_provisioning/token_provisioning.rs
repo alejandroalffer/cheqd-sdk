@@ -1,4 +1,4 @@
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency};
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
 use error::prelude::*;
 use messages::agent_utils::{set_config_values, configure_wallet, ComMethod, Config};
 use messages::message_type::MessageTypes;
@@ -21,8 +21,10 @@ pub struct TokenRequest {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TokenResponse {
+    #[serde(rename = "@id")]
     id: String,
-    sponsor: String,
+    #[serde(rename = "sponsorId")]
+    sponsor_id: String,
     nonce: String,
     timestamp: String,
     sig: String,
@@ -55,14 +57,14 @@ impl TokenRequestBuilder {
     pub fn version(&mut self, version: ProtocolTypes) -> &mut Self { self.version = Some(version); self}
     pub fn agency_did(&mut self, did: &str) -> &mut Self { self.agency_did = Some(did.to_string()); self}
 
-    pub fn send_secure(&mut self) -> VcxResult<()> {
+    pub fn send_secure(&mut self) -> VcxResult<String> {
         trace!("TokenRequestBuilder::send >>>");
 
         let data = self.prepare_request()?;
 
-        httpclient::post_u8(&data)?;
+        let response = httpclient::post_u8(&data)?;
 
-        Ok(())
+        self.parse_response(&response)
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
@@ -90,9 +92,23 @@ impl TokenRequestBuilder {
 
         prepare_message_for_agency(&message, &agency_did, &version)
     }
+
+    fn parse_response(&self, response: &Vec<u8>) -> VcxResult<String> {
+        trace!("TokenRequestBuilder::parse_response >>>");
+
+        let mut response = parse_response_from_agency(response, &ProtocolTypes::V2)?;
+
+        match response.remove(0) {
+            A2AMessage::Version1(_) => {
+                Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response expected to be of version 2"))
+            },
+            A2AMessage::Version2(A2AMessageV2::TokenResponse(res)) => Ok(json!(res).to_string()),
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidAgencyResponse, "Agency response does not match any variant of TokenResponse"))
+        }
+    }
 }
 
-pub fn provision(my_config: Config, sponsee_id: &str, sponsor_id: &str, com_method: ComMethod) -> VcxResult<()> {
+pub fn provision(my_config: Config, sponsee_id: &str, sponsor_id: &str, com_method: ComMethod) -> VcxResult<String> {
     debug!("***Configuring Library");
     set_config_values(&my_config);
 
@@ -100,7 +116,7 @@ pub fn provision(my_config: Config, sponsee_id: &str, sponsor_id: &str, com_meth
     configure_wallet(&my_config)?;
 
     debug!("Getting Token");
-    TokenRequestBuilder::build()
+    let token = TokenRequestBuilder::build()
         .sponsee_id(sponsee_id)
         .sponsor_id(sponsor_id)
         .push_id(com_method)
@@ -108,7 +124,7 @@ pub fn provision(my_config: Config, sponsee_id: &str, sponsor_id: &str, com_meth
         .agency_did(&my_config.agency_did)
         .send_secure()?;
 
-    Ok(())
+    Ok(token)
 }
 
 #[cfg(test)]

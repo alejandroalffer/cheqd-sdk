@@ -1,4 +1,4 @@
-use serde_json;
+use ::{serde_json, credential_def};
 
 use std::collections::HashMap;
 use api::VcxStateType;
@@ -655,6 +655,8 @@ pub fn issuer_credential_create(cred_def_handle: u32,
                                 credential_name: String,
                                 credential_data: String,
                                 price: u64) -> VcxResult<u32> {
+    credential_def::check_is_published(cred_def_handle)?;
+
     trace!("issuer_credential_create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
            cred_def_handle, source_id, secret!(issuer_did), secret!(credential_name), secret!(&credential_data), price);
     debug!("creating issuer credential {} state object", source_id);

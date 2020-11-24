@@ -117,7 +117,6 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::connection::response::tests::*;
     use utils::constants::CRED_DEF_JSON;
 
     fn _attachment() -> ::serde_json::Value {
@@ -158,7 +157,7 @@ pub mod tests {
             comment: _comment(),
             credential_preview: _preview_data(),
             offers_attach: attachment,
-            thread: Some(_thread()),
+            thread: None,
         }
     }
 
@@ -166,7 +165,6 @@ pub mod tests {
     fn test_credential_offer_build_works() {
         let credential_offer: CredentialOffer = CredentialOffer::create()
             .set_comment(_comment())
-            .set_thread_id(&_thread_id())
             .set_credential_preview_data(_preview_data()).unwrap()
             .set_offers_attach(&_attachment().to_string()).unwrap();
 

@@ -1,6 +1,15 @@
-libvcx (0.10.0) unstable; urgency=medium
+libvcx (0.10.1) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 0.10.1
+* Fixed deadlock that may have happened when VCX of 0.9.4/1.10.0 versions was used via NodeJS.
+* Corrected building of an Android aar artifact for armeabi-v7a architecture.
+* Changed `get_provision_token` function to return token as JSON string value instead of void.
+* Aries Invite Action Protocol:
+    * Added `vcx_connection_send_invite_action` function which prepares and sends a message to invite another side to take a particular action.
+* Updated VCX Aries message threading handling to use `@id` of the first message as thread id (thid) only if that first message doesn't contain `thid`.
+* Bugfixes
 
 ## 0.10.0
 

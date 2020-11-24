@@ -104,6 +104,7 @@ pub struct UpdateComMethod {
 }
 
 impl UpdateComMethod {
+    #[allow(dead_code)]
     fn build(com_method: ComMethod) -> UpdateComMethod {
         UpdateComMethod {
             msg_type: MessageTypes::build(A2AMessageKinds::UpdateComMethod),
@@ -217,7 +218,7 @@ pub fn get_final_config(my_did: &str,
     /* Update Agent Info */
     update_agent_profile(&agent_did,
                          &Some(issuer_did.to_string()),
-                         my_config.protocol_type.clone())?;
+                         ProtocolTypes::V1)?;
 
     let mut final_config = json!({
         "wallet_key": &my_config.wallet_key,
@@ -445,15 +446,18 @@ pub fn update_agent_info(com_method: ComMethod) -> VcxResult<()> {
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-    match settings::get_protocol_type() {
-        settings::ProtocolTypes::V1 => {
-            update_agent_info_v1(&to_did, com_method)
-        }
-        settings::ProtocolTypes::V2 |
-        settings::ProtocolTypes::V3 => {
-            update_agent_info_v2(&to_did, com_method)
-        }
-    }
+    // for tis message Agency always return response in V1 format
+    update_agent_info_v1(&to_did, com_method)
+
+//    match settings::get_protocol_type() {
+//        settings::ProtocolTypes::V1 => {
+//            update_agent_info_v1(&to_did, com_method)
+//        }
+//        settings::ProtocolTypes::V2 |
+//        settings::ProtocolTypes::V3 => {
+//            update_agent_info_v2(&to_did, com_method)
+//        }
+//    }
 }
 
 fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
@@ -462,12 +466,24 @@ fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
     AgencyMock::set_next_response(constants::REGISTER_RESPONSE.to_vec());
 
     let message = A2AMessage::Version1(
-        A2AMessageV1::UpdateComMethod(UpdateComMethod::build(com_method))
+        A2AMessageV1::UpdateComMethod(
+            UpdateComMethod {
+                msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::UpdateComMethod)),
+                com_method,
+            }
+        )
     );
-    send_message_to_agency(&message, to_did)?;
+
+    let data = prepare_message_for_agency(&message, &to_did, &ProtocolTypes::V1)?;
+
+    let response = httpclient::post_u8(&data)?;
+
+    parse_response_from_agency(&response, &ProtocolTypes::V1)?;
+
     Ok(())
 }
 
+#[allow(dead_code)]
 fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
     trace!("Updating agent information V2");
 

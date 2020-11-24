@@ -63,7 +63,7 @@ vcx_error_t sovtoken_init();
 
 vcx_error_t vcx_agent_provision_async(vcx_command_handle_t handle, const char *json, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *config));
 const char *vcx_provision_agent_with_token(const char *json, const char *token);
-vcx_error_t vcx_get_provision_token(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
+vcx_error_t vcx_get_provision_token(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *token));
 
 vcx_error_t vcx_agent_update_info(vcx_command_handle_t handle, const char *json, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 //pub extern fn vcx_agent_update_info(command_handle : u32, json: *const c_char, cb: Option<extern fn(xcommand_handle: u32, err: u32, config: *const c_char)>) -> u32
@@ -228,6 +228,12 @@ vcx_error_t vcx_connection_send_answer(vcx_command_handle_t command_handle,
                                       const char *question,
                                       const char *answer,
                                       void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+
+/** Send a message to invite another side to take a particular action. */
+vcx_error_t vcx_connection_send_invite_action(vcx_command_handle_t command_handle,
+                                              vcx_connection_handle_t connection_handle,
+                                              const char *goal_code,
+                                              void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *message));
 
 /**
  * credential issuer object

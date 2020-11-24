@@ -178,12 +178,9 @@ async def test_get_state():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_disclosed_proof_release():
-    with pytest.raises(VcxError) as e:
-        disclosed_proof = await DisclosedProof.create(source_id, request)
-        assert disclosed_proof.handle > 0
-        disclosed_proof.release()
-        await disclosed_proof.serialize()
-    assert ErrorCode.InvalidDisclosedProofHandle == e.value.error_code
+    disclosed_proof = await DisclosedProof.create(source_id, request)
+    assert disclosed_proof.handle > 0
+    disclosed_proof.release()
 
 
 @pytest.mark.asyncio

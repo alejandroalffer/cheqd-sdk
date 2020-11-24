@@ -200,12 +200,9 @@ async def test_get_state():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_credential_release():
-    with pytest.raises(VcxError) as e:
-        credential = await Credential.create(source_id, offer)
-        assert credential.handle > 0
-        credential.release()
-        await credential.serialize()
-    assert ErrorCode.InvalidCredentialHandle == e.value.error_code
+    credential = await Credential.create(source_id, offer)
+    assert credential.handle > 0
+    credential.release()
 
 
 @pytest.mark.asyncio

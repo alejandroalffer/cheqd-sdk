@@ -3,7 +3,6 @@ package com.evernym.sdk.vcx;
 
 import com.evernym.sdk.vcx.connection.AcceptConnectionResult;
 import com.evernym.sdk.vcx.connection.ConnectionApi;
-import com.evernym.sdk.vcx.connection.InvalidConnectionHandleException;
 import com.evernym.sdk.vcx.vcx.VcxApi;
 import com.evernym.sdk.vcx.utils.UtilsApi;
 import java9.util.concurrent.CompletableFuture;
@@ -69,11 +68,9 @@ class ConnectionApiTest {
 	@DisplayName("throw invalid connection handle exception for wrong handle")
 	void throwInvalidConnectionHandleException() {
 
-		Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {
+		Assertions.assertThrows(ExecutionException.class, () -> {
 			String payload = "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
-			CompletableFuture<String> future = ConnectionApi.vcxConnectionConnect(8765, TestHelper.convertToValidJson(payload));
-			Awaitility.await().until(future::isDone);
-			assertNotSame("", future.getNow(""));
+			TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(8765, TestHelper.convertToValidJson(payload)));
 		});
 
 
@@ -95,11 +92,9 @@ class ConnectionApiTest {
 	@Test
 	@DisplayName("throw invalid connection handle exception for serializing invalid connection ")
 	void serializeConnectionWithBadHandle() {
-		Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {
-			CompletableFuture<String> future = ConnectionApi.connectionSerialize(0);
-			Awaitility.await().until(future::isDone);
+		Assertions.assertThrows(ExecutionException.class, () -> {
+			TestHelper.getResultFromFuture(ConnectionApi.connectionSerialize(0));
 		});
-
 	}
 
 	@Test
@@ -116,12 +111,10 @@ class ConnectionApiTest {
 	@DisplayName("throw invalid connection handle exception if trying to serialize deleted connection ")
 	void serlializeDeletedConnection() {
 
-		Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {
+		Assertions.assertThrows(ExecutionException.class, () -> {
 			Integer connectionHandle = _createConnection();
-			CompletableFuture<Void> futureDelete = ConnectionApi.deleteConnection(connectionHandle);
-			Awaitility.await().until(futureDelete::isDone);
-			CompletableFuture<String> future = ConnectionApi.connectionSerialize(connectionHandle);
-			Awaitility.await().until(future::isDone);
+			TestHelper.getResultFromFuture(ConnectionApi.deleteConnection(connectionHandle));
+			TestHelper.getResultFromFuture(ConnectionApi.connectionSerialize(connectionHandle));
 		});
 
 	}
@@ -129,12 +122,11 @@ class ConnectionApiTest {
 	@Test
 	@DisplayName("throw invalid connection handle exception if trying to serialize released connection")
 	void serlializeReleasedConnection() {
-		Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {
+		Assertions.assertThrows(ExecutionException.class, () -> {
 			Integer connectionHandle = _createConnection();
 			int releaseResult = ConnectionApi.connectionRelease(connectionHandle);
 			assert (releaseResult == 0);
-			CompletableFuture<String> future = ConnectionApi.connectionSerialize(connectionHandle);
-			Awaitility.await().until(future::isDone);
+			TestHelper.getResultFromFuture(ConnectionApi.connectionSerialize(connectionHandle));
 		});
 	}
 
@@ -325,6 +317,16 @@ class ConnectionApiTest {
 			String question = "{\"@type\": \"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/questionanswer/1.0/question\",\"@id\": \"518be002-de8e-456e-b3d5-8fe472477a86\",\"question_text\": \"Alice, are you on the phone with Bob from Faber Bank right now?\",}";
 			String answer = "{\"text\": \"Yes, it's me\"}";
 			TestHelper.getResultFromFuture(ConnectionApi.connectionSendAnswer(connectionHandle, question, answer));
+		});
+	}
+
+	@Test
+	@DisplayName("send invite action")
+	void sendInviteAction() {
+		Assertions.assertThrows(ExecutionException.class, () -> {
+			int connectionHandle = _createConnection();
+			String data = "{\"goal_code\": \"automotive.inspect.tire\"}";
+			TestHelper.getResultFromFuture(ConnectionApi.connectionSendInviteAction(connectionHandle, data));
 		});
 	}
 }

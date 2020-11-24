@@ -115,10 +115,10 @@ describe('Connection:', () => {
   })
 
   describe('updateState:', () => {
-    it(`returns ${StateType.None}: not initialized`, async () => {
+    it('throws: not initialized', async () => {
       const connection = new (Connection as any)()
-      await connection.updateState()
-      assert.equal(await connection.getState(), StateType.None)
+      const error = await shouldThrow(() => connection.updateState())
+      assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)
     })
 
     it(`returns ${StateType.Initialized}: not connected`, async () => {
@@ -279,6 +279,14 @@ describe('Connection:', () => {
       }
       const error = await shouldThrow(() => connection.sendAnswer(data))
       assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+    })
+  })
+
+  describe('sendInviteAction:', () => {
+    it('success: send invite action', async () => {
+      const connection = await connectionCreate()
+      const error = await shouldThrow(() => connection.sendInviteAction({goal_code: 'automotive.inspect.tire'}))
+      assert.equal(error.vcxCode, VCXCode.NOT_READY)
     })
   })
 })

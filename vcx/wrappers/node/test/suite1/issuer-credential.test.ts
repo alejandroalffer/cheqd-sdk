@@ -124,8 +124,8 @@ describe('IssuerCredential:', () => {
   describe('updateState:', () => {
     it(`returns ${StateType.None}: not initialized`, async () => {
       const issuerCredential = new IssuerCredential(null as any, {} as any)
-      await issuerCredential.updateState()
-      assert.equal(await issuerCredential.getState(), StateType.None)
+      const error = await shouldThrow(() => issuerCredential.updateState())
+      assert.equal(error.vcxCode, VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE)
     })
 
     it(`returns ${StateType.Initialized}: created`, async () => {

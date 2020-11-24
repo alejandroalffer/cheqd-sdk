@@ -41,13 +41,16 @@ threadlike!(Ack);
 a2a_message!(Ack);
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct PleaseAck {}
+pub struct PleaseAck {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub on: Option<Vec<String>>
+}
 
 #[macro_export]
 macro_rules! please_ack (($type:ident) => (
     impl $type {
         pub fn ask_for_ack(mut self) -> $type {
-            self.please_ack = Some(PleaseAck {});
+            self.please_ack = Some(PleaseAck { on: None });
             self
         }
     }
