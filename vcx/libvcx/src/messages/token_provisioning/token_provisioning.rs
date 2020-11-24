@@ -25,6 +25,8 @@ pub struct TokenResponse {
     id: String,
     #[serde(rename = "sponsorId")]
     sponsor_id: String,
+    #[serde(rename = "sponseeId")]
+    sponsee_id: String,
     nonce: String,
     timestamp: String,
     sig: String,
