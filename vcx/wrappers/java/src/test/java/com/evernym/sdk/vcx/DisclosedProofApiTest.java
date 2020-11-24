@@ -16,6 +16,7 @@ public class DisclosedProofApiTest {
     private String sourceId = "123";
     private String name = "proof name";
     private String proofRequest = "{\"@topic\": {\"mid\": 9,\"tid\": 1},\"@type\": {\"name\": \"PROOF_REQUEST\",\"version\":\"1.0\"},\"msg_ref_id\": \"ymy5nth\",\"proof_request_data\": {\"name\": \"Account Certificate\", \"nonce\": \"838186471541979035208225\", \"requested_attributes\": { \"business_2\": { \"name\": \"business\" }, \"email_1\": { \"name\": \"email\" }, \"name_0\": { \"name\": \"name\" } }, \"requested_predicates\": {}, \"version\": \"0.1\" } }";
+    private String proposal = "{\"attributes\":[{\"name\":\"name\",\"value\":\"John Doe\"},{\"name\":\"email\",\"value\":\"johndoe@example.com\"}],\"predicates\":[]}";
 
     @BeforeEach
     void setup() throws Exception {
@@ -32,6 +33,13 @@ public class DisclosedProofApiTest {
         int result = TestHelper.getResultFromFuture(DisclosedProofApi.proofCreateWithRequest(sourceId, proofRequest));
         assert (result != 0);
    }
+
+    @Test
+    @DisplayName("create a proposal")
+    void createProposal() throws VcxException, ExecutionException, InterruptedException {
+        int result = TestHelper.getResultFromFuture(DisclosedProofApi.proofCreateProposal(sourceId, proposal, "comment"));
+        assert (result != 0);
+    }
 
     @Test
     @DisplayName("serialize and deserialize proof")
