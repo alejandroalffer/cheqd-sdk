@@ -978,7 +978,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
             reject(rc)
           }
         },
-        (resolve, reject) => Callback(
+        (resolve, reject) => ffi.Callback(
           'void',
           ['uint32', 'uint32', 'string'],
           (xHandle: number, err: number, message: string) => {
