@@ -843,7 +843,7 @@ pub mod test {
             let mut prover_sm = _prover_sm();
             prover_sm = prover_sm.step(ProverMessages::ProposePresentation((mock_connection(), _presentation_preview()))).unwrap();
 
-            assert_match!(ProverState::Finished(_), prover_sm.state);
+            assert_match!(ProverState::ProposalSent(_), prover_sm.state);
         }
 
         #[test]

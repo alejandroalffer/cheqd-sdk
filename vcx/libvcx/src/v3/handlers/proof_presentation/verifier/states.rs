@@ -565,8 +565,8 @@ pub mod test {
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
             verifier_sm = verifier_sm.step(VerifierMessages::PresentationProposalReceived(_presentation_proposal())).unwrap();
 
-            assert_match!(VerifierState::Finished(_), verifier_sm.state);
-            assert_eq!(VcxStateType::VcxStateNone as u32, verifier_sm.state());
+            assert_match!(VerifierState::PresentationProposalReceived(_), verifier_sm.state);
+            assert_eq!(VcxStateType::VcxStateRequestReceived as u32, verifier_sm.state());
         }
 
         #[test]

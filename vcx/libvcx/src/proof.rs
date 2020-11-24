@@ -749,12 +749,15 @@ pub fn request_proof(handle: u32,
                 if ::connection::is_v3_connection(connection_handle)? {
                     debug!("converting pending proof into aries object");
 
+                    let revocation_interval = serde_json::to_string(&obj.revocation_interval)
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize RevocationDetails. Err: {:?}", err)))?;
+
                     let mut verifier = Verifier::create(obj.source_id.to_string(),
-                                                        requested_attrs.to_string(),
-                                                        requested_predicates.to_string(),
-                                                        revocation_details.clone(),
-                                                        name.to_string())?;
-                    verifier.send_presentation_request(connection_handle)?;
+                                                        obj.requested_attrs.to_string(),
+                                                        obj.requested_predicates.to_string(),
+                                                        revocation_interval,
+                                                        obj.name.to_string())?;
+                    verifier.request_proof(connection_handle, requested_attrs.clone(), requested_predicates.clone(), revocation_details.clone(), name.clone())?;
 
                     Ok(Proofs::V3(verifier))
                 } else { // else - Convert Pending object to V1 proof
