@@ -44,7 +44,7 @@ enum Connections {
     V3(ConnectionV3),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConnectionOptions {
     #[serde(default)]
     pub connection_type: Option<String>,
@@ -1098,11 +1098,12 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
 }
 
 pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
+
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
             Connections::V1(ref mut connection) => {
-                debug!("establish connection {}", connection.source_id);
                 let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options.as_ref())?;
+                debug!("establish connection {}", connection.source_id);
                 if options_obj.update_agent_info.unwrap_or(true) {
                     connection.update_agent_profile(&options_obj)?;
                 }
@@ -1111,7 +1112,8 @@ pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
                 connection.connect(&options_obj)
             }
             Connections::V3(ref mut connection) => {
-                connection.connect()?;
+                let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options.as_ref())?;
+                connection.connect(options_obj)?;
                 Ok(error::SUCCESS.code_num)
             }
         }

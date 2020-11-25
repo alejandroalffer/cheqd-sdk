@@ -29,6 +29,7 @@ use std::collections::HashMap;
 use error::prelude::*;
 use messages::thread::Thread;
 use settings;
+use connection::ConnectionOptions;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeSM {
@@ -302,7 +303,7 @@ impl From<(CompleteState, Vec<ProtocolDescriptor>)> for CompleteState {
 }
 
 impl InitializedState {
-    fn prepare_invitation(self, source_id: &str, agent_info: &AgentInfo) -> VcxResult<ActorDidExchangeState> {
+    fn prepare_invitation(self, source_id: &str, agent_info: &AgentInfo, options: &ConnectionOptions) -> VcxResult<ActorDidExchangeState> {
         trace!("InvitedState:prepare_invitation >>> source_id: {:?}", source_id);
         debug!("preparing invitation for connection {}", source_id);
 
@@ -321,12 +322,19 @@ impl InitializedState {
                 ActorDidExchangeState::Inviter(DidExchangeState::Invited((self, invite).into()))
             }
             Some(outofband_meta) => {
+
+                let public_did = match options.use_public_did {
+                    Some(true) => settings::get_config_value(settings::CONFIG_INSTITUTION_DID).ok(),
+                    _ => None
+                };
+
                 let invite: OutofbandInvitation = OutofbandInvitation::create()
                     .set_label(label)
                     .set_opt_profile_url(profile_url)
                     .set_opt_goal_code(outofband_meta.goal_code)
                     .set_opt_goal(outofband_meta.goal)
                     .set_handshake(outofband_meta.handshake)
+                    .set_opt_public_did(public_did)
                     .set_service(
                         Service::create()
                             .set_id(SERVICE_ID.to_string())
@@ -949,9 +957,9 @@ impl DidExchangeSM {
                 match state {
                     DidExchangeState::Initialized(state) => {
                         match message {
-                            DidExchangeMessages::Connect() => {
+                            DidExchangeMessages::Connect(options) => {
                                 agent_info = agent_info.create_agent()?;
-                                state.prepare_invitation(&source_id, &agent_info)?
+                                state.prepare_invitation(&source_id, &agent_info, &options)?
                             }
                             message_ => {
                                 warn!("DidExchangeSM: Unexpected action to update state {:?}", message_);
@@ -1089,7 +1097,7 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Invited(state) => {
                         match message {
-                            DidExchangeMessages::Connect() => {
+                            DidExchangeMessages::Connect(_options) => {
                                 agent_info = agent_info.create_agent()?;
 
                                 let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
@@ -1292,18 +1300,18 @@ pub mod test {
 
         impl DidExchangeSM {
             fn to_inviter_invited_state(mut self) -> DidExchangeSM {
-                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 self
             }
 
             fn to_inviter_responded_state(mut self) -> DidExchangeSM {
-                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 self = self.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
                 self
             }
 
             fn to_inviter_completed_state(mut self) -> DidExchangeSM {
-                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 self = self.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
                 self = self.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
                 self
@@ -1364,7 +1372,7 @@ pub mod test {
 
                 let mut did_exchange_sm = inviter_sm();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
 
                 match did_exchange_sm.state {
                     ActorDidExchangeState::Inviter(DidExchangeState::Invited(state)) => {
@@ -1383,7 +1391,7 @@ pub mod test {
 
                 let mut did_exchange_sm = DidExchangeSM::new(Actor::Inviter, &source_id(), Some(_outofband_meta()));
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
 
                 match did_exchange_sm.state {
                     ActorDidExchangeState::Inviter(DidExchangeState::Invited(state)) => {
@@ -1409,7 +1417,7 @@ pub mod test {
 
                 let mut did_exchange_sm = DidExchangeSM::new(Actor::Inviter, &source_id(), Some(outofband_meta));
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
 
                 match did_exchange_sm.state {
                     ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)) => Ok(()),
@@ -1485,7 +1493,7 @@ pub mod test {
 
                 let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Invited(_)), did_exchange_sm.state);
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
@@ -1539,7 +1547,7 @@ pub mod test {
 
                 let mut did_exchange_sm = inviter_sm().to_inviter_responded_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
 
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Responded(_)), did_exchange_sm.state);
             }
@@ -1834,7 +1842,7 @@ pub mod test {
 
             pub fn to_invitee_requested_state(mut self) -> DidExchangeSM {
                 self = self.step(DidExchangeMessages::InvitationReceived(_invitation())).unwrap();
-                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 self
             }
 
@@ -1843,7 +1851,7 @@ pub mod test {
                 let invitation = Invitation::default().set_recipient_keys(vec![key.clone()]);
 
                 self = self.step(DidExchangeMessages::InvitationReceived(invitation)).unwrap();
-                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 self = self.step(DidExchangeMessages::ExchangeResponseReceived(_response(&key))).unwrap();
                 self = self.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
                 self
@@ -1944,7 +1952,7 @@ pub mod test {
 
                 let mut did_exchange_sm = invitee_sm();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Initialized(_)), did_exchange_sm.state);
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
@@ -1957,7 +1965,7 @@ pub mod test {
 
                 let mut did_exchange_sm = invitee_sm().to_invitee_invited_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
 
                 match did_exchange_sm.state {
                     ActorDidExchangeState::Invitee(DidExchangeState::Requested(state)) => {

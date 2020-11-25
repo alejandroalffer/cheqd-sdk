@@ -16,11 +16,12 @@ use v3::messages::questionanswer::answer::Answer;
 use v3::messages::committedanswer::question::Question as CommitedQuestion;
 use v3::messages::committedanswer::answer::Answer as CommitedAnswer;
 use v3::messages::invite_action::invite::{Invite as InviteForAction};
+use connection::ConnectionOptions;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DidExchangeMessages {
-    Connect(),
+    Connect(ConnectionOptions),
     InvitationReceived(Invitation),
     ExchangeRequestReceived(Request),
     ExchangeResponseReceived(SignedResponse),
