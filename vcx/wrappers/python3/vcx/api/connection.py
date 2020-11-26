@@ -838,19 +838,21 @@ class Connection(VcxStateful):
                      * both - ["ACCEPT", "OUTCOME"]
              }
 
-        :return: no value
+        :return: Sent invite message as JSON string.
         """
         if not hasattr(Connection.send_invite_action, "cb"):
             self.logger.debug("vcx_connection_send_invite_action: Creating callback")
-            Connection.send_invite_action.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+            Connection.send_invite_action.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_connection_handle = c_uint32(self.handle)
         c_data = c_char_p(json.dumps(data).encode('utf-8'))
 
-        await do_call('vcx_connection_send_invite_action',
-                      c_connection_handle,
-                      c_data,
-                      Connection.send_invite_action.cb)
+        message = await do_call('vcx_connection_send_invite_action',
+                                c_connection_handle,
+                                c_data,
+                                Connection.send_invite_action.cb)
+
+        return message.decode()
 
     async def get_my_pw_did(self) -> str:
         if not hasattr(Connection.get_my_pw_did, "cb"):

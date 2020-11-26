@@ -29,11 +29,16 @@ pub struct ProverSM {
 
 impl ProverSM {
     pub fn new(presentation_request: PresentationRequest, source_id: String) -> ProverSM {
+        let thread = match presentation_request.thread.as_ref() {
+            Some(thread_) => thread_.clone(),
+            None => Thread::new().set_thid(presentation_request.id.to_string()),
+        };
+        trace!("Thread: {:?}", thread);
         ProverSM {
             source_id,
             state: ProverState::RequestReceived(
                 RequestReceivedState {
-                    thread: Thread::new().set_thid(presentation_request.id.to_string()),
+                    thread,
                     presentation_request,
                     presentation_proposal: None
                 }
@@ -807,6 +812,26 @@ pub mod test {
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
 
             assert_match!(ProverState::PresentationPrepared(_), prover_sm.state);
+        }
+
+        #[test]
+        fn test_prover_handle_prepare_presentation_message_from_initiated_state_for_proof_request_with_thread() -> Result<(), String> {
+            let _setup = SetupAriesMocks::init();
+
+            let thread_id = "71fa23b0-427e-4064-bf24-b375b1a2c64b";
+            let presentation_request = _presentation_request().set_thread_id(thread_id);
+
+            let mut prover_sm = ProverSM::new(presentation_request, source_id());
+            prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
+
+            match prover_sm.state {
+                ProverState::PresentationPrepared(state) => {
+                    assert_eq!(thread_id, state.thread.thid.unwrap());
+                    assert_eq!(0, state.thread.sender_order);
+                    Ok(())
+                }
+                other => Err(format!("State expected to be PresentationPrepared, but: {:?}", other))
+            }
         }
 
         #[test]

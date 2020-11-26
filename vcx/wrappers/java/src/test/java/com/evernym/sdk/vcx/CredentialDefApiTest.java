@@ -1,6 +1,5 @@
 package com.evernym.sdk.vcx;
 
-import com.evernym.sdk.vcx.credential.InvalidCredentialDefHandle;
 import com.evernym.sdk.vcx.credentialDef.CredentialDefApi;
 import com.evernym.sdk.vcx.credentialDef.CredentialDefPrepareForEndorserResult;
 import com.evernym.sdk.vcx.vcx.VcxApi;
@@ -56,7 +55,7 @@ public class CredentialDefApiTest {
     @Test
     @DisplayName("should throw invalid credentialdef handle exception when serializing invalid credentialdef")
     void serializeCredentialShouldThrow() {
-        Assertions.assertThrows(InvalidCredentialDefHandle.class, () -> {
+        Assertions.assertThrows(ExecutionException.class, () -> {
             TestHelper.getResultFromFuture(CredentialDefApi.credentialDefSerialize(0));
         });
     }

@@ -12,6 +12,7 @@ use v3::handlers::connection::types::{SideConnectionInfo, PairwiseConnectionInfo
 use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 use v3::messages::questionanswer::question::{Question, QuestionResponse};
 use v3::messages::invite_action::invite::InviteActionData;
+use v3::messages::invite_action::invite::{Invite as InviteForAction};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
@@ -290,11 +291,20 @@ impl Connection {
         self.handle_message(DidExchangeMessages::SendAnswer((question, response)))
     }
 
-    pub fn send_invite_action(&mut self, data: InviteActionData) -> VcxResult<()> {
+    pub fn send_invite_action(&mut self, data: InviteActionData) -> VcxResult<String> {
         trace!("Connection::send_invite_action >>> data: {:?}", secret!(data));
         debug!("Connection {}: Sending invitation for taking an action", self.source_id());
 
-        self.handle_message(DidExchangeMessages::SendInviteAction(data))
+        let invite = InviteForAction::create()
+            .set_goal_code(data.goal_code)
+            .set_ack_on(data.ack_on)
+            .to_a2a_message();
+
+        let invite_json = json!(invite).to_string();
+
+        self.handle_message(DidExchangeMessages::SendInviteAction(invite))?;
+
+        Ok(invite_json)
     }
 
     pub fn get_connection_info(&self) -> VcxResult<String> {

@@ -1,8 +1,5 @@
 package com.evernym.sdk.vcx;
 
-import com.evernym.sdk.vcx.connection.ConnectionApi;
-import com.evernym.sdk.vcx.connection.InvalidConnectionHandleException;
-import com.evernym.sdk.vcx.proof.InvalidProofHandleException;
 import com.evernym.sdk.vcx.proof.DisclosedProofApi;
 import com.evernym.sdk.vcx.vcx.VcxApi;
 import org.junit.jupiter.api.Assertions;
@@ -75,7 +72,7 @@ public class DisclosedProofApiTest {
     @DisplayName("decline request")
     void declineRequest() throws VcxException, ExecutionException, InterruptedException {
         int proofHandle = TestHelper.getResultFromFuture(DisclosedProofApi.proofCreateWithRequest(sourceId, proofRequest));
-        Assertions.assertThrows(InvalidConnectionHandleException.class, ()-> {
+        Assertions.assertThrows(ExecutionException.class, ()-> {
             TestHelper.getResultFromFuture(DisclosedProofApi.proofDeclineRequest(proofHandle, 0, null, null));
         });
     }

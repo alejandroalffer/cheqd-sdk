@@ -34,6 +34,7 @@ impl Attachments {
     pub fn content(&self) -> VcxResult<String> {
         match self.get() {
             Some(Attachment::JSON(ref attach)) => attach.get_data(),
+            Some(Attachment::DidcomPlainJSON(ref attach)) => attach.get_data(),
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidAttachmentEncoding, "Unsupported Attachment type"))
         }
     }
@@ -44,6 +45,8 @@ impl Attachments {
 pub enum Attachment {
     #[serde(rename = "application/json")]
     JSON(Json),
+    #[serde(rename = "application/didcomm-plain+json")]
+    DidcomPlainJSON(Json),
     Blank,
 }
 

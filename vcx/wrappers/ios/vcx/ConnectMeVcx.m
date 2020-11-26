@@ -383,18 +383,18 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 }
 
 - (void)getProvisionToken:(NSString *)config
-            completion:(void (^)(NSError *error))completion
+            completion:(void (^)(NSError *error, NSString *token))completion
 {
     const char *config_char = [config cStringUsingEncoding:NSUTF8StringEncoding];
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
-    vcx_error_t ret = vcx_get_provision_token(handle, config_char, VcxWrapperCommonCallback);
+    vcx_error_t ret = vcx_get_provision_token(handle, config_char, VcxWrapperCommonStringCallback);
     if( ret != 0 )
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
         dispatch_async(dispatch_get_main_queue(), ^{
             NSLog(@"ERROR: getProvisionToken: calling completion");
-            completion([NSError errorFromVcxError: ret]);
+            completion([NSError errorFromVcxError: ret], nil);
         });
     }
 
@@ -677,21 +677,21 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 - (void)connectionSendInviteAction:(VcxHandle)connectionHandle
                               data:(NSString *)data
-                    withCompletion:(void (^)(NSError *error))completion
+                    withCompletion:(void (^)(NSError *error, NSString *message))completion
 {
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     const char *data_ctype = [data cStringUsingEncoding:NSUTF8StringEncoding];
     vcx_error_t ret = vcx_connection_send_invite_action(handle,
                                                         connectionHandle,
                                                         data_ctype,
-                                                        VcxWrapperCommonCallback);
+                                                        VcxWrapperCommonStringCallback);
     if( ret != 0 )
     {
-        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
-        });
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], nil);
+       });
     }
 }
 

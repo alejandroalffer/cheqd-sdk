@@ -12,7 +12,6 @@ use messages::issuance::credential_request::set_cred_req_ref_message;
 use v3::messages::a2a::A2AMessage as AriesA2AMessage;
 use v3::utils::encryption_envelope::EncryptionEnvelope;
 use messages::issuance::credential_offer::CredentialOffer;
-use messages::issuance::credential::CredentialMessage;
 use std::convert::TryInto;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -444,9 +443,8 @@ impl Message {
                 cred_offer.msg_ref_id = Some(self.uid.clone());
                 (PayloadKinds::CredOffer, json!(vec![cred_offer]).to_string())
             }
-            AriesA2AMessage::Credential(credential) => {
-                let credential: CredentialMessage = credential.try_into()?;
-                (PayloadKinds::Cred, json!(&credential).to_string())
+            credential @ AriesA2AMessage::Credential(_) => {
+                (PayloadKinds::Other(String::from("credential")), json!(&credential).to_string())
             }
             presentation @ AriesA2AMessage::Presentation(_) => {
                 (PayloadKinds::Other(String::from(AriesA2AMessage::PRESENTATION)), json!(&presentation).to_string())
@@ -486,6 +484,11 @@ impl Message {
             }
             invite @ AriesA2AMessage::InviteForAction(_) => {
                 (PayloadKinds::Other(String::from("invite-action")), json!(&invite).to_string())
+            }
+            reject @ AriesA2AMessage::InviteForActionReject(_) |
+            reject @ AriesA2AMessage::CredentialReject(_) |
+            reject @ AriesA2AMessage::PresentationReject(_) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::PROBLEM_REPORT)), json!(&reject).to_string())
             }
             msg => {
                 let msg = json!(&msg).to_string();

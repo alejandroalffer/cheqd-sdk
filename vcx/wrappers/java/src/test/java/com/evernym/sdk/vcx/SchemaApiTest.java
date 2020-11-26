@@ -1,6 +1,5 @@
 package com.evernym.sdk.vcx;
 
-import com.evernym.sdk.vcx.schema.InvalidSchemahandleException;
 import com.evernym.sdk.vcx.schema.SchemaApi;
 import com.evernym.sdk.vcx.schema.SchemaPrepareForEndorserResult;
 import com.evernym.sdk.vcx.vcx.VcxApi;
@@ -46,7 +45,7 @@ public class SchemaApiTest {
     @Test
     @DisplayName("serialise a bad schema throws InvalidSchemahandleException")
     void serialiseBadSchema() {
-        Assertions.assertThrows(InvalidSchemahandleException.class, () -> {
+        Assertions.assertThrows(ExecutionException.class, () -> {
             TestHelper.getResultFromFuture(SchemaApi.schemaSerialize(242));
 
         });
@@ -72,7 +71,7 @@ public class SchemaApiTest {
     @Test
     @DisplayName("get id from bad schema throws InvalidSchemaHandleException")
     void getIdWithError() {
-        Assertions.assertThrows(InvalidSchemahandleException.class, () -> {
+        Assertions.assertThrows(ExecutionException.class, () -> {
             TestHelper.getResultFromFuture(SchemaApi.schemaGetSchemaId(234));
 
         });

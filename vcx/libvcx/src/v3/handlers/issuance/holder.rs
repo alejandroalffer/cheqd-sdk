@@ -443,12 +443,32 @@ mod test {
         }
 
         #[test]
+        fn test_issuer_handle_credential_request_sent_message_from_offer_with_thread_received_state() -> Result<(), String> {
+            let _setup = SetupAriesMocks::init();
+
+            let thread_id = "71fa23b0-427e-4064-bf24-b375b1a2c64b";
+            let credential_offer = _credential_offer().set_thread_id(thread_id);
+
+            let mut holder_sm = HolderSM::new(credential_offer, source_id());
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
+
+            match holder_sm.state {
+                HolderState::RequestSent(state) => {
+                    assert_eq!(thread_id, state.thread.thid.unwrap());
+                    assert_eq!(0, state.thread.sender_order);
+                    Ok(())
+                }
+                other => Err(format!("State expected to be RequestSent, but: {:?}", other))
+            }
+        }
+
+        #[test]
         fn test_issuer_handle_credential_request_sent_message_from_offer_received_state_for_invalid_offer() {
             let _setup = SetupAriesMocks::init();
 
             let credential_offer = CredentialOffer::create().set_offers_attach(r#"{"credential offer": {}}"#).unwrap();
 
-            let mut holder_sm = HolderSM::new(credential_offer, "test source".to_string());
+            let holder_sm = HolderSM::new(credential_offer, "test source".to_string());
             holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap_err();
         }
 

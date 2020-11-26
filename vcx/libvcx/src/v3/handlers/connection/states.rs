@@ -22,7 +22,7 @@ use v3::messages::questionanswer::answer::Answer;
 use v3::messages::committedanswer::question::Question as CommittedQuestion;
 use v3::messages::committedanswer::answer::Answer as CommittedAnswer;
 use v3::handlers::connection::types::{CompletedConnection, OutofbandMeta, Invitations};
-use v3::messages::invite_action::invite::{Invite as InviteForAction, InviteActionData};
+use v3::messages::invite_action::invite::{Invite as InviteForAction};
 
 use std::collections::HashMap;
 
@@ -645,9 +645,16 @@ impl CompleteState {
         trace!("CompleteState:handle_send_answer >>> Question: {:?}, response: {:?}, agent_info: {:?}", secret!(question), secret!(response), secret!(agent_info));
         debug!("sending answer message for connection");
 
-        let thread = Thread::new()
-            .set_thid(question.id.to_string())
-            .update_received_order(&self.did_doc.id);
+        let thread = match question.thread.as_ref() {
+            Some(thread_) =>
+                thread_
+                    .clone()
+                    .update_received_order(&self.did_doc.id),
+            None =>
+                Thread::new()
+                    .set_thid(question.id.to_string())
+                    .update_received_order(&self.did_doc.id)
+        };
 
         let mut answer = Answer::create()
             .set_response(response.text)
@@ -719,15 +726,10 @@ impl CompleteState {
         Ok(())
     }
 
-    fn handle_send_invite_action(&self, data: InviteActionData, agent_info: &AgentInfo) -> VcxResult<()> {
-        trace!("CompleteState:handle_send_invite_action >>> data: {:?}, agent_info: {:?}",
-               secret!(data), secret!(agent_info));
+    fn handle_send_invite_action(&self, invite: A2AMessage, agent_info: &AgentInfo) -> VcxResult<()> {
+        trace!("CompleteState:handle_send_invite_action >>> invite: {:?}, agent_info: {:?}",
+               secret!(invite), secret!(agent_info));
         debug!("sending invite to take action for connection");
-
-        let invite = InviteForAction::create()
-            .set_goal_code(data.goal_code)
-            .set_ack_on(data.ack_on)
-            .to_a2a_message();
 
         agent_info.send_message(&invite, &self.did_doc).ok();
 
@@ -1452,7 +1454,7 @@ pub mod test {
             fn test_did_exchange_handle_invalid_exchange_request_message_from_invited_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
+                let did_exchange_sm = inviter_sm().to_inviter_invited_state();
 
                 let mut request = _request();
                 request.connection.did_doc = DidDoc::default();
@@ -2013,7 +2015,7 @@ pub mod test {
             fn test_did_exchange_handle_invalid_response_message_from_requested_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = invitee_sm().to_invitee_requested_state();
+                let did_exchange_sm = invitee_sm().to_invitee_requested_state();
 
                 let mut signed_response = _signed_response();
                 signed_response.connection_sig.signature = String::from("other");

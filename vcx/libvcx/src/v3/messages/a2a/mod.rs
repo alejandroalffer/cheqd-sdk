@@ -43,7 +43,7 @@ use v3::messages::committedanswer::answer::Answer as CommitedAnswer;
 
 use v3::messages::invite_action::invite::Invite as InviteForAction;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum A2AMessage {
     /// routing
     Forward(Forward),
@@ -100,6 +100,7 @@ pub enum A2AMessage {
     // invite-action
     InviteForAction(InviteForAction),
     InviteForActionAck(Ack),
+    InviteForActionReject(CommonProblemReport),
 
     /// Any Raw Message
     Generic(Value),
@@ -277,6 +278,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::InviteForActionAck(msg))
                     .map_err(de::Error::custom)
             }
+            (MessageFamilies::InviteAction, A2AMessage::PROBLEM_REPORT) => {
+                CommonProblemReport::deserialize(value)
+                    .map(|msg| A2AMessage::InviteForActionReject(msg))
+                    .map_err(de::Error::custom)
+            }
             (_, _) => {
                 warn!("Unexpected @type field: {}", value["@type"]);
                 Ok(A2AMessage::Generic(value))
@@ -336,6 +342,7 @@ impl Serialize for A2AMessage {
             A2AMessage::CommittedAnswer(msg) => set_a2a_message_type_with_did(msg, MessageFamilies::Committedanswer, A2AMessage::ANSWER),
             A2AMessage::InviteForAction(msg) => set_a2a_message_type_with_endpoint(msg, MessageFamilies::InviteAction, A2AMessage::INVITE_FOR_ACTION),
             A2AMessage::InviteForActionAck(msg) => set_a2a_message_type_with_endpoint(msg, MessageFamilies::InviteAction, A2AMessage::ACK),
+            A2AMessage::InviteForActionReject(msg) => set_a2a_message_type_with_endpoint(msg, MessageFamilies::InviteAction, A2AMessage::PROBLEM_REPORT),
             A2AMessage::Generic(msg) => Ok(msg.clone())
         }.map_err(ser::Error::custom)?;
 

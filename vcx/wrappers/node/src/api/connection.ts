@@ -552,7 +552,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_connection_update_state_with_message(commandHandle, this.handle, message, cb)
           if (rc) {
-            resolve(StateType.None)
+            reject(rc)
           }
         },
         (resolve, reject) => ffi.Callback(
@@ -966,12 +966,12 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    *
    * Example:
    * ```
-   * await connection.sendInviteAction({goalCode: 'automotive.inspect.tire'})
+   * invite = await connection.sendInviteAction({goalCode: 'automotive.inspect.tire'})
    * ```
    */
-  public async sendInviteAction (data: IConnectionInviteActionData): Promise<void> {
+  public async sendInviteAction (data: IConnectionInviteActionData): Promise<string> {
     try {
-      return await createFFICallbackPromise<void>(
+      return await createFFICallbackPromise<string>(
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_connection_send_invite_action(0, this.handle, JSON.stringify(data), cb)
           if (rc) {
@@ -980,13 +980,17 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
         },
         (resolve, reject) => ffi.Callback(
           'void',
-          ['uint32','uint32'],
-          (xhandle: number, err: number) => {
+          ['uint32', 'uint32', 'string'],
+          (xHandle: number, err: number, message: string) => {
             if (err) {
               reject(err)
               return
             }
-            resolve()
+            if (!message) {
+              reject(`Connection ${this.sourceId} returned empty string`)
+              return
+            }
+            resolve(message)
           })
       )
     } catch (err) {

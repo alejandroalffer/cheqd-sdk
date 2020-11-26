@@ -143,12 +143,9 @@ async def test_serialize_deserialize_and_then_serialize():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_connection_release():
-    with pytest.raises(VcxError) as e:
-        connection = await Connection.create(source_id)
-        assert connection.handle > 0
-        connection.release()
-        await connection.serialize()
-    assert ErrorCode.InvalidConnectionHandle == e.value.error_code
+    connection = await Connection.create(source_id)
+    assert connection.handle > 0
+    connection.release()
 
 
 @pytest.mark.asyncio
