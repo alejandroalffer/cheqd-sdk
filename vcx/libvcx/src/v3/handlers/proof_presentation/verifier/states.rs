@@ -60,7 +60,8 @@ impl VerifierSM {
 // Possible Transitions:
 //
 // Initial -> PresentationRequestSent
-// SendPresentationRequest -> Finished
+// PresentationRequestSent -> PresentationProposalReceived, Finished
+// PresentationProposalReceived -> PresentationRequestSent
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum VerifierState {
     Initiated(InitialState),
@@ -306,19 +307,6 @@ impl VerifierSM {
                             .update_received_order(&state.connection.data.did_doc.id);
 
                         VerifierState::PresentationProposalReceived((state, presentation_proposal, thread).into())
-                        // println!("PresentationProposalReceived: {:?}", presentation_proposal);
-                        // let thread = state.thread.clone()
-                        //     .increment_sender_order()
-                        //     .update_received_order(&state.connection.data.did_doc.id);
-                        //
-                        // let problem_report =
-                        //     ProblemReport::create()
-                        //         .set_description(ProblemReportCodes::Unimplemented)
-                        //         .set_comment(String::from("presentation-proposal message is not supported"))
-                        //         .set_thread(thread.clone());
-                        //
-                        // state.connection.data.send_message(&problem_report.to_a2a_message(), &state.connection.agent)?;
-                        // VerifierState::Finished((state, problem_report, thread).into())
                     }
                     _ => {
                         VerifierState::PresentationRequestSent(state)
