@@ -1032,6 +1032,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 - (void)generateProof:(NSString *)proofRequestId
        requestedAttrs:(NSString *)requestedAttrs
   requestedPredicates:(NSString *)requestedPredicates
+   revocationInterval:(NSString *)revocationInterval
             proofName:(NSString *)proofName
            completion:(void (^)(NSError *error, NSString *proofHandle))completion;
 {
@@ -1041,10 +1042,53 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     const char *proofRequestId_char = [proofRequestId cStringUsingEncoding:NSUTF8StringEncoding];
     const char *requestedAttrs_char = [requestedAttrs cStringUsingEncoding:NSUTF8StringEncoding];
     const char *requestedPredicates_char = [requestedPredicates cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *revocationInterval_char = [proofName cStringUsingEncoding:NSUTF8StringEncoding];
     const char *proofName_char = [proofName cStringUsingEncoding:NSUTF8StringEncoding];
-    ret = vcx_proof_create(handle, proofRequestId_char, requestedAttrs_char, requestedPredicates_char, proofName_char, VcxWrapperCommonStringCallback);
+    ret = vcx_proof_create(handle, proofRequestId_char, requestedAttrs_char, requestedPredicates_char, revocationInterval_char, proofName_char, VcxWrapperCommonStringCallback);
 
     if ( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], nil);
+       });
+    }
+}
+
+- (void) requestProof:(vcx_proof_handle_t)proof_handle
+ withConnectionHandle:(vcx_connection_handle_t)connection_handle
+       requestedAttrs:(NSString *)requestedAttrs
+  requestedPredicates:(NSString *)requestedPredicates
+            proofName:(NSString *)proofName
+   revocationInterval:(NSString *)revocationInterval
+       withCompletion:(void (^)(NSError *error))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char *requestedAttrs_char = [requestedAttrs cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *requestedPredicates_char = [requestedPredicates cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *revocationInterval_char = [proofName cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *proofName_char = [proofName cStringUsingEncoding:NSUTF8StringEncoding];
+
+    ret = vcx_proof_request_proof(handle, proof_handle, connection_handle, requestedAttrs_char, requestedPredicates_char, revocationInterval_char, proofName_char, VcxWrapperCommonCallback);
+
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
+- (void)proofGetPresentationProposal:(vcx_proof_handle_t)proof_handle
+                          completion:(void (^)(NSError *error, NSString *presentationProposal))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_get_proof_proposal(handle, proof_handle, VcxWrapperCommonStringCallback);
+
+    if( ret != 0 )
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
@@ -1310,6 +1354,24 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (void) proofSendProposal:(vcx_proof_handle_t)proof_handle
+      withConnectionHandle:(vcx_connection_handle_t)connection_handle
+            withCompletion:(void (^)(NSError *error))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_disclosed_proof_send_proposal(handle, proof_handle, connection_handle, VcxWrapperCommonCallback);
+
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
 - (void)proofGetState:(NSInteger)proofHandle
                 completion:(void (^)(NSError *error, NSInteger state))completion {
     vcx_error_t ret;
@@ -1434,6 +1496,27 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     const char *sourceId = [source_id cStringUsingEncoding:NSUTF8StringEncoding];
     const char *proof_request = [proofRequest cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_disclosed_proof_create_with_request(handle, sourceId, proof_request, VcxWrapperCommonNumberCallback);
+
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0);
+        });
+    }
+}
+
+- (void) proofCreateProposal:(NSString *) source_id
+           withProofProposal:(NSString *) proofProposal
+                 withComment:(NSString *) comment
+              withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char *sourceId = [source_id cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *proof_proposal = [proofProposal cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *comment_char = [comment cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_disclosed_proof_create_proposal(handle, sourceId, proof_proposal, comment_char, VcxWrapperCommonNumberCallback);
 
     if ( ret != 0 )
     {
