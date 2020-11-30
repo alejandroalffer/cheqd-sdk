@@ -180,6 +180,84 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
+    private static Callback vcxProofRequestPresentationCB = new Callback() {
+        public void callback(int commandHandle, int err){
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
+            if(!checkCallback(future,err)) return;
+            future.complete(null);
+        }
+    };
+
+    /**
+     * Sends a new Proof Request message to pairwise connection.
+     * Used after receiving a proposal, to negotiate.
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     * @param  connectionHandle     handle pointing to a Connection object to use for sending message.
+     * @param  requestedAttrs       Describes the list of requested attribute
+     *     [{
+     *         "name": Optional(string), // attribute name, (case insensitive and ignore spaces)
+     *         "names": Optional([string, string]), // attribute names, (case insensitive and ignore spaces)
+     *                                              // NOTE: should either be "name" or "names", not both and not none of them.
+     *                                              // Use "names" to specify several attributes that have to match a single credential.
+     *         "restrictions":  Optional(wql query) - set of restrictions applying to requested credentials. (see below)
+     *         "non_revoked": {
+     *             "from": Optional(u64) Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *             "to": Optional(u64)
+     *                 //Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *         }
+     *     }]
+     * @param  requestedPredicates  predicate specifications prover must provide claim for.
+     *     <pre>
+     *     {@code
+     *     [
+     *        { // set of requested predicates
+     *           "name": attribute name, (case insensitive and ignore spaces)
+     *           "p_type": predicate type (Currently ">=" only)
+     *           "p_value": int predicate value
+     *           "restrictions":  Optional(wql query) -  set of restrictions applying to requested credentials. (see below)
+     *           "non_revoked": Optional({
+     *               "from": Optional(u64) Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *               "to": Optional(u64) Requested time represented as a total number of seconds from Unix Epoch, Optional
+     *           })
+     *       }
+     *    ]
+     *    }
+     *    </pre>
+     *
+     * @param  revocationInterval  Optional timestamps to request revocation proof
+     * @param  name                label for proof request.
+     *
+     * @return                     void
+     *
+     * @throws VcxException        If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Void> proofRequestPresentation(
+            int proofHandle,
+            int connectionHandle,
+            String requestedAttrs,
+            String requestedPredicates,
+            String revocationInterval,
+            String name
+    ) throws VcxException {
+        ParamGuard.notNull(requestedAttrs, "requestedAttrs");
+        ParamGuard.notNull(requestedPredicates, "requestedPredicates");
+        ParamGuard.notNull(revocationInterval, "revocationInterval");
+        ParamGuard.notNull(name, "name");
+
+        logger.debug("proofCreate() called with: proofHandle = [" + proofHandle + "], connectionHandle = [" + connectionHandle + "], requestedAttrs = [****], requestedPredicates = [****], revocationInterval = [****], name = [****]");
+
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+        if (requestedPredicates.isEmpty()) requestedPredicates = "[]";
+
+        int result = LibVcx.api.vcx_proof_request_proof(commandHandle, proofHandle, connectionHandle, requestedAttrs, requestedPredicates, revocationInterval, name, vcxProofRequestPresentationCB);
+        checkResult(result);
+
+        return future;
+    }
+
     private static Callback vcxProofGetRequestMsgCB = new Callback() {
         public void callback(int commandHandle, int err, String msg){
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [****]");
@@ -272,6 +350,37 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
+    private static Callback vcxGetProofProposalCB = new Callback() {
+        public void callback(int commandHandle, int err, String msg){
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [****]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if(!checkCallback(future,err)) return;
+            Integer result = commandHandle;
+            future.complete(msg);
+        }
+    };
+
+    /**
+     * Get Proof proposal received.
+     *
+     * @param  proofHandle          handle pointing to a Proof object.
+     *
+     * @return                      Proof proposal as JSON string.
+     *
+     * @throws VcxException         If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<String> getProofProposal(
+            int proofHandle
+    ) throws VcxException {
+        logger.debug("getProofProposal() called with: proofHandle = [" + proofHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_get_proof_proposal(commandHandle, proofHandle, vcxGetProofProposalCB);
+        checkResult(result);
+
+        return future;
+    }
 
     // vcx_proof_accepted
     public static CompletableFuture<Integer> proofAccepted(

@@ -54,6 +54,11 @@ impl PresentationRequest {
         self
     }
 
+    pub fn set_thread(mut self, thread: Thread) -> Self {
+        self.thread = Some(thread);
+        self
+    }
+
     pub fn to_json(&self) -> VcxResult<String> {
         serde_json::to_string(self)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize PresentationRequest: {}", err)))

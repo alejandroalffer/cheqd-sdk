@@ -2,6 +2,7 @@ use v3::messages::proof_presentation::presentation_proposal::PresentationProposa
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::error::ProblemReport;
 use v3::messages::a2a::A2AMessage;
+use v3::messages::proof_presentation::presentation_request::PresentationRequestData;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum VerifierMessages {
@@ -9,6 +10,7 @@ pub enum VerifierMessages {
     PresentationReceived(Presentation),
     PresentationProposalReceived(PresentationProposal),
     PresentationRejectReceived(ProblemReport),
+    RequestPresentation(u32, PresentationRequestData),
     Unknown
 }
 

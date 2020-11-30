@@ -159,6 +159,16 @@ public class ProofApiTest {
     }
 
     @Test
+    @DisplayName("get proof proposal")
+    void getProofProposal() throws VcxException, ExecutionException, InterruptedException {
+        String presentationProposal = "{\"@type\": \"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation\", \"@id\": \"<uuid-presentation>\", \"comment\": \"somecomment\", \"presentation_proposal\": {\"@type\": \"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview\", \"attributes\":[{\"name\": \"account\", \"cred_def_id\": \"BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag\", \"value\": \"12345678\",\"referent\": \"0\"}, {\"name\": \"streetAddress\", \"cred_def_id\": \"BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag\",\"value\": \"123MainStreet\", \"referent\": \"0\"}], \"predicates\": []}}";
+        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreateWithProposal(sourceId, presentationProposal, name));
+        assert (proofHandle != 0);
+        String result = TestHelper.getResultFromFuture(ProofApi.getProofProposal(proofHandle));
+        assert(result.length() > 0);
+    }
+
+    @Test
     @DisplayName("request proof to invalid connection handle")
     void requestProofToInvalidConnection() {
         Assertions.assertThrows(ExecutionException.class, () -> {
@@ -166,8 +176,24 @@ public class ProofApiTest {
             assert (proofHandle != 0);
             TestHelper.getResultFromFuture(ProofApi.proofSendRequest(proofHandle,0));
         });
+    }
 
+    @Test
+    @DisplayName("request proof presentation")
+    void requestProofPresentation() throws VcxException, ExecutionException, InterruptedException {
+        int connectionHandle = TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionCreate(sourceId));
+        String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
+        TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connectionHandle,TestHelper.convertToValidJson(payload)));
 
+        String presentationProposal = "{\"@type\": \"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation\", \"@id\": \"<uuid-presentation>\", \"comment\": \"somecomment\", \"presentation_proposal\": {\"@type\": \"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview\", \"attributes\":[{\"name\": \"account\", \"cred_def_id\": \"BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag\", \"value\": \"12345678\",\"referent\": \"0\"}, {\"name\": \"streetAddress\", \"cred_def_id\": \"BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag\",\"value\": \"123MainStreet\", \"referent\": \"0\"}], \"predicates\": []}}";
+
+        // not supported with proprietary connections.
+        Exception e = Assertions.assertThrows(ExecutionException.class, () -> {
+            int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreateWithProposal(sourceId, presentationProposal, name));
+            assert (proofHandle != 0);
+            TestHelper.getResultFromFuture(ProofApi.proofRequestPresentation(proofHandle, connectionHandle, TestHelper.convertToValidJson(attr), "", "{}", name));
+        });
+        assert (e.getCause().getClass() == ActionNotSupportedException.class);
     }
 
 //    @Test

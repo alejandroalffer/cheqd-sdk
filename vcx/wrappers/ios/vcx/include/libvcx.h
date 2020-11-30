@@ -281,13 +281,19 @@ vcx_error_t vcx_issuer_accept_credential(vcx_credential_handle_t credential_hand
  */
 
 /** Creates a proof object.  Populates a handle to the new proof. */
-vcx_error_t vcx_proof_create(vcx_command_handle_t command_handle, const char *source_id, const char *requested_attrs, const char *requested_predicates, const char *name, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
+vcx_error_t vcx_proof_create(vcx_command_handle_t command_handle, const char *source_id, const char *requested_attrs, const char *requested_predicates, const char *revocation_interval, const char *name, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
 
 /** Asynchronously send a proof request to the connection. */
 vcx_error_t vcx_proof_send_request(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
+/** Asynchronously send a new proof request to the connection. */
+vcx_error_t vcx_proof_request_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, const char *requested_attrs, const char *requested_predicates, const char *revocation_interval, const char *name, void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 /** Populate response_data with the latest proof offer received. */
 vcx_error_t vcx_get_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_proof_state_t state, const char *proof_string));
+
+/** Returns a proof proposal received */
+vcx_error_t vcx_get_proof_proposal(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 /** Set proof offer as accepted. */
 vcx_error_t vcx_proof_accepted(vcx_proof_handle_t proof_handle);
@@ -322,8 +328,14 @@ vcx_error_t vcx_disclosed_proof_create_with_request(vcx_command_handle_t command
 /** Creates a disclosed_proof object from a msgid.  Populates a handle to the new disclosed_proof. */
 vcx_error_t vcx_disclosed_proof_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connectionHandle, const char *msg_id, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle, const char *proof_request));
 
+/** Creates a disclosed_proof object from a proposal. Populates a handle to the new disclosed_proof. */
+vcx_error_t vcx_disclosed_proof_create_proposal(vcx_command_handle_t command_handle, const char *source_id, const char *proposal, const char *comment, void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_proof_handle_t));
+
 /** Asynchronously send a proof to the connection. */
 vcx_error_t vcx_disclosed_proof_send_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+
+/** Asynchronously send a proposal to the connection. */
+vcx_error_t vcx_disclosed_proof_send_proposal(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 /** Asynchronously send reject of a proof to the connection. */
 vcx_error_t vcx_disclosed_proof_reject_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));

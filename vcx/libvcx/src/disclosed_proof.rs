@@ -39,6 +39,7 @@ use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
 use messages::proofs::proof_request::parse_proof_req_message;
 use messages::payload::PayloadKinds;
+use v3::messages::proof_presentation::presentation_proposal::PresentationProposal;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<DisclosedProofs>  = Default::default();
@@ -707,6 +708,28 @@ pub fn create_proof_with_msgid(source_id: &str, connection_handle: u32, msg_id: 
     Ok((handle, proof_request))
 }
 
+pub fn create_proposal(source_id: &str, proposal: String, comment: String) -> VcxResult<u32> {
+    trace!("create_proposal >>> source_id: {}, proposal: {}, comment: {}",
+           source_id, secret!(proposal), comment);
+    debug!("creating disclosed proof proposal with id: {}", source_id);
+
+    let preview = serde_json::from_str(&proposal)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProofProposal, format!("Cannot parse proposal from JSON string. Err: {}", err)))?;
+
+    let proposal = PresentationProposal::create()
+        .set_presentation_preview(preview)
+        .set_comment(comment);
+
+    let proof = DisclosedProofs::V3(Prover::create_proposal(source_id, proposal)?);
+
+    let handle = HANDLE_MAP.add(proof)?;
+
+    debug!("inserting disclosed proof {} into handle map", source_id);
+    trace!("create_proposal <<<");
+
+    Ok(handle)
+}
+
 pub fn get_state(handle: u32) -> VcxResult<u32> {
     HANDLE_MAP.get(handle, |obj| {
         match obj {
@@ -808,6 +831,25 @@ pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     }).map_err(handle_err)
 }
 
+pub fn send_proposal(handle: u32, connection_handle: u32) -> VcxResult<u32> {
+    HANDLE_MAP.get_mut(handle, |proof| {
+        let new_proof = match proof {
+            DisclosedProofs::Pending(ref mut _obj) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+            DisclosedProofs::V1(ref mut _obj) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.send_proposal(connection_handle)?;
+                Ok(DisclosedProofs::V3(obj.clone()))
+            }
+        }?;
+        *proof = new_proof;
+        Ok(error::SUCCESS.code_num)
+    }).map_err(handle_err)
+}
+
 pub fn generate_reject_proof_msg(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
@@ -890,7 +932,7 @@ pub fn decline_presentation_request(handle: u32, connection_handle: u32, reason:
                                                   format!("Disclosed Proof object {} in state {} not ready to get Proof Request message", obj.source_id, obj.state as u32)))?;
 
                     let mut prover = Prover::create(&obj.get_source_id(), proof_request.try_into()?)?;
-                    prover.decline_presentation_request(connection_handle, Some(String::from("Presentation Request was rejected")), None)?;
+                    prover.decline_presentation_request(connection_handle, reason.clone(), proposal.clone())?;
                     DisclosedProofs::V3(prover)
                 } else { // else --> Convert DisclosedProofs object to Proprietary proof object
                     obj.reject_proof(connection_handle)?;
@@ -1106,6 +1148,21 @@ mod tests {
 
         reject_proof(handle, connection_h).unwrap();
         assert_eq!(VcxStateType::VcxStateRejected as u32, get_state(handle).unwrap());
+    }
+
+    #[test]
+    fn test_create_proposal() {
+        let _setup = SetupMocks::init();
+        let proposal = r#"{"attributes":[{"name":"FirstName"}],"predicates":[]}"#;
+
+        assert!(create_proposal("1", proposal.to_string(), "comment".to_string()).unwrap() > 0);
+    }
+
+    #[test]
+    fn test_create_proposal_fails() {
+        let _setup = SetupMocks::init();
+
+        assert_eq!(create_proposal("1", "{}".to_string(), "comment".to_string()).unwrap_err().kind(), VcxErrorKind::InvalidProofProposal);
     }
 
     #[test]

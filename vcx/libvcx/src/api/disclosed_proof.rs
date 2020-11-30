@@ -169,6 +169,102 @@ pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: CommandHandl
     error::SUCCESS.code_num
 }
 
+/// Create a Proof object for fulfilling a corresponding proof proposal
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Institution's identification for the proof, should be unique.
+///
+/// proposal: the proposed format of presentation request
+/// (see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#presentation-preview for details)
+/// {
+///    "attributes": [
+///        {
+///            "name": "<attribute_name>",
+///            "cred_def_id": Optional("<cred_def_id>"),
+///            "mime-type": Optional("<type>"),
+///            "value": Optional("<value>")
+///        },
+///        // more attributes
+///    ],
+///    "predicates": [
+///        {
+///            "name": "<attribute_name>",
+///            "cred_def_id": Optional("<cred_def_id>"),
+///            "predicate": "<predicate>", - one of "<", "<=", ">=", ">"
+///            "threshold": <threshold>
+///        },
+///        // more predicates
+///    ]
+/// }
+///   An attribute specification must specify a value, a cred_def_id, or both:
+///     if value is present and cred_def_id is absent, the preview proposes a self-attested attribute;
+///     if value and cred_def_id are both present, the preview proposes a verifiable claim to reveal in the presentation;
+///     if value is absent and cred_def_id is present, the preview proposes a verifiable claim not to reveal in the presentation.
+///
+/// # Example
+///  proposal ->
+///     {
+///          "attributes": [
+///              {
+///                  "name": "first name"
+///              }
+///          ],
+///          "predicates": [
+///              {
+///                  "name": "age",
+///                  "predicate": ">",
+///                  "threshold": 18
+///              }
+///          ]
+///      }
+///
+/// comment: Comment sent with proposal.
+///
+/// cb: Callback that provides proof handle or error status
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+#[allow(unused_variables, unused_mut)]
+pub extern fn vcx_disclosed_proof_create_proposal(command_handle: CommandHandle,
+                                                  source_id: *const c_char,
+                                                  proposal: *const c_char,
+                                                  comment: *const c_char,
+                                                  cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_handle: u32)>) -> u32 {
+
+    info!("vcx_disclosed_proof_create_proposal >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(proposal, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(comment, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_disclosed_proof_create_proposal(command_handle: {}, source_id: {}, proposal: {}, comment: {})",
+          command_handle, source_id, secret!(proposal), secret!(comment));
+
+    spawn(move || {
+        let (rc, handle) = match disclosed_proof::create_proposal(&source_id, proposal, comment) {
+            Ok(x) => {
+                trace!("vcx_disclosed_proof_create_proposal_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, x, disclosed_proof::get_source_id(x).unwrap_or_default());
+                (error::SUCCESS.code_num, x)
+            }
+            Err(x) => {
+                warn!("vcx_disclosed_proof_create_proposal_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, x, 0, x);
+                (x.into(), 0)
+            }
+        };
+        cb(command_handle, rc, handle);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Send a proof to the connection, called after having received a proof request
 ///
 /// #params
@@ -203,6 +299,51 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: CommandHandle,
             }
             Err(x) => {
                 error!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {})",
+                       command_handle, x);
+                cb(command_handle, x.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Send a proof proposal to the connection, called after prepared a proof proposal
+///
+/// #params
+/// command_handle: command handle to map callback to API user context.
+///
+/// proof_handle: proof handle that was provided duration creation.  Used to identify proof object.
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// cb: Callback that provides error status of proof send request
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_send_proposal(command_handle: CommandHandle,
+                                                proof_handle: u32,
+                                                connection_handle: u32,
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
+    info!("vcx_disclosed_proof_send_proposal >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_disclosed_proof_send_proof(command_handle: {}, proof_handle: {}, connection_handle: {})",
+           command_handle, proof_handle, connection_handle);
+
+    spawn(move || {
+        match disclosed_proof::send_proposal(proof_handle, connection_handle) {
+            Ok(_) => {
+                trace!("vcx_disclosed_proof_send_proposal_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(x) => {
+                error!("vcx_disclosed_proof_send_proposal_cb(command_handle: {}, rc: {})",
                        command_handle, x);
                 cb(command_handle, x.into());
             }

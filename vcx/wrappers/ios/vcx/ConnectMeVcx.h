@@ -274,9 +274,24 @@ withSelectedCredentials:(NSString *)selectedCredentials
                     withMsgId:(NSString *)msgId
                withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle, NSString *proofRequest))completion;
 
+- (void) requestProof:(vcx_proof_handle_t)proof_handle
+ withConnectionHandle:(vcx_connection_handle_t)connection_handle
+       requestedAttrs:(NSString *)requestedAttrs
+  requestedPredicates:(NSString *)requestedPredicates
+            proofName:(NSString *)proofName
+   revocationInterval:(NSString *)revocationInterval
+       withCompletion:(void (^)(NSError *error))completion;
+
+- (void)proofGetPresentationProposal:(vcx_proof_handle_t)proof_handle
+                          completion:(void (^)(NSError *error, NSString *presentationProposal))completion;
+
 - (void) proofSend:(vcx_proof_handle_t)proof_handle
 withConnectionHandle:(vcx_connection_handle_t)connection_handle
     withCompletion:(void (^)(NSError *error))completion;
+
+- (void) proofSendProposal:(vcx_proof_handle_t)proof_handle
+      withConnectionHandle:(vcx_connection_handle_t)connection_handle
+            withCompletion:(void (^)(NSError *error))completion;
 
 - (void)proofGetState:(NSInteger)proofHandle
            completion:(void (^)(NSError *error, NSInteger state))completion;
@@ -304,6 +319,11 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 - (void) proofCreateWithRequest:(NSString *) source_id
                withProofRequest:(NSString *) proofRequest
                  withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle))completion;
+
+- (void) proofCreateProposal:(NSString *) source_id
+           withProofProposal:(NSString *) proofProposal
+                 withComment:(NSString *) comment
+              withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle))completion;
 
 - (void) proofSerialize:(vcx_proof_handle_t) proofHandle
          withCompletion:(void (^)(NSError *error, NSString *proof_request))completion;

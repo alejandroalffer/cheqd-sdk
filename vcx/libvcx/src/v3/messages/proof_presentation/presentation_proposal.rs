@@ -74,6 +74,11 @@ impl PresentationProposal {
         self
     }
 
+    pub fn set_thread(mut self, thread: Thread) -> Self {
+        self.thread = Some(thread);
+        self
+    }
+
     pub fn to_proof_request_requested_attributes(&self) -> Vec<AttrInfo> {
         self.presentation_proposal.attributes
             .iter()

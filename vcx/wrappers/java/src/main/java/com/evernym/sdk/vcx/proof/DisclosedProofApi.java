@@ -300,6 +300,40 @@ public class DisclosedProofApi extends VcxJava.API {
         return future;
     }
 
+    private static Callback vcxProofSendProposalCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(null);
+        }
+    };
+
+    /**
+     * Send a Proof proposal to the connection, called after creating proposal
+     *
+     * @param  proofHandle              handle pointing to a DisclosedProof object.
+     * @param  connectionHandle         handle pointing to a Connection object to use for sending message.
+     *
+     * @return                          void
+     *
+     * @throws VcxException             If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Void> proofSendProposal(
+            int proofHandle,
+            int connectionHandle
+    ) throws VcxException {
+        logger.debug("proofSendProposal() called with: proofHandle = [" + proofHandle + "], connectionHandle = [" + connectionHandle + "]");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_disclosed_proof_send_proposal(commandHandle, proofHandle, connectionHandle, vcxProofSendProposalCB);
+        checkResult(result);
+
+        return future;
+    }
+
     private static Callback vcxProofRejectCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {
@@ -445,6 +479,45 @@ public class DisclosedProofApi extends VcxJava.API {
         return future;
     }
 
+    private static Callback vcxProofCreateProposalCB = new Callback() {
+        public void callback(int command_handle, int err, int proofHandle) {
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], proofHandle = [" + proofHandle + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(command_handle);
+            if(!checkCallback(future, err)) return;
+            // resolving with no error
+            Integer result = proofHandle;
+            future.complete(result);
+        }
+    };
+
+    /**
+     * Create a DisclosedProof object for fulfilling a corresponding proof request.
+     *
+     * @param  sourceId         Institution's personal identification for the proof, should be unique.
+     * @param  proofProposal    proof proposal
+     *                          (see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#presentation-preview for details)
+     *
+     * @return                  handle that should be used to perform actions with the DisclosedProof object.
+     *
+     * @throws VcxException     If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Integer> proofCreateProposal(
+            String sourceId,
+            String proofProposal,
+            String comment
+    ) throws VcxException {
+        ParamGuard.notNull(sourceId, "sourceId");
+        ParamGuard.notNull(proofProposal, "proofProposal");
+        ParamGuard.notNull(proofProposal, "comment");
+        logger.debug("proofCreateWithRequest() called with: sourceId = [" + sourceId + "], proofProposal = [****], comment = [****]");
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_disclosed_proof_create_proposal(commandHandle, sourceId, proofProposal, comment, vcxProofCreateProposalCB);
+        checkResult(result);
+
+        return future;
+    }
 
     private static Callback vcxProofSerializeCB = new Callback() {
         public void callback(int command_handle, int err, String serializedProof) {
