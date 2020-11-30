@@ -107,6 +107,7 @@ class ErrorCode(IntEnum):
     InvalidProvisionToken = 1107,
     InvalidDidDoc = 1108,
     MessageIsOutOfThread = 1109,
+    InvalidProofProposal = 1110,
 
 
 class VcxError(Exception):
