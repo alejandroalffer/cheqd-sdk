@@ -20,8 +20,8 @@ variables:
   libsovtokenVersionExtra: "15"
   indyBranch: 'master'
   indySimpleVersion: "1.15.0"
-  indyFullVersion: "1.15.0-1560"
-  indyFullDebVersion: "1.15.0~1560"
+  indyFullVersion: "1.15.0-1607"
+  indyFullDebVersion: "1.15.0~1607"
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
 
