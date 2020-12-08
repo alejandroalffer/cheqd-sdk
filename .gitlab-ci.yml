@@ -15,7 +15,7 @@ cache:
 
 variables:
   staticLibVersion: "20190607"
-  rustVersion: "1.40.0"
+  rustVersion: "1.45.0"
   libsovtokenVersion: "1.0.5"
   libsovtokenVersionExtra: "15"
   indyBranch: 'master'
