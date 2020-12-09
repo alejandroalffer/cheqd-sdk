@@ -310,23 +310,24 @@ impl InitializedState {
         let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
         let profile_url = settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).ok();
 
+        let public_did = match options.use_public_did {
+            Some(true) => settings::get_config_value(settings::CONFIG_INSTITUTION_DID).ok(),
+            _ => None
+        };
+
         let state = match self.outofband_meta.clone() {
             None => {
                 let invite: Invitation = Invitation::create()
                     .set_label(label)
                     .set_opt_profile_url(profile_url)
                     .set_service_endpoint(agent_info.agency_endpoint()?)
+                    .set_opt_public_did(public_did)
                     .set_recipient_keys(agent_info.recipient_keys())
                     .set_routing_keys(agent_info.routing_keys()?);
 
                 ActorDidExchangeState::Inviter(DidExchangeState::Invited((self, invite).into()))
             }
             Some(outofband_meta) => {
-
-                let public_did = match options.use_public_did {
-                    Some(true) => settings::get_config_value(settings::CONFIG_INSTITUTION_DID).ok(),
-                    _ => None
-                };
 
                 let invite: OutofbandInvitation = OutofbandInvitation::create()
                     .set_label(label)
