@@ -128,7 +128,7 @@ dockerbuild-vcx-libindy-centos:
   variables:
     DOCKERFILE_PATH: vcx/ci/libindy-centos.dockerfile
     DOCKER_IMAGE_NAME: vcx-libindy-centos
-    KANIKO_ARGS: "--build-arg LIBINDY_VER=${indyFullVersion} --build-arg LIBINDY_SIMPLE_VER=${indySimpleVersion} --build-arg LIBINDY_BRANCH=${indyBranch}"
+    KANIKO_ARGS: "--build-arg LIBINDY_VER=${indyFullVersion} --build-arg LIBINDY_SIMPLE_VER=${indySimpleVersion} --build-arg LIBINDY_BRANCH=${indyBranch} --build-arg RUST_VER=${rustVersion}"
   only:
     refs:
       - master
