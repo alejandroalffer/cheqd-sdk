@@ -13,6 +13,7 @@ use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 use v3::messages::questionanswer::question::{Question, QuestionResponse};
 use v3::messages::invite_action::invite::InviteActionData;
 use v3::messages::invite_action::invite::{Invite as InviteForAction};
+use connection::ConnectionOptions;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
@@ -130,11 +131,11 @@ impl Connection {
         return Ok(invitation)
     }
 
-    pub fn connect(&mut self) -> VcxResult<()> {
+    pub fn connect(&mut self, options: ConnectionOptions) -> VcxResult<()> {
         trace!("Connection::connect >>> source_id: {}", self.connection_sm.source_id());
         debug!("Connection {}: Starting connection establishing process", self.source_id());
 
-        self.step(DidExchangeMessages::Connect())
+        self.step(DidExchangeMessages::Connect(options))
     }
 
     pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<u32> {

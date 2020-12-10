@@ -718,7 +718,7 @@ mod tests {
                                             0,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
 
-        let handle = cb.receive(TimeoutUtils::some_medium()).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
 

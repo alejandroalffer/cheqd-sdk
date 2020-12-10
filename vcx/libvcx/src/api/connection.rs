@@ -1789,7 +1789,7 @@ mod tests {
         let handle = build_test_connection();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let rc = vcx_connection_connect(cb.command_handle, handle, CString::new("{}").unwrap().into_raw(), Some(cb.get_callback()));
+        vcx_connection_connect(cb.command_handle, handle, CString::new("{}").unwrap().into_raw(), Some(cb.get_callback()));
         let invite_details = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert!(invite_details.is_some());
     }

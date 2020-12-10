@@ -24,6 +24,8 @@ pub struct Invitation {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "profileUrl")]
     pub profile_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_did: Option<String>,
 }
 
 impl Invitation {
@@ -98,6 +100,11 @@ impl Invitation {
         self
     }
 
+    pub fn set_opt_public_did(mut self, public_did: Option<String>) -> Invitation {
+        self.public_did = public_did;
+        self
+    }
+
     pub fn validate(&self) -> VcxResult<()> {
         if self.service.is_empty() {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidRedirectDetail,
@@ -151,7 +158,8 @@ pub mod tests {
             handshake_protocols: vec![_handshake_protocol()],
             request_attach: attachment,
             service: vec![_service()],
-            profile_url: None
+            profile_url: None,
+            public_did: None
         }
     }
 
@@ -167,7 +175,8 @@ pub mod tests {
             handshake_protocols: vec![],
             request_attach: attachment,
             service: vec![_service()],
-            profile_url: None
+            profile_url: None,
+            public_did: None
         }
     }
 

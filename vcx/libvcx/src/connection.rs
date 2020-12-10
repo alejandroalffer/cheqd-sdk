@@ -44,7 +44,7 @@ enum Connections {
     V3(ConnectionV3),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConnectionOptions {
     #[serde(default)]
     pub connection_type: Option<String>,
@@ -1098,11 +1098,12 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
 }
 
 pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
+
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
             Connections::V1(ref mut connection) => {
-                debug!("establish connection {}", connection.source_id);
                 let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options.as_ref())?;
+                debug!("establish connection {}", connection.source_id);
                 if options_obj.update_agent_info.unwrap_or(true) {
                     connection.update_agent_profile(&options_obj)?;
                 }
@@ -1111,7 +1112,8 @@ pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
                 connection.connect(&options_obj)
             }
             Connections::V3(ref mut connection) => {
-                connection.connect()?;
+                let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options.as_ref())?;
+                connection.connect(options_obj)?;
                 Ok(error::SUCCESS.code_num)
             }
         }
@@ -1332,10 +1334,13 @@ impl Into<(Connection, ActorDidExchangeState)> for ConnectionV3 {
             pw_verkey: self.agent_info().pw_vk.clone(),
             state: VcxStateType::from_u32(self.state()),
             uuid: String::new(),
-            endpoint: String::new(),
+            endpoint: invitation.as_ref().map(|invitation_| invitation_.service_endpoint()).unwrap_or_default(),
             invite_detail: Some(InviteDetail{
                 sender_detail: SenderDetail {
-                    verkey: invitation.and_then(|invitation_| invitation_.recipient_key()).unwrap_or_default(),
+                    name: invitation.as_ref().and_then(|invitation_| invitation_.name()),
+                    verkey: invitation.as_ref().and_then(|invitation_| invitation_.recipient_key()).unwrap_or_default(),
+                    logo_url: invitation.as_ref().and_then(|invitation_| invitation_.logo_url()),
+                    public_did: invitation.as_ref().and_then(|invitation_| invitation_.public_did()),
                     ..SenderDetail::default()
                 },
                 ..InviteDetail::default()
@@ -1346,8 +1351,8 @@ impl Into<(Connection, ActorDidExchangeState)> for ConnectionV3 {
             agent_vk: self.agent_info().agent_vk.clone(),
             their_pw_did: self.remote_did().unwrap_or_default(),
             their_pw_verkey: self.remote_vk().unwrap_or_default(),
-            public_did: None,
-            their_public_did: None,
+            public_did: settings::get_config_value(settings::CONFIG_INSTITUTION_DID).ok(),
+            their_public_did: invitation.as_ref().and_then(|invitation_| invitation_.public_did()),
             version: Some(ProtocolTypes::V2), // TODO check correctness
         };
 
