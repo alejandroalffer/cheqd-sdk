@@ -221,8 +221,7 @@ public class VcxApi extends VcxJava.API {
     }
 
     /**
-     * Set custom logger implementation.
-     * Allows library user to provide custom logger implementation as set of handlers.
+     * Set maximum log level
      *
      * @return                  void
      *
@@ -231,6 +230,23 @@ public class VcxApi extends VcxJava.API {
     public static int vcxSetLogger(Pointer context, Callback enabled, Callback log, Callback flush) throws VcxException {
         logger.debug("vcxSetLogger()");
         int result = LibVcx.api.vcx_set_logger(context, enabled, log, flush);
+        checkResult(result);
+        return result;
+    }
+
+    /**
+     * Set maximum log level
+     *
+     * @param  maxLvl     specify whether wallet/pool should be deleted
+     *                    Possible values are from 0 to 5 inclusive: 0 - Off, 1 - Error, 2 - Warn, 3 - Trace, 4 - Debug, 5 - Trace
+     *
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
+    public static int vcxSetLogMaxLevel(int maxLvl) throws VcxException {
+        logger.debug("vcxSetLogMaxLevel()");
+        int result = LibVcx.api.vcx_set_log_max_lvl(maxLvl);
         checkResult(result);
         return result;
     }
