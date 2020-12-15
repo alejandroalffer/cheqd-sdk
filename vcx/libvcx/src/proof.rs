@@ -683,8 +683,42 @@ pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
         match obj {
             Proofs::Pending(ref mut obj) => obj.generate_proof_request_msg(),
             Proofs::V1(ref mut obj) => obj.generate_proof_request_msg(),
-            Proofs::V3(ref obj) => obj.generate_presentation_request_msg()
+            Proofs::V3(ref mut obj) => {
+                obj.generate_presentation_request()?;
+                obj.get_presentation_request()
+            }
         }
+    }).map_err(handle_err)
+}
+
+
+pub fn generate_request_attach(handle: u32) -> VcxResult<String> {
+    PROOF_MAP.get_mut(handle, |obj| {
+        let (proof, attach) = match obj {
+            Proofs::Pending((ref mut obj)) => {
+                let revocation_details = serde_json::to_string(&obj.revocation_interval)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize RevocationDetails. Err: {:?}", err)))?;
+
+                let mut verifier = Verifier::create(obj.source_id.to_string(),
+                                                    obj.requested_attrs.to_string(),
+                                                    obj.requested_predicates.to_string(),
+                                                    revocation_details,
+                                                    obj.name.to_string())?;
+
+                verifier.generate_presentation_request()?;
+                let attach = verifier.get_presentation_request()?;
+                Ok((Proofs::V3(verifier), attach))
+            }
+            Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending or V3")),
+            Proofs::V3((ref mut obj)) => {
+                obj.generate_presentation_request()?;
+                let attach = obj.get_presentation_request()?;
+                Ok((Proofs::V3(obj.clone()), attach))
+            }
+        }?;
+        *obj = proof;
+        Ok(attach)
+
     }).map_err(handle_err)
 }
 
@@ -803,6 +837,22 @@ pub fn get_proof(handle: u32) -> VcxResult<String> {
         }
     }).map_err(handle_err)
 }
+
+pub fn set_connection(handle: u32, connection_handle: u32) -> VcxResult<u32> {
+    PROOF_MAP.get_mut(handle, |obj| {
+        match obj {
+            Proofs::Pending(ref mut obj) =>
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries Proofs type doesn't support this action: `set_connection`.")),
+            Proofs::V1(ref mut obj) =>
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries Proofs type doesn't support this action: `set_connection`.")),
+            Proofs::V3(ref mut obj) => {
+                obj.set_connection(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+    }).map_err(handle_err)
+}
+
 
 // TODO: This doesnt feel like it should be here (maybe utils?)
 pub fn generate_nonce() -> VcxResult<String> {

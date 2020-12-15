@@ -1,7 +1,7 @@
 use libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
-use proof;
+use ::{proof, connection};
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
@@ -705,6 +705,51 @@ pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Get the proof request attachment that you send along the out of band credential
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to access proof object
+///
+/// cb: provides any error status of the proof_request
+///
+/// # Example presentation_request_attachment -> "{"@id": "8b23c2b6-b432-45d8-a377-d003950c0fcc", "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation", "comment": "Person Proving", "request_presentations~attach": [{"@id": "libindy-request-presentation-0", "data": {"base64": "eyJuYW1lIjoiUGVyc29uIFByb3ZpbmciLCJub25fcmV2b2tlZCI6bnVsbCwibm9uY2UiOiI2MzQxNzYyOTk0NjI5NTQ5MzA4MjY1MzQiLCJyZXF1ZXN0ZWRfYXR0cmlidXRlcyI6eyJhdHRyaWJ1dGVfMCI6eyJuYW1lIjoibmFtZSJ9LCJhdHRyaWJ1dGVfMSI6eyJuYW1lIjoiZW1haWwifX0sInJlcXVlc3RlZF9wcmVkaWNhdGVzIjp7fSwidmVyIjpudWxsLCJ2ZXJzaW9uIjoiMS4wIn0="}, "mime-type": "application/json"}]}"
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_proof_get_request_attach(command_handle: CommandHandle,
+                                           proof_handle: u32,
+                                           cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg: *const c_char)>) -> u32 {
+    info!("vcx_proof_get_request_attach >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_proof_get_request_attach(command_handle: {}, proof_handle: {})", command_handle, proof_handle);
+
+    spawn(move || {
+        match proof::generate_request_attach(proof_handle) {
+            Ok(x) => {
+                trace!("vcx_proof_get_request_msg_cb(command_handle: {}, rc: {}, proof_handle: {}, request_attach: {})",
+                       command_handle, error::SUCCESS.code_num, proof_handle, secret!(x));
+                let msg = CStringUtils::string_to_cstring(x);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+
+            },
+            Err(x) => {
+                warn!("vcx_proof_get_request_msg_cb(command_handle: {}, rc: {}, proof_handle: {})",
+                      command_handle, x, proof_handle);
+                cb(command_handle, x.into(), ptr::null_mut())
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Get the proof proposal received for deciding whether to accept it
 ///
 /// #Params
@@ -802,6 +847,49 @@ pub extern fn vcx_get_proof_msg(command_handle: CommandHandle,
 
     error::SUCCESS.code_num
 }
+
+#[no_mangle]
+pub extern fn vcx_proof_set_connection(command_handle: CommandHandle,
+                                       proof_handle: u32,
+                                       connection_handle: u32,
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
+    info!("vcx_proof_set_connection >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle).into();
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
+    }
+
+    trace!("vcx_proof_set_connection(command_handle: {}, proof_handle: {}, connection_handle: {})",
+           command_handle, proof_handle, connection_handle);
+
+    spawn(move || {
+        let err = match proof::set_connection(proof_handle, connection_handle) {
+            Ok(x) => {
+                trace!("vcx_proof_set_connection_cb(command_handle: {}, credential_handle: {}, rc: {})",
+                       command_handle, proof_handle, error::SUCCESS.message);
+                x
+            }
+            Err(x) => {
+                warn!("vcx_proof_set_connection_cb(command_handle: {}, credential_handle: {}, rc: {})",
+                      command_handle, proof_handle, x);
+                x.into()
+            }
+        };
+
+        cb(command_handle, err);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 
 fn proof_to_cb(command_handle: CommandHandle,
                proof_handle: u32,

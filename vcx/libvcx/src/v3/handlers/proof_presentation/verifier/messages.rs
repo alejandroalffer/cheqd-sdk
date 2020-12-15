@@ -6,6 +6,8 @@ use v3::messages::proof_presentation::presentation_request::PresentationRequestD
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum VerifierMessages {
+    PreparePresentationRequest(),
+    SetConnection(u32),
     SendPresentationRequest(u32),
     PresentationReceived(Presentation),
     PresentationProposalReceived(PresentationProposal),
