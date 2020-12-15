@@ -27,9 +27,9 @@ TAA_ACCEPT = bool(os.getenv("TAA_ACCEPT", "0") == "1")
 # 'wallet_key': encryption key for encoding wallet
 # 'payment_method': method that will be used for payments
 provisionConfig = {
-    'agency_url': 'http://localhost:8080',
-    'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
-    'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
+    'agency_url': 'https://eas-team1.pdev.evernym.com',
+    'agency_did': 'CV65RFpeCtPu82hNF9i61G',
+    'agency_verkey': '7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2',
     'wallet_name': 'faber_wallet',
     'wallet_key': '123',
     'payment_method': 'null',

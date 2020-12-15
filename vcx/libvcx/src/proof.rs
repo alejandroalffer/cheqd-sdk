@@ -542,11 +542,11 @@ pub fn create_proof(source_id: String,
                     revocation_details: String,
                     name: String) -> VcxResult<u32> {
 //    // Initiate proof of new format -- redirect to v3 folder
-    if settings::is_aries_protocol_set() {
-        let verifier = Verifier::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
-        return PROOF_MAP.add(Proofs::V3(verifier))
-            .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
-    }
+//    if settings::is_aries_protocol_set() {
+//        let verifier = Verifier::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
+//        return PROOF_MAP.add(Proofs::V3(verifier))
+//            .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
+//    }
 
     trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}",
            source_id, secret!(requested_attrs), secret!(requested_predicates), secret!(name));
@@ -674,6 +674,31 @@ pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
             Proofs::Pending(ref mut obj) => obj.generate_proof_request_msg(),
             Proofs::V1(ref mut obj) => obj.generate_proof_request_msg(),
             Proofs::V3(ref mut obj) => {
+                obj.generate_presentation_request()?;
+                obj.get_presentation_request()
+            }
+        }
+    }).map_err(handle_err)
+}
+
+pub fn get_request_attach(handle: u32) -> VcxResult<String> {
+    PROOF_MAP.get_mut(handle, |obj| {
+        match obj {
+            Proofs::Pending((ref mut obj)) => {
+                let revocation_details = serde_json::to_string(&obj.revocation_interval)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize RevocationDetails. Err: {:?}", err)))?;
+
+                let mut verifier = Verifier::create(obj.source_id.to_string(),
+                                                    obj.requested_attrs.to_string(),
+                                                    obj.requested_predicates.to_string(),
+                                                    revocation_details,
+                                                    obj.name.to_string())?;
+
+                verifier.generate_presentation_request()?;
+                verifier.get_presentation_request()
+            }
+            Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending or V3")),
+            Proofs::V3((ref mut obj)) => {
                 obj.generate_presentation_request()?;
                 obj.get_presentation_request()
             }

@@ -7,7 +7,7 @@ from time import sleep
 
 from demo_utils import file_ext
 
-from demo.demo_utils import download_message
+from demo_utils import download_message
 from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
@@ -64,7 +64,7 @@ async def main():
     print("#19 Create a Proof object")
     proof = await Proof.create('proof_uuid', 'Person Proving', proof_attrs, {})
 
-    proof_request = await proof.get_proof_request_msg()
+    proof_request = await proof.get_proof_request_attach()
     print("Proof Reuqest: " + json.dumps(proof_request))
 
     print("#5 Create a connection to alice and print out the invite details")
