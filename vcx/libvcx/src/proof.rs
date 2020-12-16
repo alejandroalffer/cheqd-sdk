@@ -842,9 +842,9 @@ pub fn set_connection(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     PROOF_MAP.get_mut(handle, |obj| {
         match obj {
             Proofs::Pending(ref mut obj) =>
-                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries Proofs type doesn't support this action: `set_connection`.")),
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Non-Aries Proofs type doesn't support this action: `set_connection`.")),
             Proofs::V1(ref mut obj) =>
-                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Aries Proofs type doesn't support this action: `set_connection`.")),
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Non-Aries Proofs type doesn't support this action: `set_connection`.")),
             Proofs::V3(ref mut obj) => {
                 obj.set_connection(connection_handle)?;
                 Ok(error::SUCCESS.code_num)
