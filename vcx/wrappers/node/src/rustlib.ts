@@ -174,6 +174,8 @@ export interface IFFIEntryPoint {
   vcx_proof_release: (handle: number) => number,
   vcx_proof_send_request: (commandId: number, proofHandle: number, connectionHandle: number, cb: any) => number,
   vcx_proof_get_request_msg: (commandId: number, proofHandle: number, cb: any) => number,
+  vcx_proof_get_request_attach: (commandId: number, proofHandle: number, cb: any) => number,
+  vcx_proof_set_connection: (commandId: number, proofHandle: number, connectionHandle: number, cb: any) => number,
   vcx_proof_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_proof_update_state: (commandId: number, handle: number, cb: any) => number,
   vcx_proof_update_state_with_message: (commandId: number, handle: number, message: string, cb: any) => number,
@@ -412,11 +414,14 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_proof_send_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],
   vcx_proof_get_request_msg: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_proof_get_request_attach: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_update_state_with_message: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_STRING_DATA,
     FFI_CALLBACK_PTR]],
   vcx_proof_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_proof_set_connection: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
+      FFI_CALLBACK_PTR]],
 
   // disclosed proof
   vcx_disclosed_proof_create_with_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,

@@ -285,7 +285,7 @@ class Proof(VcxStateful):
             {'@topic': {'tid': 0, 'mid': 0}, '@type': {'version': '1.0', 'name': 'PROOF_REQUEST'}, 'proof_request_data': {'name': 'proof_req', 'nonce': '118065925949165739229152', 'version': '0.1', 'requested_predicates': {}, 'non_revoked': None, 'requested_attributes': {'attribute_0': {'name': 'name', 'restrictions': {'$or': [{'issuer_did': 'did'}]}}}, 'ver': '1.0'}, 'thread_id': '40bdb5b2'}
         """
         if not hasattr(Proof.get_proof_request_msg, "cb"):
-            self.logger.debug("vcx_proof_send_request: Creating callback")
+            self.logger.debug("vcx_proof_get_request_msg: Creating callback")
             Proof.get_proof_request_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_proof_handle = c_uint32(self.handle)
@@ -293,6 +293,30 @@ class Proof(VcxStateful):
         msg = await do_call('vcx_proof_get_request_msg',
                             c_proof_handle,
                             Proof.get_proof_request_msg.cb)
+
+        return json.loads(msg.decode())
+
+    async def get_proof_request_attach(self):
+        """
+        Gets the proof request attachment for ephemeral proof request
+        Example:
+        name = "proof name"
+        requested_attrs = [{"name": "age", "restrictions": [{"schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }, { "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}]
+        proof = await Proof.create(source_id, name, requested_attrs)
+        await proof.get_proof_request_attach()
+        :param
+        :return: proof request attachment
+        {"@id": "8b23c2b6-b432-45d8-a377-d003950c0fcc", "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation", "comment": "Person Proving", "request_presentations~attach": [{"@id": "libindy-request-presentation-0", "data": {"base64": "eyJuYW1lIjoiUGVyc29uIFByb3ZpbmciLCJub25fcmV2b2tlZCI6bnVsbCwibm9uY2UiOiI2MzQxNzYyOTk0NjI5NTQ5MzA4MjY1MzQiLCJyZXF1ZXN0ZWRfYXR0cmlidXRlcyI6eyJhdHRyaWJ1dGVfMCI6eyJuYW1lIjoibmFtZSJ9LCJhdHRyaWJ1dGVfMSI6eyJuYW1lIjoiZW1haWwifX0sInJlcXVlc3RlZF9wcmVkaWNhdGVzIjp7fSwidmVyIjpudWxsLCJ2ZXJzaW9uIjoiMS4wIn0="}, "mime-type": "application/json"}]}
+        TODO: add attachment
+        """
+        if not hasattr(Proof.get_proof_request_attach, "cb"):
+            self.logger.debug("vcx_proof_get_request_attach: Creating callback")
+            Proof.get_proof_request_attach.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_proof_handle = c_uint32(self.handle)
+        msg = await do_call('vcx_proof_get_request_attach',
+                                          c_proof_handle,
+                                          Proof.get_proof_request_attach.cb)
 
         return json.loads(msg.decode())
 
@@ -451,3 +475,19 @@ class Proof(VcxStateful):
                                            Proof.get_proof_msg.cb)
         self.proof_state = proof_state
         return json.loads(proof.decode())
+
+    async def set_connection(self, connection: Connection):
+        """
+        Set connection for created proof. Used for Out-Of-Band with presentation request attachment
+        """
+        if not hasattr(Proof.set_connection, "cb"):
+            self.logger.debug("vcx_proof_set_connection: Creating callback")
+            Proof.set_connection.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_proof_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+
+        await do_call('vcx_proof_set_connection',
+                      c_proof_handle,
+                      c_connection_handle,
+                      Proof.set_connection.cb)
