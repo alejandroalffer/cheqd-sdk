@@ -272,7 +272,7 @@ pub extern fn vcx_disclosed_proof_create_proposal(command_handle: CommandHandle,
 ///
 /// proof_handle: proof handle that was provided duration creation.  Used to identify proof object.
 ///
-/// connection_handle: Connection handle that identifies pairwise connection
+/// connection_handle: Connection handle that identifies pairwise connection (pass 0 in case of ephemeral proof).
 ///
 /// cb: Callback that provides error status of proof send request
 ///

@@ -341,7 +341,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
   }
 
   /**
-   * Sends the proof to the Connection
+   * Sends the proof to the Connection (pass null as Connection in case of ephemeral proof).
    *
    * Example:
    * ```

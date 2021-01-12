@@ -796,7 +796,8 @@ pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
         let new_proof = match proof {
             DisclosedProofs::Pending(ref mut obj) => {
                 // if Aries connection is established --> Convert DisclosedProofs object to Aries presentation
-                if ::connection::is_v3_connection(connection_handle)? {
+                // if connection handle is 0 --> ephemeral Aries proof
+                if ::connection::is_v3_connection(connection_handle)? || connection_handle == 0 {
                     debug!("Convert pending proof into aries proof");
 
                     let proof_request = obj.proof_request.clone()

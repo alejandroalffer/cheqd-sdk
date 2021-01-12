@@ -488,23 +488,24 @@ impl ProverSM {
             ProverState::PresentationPrepared(state) => {
                 match message {
                     ProverMessages::SendPresentation(connection_handle) => {
-                        let connection = ::connection::get_completed_connection(connection_handle)?;
-                        let thread = state.thread.clone()
-                            .update_received_order(&connection.data.did_doc.id)
-                            .set_opt_pthid(connection.data.thread.pthid.clone());
+                        if state.presentation_request.service.is_some() && connection_handle == 0 {
+                            // ephemeral proof request
+                            let thread = state.thread.clone();
+                            let service = state.presentation_request.service.clone().unwrap().into();
+                            Connection::send_message_to_self_endpoint(&state.presentation.clone().to_a2a_message(), &service)?;
+                            ProverState::Finished((state, thread).into())
+                        } else {
+                            // regular proof request
+                            let connection = ::connection::get_completed_connection(connection_handle)?;
+                            let thread = state.thread.clone()
+                                .update_received_order(&connection.data.did_doc.id)
+                                .set_opt_pthid(connection.data.thread.pthid.clone());
 
-                        let presentation = state.presentation.clone()
-                            .set_thread(thread.clone());
+                            let presentation = state.presentation.clone()
+                                .set_thread(thread.clone());
 
-                        match state.presentation_request.service.clone() {
-                            None => {
-                                connection.data.send_message(&presentation.to_a2a_message(), &connection.agent)?;
-                                ProverState::PresentationSent((state, connection, presentation, thread).into())
-                            }
-                            Some(service) => {
-                                Connection::send_message_to_self_endpoint(&presentation.to_a2a_message(), &service.into())?;
-                                ProverState::Finished((state, thread).into())
-                            }
+                            connection.data.send_message(&presentation.to_a2a_message(), &connection.agent)?;
+                            ProverState::PresentationSent((state, connection, presentation, thread).into())
                         }
                     }
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
@@ -956,7 +957,7 @@ pub mod test {
 
             let mut prover_sm = ProverSM::new(_presentation_request_with_service(), source_id());
             prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
-            prover_sm = prover_sm.step(ProverMessages::SendPresentation(mock_connection())).unwrap();
+            prover_sm = prover_sm.step(ProverMessages::SendPresentation(0)).unwrap();
 
             assert_match!(ProverState::Finished(_), prover_sm.state);
         }
