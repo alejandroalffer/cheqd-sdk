@@ -280,7 +280,7 @@ public class DisclosedProofApi extends VcxJava.API {
      * Send a Proof to the connection, called after having received a proof request
      *
      * @param  proofHandle              handle pointing to a DisclosedProof object.
-     * @param  connectionHandle         handle pointing to a Connection object to use for sending message.
+     * @param  connectionHandle         handle pointing to a Connection object to use for sending message (pass 0 in case of ephemeral proof)..
      *
      * @return                          void
      *
