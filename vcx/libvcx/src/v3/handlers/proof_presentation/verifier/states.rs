@@ -205,14 +205,14 @@ impl From<(PresentationRequestSentState, Presentation, Thread)> for FinishedStat
     }
 }
 
-impl From<(PresentationRequestSentState, ProblemReport, Thread)> for FinishedState {
-    fn from((state, problem_report, thread): (PresentationRequestSentState, ProblemReport, Thread)) -> Self {
+impl From<(PresentationRequestSentState, ProblemReport, Status, Thread)> for FinishedState {
+    fn from((state, problem_report, status, thread): (PresentationRequestSentState, ProblemReport, Status, Thread)) -> Self {
         trace!("VerifierSM transit state from PresentationRequestSentState to FinishedState with ProblemReport: {:?}", problem_report);
         trace!("Thread: {:?}", thread);
         FinishedState {
             presentation_request: state.presentation_request,
             presentation: None,
-            status: Status::Failed(problem_report),
+            status,
             thread,
         }
     }
@@ -518,7 +518,7 @@ impl VerifierSM {
                         let thread = state.thread.clone()
                             .update_received_order(&state.connection.data.did_doc.id);
 
-                        VerifierState::Finished((state, problem_report, thread).into())
+                        VerifierState::Finished((state, problem_report, Status::Rejected, thread).into())
                     }
                     VerifierMessages::PresentationProposalReceived(presentation_proposal) => { // TODO: handle Presentation Proposal
                         let thread = state.thread.clone()
@@ -575,6 +575,7 @@ impl VerifierSM {
             VerifierState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
+                    Status::Rejected => VcxStateType::VcxStateRejected as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
             }
@@ -792,7 +793,7 @@ pub mod test {
             verifier_sm = verifier_sm.step(VerifierMessages::PresentationRejectReceived(_problem_report())).unwrap();
 
             assert_match!(VerifierState::Finished(_), verifier_sm.state);
-            assert_eq!(VcxStateType::VcxStateNone as u32, verifier_sm.state());
+            assert_eq!(VcxStateType::VcxStateRejected as u32, verifier_sm.state());
         }
 
         #[test]
