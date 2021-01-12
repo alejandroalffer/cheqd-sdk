@@ -239,19 +239,6 @@ impl From<(RequestReceivedState, Thread, ProblemReport, Reason)> for FinishedSta
     }
 }
 
-impl From<(RequestReceivedState, Thread, PresentationProposal, Reason)> for FinishedState {
-    fn from((state, thread, _presentation_proposal, _reason): (RequestReceivedState, Thread, PresentationProposal, Reason)) -> Self {
-        trace!("ProverSM transit state from RequestReceivedState to FinishedState with PresentationProposal message");
-        trace!("Thread: {:?}", thread);
-        FinishedState {
-            presentation_request: state.presentation_request,
-            presentation: Default::default(),
-            status: Status::Rejected,
-            thread,
-        }
-    }
-}
-
 impl From<(PresentationPreparedState, CompletedConnection, Presentation, Thread)> for PresentationSentState {
     fn from((state, connection, presentation, thread): (PresentationPreparedState, CompletedConnection, Presentation, Thread)) -> Self {
         trace!("ProverSM transit state from PresentationPreparedState to PresentationSentState");
@@ -298,7 +285,7 @@ impl From<(PresentationPreparedState, Thread, PresentationProposal, Reason)> for
         FinishedState {
             presentation_request: state.presentation_request,
             presentation: Default::default(),
-            status: Status::Rejected,
+            status: Status::Rejected(None),
             thread,
         }
     }
@@ -687,7 +674,7 @@ impl ProverSM {
             ProverState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
-                    Status::Rejected => VcxStateType::VcxStateRejected as u32,
+                    Status::Rejected(_) => VcxStateType::VcxStateRejected as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
             }

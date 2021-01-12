@@ -44,7 +44,7 @@ impl HolderSM {
             HolderState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
-                    Status::Rejected => VcxStateType::VcxStateRejected as u32,
+                    Status::Rejected(_) => VcxStateType::VcxStateRejected as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
             }
