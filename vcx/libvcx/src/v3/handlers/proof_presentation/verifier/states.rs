@@ -169,14 +169,14 @@ impl From<(PresentationRequestPreparedState, Presentation, Thread)> for Finished
     }
 }
 
-impl From<(PresentationRequestPreparedState, ProblemReport, Thread)> for FinishedState {
-    fn from((state, problem_report, thread): (PresentationRequestPreparedState, ProblemReport, Thread)) -> Self {
+impl From<(PresentationRequestPreparedState, Status, Thread)> for FinishedState {
+    fn from((state, status, thread): (PresentationRequestPreparedState, Status, Thread)) -> Self {
         trace!("PresentationRequestPreparedState: transit state from InitialState to FinishedState");
         trace!("Thread: {:?}", thread);
         FinishedState {
             presentation_request: state.presentation_request,
             presentation: None,
-            status: Status::Failed(problem_report),
+            status,
             thread,
         }
     }
@@ -205,9 +205,9 @@ impl From<(PresentationRequestSentState, Presentation, Thread)> for FinishedStat
     }
 }
 
-impl From<(PresentationRequestSentState, ProblemReport, Status, Thread)> for FinishedState {
-    fn from((state, problem_report, status, thread): (PresentationRequestSentState, ProblemReport, Status, Thread)) -> Self {
-        trace!("VerifierSM transit state from PresentationRequestSentState to FinishedState with ProblemReport: {:?}", problem_report);
+impl From<(PresentationRequestSentState, Status, Thread)> for FinishedState {
+    fn from((state, status, thread): (PresentationRequestSentState, Status, Thread)) -> Self {
+        trace!("VerifierSM transit state from PresentationRequestSentState to FinishedState with Status: {:?}", status);
         trace!("Thread: {:?}", thread);
         FinishedState {
             presentation_request: state.presentation_request,
@@ -459,7 +459,7 @@ impl VerifierSM {
                                         .set_thread(thread.clone());
 
                                 connection.data.send_message(&problem_report.to_a2a_message(), &connection.agent)?;
-                                VerifierState::Finished((state, problem_report, thread).into())
+                                VerifierState::Finished((state, Status::Failed(problem_report), thread).into())
                             }
                         }
                     }
@@ -470,7 +470,7 @@ impl VerifierSM {
                         let thread = problem_report.thread.clone()
                             .update_received_order(&connection.data.did_doc.id);
 
-                        VerifierState::Finished((state, problem_report, thread).into())
+                        VerifierState::Finished((state, Status::Rejected(Some(problem_report)), thread).into())
                     }
                     VerifierMessages::PresentationProposalReceived(proposal) => {
                         let id = match &state.connection {
@@ -518,7 +518,7 @@ impl VerifierSM {
                         let thread = state.thread.clone()
                             .update_received_order(&state.connection.data.did_doc.id);
 
-                        VerifierState::Finished((state, problem_report, Status::Rejected, thread).into())
+                        VerifierState::Finished((state, Status::Rejected(Some(problem_report)), thread).into())
                     }
                     VerifierMessages::PresentationProposalReceived(presentation_proposal) => { // TODO: handle Presentation Proposal
                         let thread = state.thread.clone()
@@ -575,7 +575,7 @@ impl VerifierSM {
             VerifierState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
-                    Status::Rejected => VcxStateType::VcxStateRejected as u32,
+                    Status::Rejected(_) => VcxStateType::VcxStateRejected as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
             }
