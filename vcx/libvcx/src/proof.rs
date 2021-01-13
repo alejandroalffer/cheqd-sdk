@@ -706,13 +706,13 @@ pub fn generate_request_attach(handle: u32) -> VcxResult<String> {
                                                     obj.name.to_string())?;
 
                 verifier.generate_presentation_request()?;
-                let attach = verifier.get_presentation_request()?;
+                let attach = verifier.get_presentation_request_attach()?;
                 Ok((Proofs::V3(verifier), attach))
             }
             Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending or V3")),
             Proofs::V3((ref mut obj)) => {
                 obj.generate_presentation_request()?;
-                let attach = obj.get_presentation_request()?;
+                let attach = obj.get_presentation_request_attach()?;
                 Ok((Proofs::V3(obj.clone()), attach))
             }
         }?;

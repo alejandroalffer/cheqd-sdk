@@ -146,6 +146,17 @@ impl Verifier {
         trace!("Verifier::get_presentation_request >>>");
         debug!("Verifier {}: Getting presentation request", self.get_source_id());
 
+        let proof_request: ProofRequestMessage = self.verifier_sm.presentation_request()?.try_into()?;
+
+        ::serde_json::to_string(&proof_request)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
+                                              format!("Cannot serialize ProofMessage. Err: {:?}", err)))
+    }
+
+    pub fn get_presentation_request_attach(&self) -> VcxResult<String> {
+        trace!("Verifier::get_presentation_request_attach >>>");
+        debug!("Verifier {}: Getting presentation request in Aries format", self.get_source_id());
+
         let proof_request = self.verifier_sm.presentation_request()?.to_a2a_message();
 
         ::serde_json::to_string(&proof_request)
