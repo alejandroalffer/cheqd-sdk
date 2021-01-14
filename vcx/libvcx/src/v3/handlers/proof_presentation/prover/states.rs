@@ -455,9 +455,7 @@ impl ProverSM {
                         }
                     }
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
-                        let connection = ::connection::get_completed_connection(connection_handle)?;
-                        let thread = thread.clone().update_received_order(&connection.data.did_doc.id);
-                        let problem_report = Self::_handle_reject_presentation_request(&connection, &reason, &state.presentation_request, &thread)?;
+                        let (problem_report, thread) = Self::_handle_reject_presentation_request(connection_handle, &reason, &state.presentation_request, &thread)?;
                         ProverState::Finished((state, thread, problem_report, Reason::Reject).into())
                     }
                     ProverMessages::ProposePresentation((connection_handle, preview)) => {
@@ -496,9 +494,7 @@ impl ProverSM {
                         }
                     }
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
-                        let connection = ::connection::get_completed_connection(connection_handle)?;
-                        let thread = state.thread.clone().update_received_order(&connection.data.did_doc.id);
-                        let problem_report = Self::_handle_reject_presentation_request(&connection, &reason, &state.presentation_request, &thread)?;
+                        let (problem_report, thread) = Self::_handle_reject_presentation_request(connection_handle, &reason, &state.presentation_request, &state.thread)?;
                         ProverState::Finished((state, thread, problem_report, Reason::Reject).into())
                     }
                     ProverMessages::ProposePresentation((connection_handle, preview)) => {
@@ -628,22 +624,31 @@ impl ProverSM {
         Ok(ProverSM { source_id, state })
     }
 
-    fn _handle_reject_presentation_request(connection: &CompletedConnection, reason: &str, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<ProblemReport> {
+    fn _handle_reject_presentation_request(connection_handle: u32, reason: &str, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<(ProblemReport, Thread)> {
         trace!("ProverSM::_handle_reject_presentation_request >>> reason: {:?}, presentation_request: {:?}", secret!(reason), secret!(presentation_request));
         debug!("Prover: Rejecting presentation request");
 
-        let problem_report = ProblemReport::create()
+        let mut thread = thread.clone();
+        let mut problem_report = ProblemReport::create()
             .set_description(ProblemReportCodes::PresentationRejected)
             .set_comment(reason.to_string())
             .set_thread(thread.clone());
 
-        match presentation_request.service.clone() {
-            None => connection.data.send_message(&A2AMessage::PresentationReject(problem_report.clone()), &connection.agent)?,
-            Some(service) => Connection::send_message_to_self_endpoint(&A2AMessage::PresentationReject(problem_report.clone()), &service.into())?
+        if presentation_request.service.is_some() && connection_handle == 0 {
+            // ephemeral proof request
+            Connection::send_message_to_self_endpoint(&A2AMessage::PresentationReject(problem_report.clone()), &presentation_request.service.clone().unwrap().into())?;
+        } else {
+            // regular proof request
+            let connection = ::connection::get_completed_connection(connection_handle)?;
+            // we need to update thread and put it into problem report
+            thread = thread.update_received_order(&connection.data.did_doc.id);
+            problem_report = problem_report.set_thread(thread.clone());
+
+            connection.data.send_message(&A2AMessage::PresentationReject(problem_report.clone()), &connection.agent)?;
         }
 
         trace!("ProverSM::_handle_reject_presentation_request <<<");
-        Ok(problem_report)
+        Ok((problem_report, thread))
     }
 
     fn _handle_presentation_proposal(connection: &CompletedConnection, preview: PresentationPreview, presentation_request: &PresentationRequest, thread: &Thread) -> VcxResult<PresentationProposal> {
