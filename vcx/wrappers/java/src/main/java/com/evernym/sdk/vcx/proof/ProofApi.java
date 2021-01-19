@@ -139,7 +139,7 @@ public class ProofApi extends VcxJava.API {
         logger.debug("proofCreateWithProposal() called with: sourceId = [" + sourceId + "], presentationProposal = [" + presentationProposal + "], name = [" + name + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_proof_create_with_proposal(commandHandle, sourceId, presentationProposal, name, vcxProofCreateCB);
+        int result = LibVcx.api().vcx_proof_create_with_proposal(commandHandle, sourceId, presentationProposal, name, vcxProofCreateCB);
         checkResult(result);
 
         return future;

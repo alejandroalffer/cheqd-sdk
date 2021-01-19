@@ -300,7 +300,7 @@ public class CredentialDefApi extends VcxJava.API {
 		CompletableFuture<CredentialDefPrepareForEndorserResult> future = new CompletableFuture<CredentialDefPrepareForEndorserResult>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_credentialdef_prepare_for_endorser(
+		int result = LibVcx.api().vcx_credentialdef_prepare_for_endorser(
 				commandHandle,
 				sourceId,
 				credentialName,
@@ -340,7 +340,7 @@ public class CredentialDefApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_credentialdef_update_state(
+		int result = LibVcx.api().vcx_credentialdef_update_state(
 				commandHandle,
 				handle,
 				vcxIntegerCB
@@ -366,7 +366,7 @@ public class CredentialDefApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_credentialdef_get_state(
+		int result = LibVcx.api().vcx_credentialdef_get_state(
 				commandHandle,
 				handle,
 				vcxIntegerCB

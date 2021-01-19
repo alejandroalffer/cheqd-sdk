@@ -221,7 +221,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_create_outofband(
+		int result = LibVcx.api().vcx_connection_create_outofband(
 				commandHandle,
 				sourceId,
 				goalCode,
@@ -418,7 +418,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_create_with_outofband_invitation(
+		int result = LibVcx.api().vcx_connection_create_with_outofband_invitation(
 				commandHandle,
 				sourceId,
 				invite,
@@ -531,7 +531,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<AcceptConnectionResult> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_accept_connection_invite(
+		int result = LibVcx.api().vcx_connection_accept_connection_invite(
 				commandHandle,
 				invitationId,
 				inviteDetails,
@@ -1138,7 +1138,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_send_reuse(commandHandle, connectionHandle, invite, voidCb);
+		int result = LibVcx.api().vcx_connection_send_reuse(commandHandle, connectionHandle, invite, voidCb);
 		checkResult(result);
 
 		return future;
@@ -1187,7 +1187,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_send_answer(commandHandle, connectionHandle, question, answer, voidCb);
+		int result = LibVcx.api().vcx_connection_send_answer(commandHandle, connectionHandle, question, answer, voidCb);
 		checkResult(result);
 
 		return future;
@@ -1235,7 +1235,7 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_send_invite_action(commandHandle, connectionHandle, data, connectionSendInviteActionCB);
+		int result = LibVcx.api().vcx_connection_send_invite_action(commandHandle, connectionHandle, data, connectionSendInviteActionCB);
 		checkResult(result);
 
 		return future;

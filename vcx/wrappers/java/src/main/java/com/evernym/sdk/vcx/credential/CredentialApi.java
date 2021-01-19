@@ -273,7 +273,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_delete_credential(commandHandle, credentialHandle, vcxDeleteCredentialCB);
+        int result = LibVcx.api().vcx_delete_credential(commandHandle, credentialHandle, vcxDeleteCredentialCB);
         checkResult(result);
 
         return future;
@@ -531,7 +531,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<CredentialAcceptOfferResult> future = new CompletableFuture<CredentialAcceptOfferResult>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_accept_credential_offer(
+        int result = LibVcx.api().vcx_credential_accept_credential_offer(
                 commandHandle,
                 sourceId,
                 credentialOffer,
@@ -576,7 +576,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_reject(
+        int result = LibVcx.api().vcx_credential_reject(
                 commandHandle,
                 credentialHandle,
                 connectionHandle,
@@ -621,7 +621,7 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_get_presentation_proposal_msg(commandHandle, credentialHandle, vcxGetPresentationProposalCB);
+        int result = LibVcx.api().vcx_credential_get_presentation_proposal_msg(commandHandle, credentialHandle, vcxGetPresentationProposalCB);
         checkResult(result);
 
         return future;

@@ -263,7 +263,7 @@ public class SchemaApi extends VcxJava.API {
         CompletableFuture<SchemaPrepareForEndorserResult> future = new CompletableFuture<SchemaPrepareForEndorserResult>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_schema_prepare_for_endorser(
+        int result = LibVcx.api().vcx_schema_prepare_for_endorser(
                 commandHandle,
 		        sourceId,
 		        schemaName,
@@ -301,7 +301,7 @@ public class SchemaApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_schema_update_state(
+		int result = LibVcx.api().vcx_schema_update_state(
 				commandHandle,
 				schemaHandle,
 				vcxIntegerCB
@@ -327,7 +327,7 @@ public class SchemaApi extends VcxJava.API {
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_schema_get_state(
+		int result = LibVcx.api().vcx_schema_get_state(
 				commandHandle,
 				schemaHandle,
 				vcxIntegerCB

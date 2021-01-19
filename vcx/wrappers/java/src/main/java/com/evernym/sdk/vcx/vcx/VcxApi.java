@@ -180,7 +180,7 @@ public class VcxApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_init_pool(
+        int result = LibVcx.api().vcx_init_pool(
                 commandHandle,
                 poolConfig,
                 vcxInitPoolCB);
@@ -207,7 +207,7 @@ public class VcxApi extends VcxJava.API {
 
     public static String vcxVersion() throws VcxException {
         logger.debug("vcxVersion()");
-        return LibVcx.api.vcx_version();
+        return LibVcx.api().vcx_version();
     }
 
     public static String vcxErrorCMessage(int errorCode) {

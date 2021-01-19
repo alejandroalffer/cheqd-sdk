@@ -159,7 +159,7 @@ public class UtilsApi extends VcxJava.API {
         ParamGuard.notNullOrWhiteSpace(token, "token");
         logger.debug("vcxAgentProvisionWithToken() called with: config = [****], token = [***]");
 
-        String result = LibVcx.api.vcx_provision_agent_with_token(config, token);
+        String result = LibVcx.api().vcx_provision_agent_with_token(config, token);
 
         return result;
     }
@@ -224,7 +224,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_get_provision_token(
+        int result = LibVcx.api().vcx_get_provision_token(
                 commandHandle,
                 config,
                 vcxGetProvisionTokenCB
@@ -335,7 +335,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_download_message(
+        int result = LibVcx.api().vcx_download_message(
                 commandHandle,
                 uid,
                 vcxGetMessagesCB
@@ -549,7 +549,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<Long> future = new CompletableFuture<Long>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_get_request_price(
+        int result = LibVcx.api().vcx_get_request_price(
                 commandHandle, actionJson, requesterInfoJson,
                 getReqPriceAsyncCB);
         checkResult(result);
@@ -581,7 +581,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_endorse_transaction(
+        int result = LibVcx.api().vcx_endorse_transaction(
                 commandHandle, transactionJson,
                 vcxEndorseTransactionCb);
         checkResult(result);
@@ -619,7 +619,7 @@ public class UtilsApi extends VcxJava.API {
         CompletableFuture<Void> future = new CompletableFuture<Void>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_fetch_public_entities(
+        int result = LibVcx.api().vcx_fetch_public_entities(
                 commandHandle,
                 vcxFetchPublicEntitiesCb);
         checkResult(result);
