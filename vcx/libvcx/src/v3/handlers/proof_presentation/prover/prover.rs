@@ -12,6 +12,7 @@ use connection;
 use messages::proofs::proof_message::ProofMessage;
 
 use v3::messages::proof_presentation::presentation::Presentation;
+use v3::messages::error::ProblemReport;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Prover {
@@ -190,5 +191,13 @@ impl Prover {
                 return Err(VcxError::from_msg(VcxErrorKind::InvalidOption, "Only one of `reason` or `proposal` parameters must be specified."));
             }
         }
+    }
+
+    pub fn get_problem_report_message(&self) -> VcxResult<String> {
+        trace!("Prover::get_problem_report_message >>>");
+        debug!("Prover {}: Getting problem report message", self.get_source_id());
+
+        let problem_report: Option<&ProblemReport> = self.prover_sm.problem_report();
+        Ok(json!(&problem_report).to_string())
     }
 }

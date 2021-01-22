@@ -176,6 +176,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)connectionGetState:(VcxHandle) connectionHandle
             withCompletion:(void (^)(NSError *error, NSInteger state))completion;
 
+- (void)connectionGetProblemReport:(NSInteger) connectionHandle
+                        completion:(void (^)(NSError *error, NSString *message))completion;
+
 - (void)agentUpdateInfo:(NSString *)config
              completion:(void (^)(NSError *error))completion;
 
@@ -230,6 +233,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 
 - (void)credentialDeserialize:(NSString *)serializedCredential
                    completion:(void (^)(NSError *error, NSInteger credentialHandle))completion;
+
+- (void)credentialGetProblemReport:(NSInteger) credentialHandle
+                        completion:(void (^)(NSError *error, NSString *message))completion;
 
 - (int)credentialRelease:(NSInteger) credentialHandle;
 
@@ -334,6 +340,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 - (void)proofUpdateStateWithMessage:(VcxHandle) proofHandle
                             message:(NSString *)message
                      withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)proofGetProblemReport:(VcxHandle) proofHandle
+                   completion:(void (^)(NSError *error, NSString *message))completion;
 
 - (int)proofRelease:(NSInteger) proofHandle;
 

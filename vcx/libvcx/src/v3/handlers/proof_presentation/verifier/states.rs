@@ -616,7 +616,7 @@ impl VerifierSM {
     pub fn presentation_request_data(&self) -> VcxResult<&PresentationRequestData> {
         match self.state {
             VerifierState::Initiated(ref state) => Ok(&state.presentation_request_data),
-            VerifierState::PresentationRequestPrepared(ref state) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
+            VerifierState::PresentationRequestPrepared(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
                                                                                             format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
             VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
                                                                                 format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
@@ -629,7 +629,7 @@ impl VerifierSM {
 
     pub fn presentation_request(&self) -> VcxResult<PresentationRequest> {
         match self.state {
-            VerifierState::Initiated(ref state) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Could not get Presentation Request message. VerifierSM is not in appropriate state.")),
+            VerifierState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Could not get Presentation Request message. VerifierSM is not in appropriate state.")),
             VerifierState::PresentationRequestPrepared(ref state) => Ok(state.presentation_request.clone()),
             VerifierState::PresentationProposalReceived(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
                                                                                 format!("Verifier object {} in state {} not ready to get Presentation Request Data message", self.source_id, self.state()))),
@@ -666,6 +666,22 @@ impl VerifierSM {
             VerifierState::PresentationProposalReceived(ref state) => Ok(state.presentation_proposal.clone()),
             VerifierState::Finished(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady,
                                                                   format!("Verifier object {} in state {} not ready to get Presentation proposal message", self.source_id, self.state()))),
+        }
+    }
+
+    pub fn problem_report(&self) -> Option<&ProblemReport> {
+        match self.state {
+            VerifierState::Initiated(_) |
+            VerifierState::PresentationRequestPrepared(_) |
+            VerifierState::PresentationRequestSent(_) |
+            VerifierState::PresentationProposalReceived(_) => None,
+            VerifierState::Finished(ref status) => {
+                match &status.status {
+                    Status::Success | Status::Undefined => None,
+                    Status::Rejected(ref problem_report) => problem_report.as_ref(),
+                    Status::Failed(problem_report) => Some(problem_report),
+                }
+            }
         }
     }
 }

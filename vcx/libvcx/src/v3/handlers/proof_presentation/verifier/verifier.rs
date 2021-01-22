@@ -10,6 +10,7 @@ use v3::handlers::proof_presentation::verifier::states::VerifierSM;
 use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_proposal::{PresentationProposal, PresentationPreview};
+use v3::messages::error::ProblemReport;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {
@@ -197,6 +198,14 @@ impl Verifier {
         ::serde_json::to_string(&proof)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
                                               format!("Cannot serialize ProofMessage. Err: {:?}", err)))
+    }
+
+    pub fn get_problem_report_message(&self) -> VcxResult<String> {
+        trace!("Verifier::get_problem_report_message >>>");
+        debug!("Verifier {}: Getting problem report message", self.get_source_id());
+
+        let problem_report: Option<&ProblemReport> = self.verifier_sm.problem_report();
+        Ok(json!(&problem_report).to_string())
     }
 
     pub fn step(&mut self, message: VerifierMessages) -> VcxResult<()> {

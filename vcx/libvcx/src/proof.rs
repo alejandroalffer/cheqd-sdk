@@ -695,7 +695,7 @@ pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
 pub fn generate_request_attach(handle: u32) -> VcxResult<String> {
     PROOF_MAP.get_mut(handle, |obj| {
         let (proof, attach) = match obj {
-            Proofs::Pending((ref mut obj)) => {
+            Proofs::Pending(ref mut obj) => {
                 let revocation_details = serde_json::to_string(&obj.revocation_interval)
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize RevocationDetails. Err: {:?}", err)))?;
 
@@ -710,7 +710,7 @@ pub fn generate_request_attach(handle: u32) -> VcxResult<String> {
                 Ok((Proofs::V3(verifier), attach))
             }
             Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending or V3")),
-            Proofs::V3((ref mut obj)) => {
+            Proofs::V3(ref mut obj) => {
                 obj.generate_presentation_request()?;
                 let attach = obj.get_presentation_request_attach()?;
                 Ok((Proofs::V3(obj.clone()), attach))
@@ -841,9 +841,7 @@ pub fn get_proof(handle: u32) -> VcxResult<String> {
 pub fn set_connection(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     PROOF_MAP.get_mut(handle, |obj| {
         match obj {
-            Proofs::Pending(ref mut obj) =>
-                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Non-Aries Proofs type doesn't support this action: `set_connection`.")),
-            Proofs::V1(ref mut obj) =>
+            Proofs::Pending(_) | Proofs::V1(_) =>
                 Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Non-Aries Proofs type doesn't support this action: `set_connection`.")),
             Proofs::V3(ref mut obj) => {
                 obj.set_connection(connection_handle)?;
@@ -853,6 +851,18 @@ pub fn set_connection(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     }).map_err(handle_err)
 }
 
+pub fn get_problem_report_message(handle: u32) -> VcxResult<String> {
+    PROOF_MAP.get(handle, |proof| {
+        match proof {
+            Proofs::Pending(ref _obj) | Proofs::V1(ref _obj) => {
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Proof type doesn't support this action: `get_problem_report_message`."))
+            }
+            Proofs::V3(ref obj) => {
+                obj.get_problem_report_message()
+            }
+        }
+    }).map_err(handle_err)
+}
 
 // TODO: This doesnt feel like it should be here (maybe utils?)
 pub fn generate_nonce() -> VcxResult<String> {

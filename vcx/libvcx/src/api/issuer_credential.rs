@@ -34,8 +34,9 @@ use indy_sys::CommandHandle;
         VcxStateType::VcxStateOfferSent - once `vcx_issuer_send_credential_offer` (send `CredentialOffer` message) is called.
 
         VcxStateType::VcxStateRequestReceived - once `CredentialRequest` messages is received.
-        VcxStateType::None - once `ProblemReport` messages is received.
-                                                use `vcx_issuer_credential_update_state` or `vcx_issuer_credential_update_state_with_message` functions for state updates.
+        VcxStateType::None - once error occurred
+                             use `vcx_issuer_credential_update_state` or `vcx_issuer_credential_update_state_with_message` functions for state updates.
+        VcxStateType::VcxStateRejected - once `ProblemReport` messages is received.
 
         VcxStateType::VcxStateAccepted - once `vcx_issuer_send_credential` (send `Credential` message) is called.
 
@@ -56,7 +57,7 @@ use indy_sys::CommandHandle;
         VcxStateType::VcxStateInitialized - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
 
         VcxStateType::VcxStateOfferSent - received `CredentialRequest` - VcxStateType::VcxStateRequestReceived
-        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::VcxStateRejected
 
         VcxStateType::VcxStateRequestReceived - vcx_issuer_send_credential` - VcxStateType::VcxStateAccepted
 
@@ -735,6 +736,51 @@ pub extern fn vcx_issuer_revoke_credential(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Get Problem Report message for Issuer Credential object in Failed or Rejected state.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: handle pointing to Issuer Credential state object.
+///
+/// cb: Callback that returns Problem Report as JSON string or null
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_issuer_credential_get_problem_report(command_handle: CommandHandle,
+                                                       credential_handle: u32,
+                                                       cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                                            err: u32,
+                                                                            message: *const c_char)>) -> u32 {
+    info!("vcx_issuer_credential_get_problem_report >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_issuer_credential_get_problem_report(command_handle: {}, credential_handle: {})",
+           command_handle, credential_handle);
+
+    spawn(move || {
+        match issuer_credential::get_problem_report_message(credential_handle) {
+            Ok(message) => {
+                trace!("vcx_issuer_credential_get_problem_report_cb(command_handle: {}, rc: {}, msg: {})",
+                       command_handle, error::SUCCESS.message, secret!(message));
+                let message = CStringUtils::string_to_cstring(message);
+                cb(command_handle, error::SUCCESS.code_num, message.as_ptr());
+            }
+            Err(x) => {
+                error!("vcx_issuer_credential_get_problem_report_cb(command_handle: {}, rc: {})",
+                       command_handle, x);
+                cb(command_handle, x.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 pub mod tests {
     extern crate serde_json;
@@ -822,13 +868,13 @@ pub mod tests {
     fn _vcx_issuer_create_credential_c_closure() -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_issuer_create_credential(cb.command_handle,
-                                     CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                     ::credential_def::tests::create_cred_def_fake(),
-                                     CString::new(DEFAULT_DID).unwrap().into_raw(),
-                                     CString::new(DEFAULT_ATTR).unwrap().into_raw(),
-                                     CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                     CString::new("1").unwrap().into_raw(),
-                                     Some(cb.get_callback()));
+                                              CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
+                                              ::credential_def::tests::create_cred_def_fake(),
+                                              CString::new(DEFAULT_DID).unwrap().into_raw(),
+                                              CString::new(DEFAULT_ATTR).unwrap().into_raw(),
+                                              CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
+                                              CString::new("1").unwrap().into_raw(),
+                                              Some(cb.get_callback()));
         if rc != error::SUCCESS.code_num {
             return Err(rc);
         }

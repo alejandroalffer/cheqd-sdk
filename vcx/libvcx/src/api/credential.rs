@@ -33,9 +33,9 @@ use indy_sys::CommandHandle;
 
         VcxStateType::VcxStateAccepted - once `Credential` messages is received.
 
-        VcxStateType::None - 1) once `ProblemReport` messages is received.
-                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
-                             2) once `vcx_credential_reject` is called.
+        VcxStateType::VcxStateRejected - 1) once `ProblemReport` messages is received.
+                                            use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+                                         2) once `vcx_credential_reject` is called.
 
     # Transitions
 
@@ -53,8 +53,8 @@ use indy_sys::CommandHandle;
         VcxStateType::VcxStateRequestReceived - `vcx_credential_reject` - VcxStateType::None
 
         VcxStateType::VcxStateOfferSent - received `Credential` - VcxStateType::VcxStateAccepted
-        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
-        VcxStateType::VcxStateOfferSent - `vcx_credential_reject` - VcxStateType::None
+        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::VcxStateRejected
+        VcxStateType::VcxStateOfferSent - `vcx_credential_reject` - VcxStateType::VcxStateRejected
 
     # Messages
 
@@ -997,6 +997,51 @@ pub extern fn vcx_credential_get_presentation_proposal_msg(command_handle: Comma
                 warn!("vcx_credential_get_presentation_proposal_msg_cb(command_handle: {}, rc: {})",
                       command_handle, e);
                 cb(command_handle, e.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Get Problem Report message for Credential object in Failed or Rejected state.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: handle pointing to Credential state object.
+///
+/// cb: Callback that returns Problem Report as JSON string or null
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_credential_get_problem_report(command_handle: CommandHandle,
+                                                credential_handle: u32,
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                                     err: u32,
+                                                                     message: *const c_char)>) -> u32 {
+    info!("vcx_credential_get_problem_report >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_credential_get_problem_report(command_handle: {}, credential_handle: {})",
+           command_handle, credential_handle);
+
+    spawn(move || {
+        match credential::get_problem_report_message(credential_handle) {
+            Ok(message) => {
+                trace!("vcx_credential_get_problem_report_cb(command_handle: {}, rc: {}, msg: {})",
+                       command_handle, error::SUCCESS.message, secret!(message));
+                let message = CStringUtils::string_to_cstring(message);
+                cb(command_handle, error::SUCCESS.code_num, message.as_ptr());
+            }
+            Err(x) => {
+                error!("vcx_credential_get_problem_report_cb(command_handle: {}, rc: {})",
+                       command_handle, x);
+                cb(command_handle, x.into(), ptr::null_mut());
             }
         };
 

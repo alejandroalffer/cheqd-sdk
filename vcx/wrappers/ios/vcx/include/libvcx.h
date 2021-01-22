@@ -175,6 +175,9 @@ vcx_error_t vcx_connection_create_with_outofband_invitation(vcx_command_handle_t
 /** Deletes a connection, send an API call to agency to stop sending messages from this connection */
 vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t err));
 
+/** Get Problem Report message for Connection object in Failed or Rejected state. */
+vcx_error_t vcx_connection_get_problem_report(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t err));
+
 /** Send a message to the specified connection
 ///
 /// #params
@@ -274,6 +277,10 @@ vcx_error_t vcx_connection_send_invite_action(vcx_command_handle_t command_handl
 /** Sets the credential request in an accepted state. (not in MVP) */
 vcx_error_t vcx_issuer_accept_credential(vcx_credential_handle_t credential_handle);
 
+vcx_error_t vcx_issuer_credential_get_problem_report(vcx_command_handle_t command_handle,
+                                                     vcx_credential_handle_t credential_handle,
+                                                     void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 /**
  * proof object
  *
@@ -315,6 +322,9 @@ vcx_error_t vcx_proof_deserialize(vcx_command_handle_t command_handle, const cha
 
 /** Releases the proof from memory. */
 vcx_error_t vcx_proof_release(vcx_proof_handle_t proof_handle);
+
+/** Get Problem Report message for Proof object in Failed or Rejected state. */
+vcx_error_t vcx_proof_get_problem_report(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 /**
  * disclosed_proof object
@@ -379,6 +389,12 @@ vcx_error_t vcx_disclosed_proof_generate_proof(vcx_command_handle_t command_hand
 /** Releases the disclosed_proof from memory. */
 vcx_error_t vcx_disclosed_proof_release(vcx_proof_handle_t proof_handle);
 
+/** Declines presentation request. */
+vcx_error_t vcx_disclosed_proof_decline_presentation_request(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, const char *reason, const char *proposal, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+
+/** Get Problem Report message for Disclosed Proof object in Failed or Rejected state. */
+vcx_error_t vcx_disclosed_proof_get_problem_report(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 /**
  * credential object
  *
@@ -429,6 +445,9 @@ vcx_error_t vcx_credential_reject(vcx_command_handle_t command_handle, vcx_crede
 
 /** Build Presentation Proposal message for revealing Credential data. */
 vcx_error_t vcx_credential_get_presentation_proposal_msg(vcx_command_handle_t handle, vcx_credential_handle_t credential_handle, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *presentation_proposal));
+
+/** Get Problem Report message for Credential object in Failed or Rejected state. */
+vcx_error_t vcx_credential_get_problem_report(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 /**
  * wallet object

@@ -1068,6 +1068,19 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
     }).map_err(handle_err)
 }
 
+pub fn get_problem_report_message(handle: u32) -> VcxResult<String> {
+    HANDLE_MAP.get(handle, |proof| {
+        match proof {
+            DisclosedProofs::Pending(ref _obj) | DisclosedProofs::V1(ref _obj) => {
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Proof type doesn't support this action: `get_problem_report_message`."))
+            }
+            DisclosedProofs::V3(ref obj) => {
+                obj.get_problem_report_message()
+            }
+        }
+    }).map_err(handle_err)
+}
+
 #[cfg(test)]
 mod tests {
     extern crate serde_json;

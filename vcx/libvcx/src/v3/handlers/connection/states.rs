@@ -1192,6 +1192,21 @@ impl DidExchangeSM {
         }
     }
 
+    pub fn problem_report(&self) -> Option<&ProblemReport> {
+        match self.state {
+            ActorDidExchangeState::Invitee(ref state) | ActorDidExchangeState::Inviter(ref state) =>
+                match state {
+                    DidExchangeState::Initialized(_) |
+                    DidExchangeState::Invited(_) |
+                    DidExchangeState::Requested(_) |
+                    DidExchangeState::Responded(_) |
+                    DidExchangeState::Completed(_) => None,
+                    DidExchangeState::Failed(ref state) => state.error.as_ref(),
+
+                }
+        }
+    }
+
     pub fn completed_connection(&self) -> Option<CompletedConnection> {
         match self.state {
             ActorDidExchangeState::Invitee(ref state) | ActorDidExchangeState::Inviter(ref state) =>

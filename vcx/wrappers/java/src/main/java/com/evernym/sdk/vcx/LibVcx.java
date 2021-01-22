@@ -248,6 +248,11 @@ public abstract class LibVcx {
         public int vcx_connection_send_invite_action(int command_handle, int connection_handle, String data, Callback cb);
 
         /**
+         * Get Problem Report message for object in Failed or Rejected state.
+         */
+        public int vcx_connection_get_problem_report(int command_handle, int connection_handle, Callback cb);
+
+        /**
          * The API represents an Issuer side in credential issuance process.
          * Assumes that pairwise connection between Issuer and Holder is already established.
          */
@@ -297,6 +302,8 @@ public abstract class LibVcx {
         /** Sets the credential request in an accepted state. (not in MVP) */
         public int vcx_issuer_accept_credential(int credential_handle);
 
+        /** Get Problem Report message for object in Failed or Rejected state. */
+        public int vcx_issuer_credential_get_problem_report(int command_handle, int credential_handle, Callback cb);
 
         /**
          * APIs in this module are called by a verifier throughout the request-proof-and-verify process.
@@ -374,6 +381,11 @@ public abstract class LibVcx {
          * Takes a json string representing a proof object and recreates an object matching the json
          */
         public int vcx_proof_deserialize(int command_handle, String serialized_proof, Callback cb);
+
+        /**
+         * Get Problem Report message for object in Failed or Rejected state.
+         */
+        public int vcx_proof_get_problem_report(int command_handle, int proof_handle, Callback cb);
 
         /**
          * Releases the proof object by de-allocating memory
@@ -474,6 +486,12 @@ public abstract class LibVcx {
          * Declines presentation request..
          */
         public int vcx_disclosed_proof_decline_presentation_request(int command_handle, int proof_handle, int connection_handle, String reason, String proposal, Callback cb);
+
+
+        /**
+         * Get Problem Report message for object in Failed or Rejected state.
+         */
+        public int vcx_disclosed_proof_get_problem_report(int command_handle, int proof_handle, Callback cb);
 
 
         /**
@@ -725,6 +743,9 @@ public abstract class LibVcx {
 
         /** Delete a credential from the wallet and release it from memory. */
         public int vcx_delete_credential(int command_handle, int credential_handle, Callback cb);
+
+        /** Get Problem Report message for object in Failed or Rejected state.. */
+        public int vcx_credential_get_problem_report(int command_handle, int credential_handle, Callback cb);
 
         /**
          * wallet object
