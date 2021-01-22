@@ -553,7 +553,7 @@ class DisclosedProof(VcxStateful):
 
         :param connection: Connection
         :param reason: human-readable string that explain the reason of decline
-        :param proposal: the proposed format of presentation request
+        :param proposal: the proposed format of presentation request. Pass none to send Presentation Reject.
            (see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#presentation-preview for details)
            {
               "attributes": [
@@ -600,3 +600,21 @@ class DisclosedProof(VcxStateful):
                       c_reason,
                       c_proposal,
                       DisclosedProof.decline_presentation_request.cb)
+
+    async def get_problem_report(self) -> Optional[str]:
+        """
+        Get Problem Report message for object in Failed or Rejected state.
+        :return: Problem Report as JSON string or null
+        """
+
+        if not hasattr(DisclosedProof.get_problem_report, "cb"):
+            self.logger.debug("vcx_disclosed_proof_get_problem_report: Creating callback")
+            DisclosedProof.get_problem_report.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+        result = await do_call('vcx_disclosed_proof_get_problem_report',
+                               c_connection_handle,
+                               DisclosedProof.get_problem_report.cb)
+
+        self.logger.debug("vcx_disclosed_proof_get_problem_report completed")
+        return result.decode() if result else None

@@ -798,6 +798,23 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     }
 }
 
+- (void)connectionGetProblemReport:(NSInteger) connectionHandle
+                        completion:(void (^)(NSError *error, NSString *message))completion
+{
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    vcx_error_t ret = vcx_connection_get_problem_report(handle,
+                                                        connectionHandle,
+                                                        VcxWrapperCommonStringCallback);
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], nil);
+       });
+    }
+}
+
 - (void)agentUpdateInfo: (NSString *) config
             completion: (void (^)(NSError *error)) completion
 {
@@ -1132,6 +1149,23 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     }
 }
 
+- (void)credentialGetProblemReport:(NSInteger) credentialHandle
+                        completion:(void (^)(NSError *error, NSString *message))completion
+{
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    vcx_error_t ret = vcx_credential_get_problem_report(handle,
+                                                        credentialHandle,
+                                                        VcxWrapperCommonStringCallback);
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], nil);
+       });
+    }
+}
+
 - (int)credentialRelease:(NSInteger) credentialHandle {
     return vcx_credential_release(credentialHandle);
 }
@@ -1419,6 +1453,28 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (void) proofDeclinePresentationRequest:(vcx_proof_handle_t)proof_handle
+                    withConnectionHandle:(vcx_connection_handle_t)connection_handle
+                              withReason:(NSString *)reason
+                            withProposal:(NSString *)proposal
+                          withCompletion:(void (^)(NSError *error))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char *c_reason = [reason cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *c_proposal = [proposal cStringUsingEncoding:NSUTF8StringEncoding];
+
+    ret = vcx_disclosed_proof_decline_presentation_request(handle, proof_handle, connection_handle, c_reason, c_proposal, VcxWrapperCommonCallback);
+
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
 - (void) getProofMsg:(vcx_proof_handle_t) proofHandle
          withCompletion:(void (^)(NSError *error, NSString *proofMsg))completion {
     vcx_error_t ret;
@@ -1580,6 +1636,23 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
        dispatch_async(dispatch_get_main_queue(), ^{
            completion([NSError errorFromVcxError: ret], 0);
+       });
+    }
+}
+
+- (void)proofGetProblemReport:(VcxHandle) proofHandle
+                   completion:(void (^)(NSError *error, NSString *message))completion
+{
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    vcx_error_t ret = vcx_disclosed_proof_get_problem_report(handle,
+                                                             proofHandle,
+                                                             VcxWrapperCommonStringCallback);
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], nil);
        });
     }
 }

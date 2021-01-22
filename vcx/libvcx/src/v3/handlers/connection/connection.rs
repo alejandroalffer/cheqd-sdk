@@ -14,6 +14,7 @@ use v3::messages::questionanswer::question::{Question, QuestionResponse};
 use v3::messages::invite_action::invite::InviteActionData;
 use v3::messages::invite_action::invite::{Invite as InviteForAction};
 use connection::ConnectionOptions;
+use v3::messages::connection::problem_report::ProblemReport;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
@@ -347,6 +348,14 @@ impl Connection {
         self.connection_sm.completed_connection()
             .ok_or(VcxError::from_msg(VcxErrorKind::NotReady,
                                       format!("Connection object {} in state {} not ready to send remote messages", self.connection_sm.source_id(), self.state())))
+    }
+
+    pub fn get_problem_report_message(&self) -> VcxResult<String> {
+        trace!("Connection::get_problem_report_message >>>");
+        debug!("Connection {}: Getting problem report message", self.get_source_id());
+
+        let problem_report: Option<&ProblemReport> = self.connection_sm.problem_report();
+        Ok(json!(&problem_report).to_string())
     }
 }
 

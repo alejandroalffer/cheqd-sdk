@@ -350,7 +350,7 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
-    private static Callback vcxGetProofProposalCB = new Callback() {
+    private static Callback stringCB = new Callback() {
         public void callback(int commandHandle, int err, String msg){
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
@@ -376,7 +376,7 @@ public class ProofApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_get_proof_proposal(commandHandle, proofHandle, vcxGetProofProposalCB);
+        int result = LibVcx.api.vcx_get_proof_proposal(commandHandle, proofHandle, stringCB);
         checkResult(result);
 
         return future;
@@ -581,4 +581,26 @@ public class ProofApi extends VcxJava.API {
         return result;
     }
 
+    /**
+     * Get Problem Report message for object in Failed or Rejected state.
+     *
+     * @param  proofHandle      handle pointing to Proof state object.
+     *
+     * @return                  Problem Report as JSON string or null
+     *
+     * @throws VcxException     If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<String> proofGetProblemReport(
+            int proofHandle
+    ) throws VcxException {
+
+        logger.debug("proofGetProblemReport() called with: proofHandle = [" + proofHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_proof_get_problem_report(commandHandle, proofHandle, stringCB);
+        checkResult(result);
+
+        return future;
+    }
 }

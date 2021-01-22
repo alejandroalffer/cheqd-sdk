@@ -740,6 +740,24 @@ impl ProverSM {
                                                                       format!("Prover object {} in state {} not ready to get Presentation message", self.source_id, self.state()))),
         }
     }
+
+    pub fn problem_report(&self) -> Option<&ProblemReport> {
+        match self.state {
+            ProverState::RequestReceived(_) |
+            ProverState::PresentationPrepared(_) |
+            ProverState::PresentationSent(_) |
+            ProverState::ProposalPrepared(_) |
+            ProverState::ProposalSent(_) => None,
+            ProverState::PresentationPreparationFailed(ref state) => Some(&state.problem_report),
+            ProverState::Finished(ref status) => {
+                match &status.status {
+                    Status::Success | Status::Undefined => None,
+                    Status::Rejected(ref problem_report) => problem_report.as_ref(),
+                    Status::Failed(problem_report) => Some(problem_report),
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]

@@ -966,6 +966,19 @@ pub fn get_presentation_proposal_msg(handle: u32) -> VcxResult<String> {
         .map_err(handle_err)
 }
 
+pub fn get_problem_report_message(handle: u32) -> VcxResult<String> {
+    HANDLE_MAP.get(handle, |obj| {
+        match obj {
+            Credentials::Pending(ref _obj) | Credentials::V1(ref _obj) => {
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Credential type doesn't support this action: `get_problem_report_message`."))
+            }
+            Credentials::V3(ref obj) => {
+                obj.get_problem_report_message()
+            }
+        }
+    }).map_err(handle_err)
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;

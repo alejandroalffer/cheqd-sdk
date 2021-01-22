@@ -1,4 +1,6 @@
 from ctypes import *
+from typing import Optional
+
 from vcx.common import do_call, create_cb
 from vcx.api.connection import Connection
 from vcx.api.vcx_stateful import VcxStateful
@@ -491,3 +493,21 @@ class Proof(VcxStateful):
                       c_proof_handle,
                       c_connection_handle,
                       Proof.set_connection.cb)
+
+    async def get_problem_report(self) -> Optional[str]:
+        """
+        Get Problem Report message for object in Failed or Rejected state.
+        :return: Problem Report as JSON string or null
+        """
+
+        if not hasattr(Proof.get_problem_report, "cb"):
+            self.logger.debug("vcx_proof_get_problem_report: Creating callback")
+            Proof.get_problem_report.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+        result = await do_call('vcx_proof_get_problem_report',
+                               c_connection_handle,
+                               Proof.get_problem_report.cb)
+
+        self.logger.debug("vcx_proof_get_problem_report completed")
+        return result.decode() if result else None

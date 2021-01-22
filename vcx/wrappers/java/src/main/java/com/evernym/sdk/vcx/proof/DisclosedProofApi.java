@@ -370,7 +370,7 @@ public class DisclosedProofApi extends VcxJava.API {
         return future;
     }
 
-    private static Callback vcxProofGetMsgCB = new Callback() {
+    private static Callback stringCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String msg) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [****]");
@@ -396,7 +396,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_get_proof_msg(commandHandle, proofHandle, vcxProofGetMsgCB);
+        int result = LibVcx.api.vcx_disclosed_proof_get_proof_msg(commandHandle, proofHandle, stringCB);
         checkResult(result);
 
         return future;
@@ -428,7 +428,7 @@ public class DisclosedProofApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_disclosed_proof_get_reject_msg(commandHandle, proofHandle, vcxProofGetMsgCB);
+        int result = LibVcx.api.vcx_disclosed_proof_get_reject_msg(commandHandle, proofHandle, stringCB);
         checkResult(result);
 
         return future;
@@ -625,6 +625,29 @@ public class DisclosedProofApi extends VcxJava.API {
 
 		int result = LibVcx.api.vcx_disclosed_proof_decline_presentation_request(commandHandle, proofHandle, connectionHandle, reason, proposal, vcxDeclinePresentationRequestCB);
 		checkResult(result);
+
+        return future;
+    }
+
+    /**
+     * Get Problem Report message for object in Failed or Rejected state.
+     *
+     * @param  proofHandle      handle pointing to Disclosed Proof state object.
+     *
+     * @return                  Problem Report as JSON string or null
+     *
+     * @throws VcxException     If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<String> proofGetProblemReport(
+            int proofHandle
+    ) throws VcxException {
+
+        logger.debug("proofGetProblemReport() called with: proofHandle = [" + proofHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_disclosed_proof_get_problem_report(commandHandle, proofHandle, stringCB);
+        checkResult(result);
 
         return future;
     }

@@ -437,4 +437,27 @@ public class IssuerApi extends VcxJava.API {
 
         return future;
     }
+
+    /**
+     * Get Problem Report message for object in Failed or Rejected state.
+     *
+     * @param  credentialHandle handle pointing to Issuer state object.
+     *
+     * @return                  Problem Report as JSON string or null
+     *
+     * @throws VcxException     If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<String> issuerGetProblemReport(
+            int credentialHandle
+    ) throws VcxException {
+
+        logger.debug("issuerGetProblemReport() called with: credentialHandle = [" + credentialHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_issuer_credential_get_problem_report(commandHandle, credentialHandle, issuerCredentialStringCB);
+        checkResult(result);
+
+        return future;
+    }
 }

@@ -1477,6 +1477,19 @@ pub fn get_completed_connection(handle: u32) -> VcxResult<CompletedConnection> {
     }).map_err(handle_err)
 }
 
+pub fn get_problem_report_message(handle: u32) -> VcxResult<String> {
+    CONNECTION_MAP.get(handle, |connection| {
+        match connection {
+            Connections::V1(ref _obj) => {
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `get_problem_report_message`."))
+            }
+            Connections::V3(ref obj) => {
+                obj.get_problem_report_message()
+            }
+        }
+    }).map_err(handle_err)
+}
+
 #[cfg(test)]
 pub mod tests {
     use std::thread;

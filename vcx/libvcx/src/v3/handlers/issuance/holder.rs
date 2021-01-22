@@ -274,6 +274,20 @@ impl HolderSM {
             HolderState::Finished(_) => None,
         }
     }
+
+    pub fn problem_report(&self) -> Option<&ProblemReport> {
+        match self.state {
+            HolderState::OfferReceived(_) |
+            HolderState::RequestSent(_) => None,
+            HolderState::Finished(ref status) => {
+                match &status.status {
+                    Status::Success | Status::Undefined => None,
+                    Status::Rejected(ref problem_report) => problem_report.as_ref(),
+                    Status::Failed(problem_report) => Some(problem_report),
+                }
+            }
+        }
+    }
 }
 
 fn _parse_cred_def_from_cred_offer(cred_offer: &str) -> VcxResult<String> {

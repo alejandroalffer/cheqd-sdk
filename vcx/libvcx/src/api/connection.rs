@@ -7,6 +7,7 @@ use connection::*;
 use error::prelude::*;
 use indy_sys::CommandHandle;
 use v3::messages::invite_action::invite::InviteActionData;
+use connection::connect;
 
 /*
     Tha API represents a pairwise connection with another identity owner.
@@ -869,7 +870,6 @@ pub extern fn vcx_connection_update_state_with_message(command_handle: CommandHa
                 trace!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {})",
                        command_handle, error::SUCCESS.message, connection_handle, state);
                 cb(command_handle, error::SUCCESS.code_num, state);
-
             }
             Err(x) => {
                 let state = get_state(connection_handle);
@@ -1725,6 +1725,51 @@ pub extern fn vcx_connection_get_their_pw_did(command_handle: u32,
             Err(x) => {
                 warn!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {})",
                       command_handle, connection_handle, x, "null");
+                cb(command_handle, x.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Get Problem Report message for Connection object in Failed or Rejected state.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: handle pointing to Connection state object.
+///
+/// cb: Callback that returns Problem Report as JSON string or null
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_get_problem_report(command_handle: CommandHandle,
+                                                connection_handle: u32,
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                                     err: u32,
+                                                                     message: *const c_char)>) -> u32 {
+    info!("vcx_connection_get_problem_report >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_get_problem_report(command_handle: {}, connection_handle: {})",
+           command_handle, connection_handle);
+
+    spawn(move || {
+        match get_problem_report_message(connection_handle) {
+            Ok(message) => {
+                trace!("vcx_connection_get_problem_report_message_cb(command_handle: {}, rc: {}, msg: {})",
+                       command_handle, error::SUCCESS.message, secret!(message));
+                let message = CStringUtils::string_to_cstring(message);
+                cb(command_handle, error::SUCCESS.code_num, message.as_ptr());
+            }
+            Err(x) => {
+                error!("vcx_connection_get_problem_report_message_cb(command_handle: {}, rc: {})",
+                       command_handle, x);
                 cb(command_handle, x.into(), ptr::null_mut());
             }
         };

@@ -910,3 +910,21 @@ class Connection(VcxStateful):
                                 Connection.info.cb)
 
         return json.loads(details.decode())
+
+    async def get_problem_report(self) -> Optional[str]:
+        """
+        Get Problem Report message for object in Failed or Rejected state.
+        :return: Problem Report as JSON string or null
+        """
+
+        if not hasattr(Connection.get_problem_report, "cb"):
+            self.logger.debug("vcx_connection_get_problem_report: Creating callback")
+            Connection.get_problem_report.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+        result = await do_call('vcx_connection_get_problem_report',
+                               c_connection_handle,
+                               Connection.get_problem_report.cb)
+
+        self.logger.debug("vcx_connection_get_problem_report completed")
+        return result.decode() if result else None

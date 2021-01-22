@@ -840,6 +840,19 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
     }).map_err(handle_err)
 }
 
+pub fn get_problem_report_message(handle: u32) -> VcxResult<String> {
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        match obj {
+            IssuerCredentials::Pending(ref _obj) | IssuerCredentials::V1(ref _obj) => {
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Issuer Credential type doesn't support this action: `get_problem_report_message`."))
+            }
+            IssuerCredentials::V3(ref obj) => {
+                obj.get_problem_report_message()
+            }
+        }
+    }).map_err(handle_err)
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;

@@ -242,7 +242,7 @@ pub extern fn vcx_disclosed_proof_create_proposal(command_handle: CommandHandle,
     check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
 
     trace!("vcx_disclosed_proof_create_proposal(command_handle: {}, source_id: {}, proposal: {}, comment: {})",
-          command_handle, source_id, secret!(proposal), secret!(comment));
+           command_handle, source_id, secret!(proposal), secret!(comment));
 
     spawn(move || {
         let (rc, handle) = match disclosed_proof::create_proposal(&source_id, proposal, comment) {
@@ -970,6 +970,50 @@ pub extern fn vcx_disclosed_proof_decline_presentation_request(command_handle: u
     error::SUCCESS.code_num
 }
 
+/// Get Problem Report message for Disclosed Proof object in Failed or Rejected state.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: handle pointing to Disclosed Proof state object.
+///
+/// cb: Callback that returns Problem Report as JSON string or null
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_get_problem_report(command_handle: CommandHandle,
+                                                     proof_handle: u32,
+                                                     cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                                          err: u32,
+                                                                          message: *const c_char)>) -> u32 {
+    info!("vcx_disclosed_proof_get_problem_report >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_disclosed_proof_get_problem_report(command_handle: {}, proof_handle: {})",
+           command_handle, proof_handle);
+
+    spawn(move || {
+        match disclosed_proof::get_problem_report_message(proof_handle) {
+            Ok(message) => {
+                trace!("vcx_disclosed_proof_get_problem_report_cb(command_handle: {}, rc: {}, msg: {})",
+                       command_handle, error::SUCCESS.message, secret!(message));
+                let message = CStringUtils::string_to_cstring(message);
+                cb(command_handle, error::SUCCESS.code_num, message.as_ptr());
+            }
+            Err(x) => {
+                error!("vcx_disclosed_proof_get_problem_report_cb(command_handle: {}, rc: {})",
+                       command_handle, x);
+                cb(command_handle, x.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
 
 /// Releases the disclosed proof object by de-allocating memory
 ///

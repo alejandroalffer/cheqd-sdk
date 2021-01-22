@@ -139,8 +139,8 @@ export interface IGenerateProofData {
 export interface IDeclinePresentationRequestData {
   // Connection to decline presentation request
   connection: Connection,
-  // Human-readable string that explain the reason of decline
-  reason?: string,
+  // Human-readable string that explain the reason of decline. Use null to send Presentation Reject.
+reason?: string,
   // The proposed format of presentation request
   proposal?: any
 }
@@ -595,6 +595,36 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
         )
     } catch (err) {
       throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Get Problem Report message for object in Failed or Rejected state.
+   *
+   * return Problem Report as JSON string or null
+   */
+  public async getProblemReport (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_disclosed_proof_get_problem_report(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+        throw new VCXInternalError(err)
     }
   }
 
