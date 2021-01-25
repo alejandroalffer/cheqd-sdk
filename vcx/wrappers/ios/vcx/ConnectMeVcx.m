@@ -871,7 +871,8 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
            completion:(void (^)(NSError *error, NSInteger credentialHandle))completion{
    vcx_error_t ret;
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-   const char * credential_offer=[credentialOffer cStringUsingEncoding:NSUTF8StringEncoding];
+   NSData * data = [credentialOffer dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:FALSE];
+   const char * credential_offer= (void *) [data bytes];
    const char * source_id = [sourceId cStringUsingEncoding:NSUTF8StringEncoding];
     ret = vcx_credential_create_with_offer(handle, source_id,credential_offer, VcxWrapperCommonNumberCallback);
 
