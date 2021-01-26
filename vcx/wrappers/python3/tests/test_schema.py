@@ -76,12 +76,9 @@ async def test_serialize_deserialize_and_then_serialize():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_release():
-    with pytest.raises(VcxError) as e:
-        schema = await Schema.create(source_id, name, version, attrs, 0)
-        assert schema.handle > 0
-        schema.release()
-        await schema.serialize()
-    assert ErrorCode.InvalidSchemaHandle == e.value.error_code
+    schema = await Schema.create(source_id, name, version, attrs, 0)
+    assert schema.handle > 0
+    schema.release()
 
 
 @pytest.mark.asyncio

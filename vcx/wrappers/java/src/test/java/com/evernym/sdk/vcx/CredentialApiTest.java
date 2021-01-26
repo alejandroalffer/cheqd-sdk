@@ -4,7 +4,6 @@ import com.evernym.sdk.vcx.connection.ConnectionApi;
 import com.evernym.sdk.vcx.credential.CredentialAcceptOfferResult;
 import com.evernym.sdk.vcx.credential.CredentialApi;
 import com.evernym.sdk.vcx.credential.GetCredentialCreateMsgidResult;
-import com.evernym.sdk.vcx.credential.InvalidCredentialHandleException;
 import com.evernym.sdk.vcx.vcx.InvalidOptionException;
 import com.evernym.sdk.vcx.vcx.VcxApi;
 import com.jayway.jsonpath.JsonPath;
@@ -77,7 +76,7 @@ class CredentialApiTest {
     @Test
     @DisplayName("should throw invalid credential handle exception when serializing invalid credential")
     void serializeCredentialShouldThrow() {
-        Assertions.assertThrows(InvalidCredentialHandleException.class, () -> {
+        Assertions.assertThrows(ExecutionException.class, () -> {
             TestHelper.getResultFromFuture(CredentialApi.credentialSerialize(0));
         });
     }

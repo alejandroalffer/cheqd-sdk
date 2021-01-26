@@ -115,8 +115,8 @@ describe('Proof:', () => {
   describe('updateState:', () => {
     it(`returns ${StateType.None}: not initialized`, async () => {
       const proof = new Proof(null as any, {} as any)
-      await proof.updateState()
-      assert.equal(await proof.getState(), StateType.None)
+      const error = await shouldThrow(() => proof.updateState())
+      assert.equal(error.vcxCode, VCXCode.INVALID_PROOF_HANDLE)
     })
 
     it(`returns ${StateType.Initialized}: created`, async () => {

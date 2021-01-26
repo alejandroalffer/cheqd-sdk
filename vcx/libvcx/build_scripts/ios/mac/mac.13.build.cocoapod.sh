@@ -63,7 +63,7 @@ done
 # Test the libvcx.a file if the ${IOS_ARCHS} contains i386 or x86_64
 if [[ "${IOS_ARCHS}" == *"i386"* ]] || [[ "${IOS_ARCHS}" == *"x86_64"* ]]; then
     #xcodebuild -project vcx.xcodeproj -scheme vcx-demo -sdk iphonesimulator build-for-testing
-    xcodebuild -project vcx.xcodeproj -scheme vcx-demo -destination 'platform=iOS Simulator,name=iPhone 5s' test
+    xcodebuild -project vcx.xcodeproj -scheme vcx-demo -destination 'platform=iOS Simulator,name=iPhone 6s' test
     ## Need to do:
     ## a) gem install cocoapods -- sudo may be needed
     #if [ -z "$(which pod)" ]; then

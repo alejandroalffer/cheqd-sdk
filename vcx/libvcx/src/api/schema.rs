@@ -174,26 +174,20 @@ pub extern fn vcx_schema_serialize(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
-
-    trace!("vcx_schema_serialize(command_handle: {}, schema_handle: {}) source_id: {}",
-           command_handle, schema_handle, source_id);
-
-    if !schema::is_valid_handle(schema_handle) {
-        return VcxError::from(VcxErrorKind::InvalidSchemaHandle).into()
-    };
+    trace!("vcx_schema_serialize(command_handle: {}, schema_handle: {})",
+           command_handle, schema_handle);
 
     spawn(move || {
         match schema::to_string(schema_handle) {
             Ok(x) => {
-                trace!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}) source_id: {}",
-                       command_handle, schema_handle, error::SUCCESS.message, secret!(x), source_id);
+                trace!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {})",
+                       command_handle, schema_handle, error::SUCCESS.message, secret!(x));
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             }
             Err(x) => {
-                warn!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}) source_id: {}",
-                      command_handle, schema_handle, x, "null", source_id);
+                warn!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {})",
+                      command_handle, schema_handle, x, "null");
                 cb(command_handle, x.into(), ptr::null_mut());
             }
         };
@@ -230,13 +224,13 @@ pub extern fn vcx_schema_deserialize(command_handle: CommandHandle,
     spawn(move || {
         match schema::from_string(&schema_data) {
             Ok(x) => {
-                trace!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
-                       command_handle, error::SUCCESS.message, x, schema::get_source_id(x).unwrap_or_default());
+                trace!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
+                       command_handle, error::SUCCESS.message, x);
                 cb(command_handle, error::SUCCESS.code_num, x);
             }
             Err(x) => {
-                warn!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
-                      command_handle, x, 0, "");
+                warn!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, x, 0);
                 cb(command_handle, x.into(), 0);
             }
         };
@@ -258,19 +252,20 @@ pub extern fn vcx_schema_deserialize(command_handle: CommandHandle,
 pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
     info!("vcx_schema_release >>>");
 
-    let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
-    match schema::release(schema_handle) {
-        Ok(()) => {
-            trace!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
-                   schema_handle, error::SUCCESS.message, source_id);
-            error::SUCCESS.code_num
-        }
-        Err(e) => {
-            warn!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
-                  schema_handle, e, source_id);
-            e.into()
-        }
-    }
+    spawn(move || {
+        match schema::release(schema_handle) {
+            Ok(()) => {
+                trace!("vcx_schema_release(schema_handle: {}, rc: {})",
+                       schema_handle, error::SUCCESS.message);
+            }
+            Err(e) => {
+                warn!("vcx_schema_release(schema_handle: {}), rc: {})",
+                      schema_handle, e);
+            }
+        };
+        Ok(())
+    });
+    error::SUCCESS.code_num
 }
 
 /// Retrieves schema's id
@@ -291,9 +286,6 @@ pub extern fn vcx_schema_get_schema_id(command_handle: CommandHandle,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_schema_get_schema_id(command_handle: {}, schema_handle: {})", command_handle, schema_handle);
-    if !schema::is_valid_handle(schema_handle) {
-        return VcxError::from(VcxErrorKind::InvalidSchemaHandle).into()
-    }
 
     spawn(move || {
         match schema::get_schema_id(schema_handle) {
@@ -395,8 +387,6 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    let source_id = schema::get_source_id(handle).unwrap_or_default();
-
     trace!("vcx_schema_get_payment_txn(command_handle: {})", command_handle);
 
     spawn(move || {
@@ -404,23 +394,23 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: CommandHandle,
             Ok(x) => {
                 match serde_json::to_string(&x) {
                     Ok(x) => {
-                        trace!("vcx_schema_get_payment_txn_cb(command_handle: {}, rc: {}, : {}), source_id: {:?}",
-                               command_handle, error::SUCCESS.message, secret!(x), source_id);
+                        trace!("vcx_schema_get_payment_txn_cb(command_handle: {}, rc: {}, : {})",
+                               command_handle, error::SUCCESS.message, secret!(x));
 
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, 0, msg.as_ptr());
                     }
                     Err(e) => {
                         let err = VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize payment txn as JSON. Error: {}", e));
-                        error!("vcx_schema_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {:?}",
-                               command_handle, err, "null", source_id);
+                        error!("vcx_schema_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {})",
+                               command_handle, err, "null");
                         cb(command_handle, err.into(), ptr::null_mut());
                     }
                 }
             }
             Err(x) => {
-                error!("vcx_schema_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {:?}",
-                       command_handle, x, "null", source_id);
+                error!("vcx_schema_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {})",
+                       command_handle, x, "null");
                 cb(command_handle, x.into(), ptr::null());
             }
         };
@@ -453,14 +443,8 @@ pub extern fn vcx_schema_update_state(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
-
-    trace!("vcx_schema_update_state(command_handle: {}, schema_handle: {}) source_id: {}",
-           command_handle, schema_handle, source_id);
-
-    if !schema::is_valid_handle(schema_handle) {
-        return VcxError::from(VcxErrorKind::InvalidSchemaHandle).into();
-    };
+    trace!("vcx_schema_update_state(command_handle: {}, schema_handle: {})",
+           command_handle, schema_handle);
 
     spawn(move || {
         match schema::update_state(schema_handle) {
@@ -504,14 +488,8 @@ pub extern fn vcx_schema_get_state(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
-    let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
-
-    trace!("vcx_schema_get_state(command_handle: {}, schema_handle: {}) source_id: {}",
-           command_handle, schema_handle, source_id);
-
-    if !schema::is_valid_handle(schema_handle) {
-        return VcxError::from(VcxErrorKind::InvalidSchemaHandle).into();
-    };
+    trace!("vcx_schema_get_state(command_handle: {}, schema_handle: {})",
+           command_handle, schema_handle);
 
     spawn(move || {
         match schema::get_state(schema_handle) {
@@ -701,9 +679,7 @@ mod tests {
 
         let (_, schema_name, schema_version, data) = prepare_schema_data();
         let handle = vcx_schema_create_c_closure(&schema_name, &schema_version, &data).unwrap();
-
-        let unknown_handle = handle + 1;
-        assert_eq!(vcx_schema_release(unknown_handle), error::INVALID_SCHEMA_HANDLE.code_num);
+        vcx_schema_release(handle);
     }
 
     #[test]

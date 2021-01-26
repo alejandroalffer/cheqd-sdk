@@ -14,6 +14,7 @@ use v3::messages::proof_presentation::presentation_proposal::{PresentationPropos
 
 use connection;
 use utils::libindy::anoncreds::prover_get_credential;
+use v3::messages::error::ProblemReport;
 
 // Issuer
 
@@ -56,6 +57,14 @@ impl Issuer {
     pub fn get_credential_offer(&self) -> VcxResult<CredentialOffer> {
         self.issuer_sm.get_credential_offer()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, format!("Invalid {} Issuer object state: `offer` not found", self.get_source_id()?)))
+    }
+
+    pub fn get_problem_report_message(&self) -> VcxResult<String> {
+        trace!("Issuer::get_problem_report_message >>>");
+        debug!("Issuer {}: Getting problem report message", self.issuer_sm.get_source_id());
+
+        let problem_report: Option<&ProblemReport> = self.issuer_sm.problem_report();
+        Ok(json!(&problem_report).to_string())
     }
 
     pub fn update_status(&mut self, msg: Option<String>) -> VcxResult<u32> {
@@ -177,6 +186,14 @@ impl Holder {
 
         trace!("Credential::get_presentation_proposal <<< presentation_proposal: {:?}", presentation_proposal);
         Ok(presentation_proposal)
+    }
+
+    pub fn get_problem_report_message(&self) -> VcxResult<String> {
+        trace!("Holder::get_problem_report_message >>>");
+        debug!("Holder {}: Getting problem report message", self.get_source_id());
+
+        let problem_report: Option<&ProblemReport> = self.holder_sm.problem_report();
+        Ok(json!(&problem_report).to_string())
     }
 
     pub fn step(&mut self, message: CredentialIssuanceMessage) -> VcxResult<()> {

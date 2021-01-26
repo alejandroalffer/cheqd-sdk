@@ -50,6 +50,9 @@ async def main():
     config['institution_logo_url'] = 'http://robohash.org/4'
     config['genesis_path'] = 'docker.txn'
     config['payment_method'] = 'null'
+    config[
+        'author_agreement'] = "{\"taaDigest\":\"3ae97ea501bd26b81c8c63da2c99696608517d6df8599210c7edaa7e2c719d65\",\"acceptanceMechanismType\":\"at_submission\",\"timeOfAcceptance\":" + str(
+        1594193805) + "}"
 
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
@@ -67,6 +70,7 @@ async def main():
             "3 - send ping \n "
             "4 - update connection state \n "
             "5 - establish out-of-band connection \n "
+            "6 - send invite action \n "
             "else finish \n") \
             .lower().strip()
         if answer == '0':
@@ -89,6 +93,8 @@ async def main():
             await connection_to_alice.update_state()
         elif answer == '5':
             connection_to_alice = await outofband_connect()
+        elif answer == '6':
+            await connection_to_alice.send_invite_action({'goal_code': 'automotive.inspect.tire'})
         else:
             break
 

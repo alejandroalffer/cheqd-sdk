@@ -1,4 +1,4 @@
-use serde_json;
+use ::{serde_json, credential_def};
 
 use std::collections::HashMap;
 use api::VcxStateType;
@@ -655,6 +655,8 @@ pub fn issuer_credential_create(cred_def_handle: u32,
                                 credential_name: String,
                                 credential_data: String,
                                 price: u64) -> VcxResult<u32> {
+    credential_def::check_is_published(cred_def_handle)?;
+
     trace!("issuer_credential_create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
            cred_def_handle, source_id, secret!(issuer_did), secret!(credential_name), secret!(&credential_data), price);
     debug!("creating issuer credential {} state object", source_id);
@@ -834,6 +836,19 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
             IssuerCredentials::Pending(ref obj) => Ok(obj.get_source_id().to_string()),
             IssuerCredentials::V1(ref obj) => Ok(obj.get_source_id().to_string()),
             IssuerCredentials::V3(ref obj) => obj.get_source_id()
+        }
+    }).map_err(handle_err)
+}
+
+pub fn get_problem_report_message(handle: u32) -> VcxResult<String> {
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        match obj {
+            IssuerCredentials::Pending(ref _obj) | IssuerCredentials::V1(ref _obj) => {
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Issuer Credential type doesn't support this action: `get_problem_report_message`."))
+            }
+            IssuerCredentials::V3(ref obj) => {
+                obj.get_problem_report_message()
+            }
         }
     }).map_err(handle_err)
 }

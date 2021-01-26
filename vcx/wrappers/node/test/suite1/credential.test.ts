@@ -118,8 +118,8 @@ describe('Credential:', () => {
   describe('updateState:', () => {
     it(`returns ${StateType.None}: not initialized`, async () => {
       const credential = new Credential(null as any)
-      await credential.updateState()
-      assert.equal(await credential.getState(), StateType.None)
+      const error = await shouldThrow(() => credential.updateState())
+      assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_HANDLE)
     })
 
     it(`returns ${StateType.RequestReceived}: created`, async () => {

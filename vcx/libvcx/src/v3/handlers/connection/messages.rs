@@ -15,11 +15,13 @@ use v3::messages::questionanswer::question::{Question, QuestionResponse};
 use v3::messages::questionanswer::answer::Answer;
 use v3::messages::committedanswer::question::Question as CommitedQuestion;
 use v3::messages::committedanswer::answer::Answer as CommitedAnswer;
+use v3::messages::invite_action::invite::{Invite as InviteForAction};
+use connection::ConnectionOptions;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DidExchangeMessages {
-    Connect(),
+    Connect(ConnectionOptions),
     InvitationReceived(Invitation),
     ExchangeRequestReceived(Request),
     ExchangeResponseReceived(SignedResponse),
@@ -40,6 +42,8 @@ pub enum DidExchangeMessages {
     SendAnswer((Question, QuestionResponse)),
     CommittedQuestionReceived(CommitedQuestion),
     CommittedAnswerReceived(CommitedAnswer),
+    SendInviteAction(A2AMessage),
+    InviteActionReceived(InviteForAction),
     Unknown
 }
 
@@ -90,6 +94,9 @@ impl From<A2AMessage> for DidExchangeMessages {
             }
             A2AMessage::CommittedAnswer(answer) => {
                 DidExchangeMessages::CommittedAnswerReceived(answer)
+            }
+            A2AMessage::InviteForAction(invite) => {
+                DidExchangeMessages::InviteActionReceived(invite)
             }
             _ => {
                 DidExchangeMessages::Unknown

@@ -92,7 +92,7 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                           token:(NSString *)token;
 
 - (void)getProvisionToken:(NSString *)config
-                 completion:(void (^)(NSError *error))completion;
+                 completion:(void (^)(NSError *error, NSString *token))completion;
 
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                      inviteDetails:(NSString *)inviteDetails
@@ -153,6 +153,10 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                       answer:(NSString *)answer
              withCompletion:(void (^)(NSError *error))completion;
 
+- (void)connectionSendInviteAction:(VcxHandle)connectionHandle
+                              data:(NSString *)data
+                    withCompletion:(void (^)(NSError *error, NSString *message))completion;
+
 - (void)connectionSignData:(VcxHandle)connectionHandle
                   withData:(NSData *)dataRaw
             withCompletion:(void (^)(NSError *error, NSData *signature_raw, vcx_u32_t signature_len))completion;
@@ -171,6 +175,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 
 - (void)connectionGetState:(VcxHandle) connectionHandle
             withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)connectionGetProblemReport:(NSInteger) connectionHandle
+                        completion:(void (^)(NSError *error, NSString *message))completion;
 
 - (void)agentUpdateInfo:(NSString *)config
              completion:(void (^)(NSError *error))completion;
@@ -227,6 +234,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)credentialDeserialize:(NSString *)serializedCredential
                    completion:(void (^)(NSError *error, NSInteger credentialHandle))completion;
 
+- (void)credentialGetProblemReport:(NSInteger) credentialHandle
+                        completion:(void (^)(NSError *error, NSString *message))completion;
+
 - (int)credentialRelease:(NSInteger) credentialHandle;
 
 - (void)exportWallet:(NSString *)exportPath
@@ -270,9 +280,24 @@ withSelectedCredentials:(NSString *)selectedCredentials
                     withMsgId:(NSString *)msgId
                withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle, NSString *proofRequest))completion;
 
+- (void) requestProof:(vcx_proof_handle_t)proof_handle
+ withConnectionHandle:(vcx_connection_handle_t)connection_handle
+       requestedAttrs:(NSString *)requestedAttrs
+  requestedPredicates:(NSString *)requestedPredicates
+            proofName:(NSString *)proofName
+   revocationInterval:(NSString *)revocationInterval
+       withCompletion:(void (^)(NSError *error))completion;
+
+- (void)proofGetPresentationProposal:(vcx_proof_handle_t)proof_handle
+                          completion:(void (^)(NSError *error, NSString *presentationProposal))completion;
+
 - (void) proofSend:(vcx_proof_handle_t)proof_handle
 withConnectionHandle:(vcx_connection_handle_t)connection_handle
     withCompletion:(void (^)(NSError *error))completion;
+
+- (void) proofSendProposal:(vcx_proof_handle_t)proof_handle
+      withConnectionHandle:(vcx_connection_handle_t)connection_handle
+            withCompletion:(void (^)(NSError *error))completion;
 
 - (void)proofGetState:(NSInteger)proofHandle
            completion:(void (^)(NSError *error, NSInteger state))completion;
@@ -301,6 +326,11 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                withProofRequest:(NSString *) proofRequest
                  withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle))completion;
 
+- (void) proofCreateProposal:(NSString *) source_id
+           withProofProposal:(NSString *) proofProposal
+                 withComment:(NSString *) comment
+              withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle))completion;
+
 - (void) proofSerialize:(vcx_proof_handle_t) proofHandle
          withCompletion:(void (^)(NSError *error, NSString *proof_request))completion;
 
@@ -310,6 +340,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 - (void)proofUpdateStateWithMessage:(VcxHandle) proofHandle
                             message:(NSString *)message
                      withCompletion:(void (^)(NSError *error, NSInteger state))completion;
+
+- (void)proofGetProblemReport:(VcxHandle) proofHandle
+                   completion:(void (^)(NSError *error, NSString *message))completion;
 
 - (int)proofRelease:(NSInteger) proofHandle;
 

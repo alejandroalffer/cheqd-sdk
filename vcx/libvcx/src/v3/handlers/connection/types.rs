@@ -89,10 +89,39 @@ impl Invitations {
         }
     }
 
+    pub fn service_endpoint(&self) -> String {
+        match self {
+            Invitations::ConnectionInvitation(invitation_)=> invitation_.service_endpoint.clone(),
+            Invitations::OutofbandInvitation(invitation_)=>
+                invitation_.service.get(0).map(|service| service.service_endpoint.clone()).unwrap_or_default(),
+        }
+    }
+
     pub fn pthid(&self) -> Option<String>{
         match self {
             Invitations::ConnectionInvitation(_)=> None,
             Invitations::OutofbandInvitation(invitation_)=> Some(invitation_.id.to_string()),
+        }
+    }
+
+    pub fn logo_url(&self) -> Option<String>{
+        match self {
+            Invitations::ConnectionInvitation(invitation_)=> invitation_.profile_url.clone(),
+            Invitations::OutofbandInvitation(invitation_)=> invitation_.profile_url.clone(),
+        }
+    }
+
+    pub fn public_did(&self) -> Option<String>{
+        match self {
+            Invitations::ConnectionInvitation(invitation_)=> invitation_.public_did.clone(),
+            Invitations::OutofbandInvitation(invitation_)=> invitation_.public_did.clone(),
+        }
+    }
+
+    pub fn name(&self) -> Option<String>{
+        match self {
+            Invitations::ConnectionInvitation(invitation_)=> Some(invitation_.label.clone()),
+            Invitations::OutofbandInvitation(invitation_)=> invitation_.label.clone(),
         }
     }
 }

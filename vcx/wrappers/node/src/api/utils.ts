@@ -101,7 +101,7 @@ export async function provisionAgentWithToken (configAgent: string, token: strin
   }
 }
 
-export async function getProvisionToken (config: string, options: IInitVCXOptions = {}): Promise<void> {
+export async function getProvisionToken (config: string, options: IInitVCXOptions = {}): Promise<string> {
   /**
    * Get Provisioning Token
    * Config Example:
@@ -121,7 +121,7 @@ export async function getProvisionToken (config: string, options: IInitVCXOption
    */
   try {
     initRustAPI(options.libVCXPath)
-    return await createFFICallbackPromise<void>(
+    return await createFFICallbackPromise<string>(
       (resolve, reject, cb) => {
         const rc = rustAPI().vcx_get_provision_token(0, config, cb)
         if (rc) {
@@ -130,13 +130,13 @@ export async function getProvisionToken (config: string, options: IInitVCXOption
       },
       (resolve, reject) => Callback(
         'void',
-        ['uint32','uint32'],
-        (xhandle: number, err: number) => {
+        ['uint32','uint32','string'],
+        (xhandle: number, err: number, token: string) => {
           if (err) {
             reject(err)
             return
           }
-          resolve()
+          resolve(token)
         })
     )
   } catch (err) {

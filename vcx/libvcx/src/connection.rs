@@ -27,6 +27,7 @@ use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation as InvitationV3;
 use v3::messages::a2a::A2AMessage;
 use v3::handlers::connection::types::CompletedConnection;
+use v3::messages::invite_action::invite::{Invite as InviteForAction, InviteActionData};
 
 use settings::ProtocolTypes;
 
@@ -43,7 +44,7 @@ enum Connections {
     V3(ConnectionV3),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConnectionOptions {
     #[serde(default)]
     pub connection_type: Option<String>,
@@ -461,6 +462,46 @@ impl Connection {
         debug!("Connection {}: Sent generic message", self.source_id);
         trace!("Connection::send_generic_message <<< msg_uid: {:?}", secret!(msg_uid));
         return Ok(msg_uid);
+    }
+
+
+    pub fn send_invite_action(&self, data: InviteActionData) -> VcxResult<String> {
+        trace!("Connection::send_invite_action >>> data: {:?}", secret!(data));
+        debug!("Connection {}: Sending invitation for action", self.source_id);
+
+        if self.state != VcxStateType::VcxStateAccepted {
+            return Err(VcxError::from_msg(VcxErrorKind::NotReady, format!("Connection {} is not in Accepted state. Not ready to send message", self.source_id)));
+        }
+
+        let invite = json!(
+                InviteForAction::create()
+                .set_goal_code(data.goal_code)
+                .set_ack_on(data.ack_on)
+                .to_a2a_message()
+            ).to_string();
+
+        ::messages::send_message()
+            .to(&self.get_pw_did())?
+            .to_vk(&self.get_pw_verkey())?
+            .msg_type(&RemoteMessageType::InviteAction)?
+            .version(self.version.clone())?
+            .edge_agent_payload(
+                &self.get_pw_verkey(),
+                &self.get_their_pw_verkey(),
+                &invite,
+                PayloadKinds::Other(String::from("invite-action")),
+                None)?
+            .agent_did(&self.get_agent_did())?
+            .agent_vk(&self.get_agent_verkey())?
+            .set_title("Take the action")?
+            .set_detail("Take the action")?
+            .status_code(&MessageStatusCode::Accepted)?
+            .send_secure()
+            .map_err(|err| err.extend("Cannot send generic message"))?;
+
+        debug!("Connection {}: Sent send invite action", self.source_id);
+        trace!("Connection::send_invite_action <<<");
+        return Ok(invite);
     }
 }
 
@@ -942,10 +983,14 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
     }).map_err(handle_err)
 }
 
-pub fn update_state_with_message(handle: u32, message: Message) -> VcxResult<u32> {
+pub fn update_state_with_message(handle: u32, message: String) -> VcxResult<u32> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
             Connections::V1(ref mut connection) => {
+                let message: Message = ::serde_json::from_str(&message)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                                      format!("Cannot updated Connection state with messages: Message deserialization failed with: {:?}", err)))?;
+
                 if message.status_code == MessageStatusCode::Redirected && message.msg_type == RemoteMessageType::ConnReqRedirect {
                     connection.process_redirect_message(&message)?;
                     Ok(connection.get_state())
@@ -955,8 +1000,7 @@ pub fn update_state_with_message(handle: u32, message: Message) -> VcxResult<u32
                 }
             }
             Connections::V3(ref mut connection) => {
-                connection.update_state(Some(&json!(message).to_string()))?;
-                Ok(error::SUCCESS.code_num)
+                connection.update_state(Some(&message))
             }
         }
     }).map_err(handle_err)
@@ -1054,11 +1098,12 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
 }
 
 pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
+
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
             Connections::V1(ref mut connection) => {
-                debug!("establish connection {}", connection.source_id);
                 let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options.as_ref())?;
+                debug!("establish connection {}", connection.source_id);
                 if options_obj.update_agent_info.unwrap_or(true) {
                     connection.update_agent_profile(&options_obj)?;
                 }
@@ -1067,7 +1112,8 @@ pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
                 connection.connect(&options_obj)
             }
             Connections::V3(ref mut connection) => {
-                connection.connect()?;
+                let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options.as_ref())?;
+                connection.connect(options_obj)?;
                 Ok(error::SUCCESS.code_num)
             }
         }
@@ -1288,10 +1334,13 @@ impl Into<(Connection, ActorDidExchangeState)> for ConnectionV3 {
             pw_verkey: self.agent_info().pw_vk.clone(),
             state: VcxStateType::from_u32(self.state()),
             uuid: String::new(),
-            endpoint: String::new(),
+            endpoint: invitation.as_ref().map(|invitation_| invitation_.service_endpoint()).unwrap_or_default(),
             invite_detail: Some(InviteDetail{
                 sender_detail: SenderDetail {
-                    verkey: invitation.and_then(|invitation_| invitation_.recipient_key()).unwrap_or_default(),
+                    name: invitation.as_ref().and_then(|invitation_| invitation_.name()),
+                    verkey: invitation.as_ref().and_then(|invitation_| invitation_.recipient_key()).unwrap_or_default(),
+                    logo_url: invitation.as_ref().and_then(|invitation_| invitation_.logo_url()),
+                    public_did: invitation.as_ref().and_then(|invitation_| invitation_.public_did()),
                     ..SenderDetail::default()
                 },
                 ..InviteDetail::default()
@@ -1302,8 +1351,8 @@ impl Into<(Connection, ActorDidExchangeState)> for ConnectionV3 {
             agent_vk: self.agent_info().agent_vk.clone(),
             their_pw_did: self.remote_did().unwrap_or_default(),
             their_pw_verkey: self.remote_vk().unwrap_or_default(),
-            public_did: None,
-            their_public_did: None,
+            public_did: settings::get_config_value(settings::CONFIG_INSTITUTION_DID).ok(),
+            their_public_did: invitation.as_ref().and_then(|invitation_| invitation_.public_did()),
             version: Some(ProtocolTypes::V2), // TODO check correctness
         };
 
@@ -1325,19 +1374,19 @@ impl From<(Connection, ActorDidExchangeState)> for ConnectionV3 {
 }
 
 pub fn get_messages(handle: u32) -> VcxResult<HashMap<String, A2AMessage>> {
-    CONNECTION_MAP.get_mut(handle, |connection| {
+    CONNECTION_MAP.get(handle, |connection| {
         match connection {
             Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `get_messages`.")),
-            Connections::V3(ref mut connection) => connection.get_messages(),
+            Connections::V3(ref connection) => connection.get_messages(),
         }
     }).map_err(handle_err)
 }
 
 pub fn get_message_by_id(handle: u32, msg_id: String) -> VcxResult<A2AMessage> {
-    CONNECTION_MAP.get_mut(handle, |connection| {
+    CONNECTION_MAP.get(handle, |connection| {
         match connection {
             Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `get_message_by_id`.")),
-            Connections::V3(ref mut connection) => connection.get_message_by_id(&msg_id),
+            Connections::V3(ref connection) => connection.get_message_by_id(&msg_id),
         }
     }).map_err(handle_err)
 }
@@ -1397,6 +1446,19 @@ pub fn send_answer(connection_handle: u32, question: String, answer: String) -> 
     })
 }
 
+pub fn send_invite_action(connection_handle: u32, data: InviteActionData) -> VcxResult<String> {
+    CONNECTION_MAP.get_mut(connection_handle, |connection| {
+        match connection {
+            Connections::V1(ref connection) => {
+                connection.send_invite_action(data.clone())
+            },
+            Connections::V3(ref mut connection) => {
+                connection.send_invite_action(data.clone())
+            }
+        }
+    })
+}
+
 pub fn get_connection_info(handle: u32) -> VcxResult<String> {
     CONNECTION_MAP.get(handle, |cxn| {
         match cxn {
@@ -1411,6 +1473,19 @@ pub fn get_completed_connection(handle: u32) -> VcxResult<CompletedConnection> {
         match cxn {
             Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `get_internal_connection_info`.")),
             Connections::V3(ref connection) => connection.get_completed_connection()
+        }
+    }).map_err(handle_err)
+}
+
+pub fn get_problem_report_message(handle: u32) -> VcxResult<String> {
+    CONNECTION_MAP.get(handle, |connection| {
+        match connection {
+            Connections::V1(ref _obj) => {
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Connection type doesn't support this action: `get_problem_report_message`."))
+            }
+            Connections::V3(ref obj) => {
+                obj.get_problem_report_message()
+            }
         }
     }).map_err(handle_err)
 }
@@ -1842,8 +1917,7 @@ pub mod tests {
         let _setup = SetupMocks::init();
 
         let handle = create_connection("test_process_acceptance_message").unwrap();
-        let message = serde_json::from_str(INVITE_ACCEPTED_RESPONSE).unwrap();
-        assert_eq!(VcxStateType::VcxStateAccepted as u32, update_state_with_message(handle, message).unwrap());
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, update_state_with_message(handle, INVITE_ACCEPTED_RESPONSE.to_string()).unwrap());
     }
 
     #[test]

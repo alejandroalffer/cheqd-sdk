@@ -139,9 +139,11 @@ export interface IFFIEntryPoint {
                                            comment: string | null | undefined, cb: any) => number,
   vcx_connection_send_reuse: (commandId: number, handle: number, invite: string, cb: any) => number,
   vcx_connection_send_answer: (commandId: number, handle: number, question: string, answer: string, cb: any) => number,
+  vcx_connection_send_invite_action: (commandId: number, handle: number, data: string, cb: any) => number,
   vcx_connection_get_pw_did: (commandId: number, handle: number, cb: any) => number,
   vcx_connection_get_their_pw_did: (commandId: number, handle: number, cb: any) => number,
   vcx_connection_info: (commandId: number, handle: number, cb: any) => number,
+  vcx_connection_get_problem_report: (commandId: number, handle: number, cb: any) => number,
 
   // issuer
   vcx_issuer_credential_release: (handle: number) => number,
@@ -162,6 +164,7 @@ export interface IFFIEntryPoint {
     number,
   vcx_issuer_get_credential_offer_msg: (commandId: number, credentialHandle: number, cb: any) => number
   vcx_issuer_credential_get_payment_txn: (commandId: number, handle: number, cb: any) => number,
+  vcx_issuer_credential_get_problem_report: (commandId: number, handle: number, cb: any) => number,
 
   // proof
   vcx_proof_create: (commandId: number, sourceId: string, attrs: string, predicates: string,
@@ -173,10 +176,13 @@ export interface IFFIEntryPoint {
   vcx_proof_release: (handle: number) => number,
   vcx_proof_send_request: (commandId: number, proofHandle: number, connectionHandle: number, cb: any) => number,
   vcx_proof_get_request_msg: (commandId: number, proofHandle: number, cb: any) => number,
+  vcx_proof_get_request_attach: (commandId: number, proofHandle: number, cb: any) => number,
+  vcx_proof_set_connection: (commandId: number, proofHandle: number, connectionHandle: number, cb: any) => number,
   vcx_proof_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_proof_update_state: (commandId: number, handle: number, cb: any) => number,
   vcx_proof_update_state_with_message: (commandId: number, handle: number, message: string, cb: any) => number,
   vcx_proof_get_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_proof_get_problem_report: (commandId: number, handle: number, cb: any) => number,
 
   // disclosed proof
   vcx_disclosed_proof_create_with_request: (commandId: number, sourceId: string, req: string, cb: any) => number,
@@ -203,6 +209,7 @@ export interface IFFIEntryPoint {
   vcx_disclosed_proof_decline_presentation_request: (commandId: number, handle: number, connectionHandle: number,
                                                      reason: string | undefined | null,
                                                      proposal: string | undefined | null, cb: any) => number,
+  vcx_disclosed_proof_get_problem_report: (commandId: number, handle: number, cb: any) => number,
 
   // credential
   vcx_credential_create_with_offer: (commandId: number, sourceId: string, offer: string, cb: any) => number,
@@ -228,6 +235,7 @@ export interface IFFIEntryPoint {
                           comment: string | undefined | null, cb: any) => number,
   vcx_delete_credential: (commandId: number, handle: number, cb: any) => number,
   vcx_credential_get_presentation_proposal_msg: (commandId: number, handle: number, cb: any) => number,
+  vcx_credential_get_problem_report: (commandId: number, handle: number, cb: any) => number,
 
   // logger
   vcx_set_default_logger: (level: string) => number,
@@ -299,7 +307,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   // Evernym extensions
   vcx_pack_message: [FFI_INDY_NUMBER, [FFI_INDY_NUMBER, FFI_INDY_NUMBER, FFI_UNSIGNED_INT, FFI_UNSIGNED_INT,
     FFI_STRING, FFI_STRING, FFI_CALLBACK_PTR]],
-  vcx_unpack_message: [FFI_INDY_NUMBER, [FFI_INDY_NUMBER, FFI_INDY_NUMBER, FFI_UNSIGNED_INT, FFI_UNSIGNED_INT,
+  vcx_unpack_message: [FFI_INDY_NUMBER, [FFI_INDY_NUMBER, FFI_INDY_NUMBER, FFI_UNSIGNED_INT_PTR, FFI_UNSIGNED_INT,
     FFI_CALLBACK_PTR]],
 
   // wallet
@@ -370,12 +378,15 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_CALLBACK_PTR]],
   vcx_connection_send_answer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_connection_send_invite_action: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_STRING_DATA,
+    FFI_CALLBACK_PTR]],
   vcx_connection_get_pw_did: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_connection_get_their_pw_did: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_connection_redirect: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],
   vcx_connection_get_redirect_details: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_connection_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_connection_get_problem_report: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
 
   // issuer
   vcx_issuer_credential_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
@@ -396,6 +407,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_issuer_get_credential_offer_msg: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_issuer_credential_release: [FFI_ERROR_CODE, [FFI_CREDENTIAL_HANDLE]],
   vcx_issuer_credential_get_payment_txn: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
+  vcx_issuer_credential_get_problem_report: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
 
   // proof
   vcx_proof_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
@@ -409,11 +421,15 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_proof_send_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],
   vcx_proof_get_request_msg: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_proof_get_request_attach: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_update_state_with_message: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_STRING_DATA,
     FFI_CALLBACK_PTR]],
   vcx_proof_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_proof_set_connection: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
+      FFI_CALLBACK_PTR]],
+  vcx_proof_get_problem_report: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
 
   // disclosed proof
   vcx_disclosed_proof_create_with_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
@@ -439,6 +455,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_disclosed_proof_decline_presentation_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE,
     FFI_CONNECTION_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_disclosed_proof_get_problem_report: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
 
   // credential
   vcx_credential_create_with_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
@@ -467,6 +484,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_delete_credential: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_credential_get_presentation_proposal_msg: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,
     FFI_CALLBACK_PTR]],
+  vcx_credential_get_problem_report: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
 
   // credentialDef
   vcx_credentialdef_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,

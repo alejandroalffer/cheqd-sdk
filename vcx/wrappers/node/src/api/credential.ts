@@ -602,6 +602,36 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
     }
   }
 
+  /**
+   * Get Problem Report message for object in Failed or Rejected state.
+   *
+   * return Problem Report as JSON string or null
+   */
+  public async getProblemReport (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credential_get_problem_report(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+        throw new VCXInternalError(err)
+    }
+  }
+
   protected _setHandle (handle: number) {
     super._setHandle(handle)
     this.paymentManager = new CredentialPaymentManager({ handle })

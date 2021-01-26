@@ -15,13 +15,13 @@ cache:
 
 variables:
   staticLibVersion: "20190607"
-  rustVersion: "1.40.0"
+  rustVersion: "1.45.0"
   libsovtokenVersion: "1.0.5"
   libsovtokenVersionExtra: "15"
   indyBranch: 'master'
   indySimpleVersion: "1.15.0"
-  indyFullVersion: "1.15.0-1560"
-  indyFullDebVersion: "1.15.0~1560"
+  indyFullVersion: "1.15.0-1618"
+  indyFullDebVersion: "1.15.0~1618"
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
 
@@ -128,7 +128,7 @@ dockerbuild-vcx-libindy-centos:
   variables:
     DOCKERFILE_PATH: vcx/ci/libindy-centos.dockerfile
     DOCKER_IMAGE_NAME: vcx-libindy-centos
-    KANIKO_ARGS: "--build-arg LIBINDY_VER=${indyFullVersion} --build-arg LIBINDY_SIMPLE_VER=${indySimpleVersion} --build-arg LIBINDY_BRANCH=${indyBranch}"
+    KANIKO_ARGS: "--build-arg LIBINDY_VER=${indyFullVersion} --build-arg LIBINDY_SIMPLE_VER=${indySimpleVersion} --build-arg LIBINDY_BRANCH=${indyBranch} --build-arg RUST_VER=${rustVersion}"
   only:
     refs:
       - master

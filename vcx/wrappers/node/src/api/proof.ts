@@ -535,6 +535,52 @@ export class Proof extends VCXBaseWithState<IProofData> {
       throw new VCXInternalError(err)
     }
   }
+
+  /**
+   * Generates the presentation request attachment message for out-of-band connection
+   *
+   * Example:
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.getProofRequestAttachment()
+   * ```
+   */
+  public async getProofRequestAttachment (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_proof_get_request_attach(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`proof ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
   /**
    * Returns the requested proof if available
    *
@@ -579,4 +625,62 @@ export class Proof extends VCXBaseWithState<IProofData> {
       throw new VCXInternalError(err)
     }
   }
+  /**
+   * Set connection handle for proof request. Should only be used for ephemeral proof requests.
+   */
+   public async setConnection(connection: Connection): Promise<void> {
+     try {
+       await createFFICallbackPromise<void>(
+         (resolve, reject, cb) => {
+           const rc = rustAPI().vcx_proof_set_connection(0, this.handle, connection.handle, cb)
+           if (rc) {
+             reject(rc)
+           }
+         },
+         (resolve, reject) => ffi.Callback(
+           'void',
+           ['uint32', 'uint32'],
+           (xcommandHandle: number, err: number) => {
+             if (err) {
+               reject(err)
+               return
+             }
+             resolve()
+           })
+         )
+     } catch (err) {
+       throw new VCXInternalError(err)
+     }
+   }
+
+  /**
+   * Get Problem Report message for object in Failed or Rejected state.
+   *
+   * return Problem Report as JSON string or null
+   */
+  public async getProblemReport (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_proof_get_problem_report(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+        throw new VCXInternalError(err)
+    }
+  }
+
 }

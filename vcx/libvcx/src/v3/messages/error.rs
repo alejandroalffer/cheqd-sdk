@@ -152,7 +152,7 @@ impl Reason {
     pub fn to_status(&self, problem_report: ProblemReport) -> Status {
         match self {
             Reason::Fail => Status::Failed(problem_report),
-            Reason::Reject => Status::Rejected,
+            Reason::Reject => Status::Rejected(Some(problem_report)),
         }
     }
 }

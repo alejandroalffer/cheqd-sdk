@@ -22,12 +22,14 @@ use v3::messages::questionanswer::answer::Answer;
 use v3::messages::committedanswer::question::Question as CommittedQuestion;
 use v3::messages::committedanswer::answer::Answer as CommittedAnswer;
 use v3::handlers::connection::types::{CompletedConnection, OutofbandMeta, Invitations};
+use v3::messages::invite_action::invite::{Invite as InviteForAction};
 
 use std::collections::HashMap;
 
 use error::prelude::*;
 use messages::thread::Thread;
 use settings;
+use connection::ConnectionOptions;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeSM {
@@ -301,12 +303,17 @@ impl From<(CompleteState, Vec<ProtocolDescriptor>)> for CompleteState {
 }
 
 impl InitializedState {
-    fn prepare_invitation(self, source_id: &str, agent_info: &AgentInfo) -> VcxResult<ActorDidExchangeState> {
+    fn prepare_invitation(self, source_id: &str, agent_info: &AgentInfo, options: &ConnectionOptions) -> VcxResult<ActorDidExchangeState> {
         trace!("InvitedState:prepare_invitation >>> source_id: {:?}", source_id);
         debug!("preparing invitation for connection {}", source_id);
 
         let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
         let profile_url = settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).ok();
+
+        let public_did = match options.use_public_did {
+            Some(true) => settings::get_config_value(settings::CONFIG_INSTITUTION_DID).ok(),
+            _ => None
+        };
 
         let state = match self.outofband_meta.clone() {
             None => {
@@ -314,18 +321,21 @@ impl InitializedState {
                     .set_label(label)
                     .set_opt_profile_url(profile_url)
                     .set_service_endpoint(agent_info.agency_endpoint()?)
+                    .set_opt_public_did(public_did)
                     .set_recipient_keys(agent_info.recipient_keys())
                     .set_routing_keys(agent_info.routing_keys()?);
 
                 ActorDidExchangeState::Inviter(DidExchangeState::Invited((self, invite).into()))
             }
             Some(outofband_meta) => {
+
                 let invite: OutofbandInvitation = OutofbandInvitation::create()
                     .set_label(label)
                     .set_opt_profile_url(profile_url)
                     .set_opt_goal_code(outofband_meta.goal_code)
                     .set_opt_goal(outofband_meta.goal)
                     .set_handshake(outofband_meta.handshake)
+                    .set_opt_public_did(public_did)
                     .set_service(
                         Service::create()
                             .set_id(SERVICE_ID.to_string())
@@ -533,6 +543,14 @@ impl CompleteState {
                 self.handle_send_answer(question, response, agent_info)?;
                 DidExchangeState::Completed(self)
             }
+            DidExchangeMessages::SendInviteAction(data) => {
+                self.handle_send_invite_action(data, agent_info)?;
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::InviteActionReceived(invite) => {
+                self.handle_invite_action(&invite)?;
+                DidExchangeState::Completed(self)
+            }
             message_ => {
                 warn!("DidExchangeSM: Unexpected action to update state {:?}", message_);
                 DidExchangeState::Completed(self)
@@ -636,9 +654,16 @@ impl CompleteState {
         trace!("CompleteState:handle_send_answer >>> Question: {:?}, response: {:?}, agent_info: {:?}", secret!(question), secret!(response), secret!(agent_info));
         debug!("sending answer message for connection");
 
-        let thread = Thread::new()
-            .set_thid(question.id.to_string())
-            .update_received_order(&self.did_doc.id);
+        let thread = match question.thread.as_ref() {
+            Some(thread_) =>
+                thread_
+                    .clone()
+                    .update_received_order(&self.did_doc.id),
+            None =>
+                Thread::new()
+                    .set_thid(question.id.to_string())
+                    .update_received_order(&self.did_doc.id)
+        };
 
         let mut answer = Answer::create()
             .set_response(response.text)
@@ -707,6 +732,23 @@ impl CompleteState {
     pub fn handle_committed_answer(&self, answer: &CommittedAnswer) -> VcxResult<()> {
         trace!("CompleteState:handle_committed_answer >>> answer: {:?}", secret!(answer));
         debug!("handling received connection committed answer message");
+        Ok(())
+    }
+
+    fn handle_send_invite_action(&self, invite: A2AMessage, agent_info: &AgentInfo) -> VcxResult<()> {
+        trace!("CompleteState:handle_send_invite_action >>> invite: {:?}, agent_info: {:?}",
+               secret!(invite), secret!(agent_info));
+        debug!("sending invite to take action for connection");
+
+        agent_info.send_message(&invite, &self.did_doc).ok();
+
+        trace!("CompleteState:handle_send_invite_action <<<");
+        Ok(())
+    }
+
+    pub fn handle_invite_action(&self, invite: &InviteForAction) -> VcxResult<()> {
+        trace!("CompleteState:handle_invite_action >>> answer: {:?}", secret!(invite));
+        debug!("handling received invite for action");
         Ok(())
     }
 
@@ -916,9 +958,9 @@ impl DidExchangeSM {
                 match state {
                     DidExchangeState::Initialized(state) => {
                         match message {
-                            DidExchangeMessages::Connect() => {
+                            DidExchangeMessages::Connect(options) => {
                                 agent_info = agent_info.create_agent()?;
-                                state.prepare_invitation(&source_id, &agent_info)?
+                                state.prepare_invitation(&source_id, &agent_info, &options)?
                             }
                             message_ => {
                                 warn!("DidExchangeSM: Unexpected action to update state {:?}", message_);
@@ -1056,7 +1098,7 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Invited(state) => {
                         match message {
-                            DidExchangeMessages::Connect() => {
+                            DidExchangeMessages::Connect(_options) => {
                                 agent_info = agent_info.create_agent()?;
 
                                 let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
@@ -1146,6 +1188,21 @@ impl DidExchangeSM {
                     DidExchangeState::Requested(ref state) => Some(state.did_doc.clone()),
                     DidExchangeState::Responded(ref state) => Some(state.did_doc.clone()),
                     DidExchangeState::Completed(ref state) => Some(state.did_doc.clone()),
+                }
+        }
+    }
+
+    pub fn problem_report(&self) -> Option<&ProblemReport> {
+        match self.state {
+            ActorDidExchangeState::Invitee(ref state) | ActorDidExchangeState::Inviter(ref state) =>
+                match state {
+                    DidExchangeState::Initialized(_) |
+                    DidExchangeState::Invited(_) |
+                    DidExchangeState::Requested(_) |
+                    DidExchangeState::Responded(_) |
+                    DidExchangeState::Completed(_) => None,
+                    DidExchangeState::Failed(ref state) => state.error.as_ref(),
+
                 }
         }
     }
@@ -1259,18 +1316,18 @@ pub mod test {
 
         impl DidExchangeSM {
             fn to_inviter_invited_state(mut self) -> DidExchangeSM {
-                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 self
             }
 
             fn to_inviter_responded_state(mut self) -> DidExchangeSM {
-                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 self = self.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
                 self
             }
 
             fn to_inviter_completed_state(mut self) -> DidExchangeSM {
-                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 self = self.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
                 self = self.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
                 self
@@ -1331,7 +1388,7 @@ pub mod test {
 
                 let mut did_exchange_sm = inviter_sm();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
 
                 match did_exchange_sm.state {
                     ActorDidExchangeState::Inviter(DidExchangeState::Invited(state)) => {
@@ -1350,7 +1407,7 @@ pub mod test {
 
                 let mut did_exchange_sm = DidExchangeSM::new(Actor::Inviter, &source_id(), Some(_outofband_meta()));
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
 
                 match did_exchange_sm.state {
                     ActorDidExchangeState::Inviter(DidExchangeState::Invited(state)) => {
@@ -1376,7 +1433,7 @@ pub mod test {
 
                 let mut did_exchange_sm = DidExchangeSM::new(Actor::Inviter, &source_id(), Some(outofband_meta));
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
 
                 match did_exchange_sm.state {
                     ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)) => Ok(()),
@@ -1421,7 +1478,7 @@ pub mod test {
             fn test_did_exchange_handle_invalid_exchange_request_message_from_invited_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
+                let did_exchange_sm = inviter_sm().to_inviter_invited_state();
 
                 let mut request = _request();
                 request.connection.did_doc = DidDoc::default();
@@ -1452,7 +1509,7 @@ pub mod test {
 
                 let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Invited(_)), did_exchange_sm.state);
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
@@ -1506,7 +1563,7 @@ pub mod test {
 
                 let mut did_exchange_sm = inviter_sm().to_inviter_responded_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
 
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Responded(_)), did_exchange_sm.state);
             }
@@ -1801,7 +1858,7 @@ pub mod test {
 
             pub fn to_invitee_requested_state(mut self) -> DidExchangeSM {
                 self = self.step(DidExchangeMessages::InvitationReceived(_invitation())).unwrap();
-                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 self
             }
 
@@ -1810,7 +1867,7 @@ pub mod test {
                 let invitation = Invitation::default().set_recipient_keys(vec![key.clone()]);
 
                 self = self.step(DidExchangeMessages::InvitationReceived(invitation)).unwrap();
-                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 self = self.step(DidExchangeMessages::ExchangeResponseReceived(_response(&key))).unwrap();
                 self = self.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
                 self
@@ -1911,7 +1968,7 @@ pub mod test {
 
                 let mut did_exchange_sm = invitee_sm();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Initialized(_)), did_exchange_sm.state);
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
@@ -1924,7 +1981,7 @@ pub mod test {
 
                 let mut did_exchange_sm = invitee_sm().to_invitee_invited_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect(ConnectionOptions::default())).unwrap();
 
                 match did_exchange_sm.state {
                     ActorDidExchangeState::Invitee(DidExchangeState::Requested(state)) => {
@@ -1982,7 +2039,7 @@ pub mod test {
             fn test_did_exchange_handle_invalid_response_message_from_requested_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = invitee_sm().to_invitee_requested_state();
+                let did_exchange_sm = invitee_sm().to_invitee_requested_state();
 
                 let mut signed_response = _signed_response();
                 signed_response.connection_sig.signature = String::from("other");

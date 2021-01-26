@@ -118,14 +118,10 @@ async def test_get_state():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_issuer_credential_release():
-    with pytest.raises(VcxError) as e:
-        cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
-        issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
-        assert issuer_credential.handle > 0
-        issuer_credential.release()
-        await issuer_credential.serialize()
-    assert ErrorCode.InvalidIssuerCredentialHandle == e.value.error_code
-    assert 'Invalid Credential Issuer Handle' == e.value.error_msg
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
+    issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
+    assert issuer_credential.handle > 0
+    issuer_credential.release()
 
 
 @pytest.mark.asyncio
@@ -245,7 +241,7 @@ async def test_send_credential_with_invalid_connection():
         cred_def = await CredentialDef.create(source_id, name, schema_id, 0, "tag")
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
         await issuer_credential.send_credential(Connection(source_id))
-    assert ErrorCode.InvalidConnectionHandle == e.value.error_code
+    assert ErrorCode.NotReady == e.value.error_code
 
 
 @pytest.mark.asyncio

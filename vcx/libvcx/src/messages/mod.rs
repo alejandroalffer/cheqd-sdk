@@ -701,6 +701,7 @@ pub enum RemoteMessageType {
     WalletBackupAck,
     WalletBackupRestored,
     RetrievedDeadDropResult,
+    InviteAction,
 }
 
 impl Serialize for RemoteMessageType {
@@ -718,6 +719,7 @@ impl Serialize for RemoteMessageType {
             RemoteMessageType::WalletBackupAck => "WALLET_BACKUP_ACK",
             RemoteMessageType::WalletBackupRestored => "WALLET_BACKUP_RESTORED",
             RemoteMessageType::RetrievedDeadDropResult => "DEAD_DROP_RETRIEVE_RESULT",
+            RemoteMessageType::InviteAction => "inviteAction",
             RemoteMessageType::Other(_type) => _type,
         };
         Value::String(value.to_string()).serialize(serializer)
@@ -740,6 +742,7 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
             Some("WALLET_BACKUP_ACK") => Ok(RemoteMessageType::WalletBackupAck),
             Some("WALLET_BACKUP_RESTORED") => Ok(RemoteMessageType::WalletBackupRestored),
             Some("DEAD_DROP_RETRIEVE_RESULT") => Ok(RemoteMessageType::RetrievedDeadDropResult),
+            Some("inviteAction") => Ok(RemoteMessageType::InviteAction),
             Some(_type) => Ok(RemoteMessageType::Other(_type.to_string())),
             value => Err(de::Error::custom(format!("Unexpected message type: {:?}", value)))
         }
@@ -992,7 +995,7 @@ fn pack_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u
 }
 
 fn parse_response_from_agency(response: &Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<A2AMessage>> {
-    trace!("parse_response_from_agency >>>");
+    trace!("parse_response_from_agency >>> response {:?}", response);
     match version {
         settings::ProtocolTypes::V1 => parse_response_from_agency_v1(response),
         settings::ProtocolTypes::V2 |

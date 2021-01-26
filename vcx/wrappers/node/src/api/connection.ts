@@ -333,6 +333,21 @@ export interface IConnectionAnswerData {
   answer: object,
 }
 
+/**
+ * @description Interface that represents the parameters for `Connection.sendInviteAction` function.
+ * @interface
+ */
+export interface IConnectionInviteActionData {
+  // A code the receiver may want to display to the user or use in automatically deciding what to do after receiving the message.
+  goal_code: string,
+  // Specify when ACKs message need to be sent back from invitee to inviter:
+  //     * not needed - None or empty array
+  //     * at the time the invitation is accepted - ["ACCEPT"]
+  //     * at the time out outcome for the action is known - ["OUTCOME"]
+  //     * both - ["ACCEPT", "OUTCOME"]
+  ack_on?: [string],
+}
+
 export function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
   /**
    * Read the contents of the pointer and copy it into a new Buffer
@@ -537,7 +552,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_connection_update_state_with_message(commandHandle, this.handle, message, cb)
           if (rc) {
-            resolve(StateType.None)
+            reject(rc)
           }
         },
         (resolve, reject) => ffi.Callback(
@@ -943,6 +958,47 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   }
 
   /**
+   * Send a message to invite another side to take a particular action.
+   * The action is represented as a `goal_code` and should be described in a way that can be automated.
+   *
+   * The related protocol can be found here:
+   *     https://github.com/hyperledger/aries-rfcs/blob/ecf4090b591b1d424813b6468f5fc391bf7f495b/features/0547-invite-action-protocol
+   *
+   * Example:
+   * ```
+   * invite = await connection.sendInviteAction({goalCode: 'automotive.inspect.tire'})
+   * ```
+   */
+  public async sendInviteAction (data: IConnectionInviteActionData): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_send_invite_action(0, this.handle, JSON.stringify(data), cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'string'],
+          (xHandle: number, err: number, message: string) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            if (!message) {
+              reject(`Connection ${this.sourceId} returned empty string`)
+              return
+            }
+            resolve(message)
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
    * Retrieves pw_did from Connection object
    *
    */
@@ -1136,6 +1192,36 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
           })
       )
       return data
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Get Problem Report message for object in Failed or Rejected state.
+   *
+   * return Problem Report as JSON string or null
+   */
+  public async getProblemReport (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_get_problem_report(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(message)
+            })
+        )
     } catch (err) {
       throw new VCXInternalError(err)
     }

@@ -1,6 +1,7 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
 use proof::generate_nonce;
 use error::VcxResult;
+use messages::thread::Thread;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Question {
@@ -14,6 +15,9 @@ pub struct Question {
     #[serde(rename = "~timing")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timing: Option<Timing>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "~thread")]
+    pub thread: Option<Thread>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
@@ -107,6 +111,7 @@ pub mod tests {
             timing: Some(Timing {
                 expires_time: _expires_time()
             }),
+            thread: None
         }
     }
 

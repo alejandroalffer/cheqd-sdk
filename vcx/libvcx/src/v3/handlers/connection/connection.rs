@@ -11,6 +11,10 @@ use v3::messages::basic_message::message::BasicMessage;
 use v3::handlers::connection::types::{SideConnectionInfo, PairwiseConnectionInfo, CompletedConnection, OutofbandMeta, Invitations};
 use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 use v3::messages::questionanswer::question::{Question, QuestionResponse};
+use v3::messages::invite_action::invite::InviteActionData;
+use v3::messages::invite_action::invite::{Invite as InviteForAction};
+use connection::ConnectionOptions;
+use v3::messages::connection::problem_report::ProblemReport;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
@@ -128,11 +132,11 @@ impl Connection {
         return Ok(invitation)
     }
 
-    pub fn connect(&mut self) -> VcxResult<()> {
+    pub fn connect(&mut self, options: ConnectionOptions) -> VcxResult<()> {
         trace!("Connection::connect >>> source_id: {}", self.connection_sm.source_id());
         debug!("Connection {}: Starting connection establishing process", self.source_id());
 
-        self.step(DidExchangeMessages::Connect())
+        self.step(DidExchangeMessages::Connect(options))
     }
 
     pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<u32> {
@@ -289,6 +293,22 @@ impl Connection {
         self.handle_message(DidExchangeMessages::SendAnswer((question, response)))
     }
 
+    pub fn send_invite_action(&mut self, data: InviteActionData) -> VcxResult<String> {
+        trace!("Connection::send_invite_action >>> data: {:?}", secret!(data));
+        debug!("Connection {}: Sending invitation for taking an action", self.source_id());
+
+        let invite = InviteForAction::create()
+            .set_goal_code(data.goal_code)
+            .set_ack_on(data.ack_on)
+            .to_a2a_message();
+
+        let invite_json = json!(invite).to_string();
+
+        self.handle_message(DidExchangeMessages::SendInviteAction(invite))?;
+
+        Ok(invite_json)
+    }
+
     pub fn get_connection_info(&self) -> VcxResult<String> {
         trace!("Connection::get_connection_info >>>");
         debug!("Connection {}: Getting information", self.source_id());
@@ -328,6 +348,14 @@ impl Connection {
         self.connection_sm.completed_connection()
             .ok_or(VcxError::from_msg(VcxErrorKind::NotReady,
                                       format!("Connection object {} in state {} not ready to send remote messages", self.connection_sm.source_id(), self.state())))
+    }
+
+    pub fn get_problem_report_message(&self) -> VcxResult<String> {
+        trace!("Connection::get_problem_report_message >>>");
+        debug!("Connection {}: Getting problem report message", self.get_source_id());
+
+        let problem_report: Option<&ProblemReport> = self.connection_sm.problem_report();
+        Ok(json!(&problem_report).to_string())
     }
 }
 

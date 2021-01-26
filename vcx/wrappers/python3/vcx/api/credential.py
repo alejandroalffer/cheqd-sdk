@@ -580,6 +580,24 @@ class Credential(VcxStateful):
                       c_credential_handle,
                       Credential.delete.cb)
 
+    async def get_problem_report(self) -> Optional[str]:
+        """
+        Get Problem Report message for object in Failed or Rejected state.
+        :return: Problem Report as JSON string or null
+        """
+
+        if not hasattr(Credential.get_problem_report, "cb"):
+            self.logger.debug("vcx_credential_get_problem_report: Creating callback")
+            Credential.get_problem_report.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+        result = await do_call('vcx_credential_get_problem_report',
+                               c_connection_handle,
+                               Credential.get_problem_report.cb)
+
+        self.logger.debug("vcx_credential_get_problem_report completed")
+        return result.decode() if result else None
+
 
 
 

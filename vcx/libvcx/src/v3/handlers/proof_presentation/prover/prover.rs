@@ -5,13 +5,14 @@ use std::convert::TryInto;
 use v3::handlers::proof_presentation::prover::states::ProverSM;
 use v3::handlers::proof_presentation::prover::messages::ProverMessages;
 use v3::messages::a2a::A2AMessage;
-use v3::messages::proof_presentation::presentation_proposal::PresentationPreview;
+use v3::messages::proof_presentation::presentation_proposal::{PresentationPreview, PresentationProposal};
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use connection;
 
 use messages::proofs::proof_message::ProofMessage;
 
 use v3::messages::proof_presentation::presentation::Presentation;
+use v3::messages::error::ProblemReport;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Prover {
@@ -27,13 +28,21 @@ impl Prover {
         })
     }
 
+    pub fn create_proposal(source_id: &str, presentation_proposal: PresentationProposal) -> VcxResult<Prover> {
+        trace!("Prover::create_proposal >>> source_id: {}, presentation_proposal: {:?}", source_id, secret!(presentation_proposal));
+        debug!("Prover {}: Creating Prover state object", source_id);
+        Ok(Prover {
+            prover_sm: ProverSM::new_proposal(presentation_proposal, source_id.to_string()),
+        })
+    }
+
     pub fn state(&self) -> u32 { self.prover_sm.state() }
 
     pub fn retrieve_credentials(&self) -> VcxResult<String> {
         trace!("Prover::retrieve_credentials >>>");
         debug!("Prover {}: Retrieving credentials for proof generation", self.get_source_id());
 
-        let presentation_request = self.prover_sm.presentation_request().request_presentations_attach.content()?;
+        let presentation_request = self.prover_sm.presentation_request()?.request_presentations_attach.content()?;
         anoncreds::libindy_prover_get_credentials_for_proof_req(&presentation_request)
     }
 
@@ -64,6 +73,12 @@ impl Prover {
         trace!("Prover::send_presentation >>>");
         debug!("Prover {}: Sending presentation", self.get_source_id());
         self.step(ProverMessages::SendPresentation(connection_handle))
+    }
+
+    pub fn send_proposal(&mut self, connection_handle: u32) -> VcxResult<()> {
+        trace!("Prover::send_proposal >>>");
+        debug!("Prover {}: Sending proposal", self.get_source_id());
+        self.step(ProverMessages::SendProposal(connection_handle))
     }
 
     pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
@@ -176,5 +191,13 @@ impl Prover {
                 return Err(VcxError::from_msg(VcxErrorKind::InvalidOption, "Only one of `reason` or `proposal` parameters must be specified."));
             }
         }
+    }
+
+    pub fn get_problem_report_message(&self) -> VcxResult<String> {
+        trace!("Prover::get_problem_report_message >>>");
+        debug!("Prover {}: Getting problem report message", self.get_source_id());
+
+        let problem_report: Option<&ProblemReport> = self.prover_sm.problem_report();
+        Ok(json!(&problem_report).to_string())
     }
 }

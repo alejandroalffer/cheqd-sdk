@@ -97,6 +97,8 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
             credential_attrs.insert(attr.name.clone(), ::serde_json::Value::String(attr.value.clone()));
         }
 
+        let thid = self.thread.and_then(|thread| thread.thid).unwrap_or(self.id.0.clone());
+
         Ok(CredentialOfferV1 {
             msg_type: PayloadKinds::CredOffer.name().to_string(),
             version: String::from("0.1"),
@@ -109,7 +111,7 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
             msg_ref_id: None,
             cred_def_id: indy_cred_offer["cred_def_id"].as_str().map(String::from).unwrap_or_default(),
             libindy_offer: indy_cred_offer_json,
-            thread_id: Some(self.id.0.clone()),
+            thread_id: Some(thid),
         })
     }
 }
@@ -117,7 +119,6 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::connection::response::tests::*;
     use utils::constants::CRED_DEF_JSON;
 
     fn _attachment() -> ::serde_json::Value {
@@ -158,7 +159,7 @@ pub mod tests {
             comment: _comment(),
             credential_preview: _preview_data(),
             offers_attach: attachment,
-            thread: Some(_thread()),
+            thread: None,
         }
     }
 
@@ -166,7 +167,6 @@ pub mod tests {
     fn test_credential_offer_build_works() {
         let credential_offer: CredentialOffer = CredentialOffer::create()
             .set_comment(_comment())
-            .set_thread_id(&_thread_id())
             .set_credential_preview_data(_preview_data()).unwrap()
             .set_offers_attach(&_attachment().to_string()).unwrap();
 
