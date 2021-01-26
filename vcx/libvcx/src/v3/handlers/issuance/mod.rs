@@ -37,8 +37,8 @@ impl Issuer {
     }
 
     pub fn create_from_data(cred_def_id: &str, rev_reg_id: Option<String>, tails_file: Option<String>, credential_data: &str, source_id: &str, credential_name: &str) -> VcxResult<Issuer> {
-        trace!("Issuer::issuer_create_credential >>> cred_def_handle: {:?}, credential_data: {:?}, source_id: {:?}",
-               cred_def_handle, secret!(credential_data), source_id);
+        trace!("Issuer::issuer_create_credential >>> cred_def_id: {:?}, rev_reg_id: {:?}, tails_file {:?},  credential_data: {:?}, source_id: {:?}",
+               cred_def_id, rev_reg_id, tails_file, secret!(credential_data), source_id);
         debug!("Issuer {}: Creating credential Issuer state object", source_id);
 
         let issuer_sm = IssuerSM::new(cred_def_id, credential_data, rev_reg_id, tails_file, source_id, credential_name);
