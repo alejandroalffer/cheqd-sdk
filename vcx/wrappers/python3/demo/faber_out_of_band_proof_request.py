@@ -1,19 +1,11 @@
 import asyncio
 import json
-import random
 import os
-from ctypes import cdll
 from time import sleep
 
-from demo_utils import file_ext
-
-from demo_utils import download_message
 from vcx.api.connection import Connection
-from vcx.api.credential_def import CredentialDef
-from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.proof import Proof
-from vcx.api.schema import Schema
-from vcx.api.utils import vcx_agent_provision, vcx_messages_download
+from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State
 
@@ -33,15 +25,11 @@ provisionConfig = {
     'agency_verkey': '7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2',
     'wallet_name': 'faber_wallet',
     'wallet_key': '123',
-    'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
     'protocol_type': '3.0',
 }
 
 async def main():
-    payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
-    payment_plugin.nullpay_init()
-
     print("#1 Provision an agent and wallet, get back configuration details")
     config = await vcx_agent_provision(json.dumps(provisionConfig))
     config = json.loads(config)
@@ -49,10 +37,7 @@ async def main():
     config['institution_name'] = 'Frank'
     config['institution_logo_url'] = 'http://robohash.org/234'
     config['genesis_path'] = 'docker.txn'
-    config['payment_method'] = 'null'
-    config[
-        'author_agreement'] = "{\"taaDigest\":\"3ae97ea501bd26b81c8c63da2c99696608517d6df8599210c7edaa7e2c719d65\",\"acceptanceMechanismType\":\"at_submission\",\"timeOfAcceptance\":" + str(
-        1594193805) + "}"
+
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
 
@@ -98,13 +83,13 @@ async def main():
 
     print("#21 Poll agency and wait for alice to provide proof")
     proof_state = await proof.get_state()
-    while proof_state != State.Accepted and proof_state != State.Undefined:
+    while proof_state != State.Accepted and proof_state != State.Rejected:
         sleep(2)
         await proof.update_state()
         proof_state = await proof.get_state()
         print(proof_state)
 
-    if proof_state == State.Undefined:
+    if proof_state == State.Rejected:
         print("Prof Request has been rejected")
         return
 

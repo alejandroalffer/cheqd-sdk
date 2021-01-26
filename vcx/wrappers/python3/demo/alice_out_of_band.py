@@ -3,7 +3,6 @@ import json
 from time import sleep
 
 from vcx.api.connection import Connection
-from vcx.api.credential import Credential
 from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State
@@ -19,7 +18,6 @@ provisionConfig = {
     'agency_verkey': '7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2',
     'wallet_name': 'alice_wallet',
     'wallet_key': '123',
-    'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
     'protocol_type': '3.0',
 }
@@ -69,7 +67,6 @@ async def init():
     config['institution_name'] = 'alice'
     config['institution_logo_url'] = 'http://robohash.org/456'
     config['genesis_path'] = 'docker.txn'
-    config['payment_method'] = 'null'
 
     config = json.dumps(config)
 

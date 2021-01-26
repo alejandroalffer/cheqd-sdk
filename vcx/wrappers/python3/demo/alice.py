@@ -20,7 +20,6 @@ provisionConfig = {
     'agency_verkey': 'FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR',
     'wallet_name': 'alice_wallet',
     'wallet_key': '123',
-    'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
     'protocol_type': '1.0',
 }
@@ -110,7 +109,6 @@ async def init():
     config['institution_name'] = 'alice'
     config['institution_logo_url'] = 'http://robohash.org/456'
     config['genesis_path'] = 'docker.txn'
-    config['payment_method'] = 'null'
 
     config = json.dumps(config)
 

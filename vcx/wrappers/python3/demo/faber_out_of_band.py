@@ -2,10 +2,9 @@ import asyncio
 import json
 import random
 import os
-from ctypes import cdll
 from time import sleep
 
-from demo_utils import file_ext
+from demo.faber import accept_taa
 from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
@@ -30,16 +29,12 @@ provisionConfig = {
     'agency_verkey': '7G3LhXFKXKTMv7XGx1Qc9wqkMbwcU2iLBHL8x1JXWWC2',
     'wallet_name': 'faber_wallet',
     'wallet_key': '123',
-    'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
     'protocol_type': '3.0',
 }
 
 
 async def main():
-    payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
-    payment_plugin.nullpay_init()
-
     print("#1 Provision an agent and wallet, get back configuration details")
     config = await vcx_agent_provision(json.dumps(provisionConfig))
     config = json.loads(config)
@@ -47,13 +42,11 @@ async def main():
     config['institution_name'] = 'Faber'
     config['institution_logo_url'] = 'http://robohash.org/234'
     config['genesis_path'] = 'docker.txn'
-    config['payment_method'] = 'null'
-    config[
-        'author_agreement'] = "{\"taaDigest\":\"3ae97ea501bd26b81c8c63da2c99696608517d6df8599210c7edaa7e2c719d65\",\"acceptanceMechanismType\":\"at_submission\",\"timeOfAcceptance\":" + str(
-        1594193805) + "}"
 
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
+
+    await accept_taa()
 
     print("#3 Create a new schema on the ledger")
     version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))
@@ -99,7 +92,7 @@ async def main():
 
     pw_did = await connection_to_alice.get_my_pw_did()
 
-    while credential_state != State.RequestReceived and credential_state != State.Undefined:
+    while credential_state != State.RequestReceived and credential_state != State.Rejected:
         messages = await vcx_messages_download("MS-103", None, pw_did)
         messages = json.loads(messages.decode())[0]['msgs']
         print(messages)
@@ -108,7 +101,7 @@ async def main():
         await credential.update_state()
         credential_state = await credential.get_state()
 
-    if credential_state == State.Undefined:
+    if credential_state == State.Rejected:
         print("Credential Offer has been rejected")
         return
 
@@ -118,14 +111,14 @@ async def main():
     print("#18 Wait for alice to accept credential")
     await credential.update_state()
     credential_state = await credential.get_state()
-    while credential_state != State.Accepted and credential_state != State.Undefined:
+    while credential_state != State.Accepted and credential_state != State.Rejected:
         sleep(2)
         await credential.update_state()
         credential_state = await credential.get_state()
 
     if credential_state == State.Accepted:
         print("Credential has been issued")
-    elif credential_state == State.Undefined:
+    elif credential_state == State.Rejected:
         print("Credential has been rejected")
 
     print("Finished")

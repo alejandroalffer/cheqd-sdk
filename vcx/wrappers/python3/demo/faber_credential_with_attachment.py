@@ -1,22 +1,18 @@
 import asyncio
 import json
 import random
-import os
-import time
 from ctypes import cdll
 from time import sleep
 
 from demo_utils import file_ext
 
-from demo.demo_utils import download_message
 from demo.faber import accept_taa
 from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.proof import Proof
 from vcx.api.schema import Schema
-from vcx.api.utils import vcx_agent_provision, vcx_get_ledger_author_agreement, \
-    vcx_set_active_txn_author_agreement_meta, vcx_messages_download
+from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State, ProofState
 
@@ -130,12 +126,12 @@ async def issue_credential(connection_to_alice):
 
     print("#14 Poll agency and wait for alice to send a credential request")
     credential_state = await credential.get_state()
-    while credential_state != State.RequestReceived and credential_state != State.Undefined:
+    while credential_state != State.RequestReceived and credential_state != State.Rejected:
         sleep(2)
         await credential.update_state()
         credential_state = await credential.get_state()
 
-    if credential_state == State.Undefined:
+    if credential_state == State.Rejected:
         print("Credential Offer has been rejected")
         return
 
@@ -145,14 +141,14 @@ async def issue_credential(connection_to_alice):
     print("#18 Wait for alice to accept credential")
     await credential.update_state()
     credential_state = await credential.get_state()
-    while credential_state != State.Accepted and credential_state != State.Undefined:
+    while credential_state != State.Accepted and credential_state != State.Rejected:
         sleep(2)
         await credential.update_state()
         credential_state = await credential.get_state()
 
     if credential_state == State.Accepted:
         print("Credential has been issued")
-    elif credential_state == State.Undefined:
+    elif credential_state == State.Rejected:
         print("Credential has been rejected")
 
 
@@ -173,13 +169,13 @@ async def ask_for_proof(connection_to_alice, institution_did):
 
     print("#21 Poll agency and wait for alice to provide proof")
     proof_state = await proof.get_state()
-    while proof_state != State.Accepted and proof_state != State.Undefined:
+    while proof_state != State.Accepted and proof_state != State.Rejected:
         sleep(2)
         await proof.update_state()
         proof_state = await proof.get_state()
         print(proof_state)
 
-    if proof_state == State.Undefined:
+    if proof_state == State.Rejected:
         print("Prof Request has been rejected")
         return
 
