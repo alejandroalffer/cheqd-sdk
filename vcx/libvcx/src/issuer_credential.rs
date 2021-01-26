@@ -752,7 +752,13 @@ pub fn send_credential_offer(handle: u32, connection_handle: u32) -> VcxResult<u
                 // if Aries connection is established --> Convert Pending object to Aries credential
                 if ::connection::is_v3_connection(connection_handle)? {
                     debug!("converting pending issuer credential into aries object");
-                    let mut issuer = Issuer::create(obj.cred_def_handle, &obj.credential_attributes, &obj.source_id, &obj.credential_name)?;
+                    let mut issuer = Issuer::create_from_data(
+                        &obj.cred_def_id,
+                        obj.rev_reg_id.clone(),
+                        obj.tails_file.clone(),
+                        &obj.credential_attributes,
+                        &obj.source_id,
+                        &obj.credential_name)?;
                     issuer.send_credential_offer(connection_handle)?;
 
                     IssuerCredentials::V3(issuer)
