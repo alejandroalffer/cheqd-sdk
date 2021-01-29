@@ -3,10 +3,8 @@ use crate::services::metrics::MetricsService;
 use indy_api_types::errors::prelude::*;
 use indy_wallet::WalletService;
 use std::sync::Arc;
-use crate::services::metrics::MetricsService;
 use serde_json::{Map, Value};
 use std::collections::HashMap;
-use std::rc::Rc;
 
 const THREADPOOL_ACTIVE_COUNT: &str = "active";
 const THREADPOOL_QUEUED_COUNT: &str = "queued";
@@ -37,22 +35,13 @@ impl MetricsController {
         }
     }
 
-    pub async fn execute(&self, command: MetricsCommand) {
-        match command {
-            MetricsCommand::CollectMetrics(cb) => {
-                debug!(target: "metrics_command_executor", "CollectMetrics command received");
-                cb(self.collect().await);
-            }
-        };
-    }
-
-    async fn collect(&self) -> IndyResult<String> {
+    pub async fn collect(&self) -> IndyResult<String> {
         trace!("_collect >>>");
         let mut metrics_map = serde_json::Map::new();
         self.append_threapool_metrics(&mut metrics_map)?;
         self.append_wallet_metrics(&mut metrics_map).await?;
         self.metrics_service
-            .append_command_metrics(&mut metrics_map)?;
+            .append_command_metrics(&mut metrics_map).await?;
         let res = serde_json::to_string(&metrics_map)
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize a metrics map")?;
 
@@ -99,7 +88,7 @@ impl MetricsController {
         Ok(())
     }
 
-    fn append_wallet_metrics(&self, metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
+    async fn append_wallet_metrics(&self, metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
         #[derive(Serialize, Deserialize)]
         struct MetricsTags {
             label: String,

@@ -3,7 +3,7 @@ use convert_case::{Case, Casing};
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use models::{MetricsValue, CommandCounters};
 use serde_json::{Map, Value};
-use std::cell::RefCell;
+use futures::lock::Mutex;
 use std::collections::HashMap;
 
 pub mod command_metrics;
@@ -12,24 +12,24 @@ pub mod models;
 const COMMANDS_COUNT: usize = MetricsService::commands_count();
 
 pub struct MetricsService {
-    queued_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
-    executed_counters: RefCell<[CommandCounters; COMMANDS_COUNT]>,
+    queued_counters: Mutex<[CommandCounters; COMMANDS_COUNT]>,
+    executed_counters: Mutex<[CommandCounters; COMMANDS_COUNT]>,
 }
 
 impl MetricsService {
     pub fn new() -> Self {
         MetricsService {
-            queued_counters: RefCell::new([CommandCounters::new(); COMMANDS_COUNT]),
-            executed_counters: RefCell::new([CommandCounters::new(); COMMANDS_COUNT]),
+            queued_counters: Mutex::new([CommandCounters::new(); COMMANDS_COUNT]),
+            executed_counters: Mutex::new([CommandCounters::new(); COMMANDS_COUNT]),
         }
     }
 
-    pub fn cmd_left_queue(&self, command_metric: CommandMetric, duration: u128) {
-        self.queued_counters.borrow_mut()[command_metric as usize].add(duration);
+    pub async fn cmd_left_queue(&self, command_metric: CommandMetric, duration: u128) {
+        self.queued_counters.lock().await[command_metric as usize].add(duration);
     }
 
-    pub fn cmd_executed(&self, command_metric: CommandMetric, duration: u128) {
-        self.executed_counters.borrow_mut()[command_metric as usize].add(duration);
+    pub async fn cmd_executed(&self, command_metric: CommandMetric, duration: u128) {
+        self.executed_counters.lock().await[command_metric as usize].add(duration);
     }
 
     pub fn cmd_name(index: usize) -> String {
@@ -50,7 +50,7 @@ impl MetricsService {
         tags
     }
 
-    pub fn append_command_metrics(&self, metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
+    pub async fn append_command_metrics(&self, metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
         let mut commands_count = Vec::new();
         let mut commands_duration_ms = Vec::new();
         let mut commands_duration_ms_bucket = Vec::new();
@@ -66,15 +66,17 @@ impl MetricsService {
                 String::from("queued"),
             );
 
-            commands_count.push(self.get_metric_json(self.executed_counters.borrow()[index].count as usize, tags_executed.clone())?);
-            commands_count.push(self.get_metric_json(self.queued_counters.borrow()[index].count as usize, tags_queued.clone())?);
+            let ec = self.executed_counters.lock().await;
+            let qc = self.queued_counters.lock().await;
+            commands_count.push(self.get_metric_json(ec[index].count as usize, tags_executed.clone())?);
+            commands_count.push(self.get_metric_json(qc[index].count as usize, tags_queued.clone())?);
 
-            commands_duration_ms.push(self.get_metric_json(self.executed_counters.borrow()[index].duration_ms_sum as usize, tags_executed.clone())?);
-            commands_duration_ms.push(self.get_metric_json(self.queued_counters.borrow()[index].duration_ms_sum as usize,tags_queued.clone())?);
+            commands_duration_ms.push(self.get_metric_json(ec[index].duration_ms_sum as usize, tags_executed.clone())?);
+            commands_duration_ms.push(self.get_metric_json(qc[index].duration_ms_sum as usize, tags_queued.clone())?);
 
-            for index_bucket in (0..self.executed_counters.borrow()[index].duration_ms_bucket.len()).rev() {
-                let executed_bucket = self.executed_counters.borrow()[index].duration_ms_bucket[index_bucket];
-                let queued_bucket = self.queued_counters.borrow()[index].duration_ms_bucket[index_bucket];
+            for index_bucket in (0..ec[index].duration_ms_bucket.len()).rev() {
+                let executed_bucket = ec[index].duration_ms_bucket[index_bucket];
+                let queued_bucket = qc[index].duration_ms_bucket[index_bucket];
 
                 commands_duration_ms_bucket.push(self.get_metric_json(executed_bucket as usize, tags_executed.clone())?);
                 commands_duration_ms_bucket.push(self.get_metric_json(queued_bucket as usize, tags_queued.clone())?);
@@ -114,82 +116,89 @@ impl MetricsService {
 mod test {
     use super::*;
 
-    #[test]
-    fn test_counters_are_initialized() {
+    #[async_std::test]
+    async fn test_counters_are_initialized() {
         let metrics_service = MetricsService::new();
-        assert_eq!(metrics_service.queued_counters.borrow().len(), COMMANDS_COUNT);
-        assert_eq!(metrics_service.executed_counters.borrow().len(), COMMANDS_COUNT);
+        assert_eq!(metrics_service.queued_counters.lock().await.len(), COMMANDS_COUNT);
+        assert_eq!(metrics_service.executed_counters.lock().await.len(), COMMANDS_COUNT);
     }
 
-    #[test]
-    fn test_cmd_left_queue_increments_relevant_queued_counters() {
-        let metrics_service = MetricsService::new();
-        let index = CommandMetric::IssuerCommandCreateSchema;
-        let duration1 = 5u128;
-        let duration2 = 2u128;
-
-        metrics_service.cmd_left_queue(index, duration1);
-
-        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 1);
-        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum, duration1);
-        assert_eq!(metrics_service.queued_counters.borrow()[index as usize]
-                       .duration_ms_bucket[
-                            metrics_service.queued_counters.borrow()[index as usize]
-                            .duration_ms_bucket.len()-1
-                       ],
-                    1
-        );
-
-        metrics_service.cmd_left_queue(index, duration2);
-
-        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 1 + 1);
-        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum,
-                   duration1 + duration2);
-        assert_eq!(metrics_service.queued_counters.borrow()[index as usize]
-                        .duration_ms_bucket[
-                            metrics_service.queued_counters.borrow()[index as usize]
-                           .duration_ms_bucket.len()-1
-                       ],
-                    2
-        );
-
-        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 0);
-        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, 0);
-        assert_eq!(metrics_service.executed_counters.borrow()[index as usize]
-                       .duration_ms_bucket[
-                            metrics_service.executed_counters.borrow()[index as usize]
-                            .duration_ms_bucket.len()-1
-                       ],
-                    0
-        );
-    }
-
-    #[test]
-    fn test_cmd_executed_increments_relevant_executed_counters() {
+    #[async_std::test]
+    async fn test_cmd_left_queue_increments_relevant_queued_counters() {
         let metrics_service = MetricsService::new();
         let index = CommandMetric::IssuerCommandCreateSchema;
         let duration1 = 5u128;
         let duration2 = 2u128;
 
-        metrics_service.cmd_executed(index, duration1);
+        metrics_service.cmd_left_queue(index, duration1).await;
 
-        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 1);
-        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, duration1);
+        {
+            let queued_counters = metrics_service.queued_counters.lock().await;
+            assert_eq!(queued_counters[index as usize].count, 1);
+            assert_eq!(queued_counters[index as usize].duration_ms_sum, duration1);
+            assert_eq!(queued_counters[index as usize]
+                           .duration_ms_bucket[
+                           queued_counters[index as usize]
+                               .duration_ms_bucket.len() - 1
+                           ],
+                       1
+            );
+        }
 
-        metrics_service.cmd_executed(index, duration2);
+        metrics_service.cmd_left_queue(index, duration2).await;
 
-        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].count, 0);
-        assert_eq!(metrics_service.queued_counters.borrow()[index as usize].duration_ms_sum, 0);
-        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].count, 1 + 1);
-        assert_eq!(metrics_service.executed_counters.borrow()[index as usize].duration_ms_sum, duration1 + duration2);
+        {
+            let queued_counters = metrics_service.queued_counters.lock().await;
+            assert_eq!(queued_counters[index as usize].count, 1 + 1);
+            assert_eq!(queued_counters[index as usize].duration_ms_sum,
+                       duration1 + duration2);
+            assert_eq!(queued_counters[index as usize]
+                           .duration_ms_bucket[
+                           queued_counters[index as usize]
+                               .duration_ms_bucket.len() - 1
+                           ],
+                       2
+            );
+        }
+
+        let executed_counters = metrics_service.executed_counters.lock().await;
+        assert_eq!(executed_counters[index as usize].count, 0);
+        assert_eq!(executed_counters[index as usize].duration_ms_sum, 0);
+        assert_eq!(executed_counters[index as usize]
+                       .duration_ms_bucket[
+                            executed_counters[index as usize]
+                            .duration_ms_bucket.len()-1
+                       ],
+                   0
+        );
     }
 
-    #[test]
-    fn test_append_command_metrics() {
+    #[async_std::test]
+    async fn test_cmd_executed_increments_relevant_executed_counters() {
+        let metrics_service = MetricsService::new();
+        let index = CommandMetric::IssuerCommandCreateSchema;
+        let duration1 = 5u128;
+        let duration2 = 2u128;
+
+        metrics_service.cmd_executed(index, duration1).await;
+
+        assert_eq!(metrics_service.executed_counters.lock().await[index as usize].count, 1);
+        assert_eq!(metrics_service.executed_counters.lock().await[index as usize].duration_ms_sum, duration1);
+
+        metrics_service.cmd_executed(index, duration2).await;
+
+        assert_eq!(metrics_service.queued_counters.lock().await[index as usize].count, 0);
+        assert_eq!(metrics_service.queued_counters.lock().await[index as usize].duration_ms_sum, 0);
+        assert_eq!(metrics_service.executed_counters.lock().await[index as usize].count, 1 + 1);
+        assert_eq!(metrics_service.executed_counters.lock().await[index as usize].duration_ms_sum, duration1 + duration2);
+    }
+
+    #[async_std::test]
+    async fn test_append_command_metrics() {
         let metrics_service = MetricsService::new();
         let mut metrics_map = serde_json::Map::new();
 
-        metrics_service.append_command_metrics(&mut metrics_map).unwrap();
+        metrics_service.append_command_metrics(&mut metrics_map).await.unwrap();
 
         assert!(metrics_map.contains_key("commands_count"));
         assert!(metrics_map.contains_key("commands_duration_ms"));

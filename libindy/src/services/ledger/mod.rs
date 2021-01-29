@@ -594,7 +594,7 @@ mod tests {
 
         let future = async move {
             let res = s.validate_action("default");
-            tx.send(res);
+            tx.send(res).unwrap();
         };
 
         executor.spawn_ok(future);

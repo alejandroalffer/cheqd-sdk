@@ -1,6 +1,5 @@
 use indy_api_types::{ErrorCode, CommandHandle};
-use crate::commands::{Command, CommandExecutor};
-use crate::commands::metrics::MetricsCommand;
+use crate::commands::Locator;
 use indy_utils::ctypes;
 use libc::c_char;
 
@@ -21,11 +20,24 @@ pub extern fn indy_collect_metrics(command_handle: CommandHandle,
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Metrics(MetricsCommand::CollectMetrics(
-            boxed_callback_string!("indy_collect_metrics", cb, command_handle)
-        )));
-    let res = prepare_result!(result);
+    let (executor, controller) = {
+        let locator = Locator::instance();
+        let executor = locator.executor.clone();
+        let controller = locator.metrics_command_executor.clone();
+        (executor, controller)
+    };
+
+    executor.spawn_ok(async move {
+        let res = controller.collect().await;
+        let (err, metrics) = prepare_result_1!(res, String::new());
+
+        trace!("indy_collect_metrics ? err {:?} metrics {:?}", err, metrics);
+
+        let did = ctypes::string_to_cstring(metrics);
+        cb(command_handle, err, did.as_ptr())
+    });
+
+    let res = ErrorCode::Success;
     trace!("indy_collect_metrics: <<< res: {:?}", res);
     res
 }

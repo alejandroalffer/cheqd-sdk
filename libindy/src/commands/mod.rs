@@ -14,7 +14,7 @@ use crate::commands::pairwise::PairwiseController;
 //use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor}; FIXME:
 use crate::commands::pool::PoolController;
 use crate::commands::wallet::WalletController;
-// use crate::commands::metrics::{MetricsCommand, MetricsCommandExecutor}; FIXME:
+use crate::commands::metrics::MetricsController;
 use crate::domain::IndyConfig;
 use crate::services::anoncreds::AnoncredsService;
 use crate::services::blob_storage::BlobStorageService;
@@ -22,7 +22,7 @@ use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 //use crate::services::payments::PaymentsService; FIXME:
 use crate::services::pool::{set_freshness_threshold, PoolService};
-//use crate::services::metrics::MetricsService; FIXME:
+use crate::services::metrics::MetricsService;
 //use crate::services::metrics::command_metrics::CommandMetric; FIXME:
 use indy_wallet::WalletService;
 
@@ -41,7 +41,7 @@ pub mod pool;
 pub mod wallet;
 //pub mod payments;
 pub mod cache;
-//pub mod metrics;
+pub mod metrics;
 
 #[allow(dead_code)] // FIXME [async] TODO implement Payment and Metrics
 pub enum Command {
@@ -111,6 +111,7 @@ pub(crate) struct Locator {
     pub(crate) blob_storage_command_executor: Arc<BlobStorageController>,
     pub(crate) non_secret_command_executor: Arc<NonSecretsController>,
     pub(crate) cache_command_executor: Arc<CacheController>,
+    pub(crate) metrics_command_executor: Arc<MetricsController>,
     pub(crate) executor: futures::executor::ThreadPool,
 }
 
@@ -134,7 +135,7 @@ impl Locator {
         //let payments_service = Arc::new(PaymentsService::new());
         let pool_service = Arc::new(PoolService::new());
         let wallet_service = Arc::new(WalletService::new());
-        //let metrics_service = Arc::new(MetricsService::new());
+        let metrics_service = Arc::new(MetricsService::new());
 
         let issuer_command_cxecutor = Arc::new(IssuerController::new(
             anoncreds_service.clone(),
@@ -190,6 +191,9 @@ impl Locator {
         let non_secret_command_executor =
             Arc::new(NonSecretsController::new(wallet_service.clone()));
 
+        let metrics_command_executor =
+            Arc::new(MetricsController::new(wallet_service.clone(), metrics_service.clone()));
+
         // FIXME: let payments_command_executor = Arc::new(PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone()));
 
         let cache_command_executor = Arc::new(CacheController::new(
@@ -221,6 +225,7 @@ impl Locator {
             blob_storage_command_executor,
             non_secret_command_executor,
             cache_command_executor,
+            metrics_command_executor,
             executor,
         }
     }
