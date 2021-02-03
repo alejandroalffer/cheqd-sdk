@@ -2,33 +2,36 @@ extern crate threadpool;
 extern crate ursa;
 
 use std::env;
+use std::future::Future;
 use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use anoncreds::{IssuerController, ProverController, VerifierController};
+use crate::services::metrics::command_metrics::CommandMetric;
+use indy_wallet::WalletService;
 
 use crate::commands::blob_storage::BlobStorageController;
 use crate::commands::cache::CacheController;
 use crate::commands::crypto::CryptoController;
 use crate::commands::did::DidController;
 use crate::commands::ledger::LedgerController;
+use crate::commands::metrics::MetricsController;
 use crate::commands::non_secrets::NonSecretsController;
 use crate::commands::pairwise::PairwiseController;
 //use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor}; FIXME:
 use crate::commands::pool::PoolController;
 use crate::commands::wallet::WalletController;
-use crate::commands::metrics::MetricsController;
 use crate::domain::IndyConfig;
 use crate::services::anoncreds::AnoncredsService;
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
-//use crate::services::payments::PaymentsService; FIXME:
-use crate::services::pool::{set_freshness_threshold, PoolService};
 use crate::services::metrics::MetricsService;
-//use crate::services::metrics::command_metrics::CommandMetric; FIXME:
-use indy_wallet::WalletService;
+//use crate::services::payments::PaymentsService; FIXME:
+use crate::services::pool::{PoolService, set_freshness_threshold};
 
 use self::threadpool::ThreadPool;
-use anoncreds::{IssuerController, ProverController, VerifierController};
-use std::time::{SystemTime, UNIX_EPOCH};
+use indy_api_types::errors::IndyResult;
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -89,13 +92,47 @@ pub fn indy_set_runtime_config(config: IndyConfig) {
     }
 }
 
-#[allow(dead_code)] // FIXME [async] TODO implement Metrics ?
 fn get_cur_time() -> u128 {
     let since_epoch = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time has gone backwards");
 
     since_epoch.as_millis()
+}
+
+#[derive(Clone)]
+pub(crate) struct InstrumentedThreadPool {
+    executor: futures::executor::ThreadPool,
+    metrics_service: Arc<MetricsService>,
+}
+
+impl InstrumentedThreadPool {
+    pub fn spawn_ok<Fut>(&self, future: Fut)
+        where
+            Fut: Future<Output = ()> + Send + 'static,
+    {
+        self.executor.spawn_ok(future)
+    }
+
+    pub fn spawn_ok_instrumented<T, FutIndyRes, FnCb>(&self, idx: CommandMetric, action: FutIndyRes, cb: FnCb)
+        where
+            FutIndyRes: Future<Output = IndyResult<T>> + Send + 'static,
+            FnCb: Fn(IndyResult<T>) + Sync + Send + 'static,
+            T: Send + 'static
+    {
+        let requested_time = get_cur_time();
+        let metrics_service = self.metrics_service.clone();
+        self.executor.spawn_ok(async move {
+            let start_time = get_cur_time();
+            let res = action.await;
+            let executed_time = get_cur_time();
+            cb(res);
+            let cb_finished_time = get_cur_time();
+            metrics_service.cmd_left_queue(idx, start_time - requested_time).await;
+            metrics_service.cmd_executed(idx, executed_time - start_time).await;
+            //TODO metrics_service.cmd_callback
+        })
+    }
 }
 
 pub(crate) struct Locator {
@@ -112,7 +149,7 @@ pub(crate) struct Locator {
     pub(crate) non_secret_command_executor: Arc<NonSecretsController>,
     pub(crate) cache_command_executor: Arc<CacheController>,
     pub(crate) metrics_command_executor: Arc<MetricsController>,
-    pub(crate) executor: futures::executor::ThreadPool,
+    pub(crate) executor: InstrumentedThreadPool,
 }
 
 // Global (lazy inited) instance of CommandExecutor
@@ -126,8 +163,6 @@ impl Locator {
     }
 
     fn new() -> Locator {
-        let executor = futures::executor::ThreadPool::new().unwrap();
-
         let anoncreds_service = Arc::new(AnoncredsService::new());
         let blob_storage_service = Arc::new(BlobStorageService::new());
         let crypto_service = Arc::new(CryptoService::new());
@@ -203,7 +238,10 @@ impl Locator {
             wallet_service.clone(),
         ));
 
-        // FIXME: let metrics_command_executor = Arc::new(MetricsCommandExecutor::new(wallet_service.clone(), metrics_service.clone()));
+        let executor = InstrumentedThreadPool {
+            executor: futures::executor::ThreadPool::new().unwrap(),
+            metrics_service: metrics_service.clone(),
+        };
 
         std::panic::set_hook(Box::new(|pi| {
             error!("Custom panic hook");

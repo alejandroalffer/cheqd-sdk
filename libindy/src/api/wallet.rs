@@ -9,6 +9,7 @@ use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 
 /// Register custom wallet storage implementation.
@@ -213,16 +214,22 @@ pub extern fn indy_create_wallet(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create(config, credentials)
             .await;
 
+        res
+    };
+
+    let cb = move |res: IndyResult<()>| {
         let err = prepare_result!(res);
         trace!("indy_create_wallet ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::WalletCommandCreate, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_create_wallet < {:?}", res);
