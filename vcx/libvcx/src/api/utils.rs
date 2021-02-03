@@ -1072,6 +1072,8 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
     fn test_health_check() {
         let _setup = SetupLibraryAgencyV1ZeroFees::init();
 
