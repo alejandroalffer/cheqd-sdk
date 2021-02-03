@@ -851,6 +851,44 @@ pub extern fn vcx_fetch_public_entities(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// This function allows you to check the health of LibVCX and EAS/CAS instance.
+/// It will return error in case of any problems on EAS or will resolve pretty long if VCX is thread-hungry.
+/// WARNING: this call may take a lot of time returning answer in case of load, be careful.
+/// NOTE: Library must be initialized, ENDPOINT_URL should be set
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// cb: Callback that provides result code
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_health_check(command_handle: CommandHandle,
+                               cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                    err: u32)>) -> u32 {
+    info!("vcx_health_check >>>");
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    spawn(move || {
+        match ::utils::health_check::health_check() {
+            Ok(()) => {
+                trace!("vcx_health_check_cb(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_health_check_cb(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+        Ok(())
+    });
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1031,6 +1069,30 @@ mod tests {
                                               Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         cb.receive(TimeoutUtils::some_medium()).unwrap();
+    }
+
+    #[test]
+    fn test_health_check() {
+        let _setup = SetupLibraryAgencyV1ZeroFees::init();
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(
+            vcx_health_check(cb.command_handle, Some(cb.get_callback())),
+            error::SUCCESS.code_num
+        );
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
+    }
+
+    #[test]
+    fn test_health_check_failure() {
+        let _setup = SetupMocks::init();
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(
+            vcx_health_check(cb.command_handle, Some(cb.get_callback())),
+            error::SUCCESS.code_num
+        );
+        cb.receive(TimeoutUtils::some_medium()).unwrap_err();
     }
 }
 
