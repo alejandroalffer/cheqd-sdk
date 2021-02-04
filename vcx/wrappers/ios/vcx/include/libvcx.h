@@ -504,6 +504,9 @@ vcx_error_t vcx_messages_update_status( vcx_command_handle_t command_handle, con
 /** Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials */
 vcx_error_t vcx_fetch_public_entities( vcx_command_handle_t command_handle, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 
+/** Check the health of VCX and CAS */
+vcx_error_t vcx_health_check( vcx_command_handle_t command_handle, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
+
 /**
  * utils object
  */

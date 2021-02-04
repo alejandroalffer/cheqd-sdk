@@ -402,6 +402,17 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
 - (void)fetchPublicEntities:(void (^)(NSError *error))completion;
 
+/**
+ This function allows you to check the health of LibVCX and EAS/CAS instance.
+ It will return error in case of any problems on EAS or will resolve pretty long if VCX is thread-hungry.
+ WARNING: this call may take a lot of time returning answer in case of load, be careful.
+ NOTE: Library must be initialized, ENDPOINT_URL should be set
+
+ Returns: void
+*/
+
+- (void)healthCheck:(void (^)(NSError *error))completion;
+
 - (void) createWalletBackup:(NSString *)sourceID
                   backupKey:(NSString *)backupKey
                  completion:(void (^)(NSError *error, NSInteger walletBackupHandle))completion;
