@@ -110,6 +110,7 @@ export interface IFFIEntryPoint {
   vcx_pool_set_handle: (handle: number) => void,
   vcx_endorse_transaction: (commandId: number, transaction: string, cb: any) => number,
   vcx_fetch_public_entities: (commandId: number, cb: any) => number,
+  vcx_health_check: (commandId: number, cb: any) => number,
 
   // connection
   vcx_connection_delete_connection: (commandId: number, handle: number, cb: any) => number,
@@ -303,6 +304,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_STRING_DATA, FFI_STRING_DATA, FFI_UNSIGNED_LONG]],
   vcx_endorse_transaction: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_fetch_public_entities: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_health_check: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CALLBACK_PTR]],
 
   // Evernym extensions
   vcx_pack_message: [FFI_INDY_NUMBER, [FFI_INDY_NUMBER, FFI_INDY_NUMBER, FFI_UNSIGNED_INT, FFI_UNSIGNED_INT,

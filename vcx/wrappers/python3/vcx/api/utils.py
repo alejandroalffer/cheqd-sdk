@@ -413,3 +413,25 @@ async def vcx_fetch_public_entities() -> None:
 
     logger.debug("vcx_fetch_public_entities completed")
     return result
+
+
+async def vcx_health_check() -> None:
+    """
+    This function allows you to check the health of LibVCX and EAS/CAS instance.
+    It will return error in case of any problems on EAS or will resolve pretty long if VCX is thread-hungry.
+    WARNING: this call may take a lot of time returning answer in case of load, be careful.
+    NOTE: Library must be initialized, ENDPOINT_URL should be set
+
+    :return None
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_health_check, "cb"):
+        logger.debug("vcx_health_check: Creating callback")
+        vcx_health_check.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+    result = await do_call('vcx_health_check',
+                           vcx_health_check.cb)
+
+    logger.debug("vcx_health_check completed")
+    return result

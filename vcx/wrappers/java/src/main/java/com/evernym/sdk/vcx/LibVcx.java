@@ -838,6 +838,9 @@ public abstract class LibVcx {
         /** Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials. */
         public int vcx_fetch_public_entities(int command_handle, Callback cb);
 
+        /** Check the health of LibVCX and EAS/CAS */
+        public int vcx_health_check(int command_handle, Callback cb);
+
         /**
          * Object representing Credential Definition publishing on the Ledger and used for the Issuance.
          */
