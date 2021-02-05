@@ -21,8 +21,8 @@ void VcxWrapperCommonCallback(vcx_command_handle_t xcommand_handle,
     void (^completion)(NSError *) = (void (^)(NSError *)) block;
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error);
         });
     }
@@ -37,8 +37,8 @@ void VcxWrapperCommonHandleCallback(vcx_command_handle_t xcommand_handle,
     void (^completion)(NSError *, VcxHandle) = (void (^)(NSError *, VcxHandle)) block;
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, (VcxHandle) pool_handle);
         });
     }
@@ -53,8 +53,8 @@ void VcxWrapperCommonNumberCallback(vcx_command_handle_t xcommand_handle,
     void (^completion)(NSError *, vcx_command_handle_t) = (void (^)(NSError *, vcx_command_handle_t)) block;
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, handle);
         });
     }
@@ -73,8 +73,8 @@ void VcxWrapperCommonStringCallback(vcx_command_handle_t xcommand_handle,
     }
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, sarg1);
         });
     }
@@ -89,8 +89,8 @@ void VcxWrapperCommonBoolCallback(vcx_command_handle_t xcommand_handle,
     void (^completion)(NSError *, BOOL) = (void (^)(NSError *, BOOL arg1)) block;
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, (BOOL) arg1);
         });
     }
@@ -115,8 +115,8 @@ void VcxWrapperCommonStringStringCallback(vcx_command_handle_t xcommand_handle,
     }
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, sarg1, sarg2);
         });
     }
@@ -141,8 +141,8 @@ void VcxWrapperCommonStringOptStringCallback(vcx_command_handle_t xcommand_handl
     }
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, sarg1, sarg2);
         });
     }
@@ -172,8 +172,8 @@ void VcxWrapperCommonStringOptStringOptStringCallback(vcx_command_handle_t xcomm
     }
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, sarg1, sarg2, sarg3);
         });
     }
@@ -203,8 +203,8 @@ void VcxWrapperCommonStringStringStringCallback(vcx_command_handle_t xcommand_ha
     }
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, sarg1, sarg2, sarg3);
         });
     }
@@ -223,8 +223,8 @@ void VcxWrapperCommonDataCallback(vcx_command_handle_t xcommand_handle,
     NSData *sarg = [NSData dataWithBytes:arg1 length:arg2];
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, sarg);
         });
     }
@@ -250,8 +250,8 @@ void VcxWrapperCommonStringDataCallback(vcx_command_handle_t xcommand_handle,
     }
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, sarg1, sarg2);
         });
     }
@@ -278,8 +278,8 @@ void VcxWrapperCommonStringStringLongCallback(vcx_command_handle_t xcommand_hand
 
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, (NSString *) sarg1, (NSString *) sarg2, (NSNumber *) sarg3);
         });
     }
@@ -301,8 +301,8 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     }
 
     if (completion) {
+        NSError *error = [NSError errorFromVcxError:err];
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSError *error = [NSError errorFromVcxError:err];
             completion(error, handle, (NSString *) sarg2);
         });
     }
@@ -329,9 +329,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
             NSLog(@"ERROR: initWithConfig: calling completion");
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 
@@ -347,9 +348,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
             NSLog(@"ERROR: initPool: calling completion");
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 
@@ -365,9 +367,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
             NSLog(@"ERROR: agentProvision: calling completion");
-            completion([NSError errorFromVcxError: ret], false);
+            completion(error, false);
         });
     }
 
@@ -392,9 +395,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
             NSLog(@"ERROR: getProvisionToken: calling completion");
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 
@@ -414,8 +418,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
    }
 }
@@ -439,8 +444,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
    }
 }
@@ -461,8 +467,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0, nil);
+           completion(error, 0, nil);
        });
    }
 }
@@ -481,8 +488,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
    }
 }
@@ -500,8 +508,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
    }
 }
@@ -512,12 +521,12 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     ret = vcx_connection_get_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
     
-    if( ret != 0 )
-    {
-        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
+    if( ret != 0 ) {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion(error, 0);
         });
     }
 }
@@ -527,11 +536,12 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     ret = vcx_connection_update_state(handle, connectionHandle, VcxWrapperCommonNumberCallback);
-    if( ret != 0 )
-    {
-        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    if( ret != 0 ) {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion(error, 0);
         });
     }
 }
@@ -547,8 +557,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret],nil);
+           completion(error, nil);
        });
    }
 }
@@ -564,8 +575,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret],0);
+           completion(error, 0);
        });
    }
 }
@@ -583,9 +595,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
             NSLog(@"deleteConnection: calling completion");
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -603,11 +616,12 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
                                                   message_ctype,
                                                   sendMessageOptions_ctype,
                                                   VcxWrapperCommonStringCallback);
-    if (ret != 0)
-    {
+    if (ret != 0) {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -626,8 +640,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -646,8 +661,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -669,8 +685,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -689,8 +706,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
     }
 }
@@ -705,11 +723,12 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     uint32_t data_length = (uint32_t) [dataRaw length];
 
     vcx_error_t ret = vcx_connection_sign_data(handle, connectionHandle, data_raw, data_length, VcxWrapperCommonDataCallback);
-    if (ret != 0)
-    {
+    if (ret != 0) {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil, 0);
+            completion(error, nil, 0);
         });
     }
 }
@@ -734,11 +753,12 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
                                                       signature_raw,
                                                       signature_length,
                                                       VcxWrapperCommonBoolCallback);
-    if (ret != 0)
-    {
+    if (ret != 0) {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], false);
+            completion(error, false);
         });
     }
 }
@@ -755,8 +775,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
     }
 }
@@ -775,8 +796,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
     }
 }
@@ -792,8 +814,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
     }
 }
@@ -809,8 +832,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
     }
 }
@@ -827,8 +851,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret]);
+           completion(error);
        });
    }
 }
@@ -844,8 +869,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
     }
 }
@@ -860,8 +886,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret]);
+           completion(error);
        });
     }
 }
@@ -879,8 +906,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
    }
 }
@@ -899,8 +927,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0, nil);
+           completion(error, 0, nil);
        });
     }
 }
@@ -919,8 +948,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0, nil);
+           completion(error, 0, nil);
        });
    }
 }
@@ -937,8 +967,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret]);
+           completion(error);
        });
     }
 }
@@ -957,8 +988,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret]);
+           completion(error);
        });
     }
 }
@@ -973,8 +1005,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
     }
 }
@@ -989,8 +1022,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
     }
 }
@@ -1007,8 +1041,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
     }
 }
@@ -1024,8 +1059,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret],nil);
+           completion(error, nil);
        });
    }
 }
@@ -1040,8 +1076,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
     }
 }
@@ -1067,8 +1104,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
     }
 }
@@ -1093,8 +1131,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -1109,8 +1148,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
     }
 }
@@ -1126,8 +1166,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
     }
 }
@@ -1143,8 +1184,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
     }
 }
@@ -1160,8 +1202,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
     }
 }
@@ -1183,8 +1226,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
    }
 }
@@ -1199,8 +1243,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret]);
+           completion(error);
        });
    }
 }
@@ -1221,8 +1266,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret]);
+           completion(error);
        });
    }
 }
@@ -1241,8 +1287,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
    }
 }
@@ -1265,8 +1312,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret]);
+           completion(error);
        });
    }
 }
@@ -1288,8 +1336,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -1305,8 +1354,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret],nil);
+           completion(error, nil);
        });
    }
 }
@@ -1326,8 +1376,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0, nil);
+            completion(error, 0, nil);
         });
     }
 }
@@ -1343,8 +1394,9 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1364,8 +1416,9 @@ withSelectedCredentials:(NSString *)selectedCredentials
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -1382,8 +1435,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -1400,8 +1454,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -1412,12 +1467,12 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     ret = vcx_disclosed_proof_get_state(handle, proofHandle, VcxWrapperCommonNumberCallback);
     
-    if( ret != 0 )
-    {
-        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
+    if( ret != 0 ) {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion(error, 0);
         });
     }
 }
@@ -1427,11 +1482,12 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     ret = vcx_disclosed_proof_update_state(handle, proofHandle, VcxWrapperCommonNumberCallback);
-    if( ret != 0 )
-    {
-        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    if( ret != 0 ) {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion(error, 0);
         });
     }
 }
@@ -1447,8 +1503,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -1469,8 +1526,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -1486,8 +1544,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1503,8 +1562,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1521,8 +1581,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -1538,8 +1599,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1557,8 +1619,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion(error, 0);
         });
     }
 }
@@ -1578,8 +1641,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion(error, 0);
         });
     }
 }
@@ -1595,8 +1659,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1613,8 +1678,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion(error, 0);
         });
     }
 }
@@ -1634,8 +1700,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], 0);
+           completion(error, 0);
        });
     }
 }
@@ -1651,8 +1718,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret], nil);
+           completion(error, nil);
        });
     }
 }
@@ -1670,8 +1738,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1688,8 +1757,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1711,8 +1781,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1732,8 +1803,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1749,8 +1821,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1768,8 +1841,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1787,8 +1861,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -1804,8 +1879,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1815,11 +1891,12 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     ret = vcx_fetch_public_entities(handle, VcxWrapperCommonCallback);
 
-    if( ret != 0 )
-    {
-        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    if( ret != 0 ) {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 }
@@ -1856,8 +1933,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1876,8 +1954,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret]);
+            completion(error);
         });
     }
 
@@ -1897,8 +1976,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion(error, 0);
         });
     }
 
@@ -1920,8 +2000,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], 0);
+            completion(error, 0);
         });
     }
 
@@ -1941,8 +2022,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
@@ -1961,8 +2043,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 
@@ -1979,8 +2062,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+       NSError *error = [NSError errorFromVcxError:ret];
        dispatch_async(dispatch_get_main_queue(), ^{
-           completion([NSError errorFromVcxError: ret]);
+           completion(error);
        });
    }
 }
@@ -2002,8 +2086,9 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
 
+        NSError *error = [NSError errorFromVcxError:ret];
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromVcxError: ret], nil);
+            completion(error, nil);
         });
     }
 }
