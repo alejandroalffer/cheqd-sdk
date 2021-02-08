@@ -12,20 +12,20 @@ pub mod models;
 const COMMANDS_COUNT: usize = MetricsService::commands_count();
 
 pub struct MetricsService {
-    queued_counters: Mutex<[CommandCounters; COMMANDS_COUNT]>,
+    queued_counters: Mutex<CommandCounters>,
     executed_counters: Mutex<[CommandCounters; COMMANDS_COUNT]>,
 }
 
 impl MetricsService {
     pub fn new() -> Self {
         MetricsService {
-            queued_counters: Mutex::new([CommandCounters::new(); COMMANDS_COUNT]),
+            queued_counters: Mutex::new(CommandCounters::new()),
             executed_counters: Mutex::new([CommandCounters::new(); COMMANDS_COUNT]),
         }
     }
 
-    pub async fn cmd_left_queue(&self, command_metric: CommandMetric, duration: u128) {
-        self.queued_counters.lock().await[command_metric as usize].add(duration);
+    pub async fn cmd_left_queue(&self, _command_metric: CommandMetric, duration: u128) {
+        self.queued_counters.lock().await.add(duration);
     }
 
     pub async fn cmd_executed(&self, command_metric: CommandMetric, duration: u128) {
@@ -59,28 +59,33 @@ impl MetricsService {
             let command_name = MetricsService::cmd_name(index);
             let tags_executed = MetricsService::get_command_tags(
                 command_name.to_owned(),
-                String::from("executed"),
-            );
-            let tags_queued = MetricsService::get_command_tags(
-                command_name.to_owned(),
-                String::from("queued"),
+                "executed".to_owned(),
             );
 
             let ec = self.executed_counters.lock().await;
-            let qc = self.queued_counters.lock().await;
-            commands_count.push(self.get_metric_json(ec[index].count as usize, tags_executed.clone())?);
-            commands_count.push(self.get_metric_json(qc[index].count as usize, tags_queued.clone())?);
+            commands_count.push(Self::get_metric_json(ec[index].count as usize, tags_executed.clone())?);
+            commands_duration_ms.push(Self::get_metric_json(ec[index].duration_ms_sum as usize, tags_executed.clone())?);
 
-            commands_duration_ms.push(self.get_metric_json(ec[index].duration_ms_sum as usize, tags_executed.clone())?);
-            commands_duration_ms.push(self.get_metric_json(qc[index].duration_ms_sum as usize, tags_queued.clone())?);
-
-            for index_bucket in (0..ec[index].duration_ms_bucket.len()).rev() {
-                let executed_bucket = ec[index].duration_ms_bucket[index_bucket];
-                let queued_bucket = qc[index].duration_ms_bucket[index_bucket];
-
-                commands_duration_ms_bucket.push(self.get_metric_json(executed_bucket as usize, tags_executed.clone())?);
-                commands_duration_ms_bucket.push(self.get_metric_json(queued_bucket as usize, tags_queued.clone())?);
+            for (executed_bucket, le) in ec[index].duration_ms_bucket.iter().rev().zip(models::LIST_LE.iter().rev()) {
+                let mut tags = tags_executed.clone();
+                tags.insert("le".to_owned(), le.to_string());
+                commands_duration_ms_bucket.push(Self::get_metric_json(*executed_bucket as usize, tags)?);
             }
+        }
+
+        let tags_queued = {
+            let mut tags = HashMap::<String, String>::new();
+            tags.insert("stage".to_owned(), "queued".to_owned());
+            tags
+        };
+        let qc = self.queued_counters.lock().await;
+        commands_duration_ms.push(Self::get_metric_json(qc.duration_ms_sum as usize, tags_queued.clone())?);
+        commands_count.push(Self::get_metric_json(qc.count as usize, tags_queued.clone())?);
+
+        for (queued_bucket, le) in qc.duration_ms_bucket.iter().rev().zip(models::LIST_LE.iter().rev()) {
+            let mut tags = tags_queued.clone();
+            tags.insert("le".to_owned(), le.to_string());
+            commands_duration_ms_bucket.push(Self::get_metric_json(*queued_bucket as usize, tags)?);
         }
 
         metrics_map.insert(
@@ -102,7 +107,7 @@ impl MetricsService {
         Ok(())
     }
 
-    fn get_metric_json(&self, value: usize, tags: HashMap<String, String>) -> IndyResult<Value> {
+    fn get_metric_json(value: usize, tags: HashMap<String, String>) -> IndyResult<Value> {
         let res = serde_json::to_value(MetricsValue::new(
             value,
             tags,

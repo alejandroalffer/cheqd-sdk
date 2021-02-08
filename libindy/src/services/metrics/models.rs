@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 const BUCKET_COUNT: usize = 16;
-const LIST_LE: [f64; BUCKET_COUNT-1] = [0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0, 20000.0];
+pub(super) const LIST_LE: [f64; BUCKET_COUNT] = [0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0, 20000.0, f64::MAX];
 
 #[derive(Serialize, Deserialize)]
 pub struct MetricsValue {
@@ -40,7 +40,6 @@ impl CommandCounters {
                 self.duration_ms_bucket[le_index] += 1;
             }
         }
-        self.duration_ms_bucket[self.duration_ms_bucket.len()-1] += 1;
     }
 }
 
