@@ -127,7 +127,7 @@ impl InstrumentedThreadPool {
             let res = action.await;
             let executed_time = get_cur_time();
             cb(res);
-            let cb_finished_time = get_cur_time();
+            //TODO restore: let cb_finished_time = get_cur_time();
             metrics_service.cmd_left_queue(idx, start_time - requested_time).await;
             metrics_service.cmd_executed(idx, executed_time - start_time).await;
             //TODO metrics_service.cmd_callback

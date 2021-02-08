@@ -15,10 +15,6 @@ const OPENED_WALLET_IDS_COUNT: &str = "opened_ids";
 const PENDING_FOR_IMPORT_WALLETS_COUNT: &str = "pending_for_import";
 const PENDING_FOR_OPEN_WALLETS_COUNT: &str = "pending_for_open";
 
-pub enum MetricsCommand {
-    CollectMetrics(Box<dyn Fn(IndyResult<String>) + Send + Sync>),
-}
-
 pub struct MetricsController {
     wallet_service:Arc<WalletService>,
     metrics_service:Arc<MetricsService>,
