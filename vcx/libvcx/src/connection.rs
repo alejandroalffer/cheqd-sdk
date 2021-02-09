@@ -1544,6 +1544,7 @@ pub mod tests {
     #[test]
     fn test_build_connection_failures_with_no_wallet() {
         let _setup = SetupDefaults::init();
+        settings::set_config_value(settings::CONFIG_PROTOCOL_TYPE, "1.0");
 
         assert_eq!(create_connection("This Should Fail").unwrap_err().kind(), VcxErrorKind::InvalidWalletHandle);
 
