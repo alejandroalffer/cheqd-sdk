@@ -86,6 +86,7 @@ impl SetupMocks {
     pub fn init() -> SetupMocks {
         setup();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        settings::set_config_value(settings::CONFIG_PROTOCOL_TYPE, "1.0");
         SetupMocks
     }
 }
