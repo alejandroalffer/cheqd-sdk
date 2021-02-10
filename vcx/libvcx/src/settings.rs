@@ -80,7 +80,7 @@ pub static DEFAULT_PAYMENT_PLUGIN: &str = "libsovtoken.so";
 pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "sovtoken_init";
 pub static DEFAULT_USE_LATEST_PROTOCOLS: &str = "false";
 pub static DEFAULT_PAYMENT_METHOD: &str = "sov";
-pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
+pub static DEFAULT_PROTOCOL_TYPE: &str = "3.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
 pub static DEFAULT_COMMUNICATION_METHOD: &str = "evernym";
 

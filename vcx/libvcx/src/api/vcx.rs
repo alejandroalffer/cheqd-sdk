@@ -40,6 +40,7 @@ pub extern fn vcx_init_with_config(command_handle: CommandHandle,
     if config == "ENABLE_TEST_MODE" {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_PROTOCOL_TYPE, "1.0");
     } else {
         match settings::process_config_string(&config, true) {
             Err(e) => {
@@ -85,6 +86,7 @@ pub extern fn vcx_init(command_handle: CommandHandle,
         if config_path == "ENABLE_TEST_MODE" {
             settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
             settings::set_defaults();
+            settings::set_config_value(settings::CONFIG_PROTOCOL_TYPE, "1.0");
         } else {
             match settings::process_config_file(&config_path) {
                 Ok(_) => (),
@@ -197,6 +199,7 @@ pub extern fn vcx_init_minimal(config: *const c_char) -> u32 {
     if config == "ENABLE_TEST_MODE" {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_PROTOCOL_TYPE, "1.0");
     } else {
         match settings::process_config_string(&config, false) {
             Err(e) => {

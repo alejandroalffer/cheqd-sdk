@@ -17,6 +17,11 @@ pub struct AgencyMock {
     responses: Vec<Vec<u8>>
 }
 
+enum RequestType {
+    GET,
+    POST
+}
+
 impl AgencyMock {
     pub fn set_next_response(body: Vec<u8>) {
         if settings::agency_mocks_enabled() {
@@ -35,7 +40,20 @@ pub fn post_u8(body_content: &Vec<u8>) -> VcxResult<Vec<u8>> {
     post_message(body_content, &endpoint)
 }
 
+pub fn get_status() -> VcxResult<Vec<u8>> {
+    let endpoint = format!("{}/agency", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)?);
+    get_message(&endpoint)
+}
+
 pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
+    send_http_message(body_content, url, RequestType::POST)
+}
+
+pub fn get_message(url: &str) -> VcxResult<Vec<u8>> {
+    send_http_message(&Vec::new(), url, RequestType::GET)
+}
+
+fn send_http_message(body_content: &Vec<u8>, url: &str, request_type: RequestType) -> VcxResult<Vec<u8>> {
     if settings::agency_mocks_enabled() {
         return AgencyMock::get_response();
     }
@@ -53,15 +71,16 @@ pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
 
     debug!("Posting encrypted bundle to: \"{}\"", secret!(url));
 
-    let mut response =
-        client.post(url)
+    let mut response = match request_type {
+        RequestType::POST => client.post(url)
             .body(body_content.to_owned())
-            .header(CONTENT_TYPE, "application/ssi-agent-wire")
-            .send()
-            .map_err(|err| {
-                error!("error: {}", err);
-                VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Could send HTTP message. Error: {:?}", err))
-            })?;
+            .header(CONTENT_TYPE, "application/ssi-agent-wire"),
+        RequestType::GET => client.get(url)
+    }.send()
+     .map_err(|err| {
+         error!("error: {}", err);
+         VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Could send HTTP message. Error: {:?}", err))
+     })?;
 
     trace!("Response Header: {:?}", response);
     if !response.status().is_success() {

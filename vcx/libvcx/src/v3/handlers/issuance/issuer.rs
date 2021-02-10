@@ -148,6 +148,7 @@ impl IssuerSM {
             IssuerState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
+                    Status::Rejected(_) => VcxStateType::VcxStateRejected as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
             }
@@ -198,13 +199,13 @@ impl IssuerSM {
                         .set_thread(thread.clone());
 
                     state_data.connection.data.send_message(&A2AMessage::CredentialReject(problem_report.clone()), &state_data.connection.agent)?;
-                    IssuerState::Finished((state_data, problem_report, thread).into())
+                    IssuerState::Finished((state_data, Status::Failed(problem_report), thread).into())
                 }
                 CredentialIssuanceMessage::ProblemReport(problem_report) => {
                     let thread = state_data.thread.clone()
                         .update_received_order(&state_data.connection.data.did_doc.id);
 
-                    IssuerState::Finished((state_data, problem_report, thread).into())
+                    IssuerState::Finished((state_data, Status::Rejected(Some(problem_report)), thread).into())
                 }
                 _ => {
                     warn!("In this state Credential Issuance can accept only Request, Proposal and Problem Report");
@@ -244,12 +245,12 @@ impl IssuerSM {
                 }
             }
             IssuerState::CredentialSent(state_data) => match cim {
-                CredentialIssuanceMessage::ProblemReport(_problem_report) => {
+                CredentialIssuanceMessage::ProblemReport(problem_report) => {
                     info!("Interaction closed with failure");
                     let thread = state_data.thread.clone()
                         .update_received_order(&state_data.connection.data.did_doc.id);
 
-                    IssuerState::Finished((state_data, thread).into())
+                    IssuerState::Finished((state_data, Status::Rejected(Some(problem_report)), thread).into())
                 }
                 CredentialIssuanceMessage::CredentialAck(_ack) => {
                     info!("Interaction closed with success");
@@ -297,6 +298,22 @@ impl IssuerSM {
             IssuerState::RequestReceived(ref state) => Some(state.offer.clone()),
             IssuerState::CredentialSent(ref state) => Some(state.offer.clone()),
             IssuerState::Finished(ref state) => state.offer.clone(),
+        }
+    }
+
+    pub fn problem_report(&self) -> Option<&ProblemReport> {
+        match self.state {
+            IssuerState::Initial(_) |
+            IssuerState::OfferSent(_) |
+            IssuerState::RequestReceived(_) |
+            IssuerState::CredentialSent(_) => None,
+            IssuerState::Finished(ref status) => {
+                match &status.status {
+                    Status::Success | Status::Undefined => None,
+                    Status::Rejected(ref problem_report) => problem_report.as_ref(),
+                    Status::Failed(problem_report) => Some(problem_report),
+                }
+            }
         }
     }
 }
@@ -482,7 +499,7 @@ pub mod test {
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::ProblemReport(_problem_report())).unwrap();
 
             assert_match!(IssuerState::Finished(_), issuer_sm.state);
-            assert_eq!(VcxStateType::VcxStateNone as u32, issuer_sm.state());
+            assert_eq!(VcxStateType::VcxStateRejected as u32, issuer_sm.state());
         }
 
         #[test]

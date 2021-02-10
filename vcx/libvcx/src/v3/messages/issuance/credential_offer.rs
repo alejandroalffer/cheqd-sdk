@@ -97,6 +97,8 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
             credential_attrs.insert(attr.name.clone(), ::serde_json::Value::String(attr.value.clone()));
         }
 
+        let thid = self.thread.and_then(|thread| thread.thid).unwrap_or(self.id.0.clone());
+
         Ok(CredentialOfferV1 {
             msg_type: PayloadKinds::CredOffer.name().to_string(),
             version: String::from("0.1"),
@@ -109,7 +111,7 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
             msg_ref_id: None,
             cred_def_id: indy_cred_offer["cred_def_id"].as_str().map(String::from).unwrap_or_default(),
             libindy_offer: indy_cred_offer_json,
-            thread_id: Some(self.id.0.clone()),
+            thread_id: Some(thid),
         })
     }
 }

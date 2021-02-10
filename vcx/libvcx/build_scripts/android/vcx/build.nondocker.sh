@@ -236,8 +236,8 @@ mkdir target/${CROSS_COMPILE}/release/tmpobjs
 pushd target/${CROSS_COMPILE}/release/tmpobjs
     ${AR} -x ../libvcx.a
     ls > ../objfiles
-    xargs ${AR} cr ../libvcx.a.new < ../objfiles
-    ${STRIP} -S -x -o ../libvcx.a.stripped ../libvcx.a.new
+#    xargs ${AR} cr ../libvcx.a.new < ../objfiles
+    ${STRIP} -S -x -o ../libvcx.a.stripped ../libvcx.a
     mv ../libvcx.a.stripped ../libvcx.a
 popd
 popd

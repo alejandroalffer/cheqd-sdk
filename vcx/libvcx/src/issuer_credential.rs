@@ -752,7 +752,13 @@ pub fn send_credential_offer(handle: u32, connection_handle: u32) -> VcxResult<u
                 // if Aries connection is established --> Convert Pending object to Aries credential
                 if ::connection::is_v3_connection(connection_handle)? {
                     debug!("converting pending issuer credential into aries object");
-                    let mut issuer = Issuer::create(obj.cred_def_handle, &obj.credential_attributes, &obj.source_id, &obj.credential_name)?;
+                    let mut issuer = Issuer::create_from_data(
+                        &obj.cred_def_id,
+                        obj.rev_reg_id.clone(),
+                        obj.tails_file.clone(),
+                        &obj.credential_attributes,
+                        &obj.source_id,
+                        &obj.credential_name)?;
                     issuer.send_credential_offer(connection_handle)?;
 
                     IssuerCredentials::V3(issuer)
@@ -836,6 +842,19 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
             IssuerCredentials::Pending(ref obj) => Ok(obj.get_source_id().to_string()),
             IssuerCredentials::V1(ref obj) => Ok(obj.get_source_id().to_string()),
             IssuerCredentials::V3(ref obj) => obj.get_source_id()
+        }
+    }).map_err(handle_err)
+}
+
+pub fn get_problem_report_message(handle: u32) -> VcxResult<String> {
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        match obj {
+            IssuerCredentials::Pending(ref _obj) | IssuerCredentials::V1(ref _obj) => {
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Issuer Credential type doesn't support this action: `get_problem_report_message`."))
+            }
+            IssuerCredentials::V3(ref obj) => {
+                obj.get_problem_report_message()
+            }
         }
     }).map_err(handle_err)
 }

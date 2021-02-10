@@ -15,6 +15,8 @@ pub struct Invitation {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "profileUrl")]
     pub profile_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_did: Option<String>,
 }
 
 impl Invitation {
@@ -51,6 +53,11 @@ impl Invitation {
         self.routing_keys = routing_keys;
         self
     }
+
+    pub fn set_opt_public_did(mut self, public_did: Option<String>) -> Invitation {
+        self.public_did = public_did;
+        self
+    }
 }
 
 a2a_message!(Invitation, ConnectionInvitation);
@@ -67,7 +74,8 @@ pub mod tests {
             recipient_keys: _recipient_keys(),
             routing_keys: _routing_keys(),
             service_endpoint: _service_endpoint(),
-            profile_url: None
+            profile_url: None,
+            public_did: None
         }
     }
 

@@ -9,6 +9,8 @@ use v3::messages::proof_presentation::presentation::Presentation;
 use v3::handlers::proof_presentation::verifier::states::VerifierSM;
 use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
 use v3::messages::a2a::A2AMessage;
+use v3::messages::proof_presentation::presentation_proposal::{PresentationProposal, PresentationPreview};
+use v3::messages::error::ProblemReport;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {
@@ -35,6 +37,12 @@ impl Verifier {
 
         Ok(Verifier {
             verifier_sm: VerifierSM::new(presentation_request, source_id),
+        })
+    }
+
+    pub fn create_from_proposal(source_id: String, presentation_proposal: PresentationProposal) -> VcxResult<Verifier> {
+        Ok(Verifier {
+            verifier_sm: VerifierSM::new_from_proposal(presentation_proposal, source_id)
         })
     }
 
@@ -115,15 +123,70 @@ impl Verifier {
         self.step(VerifierMessages::SendPresentationRequest(connection_handle))
     }
 
-    pub fn generate_presentation_request_msg(&self) -> VcxResult<String> {
-        trace!("Verifier::generate_presentation_request_msg >>>");
-        debug!("Verifier {}: Generating presentation request", self.get_source_id());
+    pub fn request_proof(&mut self,
+                         connection_handle: u32,
+                         requested_attrs: String,
+                         requested_predicates: String,
+                         revocation_details: String,
+                         name: String) -> VcxResult<()> {
+        trace!("Verifier::request_proof >>> connection_handle: {:?}, requested_attrs: {:?}, requested_predicates: {:?}, revocation_details: {:?}, name: {:?}",
+               connection_handle, secret!(requested_attrs), secret!(requested_predicates), secret!(revocation_details), secret!(name));
+        debug!("Verifier {}: Requesting presentation", self.get_source_id());
+
+        let presentation_request =
+            PresentationRequestData::create()
+                .set_name(name)
+                .set_requested_attributes(requested_attrs)?
+                .set_requested_predicates(requested_predicates)?
+                .set_not_revoked_interval(revocation_details)?
+                .set_nonce()?;
+        self.step(VerifierMessages::RequestPresentation(connection_handle, presentation_request))
+    }
+
+    pub fn get_presentation_request(&self) -> VcxResult<String> {
+        trace!("Verifier::get_presentation_request >>>");
+        debug!("Verifier {}: Getting presentation request", self.get_source_id());
 
         let proof_request: ProofRequestMessage = self.verifier_sm.presentation_request()?.try_into()?;
 
         ::serde_json::to_string(&proof_request)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
                                               format!("Cannot serialize ProofMessage. Err: {:?}", err)))
+    }
+
+    pub fn get_presentation_request_attach(&self) -> VcxResult<String> {
+        trace!("Verifier::get_presentation_request_attach >>>");
+        debug!("Verifier {}: Getting presentation request in Aries format", self.get_source_id());
+
+        let proof_request = self.verifier_sm.presentation_request()?.to_a2a_message();
+
+        ::serde_json::to_string(&proof_request)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
+                                              format!("Cannot serialize ProofMessage. Err: {:?}", err)))
+    }
+
+    pub fn generate_presentation_request(&mut self) -> VcxResult<()> {
+        trace!("Verifier::generate_presentation_request >>>");
+        debug!("Verifier {}: Generating presentation request", self.get_source_id());
+
+        self.step(VerifierMessages::PreparePresentationRequest())
+    }
+
+    pub fn set_connection(&mut self, connection_handle: u32) -> VcxResult<()> {
+        debug!("Issuer {}: Sending credential", self.get_source_id());
+        self.step(VerifierMessages::SetConnection(connection_handle))
+    }
+
+
+    pub fn get_presentation_proposal_request(&self) -> VcxResult<String> {
+        trace!("Verifier::get_proposal_request >>>");
+        debug!("Verifier {}: Getting presentation proposal request", self.get_source_id());
+
+        let proposal: PresentationPreview = self.verifier_sm.presentation_proposal()?.presentation_proposal;
+
+        ::serde_json::to_string(&proposal)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
+                                              format!("Cannot serialize PresentationProposal. Err: {:?}", err)))
     }
 
     pub fn get_presentation(&self) -> VcxResult<String> {
@@ -135,6 +198,14 @@ impl Verifier {
         ::serde_json::to_string(&proof)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError,
                                               format!("Cannot serialize ProofMessage. Err: {:?}", err)))
+    }
+
+    pub fn get_problem_report_message(&self) -> VcxResult<String> {
+        trace!("Verifier::get_problem_report_message >>>");
+        debug!("Verifier {}: Getting problem report message", self.get_source_id());
+
+        let problem_report: Option<&ProblemReport> = self.verifier_sm.problem_report();
+        Ok(json!(&problem_report).to_string())
     }
 
     pub fn step(&mut self, message: VerifierMessages) -> VcxResult<()> {

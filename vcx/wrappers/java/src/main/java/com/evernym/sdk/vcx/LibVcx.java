@@ -248,6 +248,11 @@ public abstract class LibVcx {
         public int vcx_connection_send_invite_action(int command_handle, int connection_handle, String data, Callback cb);
 
         /**
+         * Get Problem Report message for object in Failed or Rejected state.
+         */
+        public int vcx_connection_get_problem_report(int command_handle, int connection_handle, Callback cb);
+
+        /**
          * The API represents an Issuer side in credential issuance process.
          * Assumes that pairwise connection between Issuer and Holder is already established.
          */
@@ -297,6 +302,8 @@ public abstract class LibVcx {
         /** Sets the credential request in an accepted state. (not in MVP) */
         public int vcx_issuer_accept_credential(int credential_handle);
 
+        /** Get Problem Report message for object in Failed or Rejected state. */
+        public int vcx_issuer_credential_get_problem_report(int command_handle, int credential_handle, Callback cb);
 
         /**
          * APIs in this module are called by a verifier throughout the request-proof-and-verify process.
@@ -319,6 +326,11 @@ public abstract class LibVcx {
         public int vcx_proof_send_request(int command_handle, int proof_handle, int connection_handle, Callback cb);
 
         /**
+         * Request a proof from pairwise connection. Used for negotiation.
+         */
+        public int vcx_proof_request_proof(int command_handle, int proof_handle, int connection_handle, String requested_attrs, String requested_predicates, String revocationInterval, String name, Callback cb);
+
+        /**
          * Get the proof request message that can be sent to the specified connection.
          */
         public int vcx_proof_get_request_msg(int command_handle, int proof_handle, Callback cb);
@@ -333,6 +345,11 @@ public abstract class LibVcx {
          * Get Proof message.
         */
         public int vcx_get_proof_msg(int command_handle, int proof_handle, Callback cb);
+
+        /**
+         * Get Proof proposal.
+         */
+        public int vcx_get_proof_proposal(int command_handle, int proof_handle, Callback cb);
 
         /**
          * Set proof offer as accepted.
@@ -366,6 +383,11 @@ public abstract class LibVcx {
         public int vcx_proof_deserialize(int command_handle, String serialized_proof, Callback cb);
 
         /**
+         * Get Problem Report message for object in Failed or Rejected state.
+         */
+        public int vcx_proof_get_problem_report(int command_handle, int proof_handle, Callback cb);
+
+        /**
          * Releases the proof object by de-allocating memory
          */
         public int vcx_proof_release(int proof_handle);
@@ -380,9 +402,19 @@ public abstract class LibVcx {
         public int vcx_disclosed_proof_create_with_request(int command_handle, String source_id, String proof_req, Callback cb);
 
         /**
+         * Create a Proof object for sending a corresponding proof proposal
+         */
+        public int vcx_disclosed_proof_create_proposal(int command_handle, String source_id, String proof_proposal, String comment, Callback cb);
+
+        /**
          * Send a proof to the connection, called after having received a proof request
          */
         public int vcx_disclosed_proof_send_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
+
+        /**
+         * Send a proof to the connection, called after having received a proof request
+         */
+        public int vcx_disclosed_proof_send_proposal(int command_handle, int proof_handle, int connection_handle, Callback cb);
 
         /**
          * Send a proof rejection to the connection, called after having received a proof request
@@ -454,6 +486,12 @@ public abstract class LibVcx {
          * Declines presentation request..
          */
         public int vcx_disclosed_proof_decline_presentation_request(int command_handle, int proof_handle, int connection_handle, String reason, String proposal, Callback cb);
+
+
+        /**
+         * Get Problem Report message for object in Failed or Rejected state.
+         */
+        public int vcx_disclosed_proof_get_problem_report(int command_handle, int proof_handle, Callback cb);
 
 
         /**
@@ -706,6 +744,9 @@ public abstract class LibVcx {
         /** Delete a credential from the wallet and release it from memory. */
         public int vcx_delete_credential(int command_handle, int credential_handle, Callback cb);
 
+        /** Get Problem Report message for object in Failed or Rejected state.. */
+        public int vcx_credential_get_problem_report(int command_handle, int credential_handle, Callback cb);
+
         /**
          * wallet object
          *
@@ -796,6 +837,9 @@ public abstract class LibVcx {
 
         /** Fetch and Cache public entities from the Ledger associated with stored in the wallet credentials. */
         public int vcx_fetch_public_entities(int command_handle, Callback cb);
+
+        /** Check the health of LibVCX and EAS/CAS */
+        public int vcx_health_check(int command_handle, Callback cb);
 
         /**
          * Object representing Credential Definition publishing on the Ledger and used for the Issuance.

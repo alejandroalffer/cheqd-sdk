@@ -1,4 +1,6 @@
 from ctypes import *
+from typing import Optional
+
 from vcx.common import do_call, create_cb
 from vcx.api.connection import Connection
 from vcx.api.vcx_stateful import VcxStateful
@@ -285,7 +287,7 @@ class Proof(VcxStateful):
             {'@topic': {'tid': 0, 'mid': 0}, '@type': {'version': '1.0', 'name': 'PROOF_REQUEST'}, 'proof_request_data': {'name': 'proof_req', 'nonce': '118065925949165739229152', 'version': '0.1', 'requested_predicates': {}, 'non_revoked': None, 'requested_attributes': {'attribute_0': {'name': 'name', 'restrictions': {'$or': [{'issuer_did': 'did'}]}}}, 'ver': '1.0'}, 'thread_id': '40bdb5b2'}
         """
         if not hasattr(Proof.get_proof_request_msg, "cb"):
-            self.logger.debug("vcx_proof_send_request: Creating callback")
+            self.logger.debug("vcx_proof_get_request_msg: Creating callback")
             Proof.get_proof_request_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_proof_handle = c_uint32(self.handle)
@@ -295,6 +297,110 @@ class Proof(VcxStateful):
                             Proof.get_proof_request_msg.cb)
 
         return json.loads(msg.decode())
+
+    async def get_proof_request_attach(self):
+        """
+        Gets the proof request attachment for ephemeral proof request
+        Example:
+        name = "proof name"
+        requested_attrs = [{"name": "age", "restrictions": [{"schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }, { "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}]
+        proof = await Proof.create(source_id, name, requested_attrs)
+        await proof.get_proof_request_attach()
+        :param
+        :return: proof request attachment
+        {"@id": "8b23c2b6-b432-45d8-a377-d003950c0fcc", "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation", "comment": "Person Proving", "request_presentations~attach": [{"@id": "libindy-request-presentation-0", "data": {"base64": "eyJuYW1lIjoiUGVyc29uIFByb3ZpbmciLCJub25fcmV2b2tlZCI6bnVsbCwibm9uY2UiOiI2MzQxNzYyOTk0NjI5NTQ5MzA4MjY1MzQiLCJyZXF1ZXN0ZWRfYXR0cmlidXRlcyI6eyJhdHRyaWJ1dGVfMCI6eyJuYW1lIjoibmFtZSJ9LCJhdHRyaWJ1dGVfMSI6eyJuYW1lIjoiZW1haWwifX0sInJlcXVlc3RlZF9wcmVkaWNhdGVzIjp7fSwidmVyIjpudWxsLCJ2ZXJzaW9uIjoiMS4wIn0="}, "mime-type": "application/json"}]}
+        TODO: add attachment
+        """
+        if not hasattr(Proof.get_proof_request_attach, "cb"):
+            self.logger.debug("vcx_proof_get_request_attach: Creating callback")
+            Proof.get_proof_request_attach.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_proof_handle = c_uint32(self.handle)
+        msg = await do_call('vcx_proof_get_request_attach',
+                                          c_proof_handle,
+                                          Proof.get_proof_request_attach.cb)
+
+        return json.loads(msg.decode())
+
+    async def get_proof_proposal(self):
+        """
+        Gets the proof proposal received.
+        :return: proof proposal
+        """
+        if not hasattr(Proof.get_proof_proposal, "cb"):
+            self.logger.debug("get_proof_proposal: Creating callback")
+            Proof.get_proof_proposal.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_proof_handle = c_uint32(self.handle)
+
+        msg = await do_call('vcx_get_proof_proposal',
+                            c_proof_handle,
+                            Proof.get_proof_proposal.cb)
+
+        return json.loads(msg.decode())
+
+    async def request_proof_presentation(self, name: str, connection: Connection, requested_attrs: list, revocation_interval: dict, requested_predicates=None):
+        """
+        Respond to proposal with different proof request (enables negotiation).
+
+        :param name: Name of the Proof
+        :param connection: Connection to send proof request
+        :param requested_attrs: Attributes associated with the Proof
+           {
+               "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+               "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                                    // NOTE: should either be "name" or "names", not both and not none of them.
+                                                    // Use "names" to specify several attributes that have to match a single credential.
+               "restrictions":  (filter_json) {
+                  "schema_id": string, (Optional)
+                  "schema_issuer_did": string, (Optional)
+                  "schema_name": string, (Optional)
+                  "schema_version": string, (Optional)
+                  "issuer_did": string, (Optional)
+                  "cred_def_id": string, (Optional)
+              },
+               "non_revoked": {
+                   "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+                   "to": Optional<(u64)>
+                       //Requested time represented as a total number of seconds from Unix Epoch, Optional
+               }
+           }
+        :param requested_predicates: Predicates associated with the Proof
+           { // set of requested predicates
+              "name": attribute name, (case insensitive and ignore spaces)
+              "p_type": predicate type (Currently ">=" only)
+              "p_value": int predicate value
+              "restrictions": Optional<filter_json>, // see above
+              "non_revoked": Optional<{
+                  "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+                  "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+              }>
+           }
+        :param revocation_interval: interval applied to all requested attributes indicating when the claim must be valid (NOT revoked)
+        :return:
+        """
+        if requested_predicates is None:
+            requested_predicates = []
+
+        if not hasattr(Proof.request_proof_presentation, "cb"):
+            self.logger.debug("vcx_proof_request_proof: Creating callback")
+            Proof.request_proof_presentation.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_proof_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+        c_name = c_char_p(name.encode('utf-8'))
+        c_req_attrs = c_char_p(json.dumps(requested_attrs).encode('utf-8'))
+        c_req_predicates = c_char_p(json.dumps(requested_predicates).encode('utf-8'))
+        c_revocation_interval = c_char_p(json.dumps(revocation_interval).encode('utf-8'))
+
+        await do_call('vcx_proof_request_proof',
+                      c_proof_handle,
+                      c_connection_handle,
+                      c_req_attrs,
+                      c_req_predicates,
+                      c_revocation_interval,
+                      c_name,
+                      Proof.request_proof_presentation.cb)
 
     async def request_proof(self, connection: Connection):
         """
@@ -371,3 +477,37 @@ class Proof(VcxStateful):
                                            Proof.get_proof_msg.cb)
         self.proof_state = proof_state
         return json.loads(proof.decode())
+
+    async def set_connection(self, connection: Connection):
+        """
+        Set connection for created proof. Used for Out-Of-Band with presentation request attachment
+        """
+        if not hasattr(Proof.set_connection, "cb"):
+            self.logger.debug("vcx_proof_set_connection: Creating callback")
+            Proof.set_connection.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_proof_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+
+        await do_call('vcx_proof_set_connection',
+                      c_proof_handle,
+                      c_connection_handle,
+                      Proof.set_connection.cb)
+
+    async def get_problem_report(self) -> Optional[str]:
+        """
+        Get Problem Report message for object in Failed or Rejected state.
+        :return: Problem Report as JSON string or null
+        """
+
+        if not hasattr(Proof.get_problem_report, "cb"):
+            self.logger.debug("vcx_proof_get_problem_report: Creating callback")
+            Proof.get_problem_report.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+        result = await do_call('vcx_proof_get_problem_report',
+                               c_connection_handle,
+                               Proof.get_problem_report.cb)
+
+        self.logger.debug("vcx_proof_get_problem_report completed")
+        return result.decode() if result else None

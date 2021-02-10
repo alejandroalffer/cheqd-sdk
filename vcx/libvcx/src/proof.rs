@@ -1,4 +1,4 @@
-use serde_json;
+use ::serde_json;
 use serde_json::Value;
 use openssl;
 use openssl::bn::{BigNum, BigNumRef};
@@ -572,17 +572,27 @@ pub fn create_proof_with_proposal(source_id: String,
     let presentation_proposal: PresentationProposal = serde_json::from_str(&presentation_proposal)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse PresentationProposal from JSON string. Err: {:?}", err)))?;
 
-    let requested_attributes = presentation_proposal.to_proof_request_requested_attributes();
-    let requested_predicates = presentation_proposal.to_proof_request_requested_predicates();
+    // let requested_attributes = presentation_proposal.to_proof_request_requested_attributes();
+    // let requested_predicates = presentation_proposal.to_proof_request_requested_predicates();
+    //
+    // let thread = match presentation_proposal.thread {
+    //     Some(thread) => Some(thread),
+    //     None => Some(Thread::new().set_thid(presentation_proposal.id.to_string()))
+    // };
+    //
+    // let proof = Proof::create(source_id,
+    //                           json!(requested_attributes).to_string(),
+    //                           json!(requested_predicates).to_string(),
+    //                           String::from("{}"),
+    //                           name,
+    //                           thread)?;
 
-    let proof = Proof::create(source_id,
-                              json!(requested_attributes).to_string(),
-                              json!(requested_predicates).to_string(),
-                              String::from("{}"),
-                              name)?;
-
-    PROOF_MAP.add(Proofs::Pending(proof))
+    let verifier = Verifier::create_from_proposal(source_id, presentation_proposal)?;
+    PROOF_MAP.add(Proofs::V3(verifier))
         .or(Err(VcxError::from(VcxErrorKind::CreateProof)))
+
+    // PROOF_MAP.add(Proofs::Pending(proof))
+    //     .or(Err(VcxError::from(VcxErrorKind::CreateProof)))
 }
 
 fn apply_agent_info(proof: &mut Proof, agent_info: &MyAgentInfo) {
@@ -673,7 +683,51 @@ pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
         match obj {
             Proofs::Pending(ref mut obj) => obj.generate_proof_request_msg(),
             Proofs::V1(ref mut obj) => obj.generate_proof_request_msg(),
-            Proofs::V3(ref obj) => obj.generate_presentation_request_msg()
+            Proofs::V3(ref mut obj) => {
+                obj.generate_presentation_request()?;
+                obj.get_presentation_request()
+            }
+        }
+    }).map_err(handle_err)
+}
+
+
+pub fn generate_request_attach(handle: u32) -> VcxResult<String> {
+    PROOF_MAP.get_mut(handle, |obj| {
+        let (proof, attach) = match obj {
+            Proofs::Pending(ref mut obj) => {
+                let revocation_details = serde_json::to_string(&obj.revocation_interval)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize RevocationDetails. Err: {:?}", err)))?;
+
+                let mut verifier = Verifier::create(obj.source_id.to_string(),
+                                                    obj.requested_attrs.to_string(),
+                                                    obj.requested_predicates.to_string(),
+                                                    revocation_details,
+                                                    obj.name.to_string())?;
+
+                verifier.generate_presentation_request()?;
+                let attach = verifier.get_presentation_request_attach()?;
+                Ok((Proofs::V3(verifier), attach))
+            }
+            Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending or V3")),
+            Proofs::V3(ref mut obj) => {
+                obj.generate_presentation_request()?;
+                let attach = obj.get_presentation_request_attach()?;
+                Ok((Proofs::V3(obj.clone()), attach))
+            }
+        }?;
+        *obj = proof;
+        Ok(attach)
+
+    }).map_err(handle_err)
+}
+
+pub fn get_presentation_proposal_request(handle: u32) -> VcxResult<String> {
+    PROOF_MAP.get(handle, |obj| {
+        match obj {
+            Proofs::Pending(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Proof protocol doesn't support proposals.")),
+            Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Proof protocol doesn't support proposals.")),
+            Proofs::V3(obj) => obj.get_presentation_proposal_request()
         }
     }).map_err(handle_err)
 }
@@ -716,6 +770,48 @@ pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32>
     }).map_err(handle_err)
 }
 
+pub fn request_proof(handle: u32,
+                     connection_handle: u32,
+                     requested_attrs: String,
+                     requested_predicates: String,
+                     revocation_details: String,
+                     name: String) -> VcxResult<u32> {
+    PROOF_MAP.get_mut(handle, |proof| {
+        let new_proof = match proof {
+            Proofs::Pending(ref obj) => {
+                // if Aries connection is established --> Convert Pending object to V3 Aries proof
+                if ::connection::is_v3_connection(connection_handle)? {
+                    debug!("converting pending proof into aries object");
+
+                    let revocation_interval = serde_json::to_string(&obj.revocation_interval)
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize RevocationDetails. Err: {:?}", err)))?;
+
+                    let mut verifier = Verifier::create(obj.source_id.to_string(),
+                                                        obj.requested_attrs.to_string(),
+                                                        obj.requested_predicates.to_string(),
+                                                        revocation_interval,
+                                                        obj.name.to_string())?;
+                    verifier.request_proof(connection_handle, requested_attrs.clone(), requested_predicates.clone(), revocation_details.clone(), name.clone())?;
+
+                    Ok(Proofs::V3(verifier))
+                } else { // else - Convert Pending object to V1 proof
+                    // obj.send_proof_request(connection_handle)?;
+                    // Proofs::V1(obj.clone())
+                    Err(VcxError::from(VcxErrorKind::InvalidProofHandle))
+                }
+            },
+            Proofs::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
+            Proofs::V3(ref mut obj) => {
+                obj.request_proof(connection_handle, requested_attrs.clone(), requested_predicates.clone(), revocation_details.clone(), name.clone())?;
+                Ok(Proofs::V3(obj.clone()))
+            }
+        }?;
+        *proof = new_proof;
+        Ok(error::SUCCESS.code_num)
+    }).map_err(handle_err)
+
+}
+
 pub fn get_proof_uuid(handle: u32) -> VcxResult<String> {
     PROOF_MAP.get(handle, |obj| {
         match obj {
@@ -742,6 +838,32 @@ pub fn get_proof(handle: u32) -> VcxResult<String> {
     }).map_err(handle_err)
 }
 
+pub fn set_connection(handle: u32, connection_handle: u32) -> VcxResult<u32> {
+    PROOF_MAP.get_mut(handle, |obj| {
+        match obj {
+            Proofs::Pending(_) | Proofs::V1(_) =>
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Non-Aries Proofs type doesn't support this action: `set_connection`.")),
+            Proofs::V3(ref mut obj) => {
+                obj.set_connection(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+    }).map_err(handle_err)
+}
+
+pub fn get_problem_report_message(handle: u32) -> VcxResult<String> {
+    PROOF_MAP.get(handle, |proof| {
+        match proof {
+            Proofs::Pending(ref _obj) | Proofs::V1(ref _obj) => {
+                Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Proprietary Proof type doesn't support this action: `get_problem_report_message`."))
+            }
+            Proofs::V3(ref obj) => {
+                obj.get_problem_report_message()
+            }
+        }
+    }).map_err(handle_err)
+}
+
 // TODO: This doesnt feel like it should be here (maybe utils?)
 pub fn generate_nonce() -> VcxResult<String> {
     let mut bn = BigNum::new().map_err(|err| VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot generate nonce: {}", err)))?;
@@ -761,6 +883,7 @@ pub mod tests {
     use utils::httpclient::AgencyMock;
     use connection;
     use messages::proofs::proof_request::{AttrInfo, PredicateInfo};
+    use v3::messages::proof_presentation::presentation_proposal::PresentationPreview;
 
     fn default_agent_info(connection_handle: Option<u32>) -> MyAgentInfo {
         if let Some(h) = connection_handle { get_agent_info().unwrap().pw_info(h).unwrap() } else {
@@ -1473,15 +1596,16 @@ pub mod tests {
 
         PROOF_MAP.get_mut(proof_handle, |proof| {
             match proof {
-                Proofs::V3(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending")),
-                Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be Pending")),
-                Proofs::Pending(proof) => {
-                    let requested_attrs: Vec<AttrInfo> = serde_json::from_str(&proof.requested_attrs).unwrap();
-                    let requested_predicates: Vec<PredicateInfo> = serde_json::from_str(&proof.requested_predicates).unwrap();
-                    assert_eq!(2, requested_attrs.len());
-                    assert_eq!(0, requested_predicates.len());
+                Proofs::Pending(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be V3")),
+                Proofs::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be V3")),
+                Proofs::V3(verifier) => {
+                    assert_eq!(VcxStateType::VcxStateRequestReceived as u32, verifier.state());
+                    let proposal_json = verifier.get_presentation_proposal_request().unwrap();
+                    let proposal: PresentationPreview = serde_json::from_str(&proposal_json).unwrap();
+                    assert_eq!(2, proposal.attributes.len());
+                    assert_eq!(0, proposal.predicates.len());
                     Ok(())
-                },
+                }
             }
         }).unwrap();
     }

@@ -44,7 +44,7 @@ impl HolderSM {
             HolderState::Finished(ref status) => {
                 match status.status {
                     Status::Success => VcxStateType::VcxStateAccepted as u32,
-                    Status::Rejected => VcxStateType::VcxStateRejected as u32,
+                    Status::Rejected(_) => VcxStateType::VcxStateRejected as u32,
                     _ => VcxStateType::VcxStateNone as u32,
                 }
             }
@@ -272,6 +272,20 @@ impl HolderSM {
             HolderState::RequestSent(ref state) => Some(&state.connection.agent),
             HolderState::OfferReceived(_) => None,
             HolderState::Finished(_) => None,
+        }
+    }
+
+    pub fn problem_report(&self) -> Option<&ProblemReport> {
+        match self.state {
+            HolderState::OfferReceived(_) |
+            HolderState::RequestSent(_) => None,
+            HolderState::Finished(ref status) => {
+                match &status.status {
+                    Status::Success | Status::Undefined => None,
+                    Status::Rejected(ref problem_report) => problem_report.as_ref(),
+                    Status::Failed(problem_report) => Some(problem_report),
+                }
+            }
         }
     }
 }

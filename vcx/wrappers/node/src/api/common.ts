@@ -94,7 +94,8 @@ export enum VCXCode {
     NO_AGENT_INFO = 1106,
     INVALID_PROVISION_TOKEN = 1107,
     INVALID_DID_DOC = 1108,
-    MESSAGE_IS_OUT_OF_THREAD = 1109
+    MESSAGE_IS_OUT_OF_THREAD = 1109,
+    INVALID_PROOF_PROPOSAL = 1110
 }
 export enum StateType {
     None = 0,

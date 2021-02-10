@@ -625,4 +625,36 @@ public class UtilsApi extends VcxJava.API {
         checkResult(result);
         return future;
     }
+
+
+    private static Callback vcxHealthCheckCb = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(null);
+        }
+    };
+
+    /**
+     * This function allows you to check the health of LibVCX and EAS/CAS instance.
+     * It will return error in case of any problems on EAS or will resolve pretty long if VCX is thread-hungry.
+     * WARNING: this call may take a lot of time returning answer in case of load, be careful.
+     * NOTE: Library must be initialized, ENDPOINT_URL should be set
+     * @return                  void
+     *
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<Void> vcxHealthCheck() throws VcxException {
+        logger.debug("vcxHealthCheck() called");
+        CompletableFuture<Void> future = new CompletableFuture<Void>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_health_check(
+                commandHandle,
+                vcxFetchPublicEntitiesCb);
+        checkResult(result);
+        return future;
+    }
 }

@@ -32,7 +32,7 @@ test {
 }
 
 static def versionMajor() {
-    return '0.10.1'
+    return '0.11.0'
 }
 
 task("buildJavadoc", type: Javadoc) {
@@ -52,7 +52,7 @@ task("buildJavadocJar", type: Jar, dependsOn: "buildJavadoc") {
 build.finalizedBy(buildJavadocJar)
 
 static def version() {
-    String version = "0.10.1"
+    String version = "0.11.0"
     String suffix = System.getenv("CI_PIPELINE_IID")
     String branch = System.getenv("CI_COMMIT_REF_SLUG")
     if (suffix != null && !branch.equals("stable")) {

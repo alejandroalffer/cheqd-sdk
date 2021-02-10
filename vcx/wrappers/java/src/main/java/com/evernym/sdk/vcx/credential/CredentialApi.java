@@ -587,13 +587,13 @@ public class CredentialApi extends VcxJava.API {
         return future;
     }
 
-    private static Callback vcxGetPresentationProposalCB = new Callback() {
+    private static Callback stringCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int command_handle, int err, String presentationProposal) {
-            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], presentationProposal = [****]");
+        public void callback(int command_handle, int err, String message) {
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], message = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
             if (!checkCallback(future, err)) return;
-            future.complete(presentationProposal);
+            future.complete(message);
         }
     };
 
@@ -621,7 +621,30 @@ public class CredentialApi extends VcxJava.API {
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_credential_get_presentation_proposal_msg(commandHandle, credentialHandle, vcxGetPresentationProposalCB);
+        int result = LibVcx.api.vcx_credential_get_presentation_proposal_msg(commandHandle, credentialHandle, stringCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    /**
+     * Get Problem Report message for object in Failed or Rejected state.
+     *
+     * @param  credentialHandle handle pointing to Credential state object.
+     *
+     * @return                  Problem Report as JSON string or null
+     *
+     * @throws VcxException     If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<String> credentialGetProblemReport(
+            int credentialHandle
+    ) throws VcxException {
+
+        logger.debug("credentialGetProblemReport() called with: credentialHandle = [" + credentialHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_credential_get_problem_report(commandHandle, credentialHandle, stringCB);
         checkResult(result);
 
         return future;

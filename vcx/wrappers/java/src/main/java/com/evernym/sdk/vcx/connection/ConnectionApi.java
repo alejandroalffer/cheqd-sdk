@@ -1193,7 +1193,7 @@ public class ConnectionApi extends VcxJava.API {
 		return future;
 	}
 
-	private static Callback connectionSendInviteActionCB = new Callback() {
+	private static Callback stringCb = new Callback() {
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int commandHandle, int err, String message) {
 			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], message = [" + message + "]");
@@ -1235,7 +1235,30 @@ public class ConnectionApi extends VcxJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibVcx.api.vcx_connection_send_invite_action(commandHandle, connectionHandle, data, connectionSendInviteActionCB);
+		int result = LibVcx.api.vcx_connection_send_invite_action(commandHandle, connectionHandle, data, stringCb);
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Get Problem Report message for object in Failed or Rejected state.
+	 *
+	 * @param  connectionHandle handle pointing to Connection state object.
+	 *
+	 * @return                  Problem Report as JSON string or null
+	 *
+	 * @throws VcxException     If an exception occurred in Libvcx library.
+	 */
+	public static CompletableFuture<String> connectionGetProblemReport(
+			int connectionHandle
+	) throws VcxException {
+
+		logger.debug("connectionGetProblemReport() called with: connectionHandle = [" + connectionHandle + "]");
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_get_problem_report(commandHandle, connectionHandle, stringCb);
 		checkResult(result);
 
 		return future;

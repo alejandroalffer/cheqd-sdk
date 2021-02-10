@@ -442,3 +442,34 @@ export async function fetchPublicEntities (): Promise<void> {
     throw new VCXInternalError(err)
   }
 }
+
+export async function healthCheck (): Promise<void> {
+  /**
+   * This function allows you to check the health of LibVCX and EAS/CAS instance.
+   * It will return error in case of any problems on EAS or will resolve pretty long if VCX is thread-hungry.
+   * WARNING: this call may take a lot of time returning answer in case of load, be careful.
+   * NOTE: Library must be initialized, ENDPOINT_URL should be set
+   */
+  try {
+    return await createFFICallbackPromise<void>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_health_check(0, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32'],
+        (xhandle: number, err: number) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve()
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}

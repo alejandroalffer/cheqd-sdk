@@ -1,4 +1,6 @@
 from ctypes import *
+from typing import Optional
+
 from vcx.common import do_call, create_cb
 from vcx.api.connection import Connection
 from vcx.api.vcx_stateful import VcxStateful
@@ -360,8 +362,26 @@ class IssuerCredential(VcxStateful):
         c_credential_handle = c_uint32(self.handle)
 
         payment_txn = await do_call('vcx_issuer_credential_get_payment_txn',
-                      c_credential_handle,
-                      IssuerCredential.get_payment_txn.cb)
+                                    c_credential_handle,
+                                    IssuerCredential.get_payment_txn.cb)
 
         return json.loads(payment_txn.decode())
+
+    async def get_problem_report(self) -> Optional[str]:
+        """
+        Get Problem Report message for object in Failed or Rejected state.
+        :return: Problem Report as JSON string or null
+        """
+
+        if not hasattr(IssuerCredential.get_problem_report, "cb"):
+            self.logger.debug("vcx_issuer_credential_get_problem_report: Creating callback")
+            IssuerCredential.get_problem_report.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+        result = await do_call('vcx_issuer_credential_get_problem_report',
+                               c_connection_handle,
+                               IssuerCredential.get_problem_report.cb)
+
+        self.logger.debug("vcx_issuer_credential_get_problem_report completed")
+        return result.decode() if result else None
 

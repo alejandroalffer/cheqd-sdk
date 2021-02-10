@@ -694,6 +694,21 @@ vcx_error_t vcx_connection_get_pw_did(vcx_command_handle_t command_handle, vcx_c
 // Error code as a u32
 vcx_error_t vcx_connection_get_their_pw_did(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+/// Get Problem Report message for Connection object in Failed or Rejected state.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: handle pointing to Connection state object.
+///
+/// cb: Callback that returns Problem Report as JSON string
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_get_problem_report(vcx_command_handle_t command_handle,
+                                              vcx_connection_handle_t connection_handle,
+                                              void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 // Create a Credential object that requests and receives a credential for an institution
 //
 // #Params
@@ -1033,6 +1048,21 @@ vcx_error_t vcx_credential_update_state_with_message(vcx_command_handle_t comman
                                                      const char *message,
                                                      void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
 
+/// Get Problem Report message for Credential object in Failed or Rejected state.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: handle pointing to Credential state object.
+///
+/// cb: Callback that returns Problem Report as JSON string
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_credential_get_problem_report(vcx_command_handle_t command_handle,
+                                              vcx_credential_handle_t credential_handle,
+                                              void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 // Create a new CredentialDef object that can create credential definitions on the ledger
 //
 // #Params
@@ -1272,6 +1302,29 @@ vcx_error_t vcx_disclosed_proof_create_with_request(vcx_command_handle_t command
                                                  const char *proof_req,
                                                  void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_disclosed_proof_handle_t));
 
+// Create a proof proposal
+//
+// #Params
+// command_handle: command handle to map callback to user context.
+//
+// source_id: Institution's identification for the proof, should be unique.
+//
+// proposal: the proposed format of presentation request
+// (see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#presentation-preview for details)
+//
+// comment: Comment with proposal.
+//
+// cb: Callback that provides proof handle or error status
+//
+// #Returns
+// Error code as u32
+vcx_error_t vcx_disclosed_proof_create_proposal(vcx_command_handle_t command_handle,
+                                                const char *source_id,
+                                                const char *proposal,
+                                                const char *comment,
+                                                void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_disclosed_proof_handle_t));
+
+
 // Takes a json string representing an disclosed proof object and recreates an object matching the json
 //
 // #Params
@@ -1452,6 +1505,24 @@ vcx_error_t vcx_disclosed_proof_send_proof(vcx_command_handle_t command_handle,
                                         vcx_connection_handle_t connection_handle,
                                         void (*cb)(vcx_command_handle_t, vcx_error_t));
 
+// Send a proposal to the connection, called after creating a proposal.
+//
+// #params
+// command_handle: command handle to map callback to API user context.
+//
+// proof_handle: proof handle that was provided duration creation.  Used to identify proof object.
+//
+// connection_handle: Connection handle that identifies pairwise connection
+//
+// cb: Callback that provides error status of proof send request
+//
+// #Returns
+// Error code as u32
+vcx_error_t vcx_disclosed_proof_send_proposal(vcx_command_handle_t command_handle,
+                                              vcx_disclosed_proof_handle_t proof_handle,
+                                              vcx_connection_handle_t connection_handle,
+                                              void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 // Send a reject proof to the connection, called after having received a proof request
 //
 // #params
@@ -1580,6 +1651,21 @@ vcx_error_t vcx_disclosed_proof_update_state_with_message(vcx_command_handle_t c
                                                           vcx_disclosed_proof_handle_t proof_handle,
                                                           const char *message,
                                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Get Problem Report message for Disclosed Proof object in Failed or Rejected state.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: handle pointing to Disclosed Proof state object.
+///
+/// cb: Callback that returns Problem Report as JSON string
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_disclosed_proof_get_problem_report(vcx_command_handle_t command_handle,
+                                                   vcx_disclosed_proof_handle_t proof_handle,
+                                                   void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 const char *vcx_error_c_message(vcx_error_t error_code);
 
@@ -1921,6 +2007,20 @@ vcx_error_t vcx_issuer_get_credential_msg(vcx_command_handle_t command_handle,
                                           const char *my_pw_did,
                                           void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+/// Get Problem Report message for Issuer Credential object in Failed or Rejected state.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: handle pointing to Issuer Credential state object.
+///
+/// cb: Callback that returns Problem Report as JSON string
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_issuer_credential_get_problem_report(vcx_command_handle_t command_handle,
+                                                     vcx_issuer_credential_handle_t credential_handle,
+                                                     void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 // Get ledger fees from the sovrin network
 //
@@ -2043,6 +2143,7 @@ vcx_error_t vcx_proof_create(vcx_command_handle_t command_handle,
                           const char *source_id,
                           const char *requested_attrs,
                           const char *requested_predicates,
+                          const char *revocation_interval,
                           const char *name,
                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_proof_handle_t));
 
@@ -2147,6 +2248,41 @@ vcx_error_t vcx_proof_send_request(vcx_command_handle_t command_handle,
                                 vcx_connection_handle_t connection_handle,
                                 void (*cb)(vcx_command_handle_t, vcx_error_t));
 
+// Sends a new proof request to pairwise connection after receiving proposal.
+// Used for negotiation.
+//
+// #Params
+// command_handle: command handle to map callback to user context.
+//
+// proof_handle: Proof handle that was provided during creation. Used to access proof object
+//
+// connection_handle: Connection handle that identifies pairwise connection
+//
+// requested_attrs: attributes/claims prover must provide in proof
+//
+// # Example requested_attrs -> "[{"name":"attrName","restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
+//
+// requested_predicates: predicate specifications prover must provide claim for
+//
+// # Example requested_predicates -> "[{"name":"attrName","p_type":"GE","p_value":9,"restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
+//
+// revocation_interval: optional revocation interval
+//
+// name: name of proof request.
+//
+// cb: Callback that provides proof handle or error status
+//
+// #Returns
+// Error code as u32
+vcx_error_t vcx_proof_request_proof(vcx_command_handle_t command_handle,
+                                    vcx_proof_handle_t proof_handle,
+                                    vcx_connection_handle_t connection_handle,
+                                    const char *requested_attrs,
+                                    const char *requested_predicates,
+                                    const char *revocation_interval,
+                                    const char *name,
+                                    void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 // Takes the proof object and returns a json string of all its attributes
 //
 // #Params
@@ -2176,6 +2312,21 @@ vcx_error_t vcx_proof_serialize(vcx_command_handle_t command_handle,
 vcx_error_t vcx_get_proof_msg(vcx_command_handle_t command_handle,
                               vcx_proof_handle_t proof_handle,
                               void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+// Takes the Proof object and returns a proof proposal received.
+//
+// #Params
+// command_handle: command handle to map callback to user context.
+//
+// proof_handle: Proof handle that was provided during creation. Used to identify proof object
+//
+// cb: Callback that provides json string of the credential offer
+//
+// #Returns
+// Error code as a u32
+vcx_error_t vcx_get_proof_proposal(vcx_command_handle_t command_handle,
+                                   vcx_proof_handle_t proof_handle,
+                                   void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 
 // Checks for any state change and updates the proof state attribute
@@ -2216,6 +2367,21 @@ vcx_error_t vcx_proof_update_state_with_message(vcx_command_handle_t command_han
                                                 vcx_proof_handle_t proof_handle,
                                                 const char *message,
                                                 void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Get Problem Report message for Proof object in Failed or Rejected state.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: handle pointing to Proof state object.
+///
+/// cb: Callback that returns Problem Report as JSON string
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_proof_get_problem_report(vcx_command_handle_t command_handle,
+                                                     vcx_proof_handle_t proof_handle,
+                                                     void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 // Provision an agent in the agency, populate configuration and wallet for this agent.
 // NOTE: for asynchronous call use vcx_agent_provision_async

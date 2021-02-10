@@ -1,4 +1,4 @@
-use v3::messages::proof_presentation::presentation_request::PresentationRequestData;
+use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use v3::messages::proof_presentation::presentation_ack::PresentationAck;
 use v3::messages::proof_presentation::presentation_proposal::PresentationPreview;
 use v3::messages::error::ProblemReport;
@@ -7,11 +7,12 @@ use v3::messages::proof_presentation::presentation::Presentation;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ProverMessages {
-    PresentationRequestReceived(PresentationRequestData),
+    PresentationRequestReceived(PresentationRequest),
     RejectPresentationRequest((u32, String)),
     SetPresentation(Presentation),
     PreparePresentation((String, String)),
     SendPresentation(u32),
+    SendProposal(u32),
     PresentationAckReceived(PresentationAck),
     PresentationRejectReceived(ProblemReport),
     ProposePresentation((u32, PresentationPreview)),
@@ -27,6 +28,9 @@ impl From<A2AMessage> for ProverMessages {
             A2AMessage::CommonProblemReport(report) |
             A2AMessage::PresentationReject(report) => {
                 ProverMessages::PresentationRejectReceived(report)
+            }
+            A2AMessage::PresentationRequest(request) => {
+                ProverMessages::PresentationRequestReceived(request)
             }
             _ => {
                 ProverMessages::Unknown
