@@ -1,7 +1,7 @@
 [package]
 
 name = "libvcx"
-version = "0.10.1"
+version = "0.11.0"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 publish = false
 description = "This is the official SDK for Evernym's VCX"
@@ -99,11 +99,11 @@ maintainer-scripts = "./scripts"
 
 [package.metadata.deb.variants.libvcx-xenial]
 name = "libvcx"
-provides = "libvcx (= 0.10.1)"
+provides = "libvcx (= 0.11.0)"
 
 [package.metadata.deb.variants.libvcx-bionic]
 name = "libvcx"
-provides = "libvcx (= 0.10.1)"
+provides = "libvcx (= 0.11.0)"
 
 [profile.release]
 debug = true
