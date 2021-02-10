@@ -563,9 +563,7 @@ pub mod tests {
     mod pool_service {
         use std::path;
 
-        use libc::c_char;
-
-        use indy_api_types::{ErrorCode, INVALID_POOL_HANDLE};
+        use indy_api_types::INVALID_POOL_HANDLE;
 
         use super::*;
 
@@ -791,7 +789,7 @@ pub mod tests {
             ps.send_action(pool_id, test_data, None, None)
                 .await
                 .unwrap();
-//            pool_mock.join().unwrap();
+           pool_mock.join().unwrap();
         }
 
         #[test]

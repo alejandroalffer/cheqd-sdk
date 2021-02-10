@@ -55,7 +55,7 @@ impl MetricsService {
         let mut commands_duration_ms = Vec::new();
         let mut commands_duration_ms_bucket = Vec::new();
 
-        for index in (0..MetricsService::commands_count()).rev() {
+        for index in 0..MetricsService::commands_count() {
             let command_name = MetricsService::cmd_name(index);
             let tags_executed = MetricsService::get_command_tags(
                 command_name.to_owned(),
@@ -66,7 +66,7 @@ impl MetricsService {
             commands_count.push(Self::get_metric_json(ec[index].count as usize, tags_executed.clone())?);
             commands_duration_ms.push(Self::get_metric_json(ec[index].duration_ms_sum as usize, tags_executed.clone())?);
 
-            for (executed_bucket, le) in ec[index].duration_ms_bucket.iter().rev().zip(models::LIST_LE.iter().rev()) {
+            for (executed_bucket, le) in ec[index].duration_ms_bucket.iter().zip(models::LIST_LE.iter()) {
                 let mut tags = tags_executed.clone();
                 tags.insert("le".to_owned(), le.to_string());
                 commands_duration_ms_bucket.push(Self::get_metric_json(*executed_bucket as usize, tags)?);
@@ -107,7 +107,7 @@ impl MetricsService {
         Ok(())
     }
 
-    fn get_metric_json(value: usize, tags: HashMap<String, String>) -> IndyResult<Value> {
+    pub(crate) fn get_metric_json(value: usize, tags: HashMap<String, String>) -> IndyResult<Value> {
         let res = serde_json::to_value(MetricsValue::new(
             value,
             tags,
@@ -124,7 +124,6 @@ mod test {
     #[async_std::test]
     async fn test_counters_are_initialized() {
         let metrics_service = MetricsService::new();
-        assert_eq!(metrics_service.queued_counters.lock().await.len(), COMMANDS_COUNT);
         assert_eq!(metrics_service.executed_counters.lock().await.len(), COMMANDS_COUNT);
     }
 
@@ -139,11 +138,11 @@ mod test {
 
         {
             let queued_counters = metrics_service.queued_counters.lock().await;
-            assert_eq!(queued_counters[index as usize].count, 1);
-            assert_eq!(queued_counters[index as usize].duration_ms_sum, duration1);
-            assert_eq!(queued_counters[index as usize]
+            assert_eq!(queued_counters.count, 1);
+            assert_eq!(queued_counters.duration_ms_sum, duration1);
+            assert_eq!(queued_counters
                            .duration_ms_bucket[
-                           queued_counters[index as usize]
+                           queued_counters
                                .duration_ms_bucket.len() - 1
                            ],
                        1
@@ -154,12 +153,12 @@ mod test {
 
         {
             let queued_counters = metrics_service.queued_counters.lock().await;
-            assert_eq!(queued_counters[index as usize].count, 1 + 1);
-            assert_eq!(queued_counters[index as usize].duration_ms_sum,
+            assert_eq!(queued_counters.count, 1 + 1);
+            assert_eq!(queued_counters.duration_ms_sum,
                        duration1 + duration2);
-            assert_eq!(queued_counters[index as usize]
+            assert_eq!(queued_counters
                            .duration_ms_bucket[
-                           queued_counters[index as usize]
+                           queued_counters
                                .duration_ms_bucket.len() - 1
                            ],
                        2
@@ -192,8 +191,8 @@ mod test {
 
         metrics_service.cmd_executed(index, duration2).await;
 
-        assert_eq!(metrics_service.queued_counters.lock().await[index as usize].count, 0);
-        assert_eq!(metrics_service.queued_counters.lock().await[index as usize].duration_ms_sum, 0);
+        assert_eq!(metrics_service.queued_counters.lock().await.count, 0);
+        assert_eq!(metrics_service.queued_counters.lock().await.duration_ms_sum, 0);
         assert_eq!(metrics_service.executed_counters.lock().await[index as usize].count, 1 + 1);
         assert_eq!(metrics_service.executed_counters.lock().await[index as usize].duration_ms_sum, duration1 + duration2);
     }

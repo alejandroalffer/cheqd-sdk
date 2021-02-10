@@ -584,8 +584,8 @@ mod tests {
 
     #[async_std::test]
     async fn ledger_service_allows_send() {
-        use futures::{channel::oneshot, executor::ThreadPool, future::join_all};
-        use std::{sync::Arc, time::SystemTime};
+        use futures::{channel::oneshot, executor::ThreadPool};
+        use std::sync::Arc;
 
         let executor = Arc::new(ThreadPool::new().expect("Failed to new ThreadPool"));
         let service = Arc::new(Box::new(LedgerService::new()));

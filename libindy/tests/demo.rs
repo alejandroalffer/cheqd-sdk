@@ -31,6 +31,7 @@ use std::ffi::CString;
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
 
+#[allow(temporary_cstring_as_ptr)]
 #[test]
 fn anoncreds_demo_works() {
     Setup::empty();
@@ -475,6 +476,7 @@ fn anoncreds_demo_works() {
     utils::test::cleanup_storage("prover_wallet");
 }
 
+#[allow(temporary_cstring_as_ptr)]
 #[test]
 #[cfg(feature = "local_nodes_pool")]
 fn ledger_demo_works() {
@@ -742,6 +744,7 @@ fn ledger_demo_works() {
     }
 }
 
+#[allow(temporary_cstring_as_ptr)]
 #[test]
 fn crypto_demo_works() {
     Setup::empty();

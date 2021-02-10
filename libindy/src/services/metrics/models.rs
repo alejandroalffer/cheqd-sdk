@@ -2,7 +2,25 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 const BUCKET_COUNT: usize = 16;
-pub(super) const LIST_LE: [f64; BUCKET_COUNT] = [0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0, 20000.0, f64::MAX];
+pub(super) struct MetricsFloatValue(f64);
+
+impl ToString for MetricsFloatValue {
+    fn to_string(&self) -> String {
+        if self.0 == f64::MAX {
+            "+Inf".to_owned()
+        } else {
+            self.0.to_string()
+        }
+    }
+}
+
+impl From<f64> for MetricsFloatValue {
+    fn from(value: f64) -> Self {
+        MetricsFloatValue(value)
+    }
+}
+
+pub(super) const LIST_LE: [MetricsFloatValue; BUCKET_COUNT] = [MetricsFloatValue(0.5), MetricsFloatValue(1.0), MetricsFloatValue(2.0), MetricsFloatValue(5.0), MetricsFloatValue(10.0), MetricsFloatValue(20.0), MetricsFloatValue(50.0), MetricsFloatValue(100.0), MetricsFloatValue(200.0), MetricsFloatValue(500.0), MetricsFloatValue(1000.0), MetricsFloatValue(2000.0), MetricsFloatValue(5000.0), MetricsFloatValue(10000.0), MetricsFloatValue(20000.0), MetricsFloatValue(f64::MAX)];
 
 #[derive(Serialize, Deserialize)]
 pub struct MetricsValue {
@@ -36,7 +54,7 @@ impl CommandCounters {
 
     fn add_buckets(&mut self, duration: u128) {
         for (le_index, le_value) in LIST_LE.iter().enumerate() {
-            if duration <= *le_value as u128 {
+            if duration <= (le_value.0 as u128) {
                 self.duration_ms_bucket[le_index] += 1;
             }
         }

@@ -43,13 +43,10 @@ fn get_current_error_works_for_async_error_occurred() {
 }
 
 extern {
-    #[no_mangle]
     pub fn indy_set_runtime_config(config: *const c_char) -> i32;
 
-    #[no_mangle]
     pub fn indy_get_current_error(error_json: *mut *const c_char);
 
-    #[no_mangle]
     pub fn indy_abbreviate_verkey(command_handle: CommandHandle, did: *const c_char, full_verkey: *const c_char,
                                   cb: Option<extern fn(command_handle_: CommandHandle,
                                                        err: u32,

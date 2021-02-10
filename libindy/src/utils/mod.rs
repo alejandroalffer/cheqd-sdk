@@ -23,3 +23,15 @@ pub use indy_utils::wql;
 
 #[macro_use]
 pub mod qualifier;
+
+macro_rules! map (
+    { $($key:expr => $value:expr),+ } => {
+        {
+            let mut m = ::std::collections::HashMap::new();
+            $(
+                m.insert($key, $value);
+            )+
+            m
+        }
+     };
+);

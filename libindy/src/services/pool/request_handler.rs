@@ -1214,7 +1214,6 @@ pub mod tests {
 
     mod single {
         use super::*;
-        use crate::services::pool::set_freshness_threshold;
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached() {
@@ -1225,23 +1224,24 @@ pub mod tests {
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
-        fn correct_state_proof_reply(timestamp: u64) -> String {
-            json!({
-                "result": {
-                    "type": "test",
-                    "ver": "1",
-                    "multiSignature":{
-                        "signedState": {
-                            "stateMetadata": {
-                                "timestamp": timestamp
-                            }
-                        }
-                    }
-                },
-                "op": "REPLY",
-            }).to_string()
-        }
-
+        // FIXME: !!!
+        // fn correct_state_proof_reply(timestamp: u64) -> String {
+        //     json!({
+        //         "result": {
+        //             "type": "test",
+        //             "ver": "1",
+        //             "multiSignature":{
+        //                 "signedState": {
+        //                     "stateMetadata": {
+        //                         "timestamp": timestamp
+        //                     }
+        //                 }
+        //             }
+        //         },
+        //         "op": "REPLY",
+        //     }).to_string()
+        // }
+        //
         // FIXME: !!!
         // #[test]
         // fn request_handler_process_reply_event_from_single_state_works_for_state_proof() {

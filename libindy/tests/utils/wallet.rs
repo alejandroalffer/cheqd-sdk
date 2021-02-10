@@ -176,7 +176,6 @@ pub fn generate_wallet_key(config: Option<&str>) -> Result<String, IndyError> {
 }
 
 extern {
-    #[no_mangle]
     pub fn indy_register_wallet_storage(command_handle: CommandHandle,
                                         type_: *const c_char,
                                         create: Option<WalletCreate>,
