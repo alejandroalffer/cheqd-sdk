@@ -385,6 +385,8 @@ mod medium_cases {
 
     mod close {
         use super::*;
+        use std::thread;
+        use std::time::Duration;
 
         extern crate futures;
 
@@ -413,6 +415,8 @@ mod medium_cases {
             let get_nym_req = ledger::build_get_nym_request(Some(DID_MY1), DID_MY1).unwrap();
 
             let submit_fut = indy::ledger::submit_request(pool_handle, &get_nym_req);
+
+            thread::sleep(Duration::from_millis(1));
 
             pool::close(pool_handle).unwrap();
 
