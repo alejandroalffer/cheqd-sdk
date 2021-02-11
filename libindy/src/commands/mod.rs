@@ -54,22 +54,6 @@ pub enum Command {
     //Metrics(MetricsCommand),
 }
 
-#[allow(dead_code)] // FIXME [async] TODO implement Metrics
-pub struct InstrumentedCommand {
-    pub enqueue_ts: u128,
-    pub command: Command,
-}
-
-impl InstrumentedCommand {
-    #[allow(dead_code)] // FIXME [async] TODO implement Metrics
-    pub fn new(command: Command) -> InstrumentedCommand {
-        InstrumentedCommand {
-            enqueue_ts: get_cur_time(),
-            command,
-        }
-    }
-}
-
 lazy_static! {
     static ref THREADPOOL: Mutex<ThreadPool> = Mutex::new(ThreadPool::new(4));
 }
