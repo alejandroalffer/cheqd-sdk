@@ -1,10 +1,13 @@
-use crate::services::metrics::command_metrics::CommandMetric;
-use convert_case::{Case, Casing};
-use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
-use models::{MetricsValue, CommandCounters};
-use serde_json::{Map, Value};
-use futures::lock::Mutex;
 use std::collections::HashMap;
+
+use convert_case::{Case, Casing};
+use futures::lock::Mutex;
+use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
+use serde_json::{Map, Value};
+
+use models::{CommandCounters, MetricsValue};
+
+use crate::services::metrics::command_metrics::CommandMetric;
 
 pub mod command_metrics;
 pub mod models;
@@ -14,6 +17,7 @@ const COMMANDS_COUNT: usize = MetricsService::commands_count();
 pub struct MetricsService {
     queued_counters: Mutex<CommandCounters>,
     executed_counters: Mutex<[CommandCounters; COMMANDS_COUNT]>,
+    callback_counters: Mutex<[CommandCounters; COMMANDS_COUNT]>,
 }
 
 impl MetricsService {
@@ -21,6 +25,7 @@ impl MetricsService {
         MetricsService {
             queued_counters: Mutex::new(CommandCounters::new()),
             executed_counters: Mutex::new([CommandCounters::new(); COMMANDS_COUNT]),
+            callback_counters: Mutex::new([CommandCounters::new(); COMMANDS_COUNT]),
         }
     }
 
@@ -30,6 +35,10 @@ impl MetricsService {
 
     pub async fn cmd_executed(&self, command_metric: CommandMetric, duration: u128) {
         self.executed_counters.lock().await[command_metric as usize].add(duration);
+    }
+
+    pub async fn cmd_callback(&self, command_metric: CommandMetric, duration: u128) {
+        self.callback_counters.lock().await[command_metric as usize].add(duration);
     }
 
     pub fn cmd_name(index: usize) -> String {
@@ -61,15 +70,29 @@ impl MetricsService {
                 command_name.to_owned(),
                 "executed".to_owned(),
             );
+            let tags_cb = MetricsService::get_command_tags(
+                command_name.to_owned(),
+                "callback".to_owned(),
+            );
 
-            let ec = self.executed_counters.lock().await;
-            commands_count.push(Self::get_metric_json(ec[index].count as usize, tags_executed.clone())?);
-            commands_duration_ms.push(Self::get_metric_json(ec[index].duration_ms_sum as usize, tags_executed.clone())?);
+            let exec_counters = self.executed_counters.lock().await;
+            commands_count.push(Self::get_metric_json(exec_counters[index].count as usize, tags_executed.clone())?);
+            commands_duration_ms.push(Self::get_metric_json(exec_counters[index].duration_ms_sum as usize, tags_executed.clone())?);
 
-            for (executed_bucket, le) in ec[index].duration_ms_bucket.iter().zip(models::LIST_LE.iter()) {
+            let cb_counters = self.callback_counters.lock().await;
+            commands_count.push(Self::get_metric_json(cb_counters[index].count as usize, tags_cb.clone())?);
+            commands_duration_ms.push(Self::get_metric_json(cb_counters[index].duration_ms_sum as usize, tags_cb.clone())?);
+
+            for (executed_bucket, le) in exec_counters[index].duration_ms_bucket.iter().zip(models::LIST_LE.iter()) {
                 let mut tags = tags_executed.clone();
                 tags.insert("le".to_owned(), le.to_string());
                 commands_duration_ms_bucket.push(Self::get_metric_json(*executed_bucket as usize, tags)?);
+            }
+
+            for (cb_bucket, le) in cb_counters[index].duration_ms_bucket.iter().zip(models::LIST_LE.iter()) {
+                let mut tags = tags_cb.clone();
+                tags.insert("le".to_owned(), le.to_string());
+                commands_duration_ms_bucket.push(Self::get_metric_json(*cb_bucket as usize, tags)?);
             }
         }
 
@@ -78,11 +101,11 @@ impl MetricsService {
             tags.insert("stage".to_owned(), "queued".to_owned());
             tags
         };
-        let qc = self.queued_counters.lock().await;
-        commands_duration_ms.push(Self::get_metric_json(qc.duration_ms_sum as usize, tags_queued.clone())?);
-        commands_count.push(Self::get_metric_json(qc.count as usize, tags_queued.clone())?);
+        let queued_counters = self.queued_counters.lock().await;
+        commands_duration_ms.push(Self::get_metric_json(queued_counters.duration_ms_sum as usize, tags_queued.clone())?);
+        commands_count.push(Self::get_metric_json(queued_counters.count as usize, tags_queued.clone())?);
 
-        for (queued_bucket, le) in qc.duration_ms_bucket.iter().rev().zip(models::LIST_LE.iter().rev()) {
+        for (queued_bucket, le) in queued_counters.duration_ms_bucket.iter().rev().zip(models::LIST_LE.iter().rev()) {
             let mut tags = tags_queued.clone();
             tags.insert("le".to_owned(), le.to_string());
             commands_duration_ms_bucket.push(Self::get_metric_json(*queued_bucket as usize, tags)?);

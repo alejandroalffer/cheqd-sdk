@@ -6,9 +6,10 @@ use std::future::Future;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use anoncreds::{IssuerController, ProverController, VerifierController};
-use crate::services::metrics::command_metrics::CommandMetric;
+use indy_api_types::errors::IndyResult;
 use indy_wallet::WalletService;
+
+use anoncreds::{IssuerController, ProverController, VerifierController};
 
 use crate::commands::blob_storage::BlobStorageController;
 use crate::commands::cache::CacheController;
@@ -26,12 +27,12 @@ use crate::services::anoncreds::AnoncredsService;
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
+use crate::services::metrics::command_metrics::CommandMetric;
 use crate::services::metrics::MetricsService;
 //use crate::services::payments::PaymentsService; FIXME:
 use crate::services::pool::{PoolService, set_freshness_threshold};
 
 use self::threadpool::ThreadPool;
-use indy_api_types::errors::IndyResult;
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -120,10 +121,10 @@ impl InstrumentedThreadPool {
             let res = action.await;
             let executed_time = get_cur_time();
             cb(res);
-            //TODO restore: let cb_finished_time = get_cur_time();
+            let cb_finished_time = get_cur_time();
             metrics_service.cmd_left_queue(idx, start_time - requested_time).await;
             metrics_service.cmd_executed(idx, executed_time - start_time).await;
-            //TODO metrics_service.cmd_callback
+            metrics_service.cmd_callback(idx, cb_finished_time - executed_time).await;
         })
     }
 }
