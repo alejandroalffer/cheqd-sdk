@@ -112,17 +112,17 @@ impl MetricsService {
         }
 
         metrics_map.insert(
-            String::from("commands_count"),
+            "command_duration_ms_count".to_owned(),
             serde_json::to_value(commands_count)
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
         );
         metrics_map.insert(
-            String::from("commands_duration_ms"),
+            "command_duration_ms_sum".to_owned(),
             serde_json::to_value(commands_duration_ms)
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
         );
         metrics_map.insert(
-            String::from("commands_duration_ms_bucket"),
+            "command_duration_ms_bucket".to_owned(),
             serde_json::to_value(commands_duration_ms_bucket)
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
         );
