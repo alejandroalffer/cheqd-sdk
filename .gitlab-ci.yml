@@ -1,5 +1,6 @@
 ---
 stages:
+  - check
   - dockerbuild-pre
   - dockerbuild
   - build-pre
@@ -88,6 +89,18 @@ variables:
         /kaniko/executor ${KANIKO_ARGS} --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/${DOCKERFILE_PATH} \
         --destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:${CI_COMMIT_REF_SLUG}
 
+## - Check license file - ##
+license-data-check:
+  stage: check
+  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18
+  extends: .tags_micro
+  script:
+    - cd vcx && ./ci/scripts/license-date-check.sh
+  only:
+    refs:
+      - branches
+      - tags
+      - merge_requests
 
 ## - Jobs : dockerbuild-pre - ##
 .dockerbuild-vcx-libindy:
