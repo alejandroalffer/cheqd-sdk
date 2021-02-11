@@ -2,6 +2,8 @@ use indy_api_types::{ErrorCode, CommandHandle};
 use crate::commands::Locator;
 use indy_utils::ctypes;
 use libc::c_char;
+use indy_api_types::errors::IndyResult;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Collect metrics.
 ///
@@ -27,15 +29,21 @@ pub extern fn indy_collect_metrics(command_handle: CommandHandle,
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.collect().await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, metrics) = prepare_result_1!(res, String::new());
 
         trace!("indy_collect_metrics ? err {:?} metrics {:?}", err, metrics);
 
         let did = ctypes::string_to_cstring(metrics);
         cb(command_handle, err, did.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::MetricsCommandCollectMetrics, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_collect_metrics: <<< res: {:?}", res);

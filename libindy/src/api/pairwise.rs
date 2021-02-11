@@ -6,6 +6,7 @@ use indy_utils::ctypes;
 use libc::c_char;
 
 use crate::{commands::Locator, domain::crypto::did::DidValue};
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Check if pairwise is exists.
 ///
@@ -50,9 +51,12 @@ pub extern "C" fn indy_is_pairwise_exists(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.pairwise_exists(wallet_handle, their_did).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, exists) = prepare_result_1!(res, false);
         trace!(
             "indy_is_pairwise_exists ? err {:?} exists {:?}",
@@ -60,7 +64,9 @@ pub extern "C" fn indy_is_pairwise_exists(
             exists
         );
         cb(command_handle, err, exists)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PairwiseCommandPairwiseExists, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_is_pairwise_exists < {:?}", res);
@@ -122,15 +128,20 @@ pub extern "C" fn indy_create_pairwise(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create_pairwise(wallet_handle, their_did, my_did, metadata)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_create_pairwise ? err {:?}", err);
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PairwiseCommandCreatePairwise, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_create_pairwise < {:?}", res);
@@ -171,15 +182,20 @@ pub extern "C" fn indy_list_pairwise(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.list_pairwise(wallet_handle).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_list_pairwise ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PairwiseCommandListPairwise, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_list_pairwise < {:?}", res);
@@ -235,15 +251,20 @@ pub extern "C" fn indy_get_pairwise(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.get_pairwise(wallet_handle, their_did).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_get_pairwise ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PairwiseCommandGetPairwise, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_get_pairwise < {:?}", res);
@@ -300,15 +321,20 @@ pub extern "C" fn indy_set_pairwise_metadata(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .set_pairwise_metadata(wallet_handle, their_did, metadata)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_set_pairwise_metadata ? err {:?}", err);
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PairwiseCommandSetPairwiseMetadata, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_set_pairwise_metadata < {:?}", res);

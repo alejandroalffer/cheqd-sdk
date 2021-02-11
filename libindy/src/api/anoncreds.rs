@@ -28,6 +28,7 @@ use libc::c_char;
 use std::ptr;
 
 use crate::indy_api_types::validation::Validatable;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /*
 These functions wrap the Ursa algorithm as documented in this paper:
@@ -115,9 +116,12 @@ pub extern "C" fn indy_issuer_create_schema(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.create_schema(issuer_did, name, version, attrs);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, id, schema_json) = prepare_result_2!(res, String::new(), String::new());
 
         trace!(
@@ -130,7 +134,9 @@ pub extern "C" fn indy_issuer_create_schema(
         let id = ctypes::string_to_cstring(id);
         let schema_json = ctypes::string_to_cstring(schema_json);
         cb(command_handle, err, id.as_ptr(), schema_json.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::IssuerCommandCreateSchema, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_issuer_create_schema > {:?}", res);
@@ -259,7 +265,7 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create_and_store_credential_definition(
                 wallet_handle,
@@ -270,7 +276,10 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
                 config_json,
             )
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, cred_def_id, cred_def_json) =
             prepare_result_2!(res, String::new(), String::new());
 
@@ -291,7 +300,9 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
             cred_def_id.as_ptr(),
             cred_def_json.as_ptr(),
         )
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::IssuerCommandCreateAndStoreCredentialDefinition, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_issuer_create_and_store_credential_def > {:?}", res);
@@ -373,11 +384,14 @@ pub extern "C" fn indy_issuer_rotate_credential_def_start(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .rotate_credential_definition_start(wallet_handle, cred_def_id, config_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, cred_def_json) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -388,7 +402,9 @@ pub extern "C" fn indy_issuer_rotate_credential_def_start(
 
         let cred_def_json = ctypes::string_to_cstring(cred_def_json);
         cb(command_handle, err, cred_def_json.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::IssuerCommandRotateCredentialDefinitionStart, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_issuer_rotate_credential_def_star < {:?}", res);
@@ -445,15 +461,20 @@ pub extern "C" fn indy_issuer_rotate_credential_def_apply(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .rotate_credential_definition_apply(wallet_handle, cred_def_id)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_issuer_rotate_credential_def_apply ? err {:?}", err);
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::IssuerCommandRotateCredentialDefinitionApply, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_issuer_rotate_credential_def_apply < {:?}", res);
@@ -607,7 +628,7 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create_and_store_revocation_registry(
                 wallet_handle,
@@ -619,7 +640,10 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
                 tails_writer_handle,
             )
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, revoc_reg_id, revoc_reg_def_json, revoc_reg_json) =
             prepare_result_3!(res, String::new(), String::new(), String::new());
 
@@ -642,7 +666,9 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
             revoc_reg_def_json.as_ptr(),
             revoc_reg_json.as_ptr(),
         )
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::IssuerCommandCreateAndStoreRevocationRegistry, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_issuer_create_and_store_credential_def > {:?}", res);
@@ -715,11 +741,14 @@ pub extern "C" fn indy_issuer_create_credential_offer(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create_credential_offer(wallet_handle, cred_def_id)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, cred_offer_json) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -730,7 +759,9 @@ pub extern "C" fn indy_issuer_create_credential_offer(
 
         let cred_offer_json = ctypes::string_to_cstring(cred_offer_json);
         cb(command_handle, err, cred_offer_json.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::IssuerCommandCreateCredentialOffer, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_issuer_create_credential_offer < {:?}", res);
@@ -876,7 +907,7 @@ pub extern "C" fn indy_issuer_create_credential(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .new_credential(
                 wallet_handle,
@@ -887,7 +918,10 @@ pub extern "C" fn indy_issuer_create_credential(
                 blob_storage_reader_handle,
             )
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, cred_json, revoc_id, revoc_reg_delta_json) =
             prepare_result_3!(res, String::new(), None, None);
 
@@ -917,7 +951,9 @@ pub extern "C" fn indy_issuer_create_credential(
                 .map(|delta| delta.as_ptr())
                 .unwrap_or(ptr::null()),
         )
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::IssuerCommandCreateCredential, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_issuer_create_credential < {:?}", res);
@@ -1006,7 +1042,7 @@ pub extern "C" fn indy_issuer_revoke_credential(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .revoke_credential(
                 wallet_handle,
@@ -1015,7 +1051,10 @@ pub extern "C" fn indy_issuer_revoke_credential(
                 cred_revoc_id,
             )
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, revoc_reg_delta_json) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1027,7 +1066,9 @@ pub extern "C" fn indy_issuer_revoke_credential(
 
         let revoc_reg_delta_json = ctypes::string_to_cstring(revoc_reg_delta_json);
         cb(command_handle, err, revoc_reg_delta_json.as_ptr());
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::IssuerCommandRevokeCredential, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_issuer_revoke_credential < {:?}", res);
@@ -1179,10 +1220,13 @@ pub extern "C" fn indy_issuer_merge_revocation_registry_deltas(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .merge_revocation_registry_deltas(rev_reg_delta_json, other_rev_reg_delta_json);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, merged_rev_reg_delta) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1194,7 +1238,9 @@ pub extern "C" fn indy_issuer_merge_revocation_registry_deltas(
 
         let merged_rev_reg_delta = ctypes::string_to_cstring(merged_rev_reg_delta);
         cb(command_handle, err, merged_rev_reg_delta.as_ptr());
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::IssuerCommandMergeRevocationRegistryDeltas, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_issuer_merge_revocation_registry_deltas < {:?}", res);
@@ -1253,11 +1299,14 @@ pub extern "C" fn indy_prover_create_master_secret(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create_master_secret(wallet_handle, master_secret_id)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, master_secret_id) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1268,7 +1317,9 @@ pub extern "C" fn indy_prover_create_master_secret(
 
         let master_secret_id = ctypes::string_to_cstring(master_secret_id);
         cb(command_handle, err, master_secret_id.as_ptr());
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandCreateMasterSecret, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_create_master_secret < {:?}", res);
@@ -1374,7 +1425,7 @@ pub extern "C" fn indy_prover_create_credential_req(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create_credential_request(
                 wallet_handle,
@@ -1384,7 +1435,10 @@ pub extern "C" fn indy_prover_create_credential_req(
                 master_secret_id,
             )
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, cred_req_json, cred_req_metadata_json) =
             prepare_result_2!(res, String::new(), String::new());
 
@@ -1405,7 +1459,9 @@ pub extern "C" fn indy_prover_create_credential_req(
             cred_req_json.as_ptr(),
             cred_req_metadata_json.as_ptr(),
         )
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandCreateCredentialRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_create_credential_req < {:?}", res);
@@ -1496,11 +1552,14 @@ pub extern "C" fn indy_prover_set_credential_attr_tag_policy(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .set_credential_attr_tag_policy(wallet_handle, cred_def_id, tag_attrs_json, retroactive)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
 
         trace!(
@@ -1509,7 +1568,9 @@ pub extern "C" fn indy_prover_set_credential_attr_tag_policy(
         );
 
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandSetCredentialAttrTagPolicy, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_set_credential_attr_tag_policy < {:?}", res);
@@ -1571,11 +1632,14 @@ pub extern "C" fn indy_prover_get_credential_attr_tag_policy(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .get_credential_attr_tag_policy(wallet_handle, cred_def_id)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, catpol) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1586,7 +1650,9 @@ pub extern "C" fn indy_prover_get_credential_attr_tag_policy(
 
         let catpol = ctypes::string_to_cstring(catpol);
         cb(command_handle, err, catpol.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandGetCredentialAttrTagPolicy, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_get_credential_attr_tag_policy < {:?}", res);
@@ -1710,7 +1776,7 @@ pub extern "C" fn indy_prover_store_credential(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .store_credential(
                 wallet_handle,
@@ -1721,7 +1787,10 @@ pub extern "C" fn indy_prover_store_credential(
                 rev_reg_def_json,
             )
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, cred_id) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1732,7 +1801,9 @@ pub extern "C" fn indy_prover_store_credential(
 
         let cred_id = ctypes::string_to_cstring(cred_id);
         cb(command_handle, err, cred_id.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandStoreCredential, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_store_credential < {:?}", res);
@@ -1796,8 +1867,12 @@ pub extern "C" fn indy_prover_get_credential(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.get_credential(wallet_handle, cred_id).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, credential) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1808,7 +1883,9 @@ pub extern "C" fn indy_prover_get_credential(
 
         let credential = ctypes::string_to_cstring(credential);
         cb(command_handle, err, credential.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandGetCredential, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_get_credential < {:?}", res);
@@ -1849,12 +1926,18 @@ pub extern "C" fn indy_prover_delete_credential(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.delete_credential(wallet_handle, cred_id).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_prover_delete_credential ? err {:?} ", err);
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandDeleteCredential, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_delete_credential < {:?}", res);
@@ -1935,8 +2018,12 @@ pub extern "C" fn indy_prover_get_credentials(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.get_credentials(wallet_handle, filter_json).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, credentials) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1947,7 +2034,9 @@ pub extern "C" fn indy_prover_get_credentials(
 
         let credentials = ctypes::string_to_cstring(credentials);
         cb(command_handle, err, credentials.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandGetCredentials, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_get_credentials < {:?}", res);
@@ -2011,11 +2100,14 @@ pub extern "C" fn indy_prover_search_credentials(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .search_credentials(wallet_handle, query_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, handle, total_count) = prepare_result_2!(res, INVALID_SEARCH_HANDLE, 0);
 
         trace!(
@@ -2026,7 +2118,9 @@ pub extern "C" fn indy_prover_search_credentials(
         );
 
         cb(command_handle, err, handle, total_count);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandSearchCredentials, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_search_credentials < {:?}", res);
@@ -2090,8 +2184,12 @@ pub extern "C" fn indy_prover_fetch_credentials(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.fetch_credentials(search_handle, count).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, credentials) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -2102,7 +2200,9 @@ pub extern "C" fn indy_prover_fetch_credentials(
 
         let credentials = ctypes::string_to_cstring(credentials);
         cb(command_handle, err, credentials.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandFetchCredentials, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_fetch_credentials < {:?}", res);
@@ -2143,12 +2243,18 @@ pub extern "C" fn indy_prover_close_credentials_search(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.close_credentials_search(search_handle).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_prover_close_credentials_search ? err {:?}", err);
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandCloseCredentialsSearch, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_close_credentials_search < {:?}", res);
@@ -2297,11 +2403,14 @@ pub extern "C" fn indy_prover_get_credentials_for_proof_req(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .get_credentials_for_proof_req(wallet_handle, proof_request_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, credentials) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -2312,7 +2421,9 @@ pub extern "C" fn indy_prover_get_credentials_for_proof_req(
 
         let credentials = ctypes::string_to_cstring(credentials);
         cb(command_handle, err, credentials.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandGetCredentialsForProofReq, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_get_credentials_for_proof_req < {:?}", res);
@@ -2454,11 +2565,14 @@ pub extern "C" fn indy_prover_search_credentials_for_proof_req(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .search_credentials_for_proof_req(wallet_handle, proof_request_json, extra_query_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, search_handle) = prepare_result_1!(res, INVALID_SEARCH_HANDLE);
 
         trace!(
@@ -2468,7 +2582,9 @@ pub extern "C" fn indy_prover_search_credentials_for_proof_req(
         );
 
         cb(command_handle, err, search_handle)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandSearchCredentialsForProofReq, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_search_credentials_for_proof_req < {:?}", res);
@@ -2550,11 +2666,14 @@ pub extern "C" fn indy_prover_fetch_credentials_for_proof_req(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .fetch_credential_for_proof_request(search_handle, item_referent, count)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, credentials) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -2565,7 +2684,9 @@ pub extern "C" fn indy_prover_fetch_credentials_for_proof_req(
 
         let credentials = ctypes::string_to_cstring(credentials);
         cb(command_handle, err, credentials.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandFetchCredentialForProofReq, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_fetch_credentials_for_proof_req < {:?}", res);
@@ -2606,18 +2727,23 @@ pub extern "C" fn indy_prover_close_credentials_search_for_proof_req(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .close_credentials_search_for_proof_req(search_handle)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!(
             "indy_prover_close_credentials_search_for_proof_req ? err {:?}",
             err
         );
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandCloseCredentialsSearchForProofReq, action, cb);
 
     let res = ErrorCode::Success;
 
@@ -2868,7 +2994,7 @@ pub extern "C" fn indy_prover_create_proof(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create_proof(
                 wallet_handle,
@@ -2880,12 +3006,17 @@ pub extern "C" fn indy_prover_create_proof(
                 rev_states_json,
             )
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, proof) = prepare_result_1!(res, String::new());
         trace!("indy_prover_create_proof ? err {:?} proof {:?}", err, proof);
         let proof = ctypes::string_to_cstring(proof);
         cb(command_handle, err, proof.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandCreateProof, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_prover_create_proof < {:?}", res);
@@ -3112,7 +3243,7 @@ pub extern "C" fn indy_verifier_verify_proof(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.verify_proof(
             proof_request_json,
             proof_json,
@@ -3121,7 +3252,10 @@ pub extern "C" fn indy_verifier_verify_proof(
             rev_reg_defs_json,
             rev_regs_json,
         );
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, valid) = prepare_result_1!(res, false);
 
         trace!(
@@ -3131,7 +3265,9 @@ pub extern "C" fn indy_verifier_verify_proof(
         );
 
         cb(command_handle, err, valid)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::VerifierCommandVerifyProof, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_verifier_verify_proof < {:?}", res);
@@ -3229,7 +3365,7 @@ pub extern "C" fn indy_create_revocation_state(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create_revocation_state(
                 blob_storage_reader_handle,
@@ -3239,7 +3375,10 @@ pub extern "C" fn indy_create_revocation_state(
                 cred_rev_id,
             )
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, rev_state) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -3250,7 +3389,9 @@ pub extern "C" fn indy_create_revocation_state(
 
         let rev_state = ctypes::string_to_cstring(rev_state);
         cb(command_handle, err, rev_state.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandCreateRevocationState, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_create_revocation_state < {:?}", res);
@@ -3357,7 +3498,7 @@ pub extern "C" fn indy_update_revocation_state(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .update_revocation_state(
                 blob_storage_reader_handle,
@@ -3368,7 +3509,10 @@ pub extern "C" fn indy_update_revocation_state(
                 cred_rev_id,
             )
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, rev_state) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -3379,7 +3523,9 @@ pub extern "C" fn indy_update_revocation_state(
 
         let rev_state = ctypes::string_to_cstring(rev_state);
         cb(command_handle, err, rev_state.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::ProverCommandUpdateRevocationState, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_update_revocation_state < {:?}", res);
@@ -3411,15 +3557,21 @@ pub extern "C" fn indy_generate_nonce(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.generate_nonce();
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, nonce) = prepare_result_1!(res, String::new());
 
         trace!("indy_generate_nonce ? err {:?} nonce {:?}", err, nonce);
 
         let nonce = ctypes::string_to_cstring(nonce);
         cb(command_handle, err, nonce.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::VerifierCommandGenerateNonce, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_generate_nonce < {:?}", res);
@@ -3465,18 +3617,24 @@ pub extern "C" fn indy_to_unqualified(
 
     let executor = Locator::instance().executor.clone();
 
-    executor.spawn_ok(async move {
+    let action = async move {
         use crate::services::anoncreds::helpers::to_unqualified;
 
         // FIXME: Ideally it should be dedicated controller call
         let res = to_unqualified(&entity);
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, did) = prepare_result_1!(res, String::new());
 
         trace!("indy_to_unqualified ? err {:?} did {:?}", err, did);
 
         let did = ctypes::string_to_cstring(did);
         cb(command_handle, err, did.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::AnoncredsCommandToUnqualified, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_to_unqualified < {:?}", res);

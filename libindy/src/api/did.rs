@@ -18,6 +18,7 @@ use crate::{
         ledger::attrib::Endpoint,
     },
 };
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Creates keys (signing and encryption keys) for a new
 /// DID (owned by the caller of the library).
@@ -92,11 +93,14 @@ pub extern "C" fn indy_create_and_store_my_did(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create_and_store_my_did(wallet_handle, did_info)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, did, verkey) = prepare_result_2!(res, String::new(), String::new());
 
         trace!(
@@ -109,7 +113,9 @@ pub extern "C" fn indy_create_and_store_my_did(
         let did = ctypes::string_to_cstring(did);
         let verkey = ctypes::string_to_cstring(verkey);
         cb(command_handle, err, did.as_ptr(), verkey.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandCreateAndStoreMyDid, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_create_and_store_my_did < {:?}", res);
@@ -181,17 +187,22 @@ pub extern "C" fn indy_replace_keys_start(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .replace_keys_start(wallet_handle, key_info, did)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_replace_keys_start ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandReplaceKeysStart, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_replace_keys_start < {:?}", res);
@@ -245,14 +256,19 @@ pub extern "C" fn indy_replace_keys_apply(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.replace_keys_apply(wallet_handle, did).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_replace_keys_apply ? err {:?}", err);
 
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandReplaceKeysApply, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_replace_keys_apply < {:?}", res);
@@ -314,16 +330,21 @@ pub extern "C" fn indy_store_their_did(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .store_their_did(wallet_handle, identity_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_store_their_did ? err {:?}", err);
 
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandStoreTheirDid, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_store_their_did < {:?}", res);
@@ -393,17 +414,22 @@ pub extern "C" fn indy_key_for_did(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .key_for_did(pool_handle, wallet_handle, did)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_key_for_did ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandKeyForDid, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_key_for_did < {:?}", res);
@@ -467,15 +493,20 @@ pub extern "C" fn indy_key_for_local_did(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.key_for_local_did(wallet_handle, did).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_key_for_local_did ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandKeyForLocalDid, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_key_for_local_did < {:?}", res);
@@ -543,16 +574,21 @@ pub extern "C" fn indy_set_endpoint_for_did(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .set_endpoint_for_did(wallet_handle, did, endpoint)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_set_endpoint_for_did ? err {:?}", err);
 
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandSetEndpointForDid, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_set_endpoint_for_did < {:?}", res);
@@ -618,11 +654,14 @@ pub extern "C" fn indy_get_endpoint_for_did(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .get_endpoint_for_did(wallet_handle, pool_handle, did)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, address, transport_vk) = prepare_result_2!(res, String::new(), None);
 
         trace!(
@@ -644,7 +683,9 @@ pub extern "C" fn indy_get_endpoint_for_did(
                 .map(|vk| vk.as_ptr())
                 .unwrap_or(ptr::null()),
         );
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandGetEndpointForDid, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_get_endpoint_for_did < {:?}", res);
@@ -703,15 +744,20 @@ pub extern "C" fn indy_set_did_metadata(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .set_did_metadata(wallet_handle, did, metadata)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_set_did_metadata:");
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandSetDidMetadata, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_set_did_metadata < {:?}", res);
@@ -768,15 +814,20 @@ pub extern "C" fn indy_get_did_metadata(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.get_did_metadata(wallet_handle, did).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_get_did_metadata ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandGetDidMetadata, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_get_did_metadata < {:?}", res);
@@ -839,15 +890,20 @@ pub extern "C" fn indy_get_my_did_with_meta(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.get_my_did_with_meta(wallet_handle, my_did).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_get_my_did_with_meta ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandGetMyDidWithMeta, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_get_my_did_with_meta < {:?}", res);
@@ -901,15 +957,20 @@ pub extern "C" fn indy_list_my_dids_with_meta(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.list_my_dids_with_meta(wallet_handle).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_list_my_dids_with_meta ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandListMyDidsWithMeta, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_list_my_dids_with_meta < {:?}", res);
@@ -966,15 +1027,20 @@ pub extern "C" fn indy_abbreviate_verkey(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.abbreviate_verkey(did, full_verkey).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_abbreviate_verkey ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandAbbreviateVerkey, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_abbreviate_verkey < {:?}", res);
@@ -1042,15 +1108,20 @@ pub extern "C" fn indy_qualify_did(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.qualify_did(wallet_handle, did, method).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_qualify_did ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::DidCommandQualifyDid, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_qualify_did < {:?}", res);

@@ -24,6 +24,7 @@ use crate::{
         },
     },
 };
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -91,17 +92,22 @@ pub extern "C" fn indy_sign_and_submit_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .sign_and_submit_request(pool_handle, wallet_handle, submitter_did, request_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_sign_and_submit_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSignAndSubmitRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_sign_and_submit_request < {:?}", res);
@@ -159,15 +165,20 @@ pub extern "C" fn indy_submit_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.submit_request(pool_handle, request_json).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_submit_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSubmitRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_submit_request < {:?}", res);
@@ -244,17 +255,22 @@ pub extern "C" fn indy_submit_action(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .submit_action(pool_handle, request_json, nodes, timeout)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_submit_action ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSubmitAction, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_submit_action < {:?}", res);
@@ -320,17 +336,23 @@ pub extern "C" fn indy_sign_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .sign_request(wallet_handle, submitter_did, request_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_sign_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSignRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_sign_request < {:?}", res);
@@ -396,17 +418,22 @@ pub extern "C" fn indy_multi_sign_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .multi_sign_request(wallet_handle, submitter_did, request_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_multi_sign_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandMultiSignRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_multi_sign_request < {:?}", res);
@@ -458,15 +485,20 @@ pub extern "C" fn indy_build_get_ddo_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_get_ddo_request(submitter_did, target_did);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_build_get_ddo_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetDdoRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_ddo_request < {:?}", res);
@@ -543,17 +575,22 @@ pub extern "C" fn indy_build_nym_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .build_nym_request(submitter_did, target_did, verkey, alias, role)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_build_nym_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildNymRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_nym_request < {:?}", res);
@@ -605,15 +642,20 @@ pub extern "C" fn indy_build_get_nym_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_get_nym_request(submitter_did, target_did);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_build_get_nym_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetNymRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_nym_request < {:?}", res);
@@ -672,15 +714,20 @@ pub extern "C" fn indy_parse_get_nym_response(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.parse_get_nym_response(get_nym_response);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_parse_get_nym_response ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetNymResponse, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_parse_get_nym_response < {:?}", res);
@@ -752,15 +799,20 @@ pub extern "C" fn indy_build_attrib_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_attrib_request(submitter_did, target_did, hash, raw, enc);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_build_attrib_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAttribRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_attrib_request < {:?}", res);
@@ -825,9 +877,12 @@ pub extern "C" fn indy_build_get_attrib_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_get_attrib_request(submitter_did, target_did, raw, hash, enc);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -838,7 +893,9 @@ pub extern "C" fn indy_build_get_attrib_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetAttribRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_attrib_request < {:?}", res);
@@ -898,15 +955,20 @@ pub extern "C" fn indy_build_schema_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_schema_request(submitter_did, data);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_build_schema_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildSchemaRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_schema_request < {:?}", res);
@@ -958,9 +1020,12 @@ pub extern "C" fn indy_build_get_schema_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_get_schema_request(submitter_did, id);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -971,7 +1036,9 @@ pub extern "C" fn indy_build_get_schema_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetSchemaRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_schema_request < {:?}", res);
@@ -1030,9 +1097,12 @@ pub extern "C" fn indy_parse_get_schema_response(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.parse_get_schema_response(get_schema_response);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, schema_id, schema_json) = prepare_result_2!(res, String::new(), String::new());
 
         trace!(
@@ -1052,7 +1122,9 @@ pub extern "C" fn indy_parse_get_schema_response(
             schema_id.as_ptr(),
             schema_json.as_ptr(),
         );
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetSchemaResponse, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_parse_get_schema_response < {:?}", res);
@@ -1121,15 +1193,20 @@ pub extern "C" fn indy_build_cred_def_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_cred_def_request(submitter_did, data);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_build_cred_def_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildCredDefRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_cred_def_request < {:?}", res);
@@ -1182,9 +1259,12 @@ pub extern "C" fn indy_build_get_cred_def_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_get_cred_def_request(submitter_did, id);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1195,7 +1275,9 @@ pub extern "C" fn indy_build_get_cred_def_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetCredDefRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_cred_def_request < {:?}", res);
@@ -1258,9 +1340,12 @@ pub extern "C" fn indy_parse_get_cred_def_response(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.parse_get_cred_def_response(get_cred_def_response);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, cred_def_id, cred_def_json) =
             prepare_result_2!(res, String::new(), String::new());
 
@@ -1280,7 +1365,9 @@ pub extern "C" fn indy_parse_get_cred_def_response(
             cred_def_id.as_ptr(),
             cred_def_json.as_ptr(),
         )
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetCredDefResponse, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_parse_get_cred_def_response < {:?}", res);
@@ -1347,16 +1434,21 @@ pub extern "C" fn indy_build_node_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_node_request(submitter_did, target_did, data);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!("indy_build_node_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildNodeRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_node_request < {:?}", res);
@@ -1398,9 +1490,12 @@ pub extern "C" fn indy_build_get_validator_info_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_get_validator_info_request(submitter_did);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1411,7 +1506,9 @@ pub extern "C" fn indy_build_get_validator_info_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetValidatorInfoRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_validator_info_request < {:?}", res,);
@@ -1473,15 +1570,20 @@ pub extern "C" fn indy_build_get_txn_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_get_txn_request(submitter_did, ledger_type, seq_no);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_build_get_txn_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetTxnRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_txn_request < {:?}", res);
@@ -1541,9 +1643,12 @@ pub extern "C" fn indy_build_pool_config_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_pool_config_request(submitter_did, writes, force);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1554,7 +1659,9 @@ pub extern "C" fn indy_build_pool_config_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildPoolConfigRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_pool_config_request < {:?}", res);
@@ -1622,9 +1729,12 @@ pub extern "C" fn indy_build_pool_restart_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_pool_restart_request(submitter_did, action, datetime);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1635,7 +1745,9 @@ pub extern "C" fn indy_build_pool_restart_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildPoolRestartRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_pool_restart_request < {:?}", res);
@@ -1759,7 +1871,7 @@ pub extern "C" fn indy_build_pool_upgrade_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_pool_upgrade_request(
             submitter_did,
             name,
@@ -1773,7 +1885,10 @@ pub extern "C" fn indy_build_pool_upgrade_request(
             force,
             package,
         );
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1784,7 +1899,9 @@ pub extern "C" fn indy_build_pool_upgrade_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildPoolUpgradeRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_pool_upgrade_request < {:?}", res);
@@ -1860,9 +1977,12 @@ pub extern "C" fn indy_build_revoc_reg_def_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_revoc_reg_def_request(submitter_did, data);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1873,7 +1993,9 @@ pub extern "C" fn indy_build_revoc_reg_def_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildRevocRegDefRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_revoc_reg_def_request < {:?}", res);
@@ -1926,9 +2048,12 @@ pub extern "C" fn indy_build_get_revoc_reg_def_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_get_revoc_reg_def_request(submitter_did, id);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -1939,7 +2064,9 @@ pub extern "C" fn indy_build_get_revoc_reg_def_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetRevocRegDefRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_revoc_reg_def_request < {:?}", res);
@@ -2006,9 +2133,12 @@ pub extern "C" fn indy_parse_get_revoc_reg_def_response(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.parse_revoc_reg_def_response(get_revoc_reg_def_response);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, revoc_reg_def_id, revoc_reg_def_json) =
             prepare_result_2!(res, String::new(), String::new());
 
@@ -2029,7 +2159,9 @@ pub extern "C" fn indy_parse_get_revoc_reg_def_response(
             revoc_reg_def_id.as_ptr(),
             revoc_reg_def_json.as_ptr(),
         )
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetRevocRegDefResponse, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_parse_get_revoc_reg_def_response < {:?}", res);
@@ -2117,14 +2249,17 @@ pub extern "C" fn indy_build_revoc_reg_entry_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_revoc_reg_entry_request(
             submitter_did,
             revoc_reg_def_id,
             rev_def_type,
             value,
         );
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -2135,7 +2270,9 @@ pub extern "C" fn indy_build_revoc_reg_entry_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildRevocRegEntryRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_revoc_reg_entry_request < {:?}", res);
@@ -2200,10 +2337,13 @@ pub extern "C" fn indy_build_get_revoc_reg_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res =
             controller.build_get_revoc_reg_request(submitter_did, revoc_reg_def_id, timestamp);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -2214,7 +2354,9 @@ pub extern "C" fn indy_build_get_revoc_reg_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetRevocRegRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_revoc_reg_request < {:?}", res);
@@ -2273,9 +2415,12 @@ pub extern "C" fn indy_parse_get_revoc_reg_response(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.parse_revoc_reg_response(get_revoc_reg_response);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, revoc_reg_def_id, revoc_reg_json, timestamp) =
             prepare_result_3!(res, String::new(), String::new(), 0);
 
@@ -2297,7 +2442,9 @@ pub extern "C" fn indy_parse_get_revoc_reg_response(
             revoc_reg_json.as_ptr(),
             timestamp,
         )
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetRevocRegResponse, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_parse_get_revoc_reg_response < {:?}", res);
@@ -2369,10 +2516,13 @@ pub extern "C" fn indy_build_get_revoc_reg_delta_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res =
             controller.build_get_revoc_reg_delta_request(submitter_did, revoc_reg_def_id, from, to);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -2383,7 +2533,9 @@ pub extern "C" fn indy_build_get_revoc_reg_delta_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetRevocRegDeltaRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_revoc_reg_delta_request < {:?}", res);
@@ -2445,9 +2597,12 @@ pub extern "C" fn indy_parse_get_revoc_reg_delta_response(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.parse_revoc_reg_delta_response(get_revoc_reg_delta_response);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, revoc_reg_def_id, revoc_reg_delta_json, timestamp) =
             prepare_result_3!(res, String::new(), String::new(), 0);
 
@@ -2470,7 +2625,9 @@ pub extern "C" fn indy_parse_get_revoc_reg_delta_response(
             revoc_reg_delta_json.as_ptr(),
             timestamp,
         )
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetRevocRegDeltaResponse, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_parse_get_revoc_reg_delta_response < {:?}", res);
@@ -2604,15 +2761,20 @@ pub extern "C" fn indy_get_response_metadata(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.get_response_metadata(response);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_get_response_metadata ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandGetResponseMetadata, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_get_response_metadata < {:?}", res);
@@ -2714,7 +2876,7 @@ pub extern "C" fn indy_build_auth_rule_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_auth_rule_request(
             submitter_did,
             txn_type,
@@ -2724,13 +2886,18 @@ pub extern "C" fn indy_build_auth_rule_request(
             new_value,
             constraint,
         );
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_build_auth_rule_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAuthRuleRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_auth_rule_request < {:?}", res);
@@ -2806,9 +2973,12 @@ pub extern "C" fn indy_build_auth_rules_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_auth_rules_request(submitter_did, rules);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -2819,7 +2989,9 @@ pub extern "C" fn indy_build_auth_rules_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAuthRulesRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_auth_rules_request < {:?}", res);
@@ -2900,7 +3072,7 @@ pub extern "C" fn indy_build_get_auth_rule_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_get_auth_rule_request(
             submitter_did,
             txn_type,
@@ -2909,7 +3081,10 @@ pub extern "C" fn indy_build_get_auth_rule_request(
             old_value,
             new_value,
         );
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -2920,7 +3095,9 @@ pub extern "C" fn indy_build_get_auth_rule_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetAuthRuleRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_auth_rule_request < {:?}", res);
@@ -3010,7 +3187,7 @@ pub extern "C" fn indy_build_txn_author_agreement_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_txn_author_agreement_request(
             submitter_did,
             text,
@@ -3018,7 +3195,10 @@ pub extern "C" fn indy_build_txn_author_agreement_request(
             ratification_ts,
             retirement_ts,
         );
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -3029,7 +3209,9 @@ pub extern "C" fn indy_build_txn_author_agreement_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildTxnAuthorAgreementRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_txn_author_agreement_request < {:?}", res);
@@ -3079,9 +3261,12 @@ pub extern "C" fn indy_build_disable_all_txn_author_agreements_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_disable_all_txn_author_agreements_request(submitter_did);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -3092,7 +3277,9 @@ pub extern "C" fn indy_build_disable_all_txn_author_agreements_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildDisableAllTxnAuthorAgreementsRequest, action, cb);
 
     let res = ErrorCode::Success;
 
@@ -3165,9 +3352,12 @@ pub extern "C" fn indy_build_get_txn_author_agreement_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_get_txn_author_agreement_request(submitter_did, data);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -3178,7 +3368,9 @@ pub extern "C" fn indy_build_get_txn_author_agreement_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetTxnAuthorAgreementRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_txn_author_agreement_request < {:?}", res);
@@ -3239,14 +3431,17 @@ pub extern "C" fn indy_build_acceptance_mechanisms_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.build_acceptance_mechanisms_request(
             submitter_did,
             aml,
             version,
             aml_context,
         );
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -3257,7 +3452,9 @@ pub extern "C" fn indy_build_acceptance_mechanisms_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAcceptanceMechanismRequests, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_acceptance_mechanisms_request < {:?}", res);
@@ -3326,10 +3523,13 @@ pub extern "C" fn indy_build_get_acceptance_mechanisms_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res =
             controller.build_get_acceptance_mechanisms_request(submitter_did, timestamp, version);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -3340,7 +3540,9 @@ pub extern "C" fn indy_build_get_acceptance_mechanisms_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetAcceptanceMechanismsRequest, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_build_get_acceptance_mechanisms_request < {:?}", res);
@@ -3429,7 +3631,7 @@ pub extern "C" fn indy_append_txn_author_agreement_acceptance_to_request(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.append_txn_author_agreement_acceptance_to_request(
             request_json,
             text,
@@ -3438,7 +3640,10 @@ pub extern "C" fn indy_append_txn_author_agreement_acceptance_to_request(
             mechanism,
             time,
         );
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -3449,7 +3654,9 @@ pub extern "C" fn indy_append_txn_author_agreement_acceptance_to_request(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest, action, cb);
 
     let res = ErrorCode::Success;
 
@@ -3516,15 +3723,20 @@ pub extern "C" fn indy_append_request_endorser(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.append_request_endorser(request_json, endorser_did);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_append_request_endorser ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandAppendRequestEndorser, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_append_request_endorser < {:?}", res);

@@ -8,6 +8,7 @@ use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
 ///
@@ -47,15 +48,20 @@ pub extern fn indy_create_pool_ledger_config(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .create(config_name, config);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_create_pool_ledger_config ? err {:?}", err);
 
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PoolCommandCreate, action, cb);
 
     let res = ErrorCode::Success;
 
@@ -116,16 +122,21 @@ pub extern fn indy_open_pool_ledger(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .open(config_name, config)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, pool_handle) = prepare_result_1!(res, INVALID_POOL_HANDLE);
         trace!("indy_open_pool_ledger ? err {:?} pool_handle {:?}", err, pool_handle);
 
         cb(command_handle, err, pool_handle)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PoolCommandOpen, action, cb);
 
     let res = ErrorCode::Success;
 
@@ -164,16 +175,21 @@ pub extern fn indy_refresh_pool_ledger(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .refresh(handle)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_refresh_pool_ledger ? err {:?}", err);
 
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PoolCommandRefresh, action, cb);
 
     let res = ErrorCode::Success;
 
@@ -209,16 +225,21 @@ pub extern fn indy_list_pools(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .list();
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_list_pools ? err {:?} res {:?}", err, res);
 
         let list = ctypes::string_to_cstring(res);
         cb(command_handle, err, list.as_ptr());
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PoolCommandList, action, cb);
 
     let res = ErrorCode::Success;
 
@@ -257,16 +278,21 @@ pub extern fn indy_close_pool_ledger(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .close(handle)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_close_pool_ledger ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PoolCommandClose, action, cb);
 
     let res = ErrorCode::Success;
 
@@ -306,16 +332,21 @@ pub extern fn indy_delete_pool_ledger_config(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .delete(config_name)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_delete_pool_ledger_config ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PoolCommandDelete, action, cb);
 
     let res = ErrorCode::Success;
 
@@ -360,15 +391,20 @@ pub extern fn indy_set_protocol_version(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .set_protocol_version(protocol_version);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_set_protocol_version ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::PoolCommandSetProtocolVersion, action, cb);
 
     let res = ErrorCode::Success;
 

@@ -107,13 +107,6 @@ pub(crate) struct InstrumentedThreadPool {
 }
 
 impl InstrumentedThreadPool {
-    pub fn spawn_ok<Fut>(&self, future: Fut)
-        where
-            Fut: Future<Output = ()> + Send + 'static,
-    {
-        self.executor.spawn_ok(future)
-    }
-
     pub fn spawn_ok_instrumented<T, FutIndyRes, FnCb>(&self, idx: CommandMetric, action: FutIndyRes, cb: FnCb)
         where
             FutIndyRes: Future<Output = IndyResult<T>> + Send + 'static,

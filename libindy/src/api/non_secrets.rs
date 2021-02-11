@@ -8,6 +8,7 @@ use libc::c_char;
 use serde_json;
 
 use crate::commands::Locator;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Create a new non-secret record in the wallet
 ///
@@ -71,16 +72,21 @@ pub extern "C" fn indy_add_wallet_record(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .add_record(wallet_handle, type_, id, value, tags_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_add_wallet_record ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::NonSecretsCommandAddRecord, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_add_wallet_record < {:?}", res);
@@ -134,16 +140,21 @@ pub extern "C" fn indy_update_wallet_record_value(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .update_record_value(wallet_handle, type_, id, value)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_update_wallet_record_value ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::NonSecretsCommandUpdateRecordValue, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_update_wallet_record_value < {:?}", res);
@@ -206,16 +217,21 @@ pub extern "C" fn indy_update_wallet_record_tags(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .update_record_tags(wallet_handle, type_, id, tags_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("update_wallet_record_tags ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::NonSecretsCommandUpdateRecordTags, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_update_wallet_record_tags < {:?}", res);
@@ -280,16 +296,21 @@ pub extern "C" fn indy_add_wallet_record_tags(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .add_record_tags(wallet_handle, type_, id, tags_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_add_wallet_record_tags ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::NonSecretsCommandAddRecordTags, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_add_wallet_record_tags < {:?}", res);
@@ -330,16 +351,21 @@ pub extern "C" fn indy_delete_wallet_record_tags(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .delete_record_tags(wallet_handle, type_, id, tag_names_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_delete_wallet_record_tags ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::NonSecretsCommandDeleteRecordTags, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_delete_wallet_record_tags < {:?}", res);
@@ -386,9 +412,12 @@ pub extern "C" fn indy_delete_wallet_record(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.delete_record(wallet_handle, type_, id).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!(
             "indy_adindy_delete_wallet_recordd_wallet_record_tags ? err {:?}",
@@ -396,7 +425,9 @@ pub extern "C" fn indy_delete_wallet_record(
         );
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::NonSecretsCommandDeleteRecord, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_delete_wallet_record < {:?}", res);
@@ -463,17 +494,22 @@ pub extern "C" fn indy_get_wallet_record(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .get_record(wallet_handle, type_, id, options_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
         trace!("indy_get_wallet_record ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr());
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::NonSecretsCommandGetRecord, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_get_wallet_record < {:?}", res);
@@ -549,11 +585,14 @@ pub extern "C" fn indy_open_wallet_search(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .open_search(wallet_handle, type_, query_json, options_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, handle) = prepare_result_1!(res, INVALID_SEARCH_HANDLE);
 
         trace!(
@@ -563,7 +602,9 @@ pub extern "C" fn indy_open_wallet_search(
         );
 
         cb(command_handle, err, handle)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::NonSecretsCommandOpenSearch, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_open_wallet_search < {:?}", res);
@@ -625,11 +666,14 @@ pub extern "C" fn indy_fetch_wallet_search_next_records(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .fetch_search_next_records(wallet_handle, wallet_search_handle, count)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -640,7 +684,9 @@ pub extern "C" fn indy_fetch_wallet_search_next_records(
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr());
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::NonSecretsCommandFetchSearchNextRecords, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_fetch_wallet_search_next_records < {:?}", res);
@@ -676,15 +722,20 @@ pub extern "C" fn indy_close_wallet_search(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.close_search(wallet_search_handle).await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
 
         trace!("indy_close_wallet_search ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::NonSecretsCommandCloseSearch, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_close_wallet_search < {:?}", res);

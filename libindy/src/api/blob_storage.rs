@@ -3,6 +3,7 @@ use indy_utils::ctypes;
 use libc::c_char;
 
 use crate::commands::Locator;
+use crate::services::metrics::command_metrics::CommandMetric;
 
 #[no_mangle]
 pub extern "C" fn indy_open_blob_storage_reader(
@@ -34,8 +35,12 @@ pub extern "C" fn indy_open_blob_storage_reader(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.open_reader(type_, config_json).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, handle) = prepare_result_1!(res, 0);
 
         trace!(
@@ -45,7 +50,9 @@ pub extern "C" fn indy_open_blob_storage_reader(
         );
 
         cb(command_handle, err, handle)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::BlobStorageCommandOpenReader, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_open_blob_storage_reader < {:?}", res);
@@ -82,8 +89,12 @@ pub extern "C" fn indy_open_blob_storage_writer(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.open_writer(type_, config_json).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, handle) = prepare_result_1!(res, 0);
 
         trace!(
@@ -93,7 +104,9 @@ pub extern "C" fn indy_open_blob_storage_writer(
         );
 
         cb(command_handle, err, handle)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::BlobStorageCommandOpenWriter, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_open_blob_storage_writer < {:?}", res);

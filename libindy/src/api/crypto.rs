@@ -7,6 +7,7 @@ use crate::{
     commands::Locator,
     domain::crypto::{key::KeyInfo, pack::JWE},
 };
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Creates keys pair and stores in the wallet.
 ///
@@ -60,15 +61,21 @@ pub extern "C" fn indy_create_key(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.create_key(wallet_handle, &key_json).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, verkey) = prepare_result_1!(res, String::new());
 
         trace!("indy_create_key ? err {:?} verkey {:?}", err, &verkey);
 
         let verkey = ctypes::string_to_cstring(verkey);
         cb(command_handle, err, verkey.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandCreateKey, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_create_key: < {:?}", res);
@@ -127,16 +134,21 @@ pub extern "C" fn indy_set_key_metadata(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .set_key_metadata(wallet_handle, &verkey, &metadata)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
 
         trace!("indy_set_key_metadata ? err{:?}", err);
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandSetKeyMetadata, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_set_key_metadata < {:?}", res);
@@ -193,8 +205,12 @@ pub extern "C" fn indy_get_key_metadata(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.get_key_metadata(wallet_handle, &verkey).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, metadata) = prepare_result_1!(res, String::new());
 
         trace!(
@@ -205,7 +221,9 @@ pub extern "C" fn indy_get_key_metadata(
 
         let metadata = ctypes::string_to_cstring(metadata);
         cb(command_handle, err, metadata.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandGetKeyMetadata, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_get_key_metadata < {:?}", res);
@@ -281,11 +299,14 @@ pub extern "C" fn indy_crypto_sign(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .crypto_sign(wallet_handle, &signer_vk, &message_raw)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, signature) = prepare_result_1!(res, Vec::new());
 
         trace!(
@@ -296,7 +317,9 @@ pub extern "C" fn indy_crypto_sign(
 
         let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
         cb(command_handle, err, signature_raw, signature_len)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandCryptoSign, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_crypto_sign < {:?}", res);
@@ -370,16 +393,21 @@ pub extern "C" fn indy_crypto_verify(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .crypto_verify(&signer_vk, &message_raw, &signature_raw)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, valid) = prepare_result_1!(res, false);
 
         trace!("indy_crypto_verify ? err {:?} valid {:?}", err, valid);
         cb(command_handle, err, valid)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandCryptoVerify, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_crypto_verify < {:?}", res);
@@ -457,11 +485,14 @@ pub extern "C" fn indy_crypto_auth_crypt(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .authenticated_encrypt(wallet_handle, &sender_vk, &recipient_vk, &msg_data)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, encrypted_msg) = prepare_result_1!(res, Vec::new());
 
         trace!(
@@ -472,7 +503,9 @@ pub extern "C" fn indy_crypto_auth_crypt(
 
         let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
         cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAuthenticatedEncrypt, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_crypto_auth_crypt < {:?}", res);
@@ -551,11 +584,14 @@ pub extern "C" fn indy_crypto_auth_decrypt(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .authenticated_decrypt(wallet_handle, &recipient_vk, &encrypted_msg)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, sender_vk, msg) = prepare_result_2!(res, String::new(), Vec::new());
 
         trace!(
@@ -568,7 +604,9 @@ pub extern "C" fn indy_crypto_auth_decrypt(
         let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
         let sender_vk = ctypes::string_to_cstring(sender_vk);
         cb(command_handle, err, sender_vk.as_ptr(), msg_data, msg_len);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAuthenticatedDecrypt, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_crypto_auth_decrypt < {:?}", res);
@@ -647,8 +685,12 @@ pub extern "C" fn indy_crypto_anon_crypt(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.anonymous_encrypt(&recipient_vk, &msg_data).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, encrypted_msg) = prepare_result_1!(res, Vec::new());
 
         trace!(
@@ -659,7 +701,9 @@ pub extern "C" fn indy_crypto_anon_crypt(
 
         let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
         cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAnonymousEncrypt, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_crypto_anon_crypt < {:?}", res);
@@ -736,17 +780,22 @@ pub extern "C" fn indy_crypto_anon_decrypt(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .anonymous_decrypt(wallet_handle, &recipient_vk, &encrypted_msg)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, msg) = prepare_result_1!(res, Vec::new());
         trace!("indy_crypto_anon_decrypt ? err {:?} msg{:?}", err, msg);
 
         let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
         cb(command_handle, err, msg_data, msg_len);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAnonymousDecrypt, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_crypto_anon_decrypt < {:?}", res);
@@ -894,17 +943,22 @@ pub extern "C" fn indy_pack_message(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .pack_msg(message, receiver_list, sender, wallet_handle)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, jwe) = prepare_result_1!(res, Vec::new());
         trace!("indy_auth_pack_message ? err{:?} jwe{:?}", err, jwe);
 
         let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
         cb(command_handle, err, jwe_data, jwe_len);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandPackMessage, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_auth_pack_message < {:?}", res);
@@ -992,8 +1046,12 @@ pub extern "C" fn indy_unpack_message(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller.unpack_msg(jwe_struct, wallet_handle).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
         let (err, res_json) = prepare_result_1!(res, Vec::new());
 
         trace!(
@@ -1004,7 +1062,9 @@ pub extern "C" fn indy_unpack_message(
 
         let (res_json_data, res_json_len) = ctypes::vec_to_pointer(&res_json);
         cb(command_handle, err, res_json_data, res_json_len)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandUnpackMessage, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_unpack_message < {:?}", res);

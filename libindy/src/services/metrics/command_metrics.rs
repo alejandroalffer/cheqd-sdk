@@ -24,7 +24,6 @@ pub enum CommandMetric {
     // IssuerCommand
     IssuerCommandCreateSchema,
     IssuerCommandCreateAndStoreCredentialDefinition,
-    IssuerCommandCreateAndStoreCredentialDefinitionContinue,
     IssuerCommandRotateCredentialDefinitionStart,
     IssuerCommandRotateCredentialDefinitionStartComplete,
     IssuerCommandRotateCredentialDefinitionApply,
@@ -111,9 +110,7 @@ pub enum CommandMetric {
     LedgerCommandBuildAuthRulesRequest,
     LedgerCommandBuildGetAuthRuleRequest,
     LedgerCommandGetSchema,
-    LedgerCommandGetSchemaContinue,
     LedgerCommandGetCredDef,
-    LedgerCommandGetCredDefContinue,
     LedgerCommandBuildTxnAuthorAgreementRequest,
     LedgerCommandBuildDisableAllTxnAuthorAgreementsRequest,
     LedgerCommandBuildGetTxnAuthorAgreementRequest,
@@ -152,16 +149,11 @@ pub enum CommandMetric {
     // WalletCommand
     WalletCommandRegisterWalletType,
     WalletCommandCreate,
-    WalletCommandCreateContinue,
     WalletCommandOpen,
-    WalletCommandOpenContinue,
     WalletCommandClose,
     WalletCommandDelete,
-    WalletCommandDeleteContinue,
     WalletCommandExport,
-    WalletCommandExportContinue,
     WalletCommandImport,
-    WalletCommandImportContinue,
     WalletCommandGenerateKey,
     WalletCommandDeriveKey,
     // PairwiseCommand
@@ -218,9 +210,7 @@ pub enum CommandMetric {
     PaymentsCommandVerifyWithAddressAck,
     // CacheCommand
     CacheCommandGetSchema,
-    CacheCommandGetSchemaContinue,
     CacheCommandGetCredDef,
-    CacheCommandGetCredDefContinue,
     CacheCommandPurgeSchemaCache,
     CacheCommandPurgeCredDefCache,
     // MetricsCommand

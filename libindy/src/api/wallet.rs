@@ -110,7 +110,7 @@ pub extern fn indy_register_wallet_storage(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .register_type(
                 type_,
@@ -139,12 +139,17 @@ pub extern fn indy_register_wallet_storage(
                 fetch_search_next_record,
                 free_search,
             );
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_register_wallet_type ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::WalletCommandRegisterWalletType, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_register_wallet_type < {:?}", res);
@@ -222,7 +227,7 @@ pub extern fn indy_create_wallet(
         res
     };
 
-    let cb = move |res: IndyResult<()>| {
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_create_wallet ? err {:?}", err);
 
@@ -310,17 +315,22 @@ pub extern fn indy_open_wallet(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .open(config, credentials)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, handle) = prepare_result_1!(res, INVALID_WALLET_HANDLE);
         trace!("indy_open_wallet ? err {:?} handle {:?}",
                err, handle);
 
         cb(command_handle, err, handle)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::WalletCommandOpen, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_open_wallet < {:?}", res);
@@ -370,16 +380,21 @@ pub extern fn indy_export_wallet(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .export(wallet_handle, export_config)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_export_wallet ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::WalletCommandExport, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_export_wallet < {:?}", res);
@@ -459,16 +474,21 @@ pub extern fn indy_import_wallet(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .import(config, credentials, import_config)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_import_wallet ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::WalletCommandImport, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_import_wallet < {:?}", res);
@@ -506,16 +526,21 @@ pub extern fn indy_close_wallet(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .close(wallet_handle)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_close_wallet ? err {:?}", err);
 
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::WalletCommandClose, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_close_wallet < {:?}", res);
@@ -584,16 +609,21 @@ pub extern fn indy_delete_wallet(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .delete(config, credentials)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_delete_wallet ? err {:?}", err);
 
         cb(command_handle, err);
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::WalletCommandDelete, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_delete_wallet < {:?}", res);
@@ -637,16 +667,21 @@ pub extern fn indy_generate_wallet_key(command_handle: CommandHandle,
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .generate_key(config);
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, key) = prepare_result_1!(res, String::new());
         trace!("indy_generate_wallet_key ? err {:?} result {:?}", err, key);
 
         let res = ctypes::string_to_cstring(key);
         cb(command_handle, err, res.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::WalletCommandGenerateKey, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_generate_wallet_key {:?}", res);

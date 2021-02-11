@@ -13,6 +13,7 @@ use crate::{
         crypto::did::DidValue,
     },
 };
+use crate::services::metrics::command_metrics::CommandMetric;
 
 /// Gets credential definition json data for specified credential definition id.
 /// If data is present inside of cache, cached data is returned.
@@ -83,17 +84,22 @@ pub extern "C" fn indy_get_cred_def(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .get_cred_def(pool_handle, wallet_handle, submitter_did, id, options_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, cred_def) = prepare_result_1!(res, String::new());
         trace!("indy_get_cred_def ? err {:?} cred_def {:?}", err, cred_def);
 
         let cred_def = ctypes::string_to_cstring(cred_def);
         cb(command_handle, err, cred_def.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CacheCommandGetCredDef, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_get_cred_def < {:?}", res);
@@ -170,17 +176,22 @@ pub extern "C" fn indy_get_schema(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .get_schema(pool_handle, wallet_handle, submitter_did, id, options_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let (err, schema) = prepare_result_1!(res, String::new());
         trace!("indy_get_cred_def ? err {:?} schema {:?}", err, schema);
 
         let schema = ctypes::string_to_cstring(schema);
         cb(command_handle, err, schema.as_ptr())
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CacheCommandGetSchema, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_get_schema < {:?}", res);
@@ -230,15 +241,20 @@ pub extern "C" fn indy_purge_cred_def_cache(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .purge_cred_def_cache(wallet_handle, options_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_purge_cred_def_cache ? err {:?}", err);
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CacheCommandPurgeCredDefCache, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_purge_cred_def_cache < {:?}", res);
@@ -288,15 +304,20 @@ pub extern "C" fn indy_purge_schema_cache(
         (executor, controller)
     };
 
-    executor.spawn_ok(async move {
+    let action = async move {
         let res = controller
             .purge_schema_cache(wallet_handle, options_json)
             .await;
+        res
+    };
 
+    let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
         trace!("indy_purge_schema_cache ? err {:?}", err);
         cb(command_handle, err)
-    });
+    };
+
+    executor.spawn_ok_instrumented(CommandMetric::CacheCommandPurgeSchemaCache, action, cb);
 
     let res = ErrorCode::Success;
     trace!("indy_purge_schema_cache < {:?}", res);
