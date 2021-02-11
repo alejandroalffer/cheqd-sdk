@@ -221,80 +221,76 @@ mod test {
     }
 
     #[async_std::test]
-    #[ignore] //FIXME [async] tests
     async fn test_append_command_metrics() {
         let metrics_service = MetricsService::new();
         let mut metrics_map = serde_json::Map::new();
 
         metrics_service.append_command_metrics(&mut metrics_map).await.unwrap();
 
-        assert!(metrics_map.contains_key("commands_count"));
-        assert!(metrics_map.contains_key("commands_duration_ms"));
-        assert!(metrics_map.contains_key("commands_duration_ms_bucket"));
+        assert!(metrics_map.contains_key("command_duration_ms_count"));
+        assert!(metrics_map.contains_key("command_duration_ms_sum"));
+        assert!(metrics_map.contains_key("command_duration_ms_bucket"));
 
         assert_eq!(
             metrics_map
-                .get("commands_count")
+                .get("command_duration_ms_count")
                 .unwrap()
                 .as_array()
                 .unwrap()
                 .len(),
-            COMMANDS_COUNT * 2
+            COMMANDS_COUNT * 2 + 1
         );
         assert_eq!(
             metrics_map
-                .get("commands_duration_ms")
+                .get("command_duration_ms_sum")
                 .unwrap()
                 .as_array()
                 .unwrap()
                 .len(),
-            COMMANDS_COUNT * 2
+            COMMANDS_COUNT * 2 + 1
         );
         assert_eq!(
             metrics_map
-                .get("commands_duration_ms_bucket")
+                .get("command_duration_ms_bucket")
                 .unwrap()
                 .as_array()
                 .unwrap()
                 .len(),
-            COMMANDS_COUNT * 32
+            COMMANDS_COUNT * 16 * 2 /* cb and executed buckets */ + 16 /* queued buckets */
         );
 
         let commands_count = metrics_map
-            .get("commands_count")
+            .get("command_duration_ms_count")
             .unwrap()
             .as_array()
             .unwrap();
         let commands_duration_ms = metrics_map
-            .get("commands_duration_ms")
+            .get("command_duration_ms_sum")
             .unwrap()
             .as_array()
             .unwrap();
         let commands_duration_ms_bucket = metrics_map
-            .get("commands_duration_ms_bucket")
+            .get("command_duration_ms_bucket")
             .unwrap()
             .as_array()
             .unwrap();
 
         let expected_commands_count = [
             generate_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
-            generate_json("metrics_command_collect_metrics", "queued", 0),
             generate_json("cache_command_purge_cred_def_cache", "executed", 0),
-            generate_json("non_secrets_command_fetch_search_next_records", "queued", 0)
+            json!({"tags": {"stage": "queued"}, "value": 0})
         ];
 
         let expected_commands_duration_ms = [
             generate_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
-            generate_json("metrics_command_collect_metrics", "queued", 0),
             generate_json("cache_command_purge_cred_def_cache", "executed", 0),
-            generate_json("non_secrets_command_fetch_search_next_records", "queued", 0)
+            json!({"tags": {"stage": "queued"}, "value": 0})
         ];
 
         let expected_commands_duration_ms_bucket = [
-            generate_json("payments_command_build_set_txn_fees_req_ack", "executed", 0),
-            generate_json("metrics_command_collect_metrics", "queued", 0),
-            generate_json("cache_command_purge_cred_def_cache", "executed", 0),
-            generate_json("non_secrets_command_fetch_search_next_records", "queued", 0)
+            json!({"tags": {"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed", "le": "+Inf"}, "value": 0}),
+            json!({"tags": {"command": "cache_command_purge_cred_def_cache", "stage": "executed", "le": "+Inf"}, "value": 0}),
+            json!({"tags": {"stage": "queued", "le": "+Inf"}, "value": 0})
         ];
 
         for command in &expected_commands_count {

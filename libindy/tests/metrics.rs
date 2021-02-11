@@ -82,18 +82,27 @@ mod collect {
         let result_metrics = metrics::collect_metrics().unwrap();
         let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
 
-        assert!(metrics_map.contains_key("commands_count"));
-
-        let commands_count = metrics_map
-            .get("commands_count")
-            .unwrap()
-            .as_array()
+        let coummand_count_json = metrics_map
+            .get("command_duration_ms_count")
             .unwrap();
 
+        let commands_count = coummand_count_json
+            .as_array()
+            .unwrap().to_owned();
+
         assert!(commands_count.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "executed"} ,"value": 0})));
-        assert!(commands_count.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "queued"} ,"value": 0})));
         assert!(commands_count.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed"} ,"value": 0})));
-        assert!(commands_count.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "queued"} ,"value": 0})));
+
+        let mut queued = commands_count.into_iter().filter(|val| {
+            val["tags"]["stage"].as_str() == Some("queued")
+        }).collect::<Vec<Value>>();
+        assert_eq!(queued.len(), 1);
+
+        let queued = queued.remove(0);
+        assert_eq!(queued["tags"]["stage"].as_str().unwrap(), "queued");
+        assert!(queued["tags"].get("command").is_none());
+        assert_eq!(queued["tags"].as_object().unwrap().keys().len(), 1);
+        assert!(queued["value"].as_u64().unwrap() > 0);
     }
 
     #[test]
@@ -105,18 +114,27 @@ mod collect {
         let result_metrics = metrics::collect_metrics().unwrap();
         let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
 
-        assert!(metrics_map.contains_key("commands_duration_ms"));
-
-        let commands_duration_ms = metrics_map
-            .get("commands_duration_ms")
-            .unwrap()
-            .as_array()
+        let coummand_duration_ms_json = metrics_map
+            .get("command_duration_ms_sum")
             .unwrap();
 
+        let commands_duration_ms = coummand_duration_ms_json
+            .as_array()
+            .unwrap().to_owned();
+
         assert!(commands_duration_ms.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "executed"} ,"value": 0})));
-        assert!(commands_duration_ms.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "queued"} ,"value": 0})));
         assert!(commands_duration_ms.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed"} ,"value": 0})));
-        assert!(commands_duration_ms.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "queued"} ,"value": 0})));
+
+        let mut queued = commands_duration_ms.into_iter().filter(|val| {
+            val["tags"]["stage"].as_str() == Some("queued")
+        }).collect::<Vec<Value>>();
+        assert_eq!(queued.len(), 1);
+
+        let queued = queued.remove(0);
+        assert_eq!(queued["tags"]["stage"].as_str().unwrap(), "queued");
+        assert!(queued["tags"].get("command").is_none());
+        assert_eq!(queued["tags"].as_object().unwrap().keys().len(), 1);
+        assert!(queued["value"].as_u64().is_some());
     }
 
     #[test]
@@ -128,18 +146,28 @@ mod collect {
         let result_metrics = metrics::collect_metrics().unwrap();
         let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
 
-        assert!(metrics_map.contains_key("commands_duration_ms_bucket"));
-
-        let commands_duration_ms_bucket = metrics_map
-            .get("commands_duration_ms_bucket")
-            .unwrap()
-            .as_array()
+        let command_duration_ms_bucket_json = metrics_map
+            .get("command_duration_ms_bucket")
             .unwrap();
 
-        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "executed"} ,"value": 0})));
-        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "queued"} ,"value": 0})));
-        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed"} ,"value": 0})));
-        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "queued"} ,"value": 0})));
+        let commands_duration_ms_bucket = command_duration_ms_bucket_json
+            .as_array()
+            .unwrap().to_owned();
+
+        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "pairwise_command_pairwise_exists", "stage": "executed", "le": "0.5"} ,"value": 0})));
+        assert!(commands_duration_ms_bucket.contains(&json!({"tags":{"command": "payments_command_build_set_txn_fees_req_ack", "stage": "executed", "le": "1"} ,"value": 0})));
+
+        let mut queued = commands_duration_ms_bucket.into_iter().filter(|val| {
+            val["tags"]["stage"].as_str() == Some("queued")
+        }).collect::<Vec<Value>>();
+        assert_eq!(queued.len(), 16);
+
+        let queued = queued.remove(0);
+        assert_eq!(queued["tags"]["stage"].as_str().unwrap(), "queued");
+        assert_eq!(queued["tags"]["le"].as_str().unwrap(), "+Inf");
+        assert!(queued["tags"].get("command").is_none());
+        assert_eq!(queued["tags"].as_object().unwrap().keys().len(), 2);
+        assert!(queued["value"].as_u64().unwrap() > 0);
     }
 
     fn config(name: &str) -> String {
