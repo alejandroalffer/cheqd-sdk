@@ -4,10 +4,10 @@ use libc::c_char;
 use serde_json;
 
 use crate::{
-    commands::Locator,
     domain::crypto::{key::KeyInfo, pack::JWE},
+    Locator,
 };
-use crate::services::metrics::command_metrics::CommandMetric;
+use crate::services::CommandMetric;
 
 /// Creates keys pair and stores in the wallet.
 ///
@@ -42,43 +42,40 @@ pub extern "C" fn indy_create_key(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, verkey: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!("indy_create_key >");
+    debug!("indy_create_key >");
 
     check_useful_json!(key_json, ErrorCode::CommonInvalidParam3, KeyInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_create_key ? wallet_handle {:?} key_json {:?}",
         wallet_handle,
         secret!(&key_json)
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.create_key(wallet_handle, &key_json).await;
+        let res = locator
+            .crypto_controller
+            .create_key(wallet_handle, &key_json)
+            .await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, verkey) = prepare_result_1!(res, String::new());
 
-        trace!("indy_create_key ? err {:?} verkey {:?}", err, &verkey);
+        debug!("indy_create_key ? err {:?} verkey {:?}", err, &verkey);
 
         let verkey = ctypes::string_to_cstring(verkey);
         cb(command_handle, err, verkey.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandCreateKey, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandCreateKey, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_create_key: < {:?}", res);
+    debug!("indy_create_key: < {:?}", res);
     res
 }
 
@@ -109,33 +106,25 @@ pub extern "C" fn indy_set_key_metadata(
     metadata: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode)>,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_set_key_metadata > wallet_handle {:?} verkey {:?} metadata {:?}",
-        wallet_handle,
-        verkey,
-        metadata
+        wallet_handle, verkey, metadata
     );
 
     check_useful_c_str!(verkey, ErrorCode::CommonInvalidParam3);
     check_useful_c_str_empty_accepted!(metadata, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_set_key_metadata ? wallet_handle{:?} verkey{:?} metadata{:?}",
-        wallet_handle,
-        verkey,
-        metadata
+        wallet_handle, verkey, metadata
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .crypto_controller
             .set_key_metadata(wallet_handle, &verkey, &metadata)
             .await;
         res
@@ -144,14 +133,14 @@ pub extern "C" fn indy_set_key_metadata(
     let cb = move |res: IndyResult<_>| {
         let err = prepare_result!(res);
 
-        trace!("indy_set_key_metadata ? err{:?}", err);
+        debug!("indy_set_key_metadata ? err{:?}", err);
         cb(command_handle, err);
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandSetKeyMetadata, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandSetKeyMetadata, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_set_key_metadata < {:?}", res);
+    debug!("indy_set_key_metadata < {:?}", res);
     res
 }
 
@@ -183,50 +172,45 @@ pub extern "C" fn indy_get_key_metadata(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, metadata: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_get_key_metadata > wallet_handle {:?} verkey {:?}",
-        wallet_handle,
-        verkey
+        wallet_handle, verkey
     );
 
     check_useful_c_str!(verkey, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_get_key_metadata ? wallet_handle {:?} verkey {:?}",
-        wallet_handle,
-        verkey
+        wallet_handle, verkey
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.get_key_metadata(wallet_handle, &verkey).await;
+        let res = locator
+            .crypto_controller
+            .get_key_metadata(wallet_handle, &verkey)
+            .await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, metadata) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_get_key_metadata ? err {:?} metadata {:?}",
-            err,
-            metadata
+            err, metadata
         );
 
         let metadata = ctypes::string_to_cstring(metadata);
         cb(command_handle, err, metadata.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandGetKeyMetadata, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandGetKeyMetadata, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_get_key_metadata < {:?}", res);
+    debug!("indy_get_key_metadata < {:?}", res);
     res
 }
 
@@ -266,12 +250,9 @@ pub extern "C" fn indy_crypto_sign(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_crypto_sign > wallet_handle {:?} signer_vk {:?} message_raw {:?} message_len {:?}",
-        wallet_handle,
-        signer_vk,
-        message_raw,
-        message_len
+        wallet_handle, signer_vk, message_raw, message_len
     );
 
     check_useful_c_str!(signer_vk, ErrorCode::CommonInvalidParam3);
@@ -285,22 +266,16 @@ pub extern "C" fn indy_crypto_sign(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_crypto_sign ? wallet_handle {:?} signer_vk {:?} message_raw {:?}",
-        wallet_handle,
-        signer_vk,
-        message_raw,
+        wallet_handle, signer_vk, message_raw,
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .crypto_controller
             .crypto_sign(wallet_handle, &signer_vk, &message_raw)
             .await;
         res
@@ -309,20 +284,19 @@ pub extern "C" fn indy_crypto_sign(
     let cb = move |res: IndyResult<_>| {
         let (err, signature) = prepare_result_1!(res, Vec::new());
 
-        trace!(
+        debug!(
             "indy_crypto_sign ? err {:?} signature {:?}",
-            err,
-            &signature,
+            err, &signature,
         );
 
         let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
         cb(command_handle, err, signature_raw, signature_len)
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandCryptoSign, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandCryptoSign, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_crypto_sign < {:?}", res);
+    debug!("indy_crypto_sign < {:?}", res);
     res
 }
 
@@ -358,7 +332,7 @@ pub extern "C" fn indy_crypto_verify(
     signature_len: u32,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, valid: bool)>,
 ) -> ErrorCode {
-    trace!("indy_crypto_verify > signer_vk {:?} message_raw {:?} message_len {:?} signature_raw {:?} signature_len{:?}",
+    debug!("indy_crypto_verify > signer_vk {:?} message_raw {:?} message_len {:?} signature_raw {:?} signature_len{:?}",
            signer_vk, message_raw, message_len, signature_raw, signature_len);
 
     check_useful_c_str!(signer_vk, ErrorCode::CommonInvalidParam2);
@@ -379,22 +353,16 @@ pub extern "C" fn indy_crypto_verify(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!(
+    debug!(
         "indy_crypto_verify ? signer_vk {:?} message_raw {:?} signature_raw {:?}",
-        signer_vk,
-        message_raw,
-        signature_raw
+        signer_vk, message_raw, signature_raw
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .crypto_controller
             .crypto_verify(&signer_vk, &message_raw, &signature_raw)
             .await;
         res
@@ -403,14 +371,14 @@ pub extern "C" fn indy_crypto_verify(
     let cb = move |res: IndyResult<_>| {
         let (err, valid) = prepare_result_1!(res, false);
 
-        trace!("indy_crypto_verify ? err {:?} valid {:?}", err, valid);
+        debug!("indy_crypto_verify ? err {:?} valid {:?}", err, valid);
         cb(command_handle, err, valid)
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandCryptoVerify, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandCryptoVerify, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_crypto_verify < {:?}", res);
+    debug!("indy_crypto_verify < {:?}", res);
     res
 }
 
@@ -460,7 +428,7 @@ pub extern "C" fn indy_crypto_auth_crypt(
         ),
     >,
 ) -> ErrorCode {
-    trace!("indy_crypto_auth_crypt > wallet_handle {:?} sender_vk {:?} recipient_vk {:?} msg_data {:?} msg_len{:?}",
+    debug!("indy_crypto_auth_crypt > wallet_handle {:?} sender_vk {:?} recipient_vk {:?} msg_data {:?} msg_len{:?}",
            wallet_handle, sender_vk, recipient_vk, msg_data, msg_len);
 
     check_useful_c_str!(sender_vk, ErrorCode::CommonInvalidParam3);
@@ -475,18 +443,14 @@ pub extern "C" fn indy_crypto_auth_crypt(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_crypto_auth_crypt ? wallet_handle {:?} sender_vk {:?} recipient_vk {:?} msg_data {:?}",
+    debug!("indy_crypto_auth_crypt ? wallet_handle {:?} sender_vk {:?} recipient_vk {:?} msg_data {:?}",
            wallet_handle, sender_vk, recipient_vk, msg_data);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .crypto_controller
             .authenticated_encrypt(wallet_handle, &sender_vk, &recipient_vk, &msg_data)
             .await;
         res
@@ -495,20 +459,19 @@ pub extern "C" fn indy_crypto_auth_crypt(
     let cb = move |res: IndyResult<_>| {
         let (err, encrypted_msg) = prepare_result_1!(res, Vec::new());
 
-        trace!(
+        debug!(
             "indy_crypto_auth_crypt ? err {:?} encrypted_msg {:?}",
-            err,
-            encrypted_msg
+            err, encrypted_msg
         );
 
         let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
         cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAuthenticatedEncrypt, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAuthenticatedEncrypt, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_crypto_auth_crypt < {:?}", res);
+    debug!("indy_crypto_auth_crypt < {:?}", res);
     res
 }
 
@@ -556,7 +519,7 @@ pub extern "C" fn indy_crypto_auth_decrypt(
         ),
     >,
 ) -> ErrorCode {
-    trace!("indy_crypto_auth_decrypt > wallet_handle {:?} recipient_vk {:?} encrypted_msg {:?} encrypted_len {:?}",
+    debug!("indy_crypto_auth_decrypt > wallet_handle {:?} recipient_vk {:?} encrypted_msg {:?} encrypted_len {:?}",
            wallet_handle, recipient_vk, encrypted_msg, encrypted_len);
 
     check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam3);
@@ -570,22 +533,16 @@ pub extern "C" fn indy_crypto_auth_decrypt(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_crypto_auth_decrypt ? wallet_handle {:?} recipient_vk {:?} encrypted_msg {:?}",
-        wallet_handle,
-        recipient_vk,
-        encrypted_msg
+        wallet_handle, recipient_vk, encrypted_msg
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .crypto_controller
             .authenticated_decrypt(wallet_handle, &recipient_vk, &encrypted_msg)
             .await;
         res
@@ -594,11 +551,9 @@ pub extern "C" fn indy_crypto_auth_decrypt(
     let cb = move |res: IndyResult<_>| {
         let (err, sender_vk, msg) = prepare_result_2!(res, String::new(), Vec::new());
 
-        trace!(
+        debug!(
             "indy_crypto_auth_decrypt ? err {:?} sender_vk {:?} msg {:?}",
-            err,
-            sender_vk,
-            msg,
+            err, sender_vk, msg,
         );
 
         let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
@@ -606,10 +561,10 @@ pub extern "C" fn indy_crypto_auth_decrypt(
         cb(command_handle, err, sender_vk.as_ptr(), msg_data, msg_len);
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAuthenticatedDecrypt, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAuthenticatedDecrypt, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_crypto_auth_decrypt < {:?}", res);
+    debug!("indy_crypto_auth_decrypt < {:?}", res);
     res
 }
 
@@ -654,11 +609,9 @@ pub extern "C" fn indy_crypto_anon_crypt(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_crypto_anon_crypt > recipient_vk {:?} msg_data {:?} msg_len {:?}",
-        recipient_vk,
-        msg_data,
-        msg_len
+        recipient_vk, msg_data, msg_len
     );
 
     check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam2);
@@ -672,41 +625,37 @@ pub extern "C" fn indy_crypto_anon_crypt(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_crypto_anon_crypt ? recipient_vk {:?} msg_data {:?}",
-        recipient_vk,
-        msg_data,
+        recipient_vk, msg_data,
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.anonymous_encrypt(&recipient_vk, &msg_data).await;
+        let res = locator
+            .crypto_controller
+            .anonymous_encrypt(&recipient_vk, &msg_data)
+            .await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, encrypted_msg) = prepare_result_1!(res, Vec::new());
 
-        trace!(
+        debug!(
             "indy_crypto_anon_crypt ? err {:?} encrypted_msg {:?}",
-            err,
-            encrypted_msg
+            err, encrypted_msg
         );
 
         let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
         cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAnonymousEncrypt, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAnonymousEncrypt, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_crypto_anon_crypt < {:?}", res);
+    debug!("indy_crypto_anon_crypt < {:?}", res);
     res
 }
 
@@ -752,7 +701,7 @@ pub extern "C" fn indy_crypto_anon_decrypt(
         ),
     >,
 ) -> ErrorCode {
-    trace!("indy_crypto_anon_decrypt > wallet_handle {:?} recipient_vk {:?} encrypted_msg {:?} encrypted_len {:?}",
+    debug!("indy_crypto_anon_decrypt > wallet_handle {:?} recipient_vk {:?} encrypted_msg {:?} encrypted_len {:?}",
            wallet_handle, recipient_vk, encrypted_msg, encrypted_len);
 
     check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam3);
@@ -766,22 +715,16 @@ pub extern "C" fn indy_crypto_anon_decrypt(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_crypto_anon_decrypt ? wallet_handle {:?} recipient_vk {:?} encrypted_msg {:?}",
-        wallet_handle,
-        recipient_vk,
-        encrypted_msg
+        wallet_handle, recipient_vk, encrypted_msg
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .crypto_controller
             .anonymous_decrypt(wallet_handle, &recipient_vk, &encrypted_msg)
             .await;
         res
@@ -789,16 +732,16 @@ pub extern "C" fn indy_crypto_anon_decrypt(
 
     let cb = move |res: IndyResult<_>| {
         let (err, msg) = prepare_result_1!(res, Vec::new());
-        trace!("indy_crypto_anon_decrypt ? err {:?} msg{:?}", err, msg);
+        debug!("indy_crypto_anon_decrypt ? err {:?} msg{:?}", err, msg);
 
         let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
         cb(command_handle, err, msg_data, msg_len);
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAnonymousDecrypt, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandAnonymousDecrypt, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_crypto_anon_decrypt < {:?}", res);
+    debug!("indy_crypto_anon_decrypt < {:?}", res);
     res
 }
 
@@ -885,14 +828,10 @@ pub extern "C" fn indy_pack_message(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_pack_message > wallet_handle {:?} message {:?} message_len {:?} \
             receiver_keys {:?} sender {:?}",
-        wallet_handle,
-        message,
-        message_len,
-        receiver_keys,
-        sender
+        wallet_handle, message, message_len, receiver_keys, sender
     );
 
     check_useful_c_byte_array!(
@@ -906,13 +845,10 @@ pub extern "C" fn indy_pack_message(
     check_useful_opt_c_str!(sender, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_pack_message ? wallet_handle {:?} message{:?} \
             receiver_keys{:?} sender {:?}",
-        wallet_handle,
-        message,
-        receiver_keys,
-        sender
+        wallet_handle, message, receiver_keys, sender
     );
 
     //parse json array of keys
@@ -936,15 +872,11 @@ pub extern "C" fn indy_pack_message(
         .into();
     }
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .crypto_controller
             .pack_msg(message, receiver_list, sender, wallet_handle)
             .await;
         res
@@ -952,16 +884,16 @@ pub extern "C" fn indy_pack_message(
 
     let cb = move |res: IndyResult<_>| {
         let (err, jwe) = prepare_result_1!(res, Vec::new());
-        trace!("indy_auth_pack_message ? err{:?} jwe{:?}", err, jwe);
+        debug!("indy_auth_pack_message ? err{:?} jwe{:?}", err, jwe);
 
         let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
         cb(command_handle, err, jwe_data, jwe_len);
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandPackMessage, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandPackMessage, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_auth_pack_message < {:?}", res);
+    debug!("indy_auth_pack_message < {:?}", res);
     res
 }
 
@@ -1011,11 +943,9 @@ pub extern "C" fn indy_unpack_message(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_unpack_message > wallet_handle {:?} jwe_data {:?} jwe_len {:?}",
-        wallet_handle,
-        jwe_data,
-        jwe_len
+        wallet_handle, jwe_data, jwe_len
     );
 
     check_useful_c_byte_array!(
@@ -1027,10 +957,9 @@ pub extern "C" fn indy_unpack_message(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_unpack_message ? wallet_handle {:?} jwe_data{:?}",
-        wallet_handle,
-        jwe_data,
+        wallet_handle, jwe_data,
     );
 
     //serialize JWE to struct
@@ -1039,34 +968,28 @@ pub extern "C" fn indy_unpack_message(
         Err(_) => return ErrorCode::CommonInvalidParam3,
     };
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.crypto_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.unpack_msg(jwe_struct, wallet_handle).await;
+        let res = locator
+            .crypto_controller
+            .unpack_msg(jwe_struct, wallet_handle)
+            .await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res_json) = prepare_result_1!(res, Vec::new());
 
-        trace!(
-            "indy_unpack_message ? err{:?} res_json{:?}",
-            err,
-            res_json
-        );
+        debug!("indy_unpack_message ? err{:?} res_json{:?}", err, res_json);
 
         let (res_json_data, res_json_len) = ctypes::vec_to_pointer(&res_json);
         cb(command_handle, err, res_json_data, res_json_len)
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::CryptoCommandUnpackMessage, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CryptoCommandUnpackMessage, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_unpack_message < {:?}", res);
+    debug!("indy_unpack_message < {:?}", res);
     res
 }

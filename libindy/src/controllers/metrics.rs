@@ -1,14 +1,14 @@
-use crate::services::metrics::MetricsService;
+use crate::services::MetricsService;
 use indy_api_types::errors::prelude::*;
 use indy_wallet::WalletService;
 use std::sync::Arc;
 use serde_json::{Map, Value};
 
-const THREADPOOL_ACTIVE_COUNT: &str = "active";
-const THREADPOOL_QUEUED_COUNT: &str = "queued";
-const THREADPOOL_MAX_COUNT: &str = "max";
-const THREADPOOL_PANIC_COUNT: &str = "panic";
-const THREADPOOL_THREADS_COUNT: &str = "threadpool_threads_count";
+const _THREADPOOL_ACTIVE_COUNT: &str = "active";
+const _THREADPOOL_QUEUED_COUNT: &str = "queued";
+const _THREADPOOL_MAX_COUNT: &str = "max";
+const _THREADPOOL_PANIC_COUNT: &str = "panic";
+const _THREADPOOL_THREADS_COUNT: &str = "threadpool_threads_count";
 const OPENED_WALLETS_COUNT: &str = "opened";
 const OPENED_WALLET_IDS_COUNT: &str = "opened_ids";
 const PENDING_FOR_IMPORT_WALLETS_COUNT: &str = "pending_for_import";
@@ -45,7 +45,8 @@ impl MetricsController {
         Ok(res)
     }
 
-    fn append_threapool_metrics(&self, metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
+    fn append_threapool_metrics(&self, _metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
+        /*
         let tp_instance = crate::commands::THREADPOOL.lock().unwrap();
         let mut threadpool_threads_count: Vec<Value> = Vec::new();
 
@@ -74,6 +75,7 @@ impl MetricsController {
             serde_json::to_value(threadpool_threads_count)
                 .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
         );
+*/
 
         Ok(())
     }

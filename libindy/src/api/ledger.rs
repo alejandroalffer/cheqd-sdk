@@ -7,7 +7,6 @@ use libc::c_char;
 use serde_json;
 
 use crate::{
-    commands::Locator,
     domain::{
         anoncreds::{
             credential_definition::{CredentialDefinition, CredentialDefinitionId},
@@ -23,8 +22,9 @@ use crate::{
             pool::Schedule,
         },
     },
+    Locator,
 };
-use crate::services::metrics::command_metrics::CommandMetric;
+use crate::services::CommandMetric;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -63,37 +63,27 @@ pub extern "C" fn indy_sign_and_submit_request(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_sign_and_submit_request > pool_handle {:?} \
             wallet_handle {:?} submitter_did {:?} request_json {:?}",
-        pool_handle,
-        wallet_handle,
-        submitter_did,
-        request_json
+        pool_handle, wallet_handle, submitter_did, request_json
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_sign_and_submit_request? pool_handle {:?} \
             wallet_handle {:?} submitter_did {:?} request_json {:?}",
-        pool_handle,
-        wallet_handle,
-        submitter_did,
-        request_json
+        pool_handle, wallet_handle, submitter_did, request_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .ledger_controller
             .sign_and_submit_request(pool_handle, wallet_handle, submitter_did, request_json)
             .await;
         res
@@ -101,16 +91,16 @@ pub extern "C" fn indy_sign_and_submit_request(
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_sign_and_submit_request ? err {:?} res {:?}", err, res);
+        debug!("indy_sign_and_submit_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSignAndSubmitRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSignAndSubmitRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_sign_and_submit_request < {:?}", res);
+    debug!("indy_sign_and_submit_request < {:?}", res);
     res
 }
 
@@ -143,45 +133,41 @@ pub extern "C" fn indy_submit_request(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_submit_request > pool_handle {:?} request_json {:?}",
-        pool_handle,
-        request_json
+        pool_handle, request_json
     );
 
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_submit_request? pool_handle {:?} request_json {:?}",
-        pool_handle,
-        request_json
+        pool_handle, request_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.submit_request(pool_handle, request_json).await;
+        let res = locator
+            .ledger_controller
+            .submit_request(pool_handle, request_json)
+            .await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_submit_request ? err {:?} res {:?}", err, res);
+        debug!("indy_submit_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSubmitRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSubmitRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_submit_request < {:?}", res);
+    debug!("indy_submit_request < {:?}", res);
     res
 }
 
@@ -224,13 +210,10 @@ pub extern "C" fn indy_submit_action(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_submit_action > pool_handle {:?} request_json {:?} \
             nodes {:?} timeout {:?}",
-        pool_handle,
-        request_json,
-        nodes,
-        timeout
+        pool_handle, request_json, nodes, timeout
     );
 
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
@@ -239,24 +222,17 @@ pub extern "C" fn indy_submit_action(
 
     let timeout = if timeout != -1 { Some(timeout) } else { None };
 
-    trace!(
+    debug!(
         "indy_submit_action? pool_handle {:?} request_json {:?} \
             nodes {:?} timeout {:?}",
-        pool_handle,
-        request_json,
-        nodes,
-        timeout
+        pool_handle, request_json, nodes, timeout
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .ledger_controller
             .submit_action(pool_handle, request_json, nodes, timeout)
             .await;
         res
@@ -264,16 +240,16 @@ pub extern "C" fn indy_submit_action(
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_submit_action ? err {:?} res {:?}", err, res);
+        debug!("indy_submit_action ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSubmitAction, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSubmitAction, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_submit_action < {:?}", res);
+    debug!("indy_submit_action < {:?}", res);
     res
 }
 
@@ -311,33 +287,25 @@ pub extern "C" fn indy_sign_request(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_sign_request > wallet_handle {:?} submitter_did {:?} request_json {:?}",
-        wallet_handle,
-        submitter_did,
-        request_json
+        wallet_handle, submitter_did, request_json
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_sign_request? wallet_handle {:?} submitter_did {:?} request_json {:?}",
-        wallet_handle,
-        submitter_did,
-        request_json
+        wallet_handle, submitter_did, request_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .ledger_controller
             .sign_request(wallet_handle, submitter_did, request_json)
             .await;
         res
@@ -345,17 +313,17 @@ pub extern "C" fn indy_sign_request(
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_sign_request ? err {:?} res {:?}", err, res);
+        debug!("indy_sign_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSignRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandSignRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_sign_request < {:?}", res);
+    debug!("indy_sign_request < {:?}", res);
     res
 }
 
@@ -393,33 +361,25 @@ pub extern "C" fn indy_multi_sign_request(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_multi_sign_request > wallet_handle {:?} submitter_did {:?} request_json {:?}",
-        wallet_handle,
-        submitter_did,
-        request_json
+        wallet_handle, submitter_did, request_json
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_multi_sign_request? wallet_handle {:?} submitter_did {:?} request_json {:?}",
-        wallet_handle,
-        submitter_did,
-        request_json
+        wallet_handle, submitter_did, request_json
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .ledger_controller
             .multi_sign_request(wallet_handle, submitter_did, request_json)
             .await;
         res
@@ -427,16 +387,16 @@ pub extern "C" fn indy_multi_sign_request(
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_multi_sign_request ? err {:?} res {:?}", err, res);
+        debug!("indy_multi_sign_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandMultiSignRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandMultiSignRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_multi_sign_request < {:?}", res);
+    debug!("indy_multi_sign_request < {:?}", res);
     res
 }
 
@@ -462,46 +422,41 @@ pub extern "C" fn indy_build_get_ddo_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_ddo_request > submitter_did {:?} target_did {:?}",
-        submitter_did,
-        target_did
+        submitter_did, target_did
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_build_get_ddo_request? submitter_did {:?} target_did {:?}",
-        submitter_did,
-        target_did
+        submitter_did, target_did
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_get_ddo_request(submitter_did, target_did);
+        let res = locator
+            .ledger_controller
+            .build_get_ddo_request(submitter_did, target_did);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_build_get_ddo_request ? err {:?} res {:?}", err, res);
+        debug!("indy_build_get_ddo_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetDdoRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetDdoRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_ddo_request < {:?}", res);
+    debug!("indy_build_get_ddo_request < {:?}", res);
     res
 }
 
@@ -541,14 +496,10 @@ pub extern "C" fn indy_build_nym_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_nym_request > submitter_did {:?} \
             target_did {:?} verkey {:?} alias {:?} role {:?}",
-        submitter_did,
-        target_did,
-        verkey,
-        alias,
-        role
+        submitter_did, target_did, verkey, alias, role
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -558,25 +509,17 @@ pub extern "C" fn indy_build_nym_request(
     check_useful_opt_c_str!(role, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!(
+    debug!(
         "indy_build_nym_request? submitter_did {:?} \
             target_did {:?} verkey {:?} alias {:?} role {:?}",
-        submitter_did,
-        target_did,
-        verkey,
-        alias,
-        role
+        submitter_did, target_did, verkey, alias, role
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller
+        let res = locator
+            .ledger_controller
             .build_nym_request(submitter_did, target_did, verkey, alias, role)
             .await;
         res
@@ -584,16 +527,16 @@ pub extern "C" fn indy_build_nym_request(
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_build_nym_request ? err {:?} res {:?}", err, res);
+        debug!("indy_build_nym_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildNymRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildNymRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_nym_request < {:?}", res);
+    debug!("indy_build_nym_request < {:?}", res);
     res
 }
 
@@ -619,46 +562,41 @@ pub extern "C" fn indy_build_get_nym_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_nym_request > submitter_did {:?} target_did {:?}",
-        submitter_did,
-        target_did
+        submitter_did, target_did
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_build_get_nym_request? submitter_did {:?} target_did {:?}",
-        submitter_did,
-        target_did
+        submitter_did, target_did
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_get_nym_request(submitter_did, target_did);
+        let res = locator
+            .ledger_controller
+            .build_get_nym_request(submitter_did, target_did);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_build_get_nym_request ? err {:?} res {:?}", err, res);
+        debug!("indy_build_get_nym_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetNymRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetNymRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_nym_request < {:?}", res);
+    debug!("indy_build_get_nym_request < {:?}", res);
     res
 }
 
@@ -694,7 +632,7 @@ pub extern "C" fn indy_parse_get_nym_response(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, nym_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_parse_get_nym_response > get_nym_response {:?}",
         get_nym_response
     );
@@ -702,35 +640,32 @@ pub extern "C" fn indy_parse_get_nym_response(
     check_useful_c_str!(get_nym_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!(
+    debug!(
         "indy_parse_get_nym_response? get_nym_response {:?}",
         get_nym_response
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.parse_get_nym_response(get_nym_response);
+        let res = locator
+            .ledger_controller
+            .parse_get_nym_response(get_nym_response);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_parse_get_nym_response ? err {:?} res {:?}", err, res);
+        debug!("indy_parse_get_nym_response ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetNymResponse, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetNymResponse, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_parse_get_nym_response < {:?}", res);
+    debug!("indy_parse_get_nym_response < {:?}", res);
     res
 }
 
@@ -765,7 +700,7 @@ pub extern "C" fn indy_build_attrib_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!("indy_build_attrib_request > submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
+    debug!("indy_build_attrib_request > submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
            submitter_did, target_did, hash, raw, enc);
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -775,13 +710,9 @@ pub extern "C" fn indy_build_attrib_request(
     check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!(
+    debug!(
         "indy_build_attrib_request? submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
-        submitter_did,
-        target_did,
-        hash,
-        raw,
-        enc
+        submitter_did, target_did, hash, raw, enc
     );
 
     if raw.is_none() && hash.is_none() && enc.is_none() {
@@ -792,30 +723,31 @@ pub extern "C" fn indy_build_attrib_request(
         .into();
     }
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_attrib_request(submitter_did, target_did, hash, raw, enc);
+        let res = locator.ledger_controller.build_attrib_request(
+            submitter_did,
+            target_did,
+            hash,
+            raw,
+            enc,
+        );
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_build_attrib_request ? err {:?} res {:?}", err, res);
+        debug!("indy_build_attrib_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAttribRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAttribRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_attrib_request < {:?}", res);
+    debug!("indy_build_attrib_request < {:?}", res);
     res
 }
 
@@ -849,7 +781,7 @@ pub extern "C" fn indy_build_get_attrib_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!("indy_build_get_attrib_request > submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
+    debug!("indy_build_get_attrib_request > submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
            submitter_did, target_did, hash, raw, enc);
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -859,7 +791,7 @@ pub extern "C" fn indy_build_get_attrib_request(
     check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_build_get_attrib_request? submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
+    debug!("indy_build_get_attrib_request? submitter_did {:?} target_did {:?} hash {:?} raw {:?} enc {:?}",
            submitter_did, target_did, hash, raw, enc);
 
     if raw.is_none() && hash.is_none() && enc.is_none() {
@@ -870,35 +802,35 @@ pub extern "C" fn indy_build_get_attrib_request(
         .into();
     }
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_get_attrib_request(submitter_did, target_did, raw, hash, enc);
+        let res = locator.ledger_controller.build_get_attrib_request(
+            submitter_did,
+            target_did,
+            raw,
+            hash,
+            enc,
+        );
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_get_attrib_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetAttribRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetAttribRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_attrib_request < {:?}", res);
+    debug!("indy_build_get_attrib_request < {:?}", res);
     res
 }
 
@@ -932,46 +864,41 @@ pub extern "C" fn indy_build_schema_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_schema_request > submitter_did {:?} data {:?}",
-        submitter_did,
-        data
+        submitter_did, data
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, Schema);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_build_schema_request? submitter_did {:?} data {:?}",
-        submitter_did,
-        data
+        submitter_did, data
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_schema_request(submitter_did, data);
+        let res = locator
+            .ledger_controller
+            .build_schema_request(submitter_did, data);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_build_schema_request ? err {:?} res {:?}", err, res);
+        debug!("indy_build_schema_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildSchemaRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildSchemaRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_schema_request < {:?}", res);
+    debug!("indy_build_schema_request < {:?}", res);
     res
 }
 
@@ -997,51 +924,45 @@ pub extern "C" fn indy_build_get_schema_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_schema_request > submitter_did {:?} id {:?}",
-        submitter_did,
-        id
+        submitter_did, id
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, SchemaId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_build_get_schema_request? submitter_did {:?} id {:?}",
-        submitter_did,
-        id
+        submitter_did, id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_get_schema_request(submitter_did, id);
+        let res = locator
+            .ledger_controller
+            .build_get_schema_request(submitter_did, id);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_get_schema_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetSchemaRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetSchemaRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_schema_request < {:?}", res);
+    debug!("indy_build_get_schema_request < {:?}", res);
     res
 }
 
@@ -1077,7 +998,7 @@ pub extern "C" fn indy_parse_get_schema_response(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_parse_get_schema_response > get_schema_response {:?}",
         get_schema_response
     );
@@ -1085,32 +1006,27 @@ pub extern "C" fn indy_parse_get_schema_response(
     check_useful_c_str!(get_schema_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!(
+    debug!(
         "indy_parse_get_schema_response? get_schema_response {:?}",
         get_schema_response
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.parse_get_schema_response(get_schema_response);
+        let res = locator
+            .ledger_controller
+            .parse_get_schema_response(get_schema_response);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, schema_id, schema_json) = prepare_result_2!(res, String::new(), String::new());
 
-        trace!(
+        debug!(
             "indy_parse_get_schema_response ? err {:?} \
                 schema_id {:?} schema_json {:?}",
-            err,
-            schema_id,
-            schema_json
+            err, schema_id, schema_json
         );
 
         let schema_id = ctypes::string_to_cstring(schema_id);
@@ -1124,10 +1040,10 @@ pub extern "C" fn indy_parse_get_schema_response(
         );
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetSchemaResponse, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetSchemaResponse, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_parse_get_schema_response < {:?}", res);
+    debug!("indy_parse_get_schema_response < {:?}", res);
     res
 }
 
@@ -1170,46 +1086,41 @@ pub extern "C" fn indy_build_cred_def_request(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_cred_def_request > submitter_did {:?} data {:?}",
-        submitter_did,
-        data
+        submitter_did, data
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, CredentialDefinition);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_build_cred_def_request? submitter_did {:?} data {:?}",
-        submitter_did,
-        data
+        submitter_did, data
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_cred_def_request(submitter_did, data);
+        let res = locator
+            .ledger_controller
+            .build_cred_def_request(submitter_did, data);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_build_cred_def_request ? err {:?} res {:?}", err, res);
+        debug!("indy_build_cred_def_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildCredDefRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildCredDefRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_cred_def_request < {:?}", res);
+    debug!("indy_build_cred_def_request < {:?}", res);
     res
 }
 
@@ -1236,51 +1147,45 @@ pub extern "C" fn indy_build_get_cred_def_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_cred_def_request > submitter_did {:?} id {:?}",
-        submitter_did,
-        id
+        submitter_did, id
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_build_get_cred_def_request? submitter_did {:?} id {:?}",
-        submitter_did,
-        id
+        submitter_did, id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_get_cred_def_request(submitter_did, id);
+        let res = locator
+            .ledger_controller
+            .build_get_cred_def_request(submitter_did, id);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_get_cred_def_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetCredDefRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetCredDefRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_cred_def_request < {:?}", res);
+    debug!("indy_build_get_cred_def_request < {:?}", res);
     res
 }
 
@@ -1320,7 +1225,7 @@ pub extern "C" fn indy_parse_get_cred_def_response(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_parse_get_cred_def_response > get_cred_def_response {:?}",
         get_cred_def_response
     );
@@ -1328,20 +1233,17 @@ pub extern "C" fn indy_parse_get_cred_def_response(
     check_useful_c_str!(get_cred_def_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!(
+    debug!(
         "indy_parse_get_cred_def_response? get_cred_def_response {:?}",
         get_cred_def_response
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.parse_get_cred_def_response(get_cred_def_response);
+        let res = locator
+            .ledger_controller
+            .parse_get_cred_def_response(get_cred_def_response);
         res
     };
 
@@ -1349,11 +1251,9 @@ pub extern "C" fn indy_parse_get_cred_def_response(
         let (err, cred_def_id, cred_def_json) =
             prepare_result_2!(res, String::new(), String::new());
 
-        trace!(
+        debug!(
             "indy_parse_get_cred_def_response ? err {:?} cred_def_id {:?} cred_def_json {:?}",
-            err,
-            cred_def_id,
-            cred_def_json
+            err, cred_def_id, cred_def_json
         );
 
         let cred_def_id = ctypes::string_to_cstring(cred_def_id);
@@ -1367,10 +1267,10 @@ pub extern "C" fn indy_parse_get_cred_def_response(
         )
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetCredDefResponse, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetCredDefResponse, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_parse_get_cred_def_response < {:?}", res);
+    debug!("indy_parse_get_cred_def_response < {:?}", res);
     res
 }
 
@@ -1408,11 +1308,9 @@ pub extern "C" fn indy_build_node_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_node_request > submitter_did {:?} target_did {:?} data {:?}",
-        submitter_did,
-        target_did,
-        data
+        submitter_did, target_did, data
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -1420,38 +1318,33 @@ pub extern "C" fn indy_build_node_request(
     check_useful_json!(data, ErrorCode::CommonInvalidParam4, NodeOperationData);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_build_node_request? submitter_did {:?} target_did {:?} data {:?}",
-        submitter_did,
-        target_did,
-        data
+        submitter_did, target_did, data
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_node_request(submitter_did, target_did, data);
+        let res = locator
+            .ledger_controller
+            .build_node_request(submitter_did, target_did, data);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!("indy_build_node_request ? err {:?} res {:?}", err, res);
+        debug!("indy_build_node_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildNodeRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildNodeRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_node_request < {:?}", res);
+    debug!("indy_build_node_request < {:?}", res);
     res
 }
 
@@ -1475,7 +1368,7 @@ pub extern "C" fn indy_build_get_validator_info_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_validator_info_request > submitter_did {:?}",
         submitter_did,
     );
@@ -1483,35 +1376,31 @@ pub extern "C" fn indy_build_get_validator_info_request(
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_get_validator_info_request(submitter_did);
+        let res = locator
+            .ledger_controller
+            .build_get_validator_info_request(submitter_did);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_get_validator_info_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetValidatorInfoRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetValidatorInfoRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_validator_info_request < {:?}", res,);
+    debug!("indy_build_get_validator_info_request < {:?}", res,);
     res
 }
 
@@ -1543,50 +1432,44 @@ pub extern "C" fn indy_build_get_txn_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_txn_request > submitter_did {:?} \
             ledger_type {:?} seq_no {:?}",
-        submitter_did,
-        ledger_type,
-        seq_no
+        submitter_did, ledger_type, seq_no
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_opt_c_str!(ledger_type, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_build_get_txn_request ? submitter_did {:?} \
             ledger_type {:?} seq_no {:?}",
-        submitter_did,
-        ledger_type,
-        seq_no
+        submitter_did, ledger_type, seq_no
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_get_txn_request(submitter_did, ledger_type, seq_no);
+        let res =
+            locator
+                .ledger_controller
+                .build_get_txn_request(submitter_did, ledger_type, seq_no);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_build_get_txn_request ? err {:?} res {:?}", err, res);
+        debug!("indy_build_get_txn_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetTxnRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetTxnRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_txn_request < {:?}", res);
+    debug!("indy_build_get_txn_request < {:?}", res);
     res
 }
 
@@ -1617,54 +1500,46 @@ pub extern "C" fn indy_build_pool_config_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_pool_config_request > submitter_did {:?} \
             writes {:?} force {:?}",
-        submitter_did,
-        writes,
-        force
+        submitter_did, writes, force
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_build_pool_config_request? submitter_did {:?} \
             writes {:?} force {:?}",
-        submitter_did,
-        writes,
-        force
+        submitter_did, writes, force
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_pool_config_request(submitter_did, writes, force);
+        let res = locator
+            .ledger_controller
+            .build_pool_config_request(submitter_did, writes, force);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_pool_config_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildPoolConfigRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildPoolConfigRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_pool_config_request < {:?}", res);
+    debug!("indy_build_pool_config_request < {:?}", res);
     res
 }
 
@@ -1692,11 +1567,9 @@ pub extern "C" fn indy_build_pool_restart_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_pool_restart_request > submitter_did {:?} action {:?} datetime {:?}",
-        submitter_did,
-        action,
-        datetime
+        submitter_did, action, datetime
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -1704,11 +1577,9 @@ pub extern "C" fn indy_build_pool_restart_request(
     check_useful_opt_c_str!(datetime, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_build_pool_restart_request? submitter_did {:?} action {:?} datetime {:?}",
-        submitter_did,
-        action,
-        datetime
+        submitter_did, action, datetime
     );
 
     if action != "start" && action != "cancel" {
@@ -1722,35 +1593,32 @@ pub extern "C" fn indy_build_pool_restart_request(
         .into();
     }
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_pool_restart_request(submitter_did, action, datetime);
+        let res =
+            locator
+                .ledger_controller
+                .build_pool_restart_request(submitter_did, action, datetime);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_pool_restart_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildPoolRestartRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildPoolRestartRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_pool_restart_request < {:?}", res);
+    debug!("indy_build_pool_restart_request < {:?}", res);
     res
 }
 
@@ -1798,7 +1666,7 @@ pub extern "C" fn indy_build_pool_upgrade_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_pool_upgrade_request > submitter_did {:?} \
             name {:?} version {:?} action {:?} sha256 {:?} timeout {:?} \
             schedule {:?} justification {:?} reinstall {:?} force {:?} package {:?}",
@@ -1831,7 +1699,7 @@ pub extern "C" fn indy_build_pool_upgrade_request(
         None
     };
 
-    trace!(
+    debug!(
         "indy_build_pool_upgrade_request? submitter_did {:?} \
             name {:?} version {:?} action {:?} sha256 {:?} timeout {:?} \
             schedule {:?} justification {:?} reinstall {:?} force {:?} package {:?}",
@@ -1864,15 +1732,10 @@ pub extern "C" fn indy_build_pool_upgrade_request(
         .into();
     }
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_pool_upgrade_request(
+        let res = locator.ledger_controller.build_pool_upgrade_request(
             submitter_did,
             name,
             version,
@@ -1891,20 +1754,19 @@ pub extern "C" fn indy_build_pool_upgrade_request(
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_pool_upgrade_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildPoolUpgradeRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildPoolUpgradeRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_pool_upgrade_request < {:?}", res);
+    debug!("indy_build_pool_upgrade_request < {:?}", res);
     res
 }
 
@@ -1950,10 +1812,9 @@ pub extern "C" fn indy_build_revoc_reg_def_request(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_revoc_reg_def_request > submitter_did {:?} data {:?}",
-        submitter_did,
-        data
+        submitter_did, data
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -1964,41 +1825,36 @@ pub extern "C" fn indy_build_revoc_reg_def_request(
     );
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_build_revoc_reg_def_request? submitter_did {:?} data {:?}",
-        submitter_did,
-        data
+        submitter_did, data
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_revoc_reg_def_request(submitter_did, data);
+        let res = locator
+            .ledger_controller
+            .build_revoc_reg_def_request(submitter_did, data);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_revoc_reg_def_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildRevocRegDefRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildRevocRegDefRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_revoc_reg_def_request < {:?}", res);
+    debug!("indy_build_revoc_reg_def_request < {:?}", res);
     res
 }
 
@@ -2025,51 +1881,45 @@ pub extern "C" fn indy_build_get_revoc_reg_def_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_revoc_reg_def_request > submitter_did {:?} id {:?}",
-        submitter_did,
-        id
+        submitter_did, id
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_build_get_revoc_reg_def_request ? submitter_did {:?} id {:?}",
-        submitter_did,
-        id
+        submitter_did, id
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_get_revoc_reg_def_request(submitter_did, id);
+        let res = locator
+            .ledger_controller
+            .build_get_revoc_reg_def_request(submitter_did, id);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_get_revoc_reg_def_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetRevocRegDefRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetRevocRegDefRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_revoc_reg_def_request < {:?}", res);
+    debug!("indy_build_get_revoc_reg_def_request < {:?}", res);
     res
 }
 
@@ -2113,7 +1963,7 @@ pub extern "C" fn indy_parse_get_revoc_reg_def_response(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_parse_get_revoc_reg_def_response > get_revoc_reg_def_response {:?}",
         get_revoc_reg_def_response
     );
@@ -2121,20 +1971,17 @@ pub extern "C" fn indy_parse_get_revoc_reg_def_response(
     check_useful_c_str!(get_revoc_reg_def_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!(
+    debug!(
         "indy_parse_get_revoc_reg_def_response? get_revoc_reg_def_response {:?}",
         get_revoc_reg_def_response
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.parse_revoc_reg_def_response(get_revoc_reg_def_response);
+        let res = locator
+            .ledger_controller
+            .parse_revoc_reg_def_response(get_revoc_reg_def_response);
         res
     };
 
@@ -2142,12 +1989,10 @@ pub extern "C" fn indy_parse_get_revoc_reg_def_response(
         let (err, revoc_reg_def_id, revoc_reg_def_json) =
             prepare_result_2!(res, String::new(), String::new());
 
-        trace!(
+        debug!(
             "indy_parse_get_revoc_reg_def_response ? err {:?} \
                 revoc_reg_def_id {:?} revoc_reg_def_json {:?}",
-            err,
-            revoc_reg_def_id,
-            revoc_reg_def_json
+            err, revoc_reg_def_id, revoc_reg_def_json
         );
 
         let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
@@ -2161,10 +2006,10 @@ pub extern "C" fn indy_parse_get_revoc_reg_def_response(
         )
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetRevocRegDefResponse, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetRevocRegDefResponse, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_parse_get_revoc_reg_def_response < {:?}", res);
+    debug!("indy_parse_get_revoc_reg_def_response < {:?}", res);
     res
 }
 
@@ -2206,13 +2051,10 @@ pub extern "C" fn indy_build_revoc_reg_entry_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_revoc_reg_entry_request > submitter_did {:?} \
                 revoc_reg_def_id {:?} rev_def_type {:?} value {:?}",
-        submitter_did,
-        revoc_reg_def_id,
-        rev_def_type,
-        value
+        submitter_did, revoc_reg_def_id, rev_def_type, value
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -2233,24 +2075,16 @@ pub extern "C" fn indy_build_revoc_reg_entry_request(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!(
+    debug!(
         "indy_build_revoc_reg_entry_request ? submitter_did {:?} \
             revoc_reg_def_id {:?} rev_def_type {:?} value {:?}",
-        submitter_did,
-        revoc_reg_def_id,
-        rev_def_type,
-        value
+        submitter_did, revoc_reg_def_id, rev_def_type, value
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_revoc_reg_entry_request(
+        let res = locator.ledger_controller.build_revoc_reg_entry_request(
             submitter_did,
             revoc_reg_def_id,
             rev_def_type,
@@ -2262,20 +2096,19 @@ pub extern "C" fn indy_build_revoc_reg_entry_request(
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_revoc_reg_entry_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildRevocRegEntryRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildRevocRegEntryRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_revoc_reg_entry_request < {:?}", res);
+    debug!("indy_build_revoc_reg_entry_request < {:?}", res);
     res
 }
 
@@ -2304,12 +2137,10 @@ pub extern "C" fn indy_build_get_revoc_reg_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_revoc_reg_request > submitter_did {:?} \
             revoc_reg_def_id {:?} timestamp {:?}",
-        submitter_did,
-        revoc_reg_def_id,
-        timestamp
+        submitter_did, revoc_reg_def_id, timestamp
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -2322,44 +2153,39 @@ pub extern "C" fn indy_build_get_revoc_reg_request(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!(
+    debug!(
         "indy_build_get_revoc_reg_request? submitter_did {:?} \
             revoc_reg_def_id {:?} timestamp {:?}",
-        submitter_did,
-        revoc_reg_def_id,
-        timestamp
+        submitter_did, revoc_reg_def_id, timestamp
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res =
-            controller.build_get_revoc_reg_request(submitter_did, revoc_reg_def_id, timestamp);
+        let res = locator.ledger_controller.build_get_revoc_reg_request(
+            submitter_did,
+            revoc_reg_def_id,
+            timestamp,
+        );
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_get_revoc_reg_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetRevocRegRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetRevocRegRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_revoc_reg_request < {:?}", res);
+    debug!("indy_build_get_revoc_reg_request < {:?}", res);
     res
 }
 
@@ -2395,7 +2221,7 @@ pub extern "C" fn indy_parse_get_revoc_reg_response(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_parse_get_revoc_reg_response > get_revoc_reg_response {:?}",
         get_revoc_reg_response
     );
@@ -2403,20 +2229,17 @@ pub extern "C" fn indy_parse_get_revoc_reg_response(
     check_useful_c_str!(get_revoc_reg_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!(
+    debug!(
         "indy_parse_get_revoc_reg_response? get_revoc_reg_response {:?}",
         get_revoc_reg_response
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.parse_revoc_reg_response(get_revoc_reg_response);
+        let res = locator
+            .ledger_controller
+            .parse_revoc_reg_response(get_revoc_reg_response);
         res
     };
 
@@ -2424,12 +2247,10 @@ pub extern "C" fn indy_parse_get_revoc_reg_response(
         let (err, revoc_reg_def_id, revoc_reg_json, timestamp) =
             prepare_result_3!(res, String::new(), String::new(), 0);
 
-        trace!(
+        debug!(
             "indy_parse_get_revoc_reg_response ? revoc_reg_def_id {:?} \
                 revoc_reg_json {:?} timestamp {:?}",
-            revoc_reg_def_id,
-            revoc_reg_json,
-            timestamp
+            revoc_reg_def_id, revoc_reg_json, timestamp
         );
 
         let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
@@ -2444,10 +2265,10 @@ pub extern "C" fn indy_parse_get_revoc_reg_response(
         )
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetRevocRegResponse, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetRevocRegResponse, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_parse_get_revoc_reg_response < {:?}", res);
+    debug!("indy_parse_get_revoc_reg_response < {:?}", res);
     res
 }
 
@@ -2479,13 +2300,10 @@ pub extern "C" fn indy_build_get_revoc_reg_delta_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_revoc_reg_delta_request > submitter_did {:?} \
                 revoc_reg_def_id {:?} from {:?} to {:?}",
-        submitter_did,
-        revoc_reg_def_id,
-        from,
-        to
+        submitter_did, revoc_reg_def_id, from, to
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -2500,45 +2318,40 @@ pub extern "C" fn indy_build_get_revoc_reg_delta_request(
 
     let from = if from != -1 { Some(from) } else { None };
 
-    trace!(
+    debug!(
         "indy_build_get_revoc_reg_delta_request? submitter_did {:?} \
              revoc_reg_def_id {:?} from {:?} to {:?}",
-        submitter_did,
-        revoc_reg_def_id,
-        from,
-        to
+        submitter_did, revoc_reg_def_id, from, to
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res =
-            controller.build_get_revoc_reg_delta_request(submitter_did, revoc_reg_def_id, from, to);
+        let res = locator.ledger_controller.build_get_revoc_reg_delta_request(
+            submitter_did,
+            revoc_reg_def_id,
+            from,
+            to,
+        );
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_get_revoc_reg_delta_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetRevocRegDeltaRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetRevocRegDeltaRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_revoc_reg_delta_request < {:?}", res);
+    debug!("indy_build_get_revoc_reg_delta_request < {:?}", res);
     res
 }
 
@@ -2577,7 +2390,7 @@ pub extern "C" fn indy_parse_get_revoc_reg_delta_response(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_parse_get_revoc_reg_delta_response > get_revoc_reg_delta_response {:?}",
         get_revoc_reg_delta_response
     );
@@ -2585,20 +2398,17 @@ pub extern "C" fn indy_parse_get_revoc_reg_delta_response(
     check_useful_c_str!(get_revoc_reg_delta_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!(
+    debug!(
         "indy_parse_get_revoc_reg_delta_response? get_revoc_reg_delta_response {:?}",
         get_revoc_reg_delta_response
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.parse_revoc_reg_delta_response(get_revoc_reg_delta_response);
+        let res = locator
+            .ledger_controller
+            .parse_revoc_reg_delta_response(get_revoc_reg_delta_response);
         res
     };
 
@@ -2606,13 +2416,10 @@ pub extern "C" fn indy_parse_get_revoc_reg_delta_response(
         let (err, revoc_reg_def_id, revoc_reg_delta_json, timestamp) =
             prepare_result_3!(res, String::new(), String::new(), 0);
 
-        trace!(
+        debug!(
             "indy_parse_get_revoc_reg_delta_response ? err {:?} revoc_reg_def_id {:?} \
                 revoc_reg_delta_json {:?} timestamp {:?}",
-            err,
-            revoc_reg_def_id,
-            revoc_reg_delta_json,
-            timestamp
+            err, revoc_reg_def_id, revoc_reg_delta_json, timestamp
         );
 
         let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
@@ -2627,10 +2434,10 @@ pub extern "C" fn indy_parse_get_revoc_reg_delta_response(
         )
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetRevocRegDeltaResponse, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandParseGetRevocRegDeltaResponse, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_parse_get_revoc_reg_delta_response < {:?}", res);
+    debug!("indy_parse_get_revoc_reg_delta_response < {:?}", res);
     res
 }
 
@@ -2671,7 +2478,7 @@ pub type CustomFree = extern "C" fn(data: *const c_char) -> ErrorCode;
 //                                                       parser: Option<CustomTransactionParser>,
 //                                                       free: Option<CustomFree>,
 //                                                       cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
-//     trace!("indy_register_transaction_parser_for_sp > txn_type {:?} parser {:?} free {:?}",
+//     debug!("indy_register_transaction_parser_for_sp > txn_type {:?} parser {:?} free {:?}",
 //            txn_type, parser, free);
 
 //     check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam2);
@@ -2679,7 +2486,7 @@ pub type CustomFree = extern "C" fn(data: *const c_char) -> ErrorCode;
 //     check_useful_c_callback!(free, ErrorCode::CommonInvalidParam4);
 //     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-//     trace!("indy_register_transaction_parser_for_sp: entities: txn_type {}, parser {:?} free {:?}",
+//     debug!("indy_register_transaction_parser_for_sp: entities: txn_type {}, parser {:?} free {:?}",
 //            txn_type, parser, free);
 
 //     let res = CommandExecutor::instance()
@@ -2689,14 +2496,14 @@ pub type CustomFree = extern "C" fn(data: *const c_char) -> ErrorCode;
 //             free,
 //             Box::new(move |res| {
 //                 let res = prepare_result!(res);
-//                 trace!("indy_register_transaction_parser_for_sp: res {:?}", res);
+//                 debug!("indy_register_transaction_parser_for_sp: res {:?}", res);
 //                 cb(command_handle, res)
 //             }),
 //         )));
 
 //     let res = prepare_result!(res);
 
-//     trace!("indy_register_transaction_parser_for_sp < {:?}", res);
+//     debug!("indy_register_transaction_parser_for_sp < {:?}", res);
 
 //     res
 // }
@@ -2747,37 +2554,32 @@ pub extern "C" fn indy_get_response_metadata(
         ),
     >,
 ) -> ErrorCode {
-    trace!("indy_get_response_metadata > response {:?}", response);
+    debug!("indy_get_response_metadata > response {:?}", response);
 
     check_useful_c_str!(response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_get_response_metadata? response {:?}", response);
+    debug!("indy_get_response_metadata? response {:?}", response);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.get_response_metadata(response);
+        let res = locator.ledger_controller.get_response_metadata(response);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_get_response_metadata ? err {:?} res {:?}", err, res);
+        debug!("indy_get_response_metadata ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandGetResponseMetadata, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandGetResponseMetadata, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_get_response_metadata < {:?}", res);
+    debug!("indy_get_response_metadata < {:?}", res);
     res
 }
 
@@ -2834,17 +2636,11 @@ pub extern "C" fn indy_build_auth_rule_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_auth_rule_request > submitter_did {:?} \
             txn_type {:?} action {:?} field {:?} \
             old_value {:?} new_value {:?} constraint {:?}",
-        submitter_did,
-        txn_type,
-        action,
-        field,
-        old_value,
-        new_value,
-        constraint
+        submitter_did, txn_type, action, field, old_value, new_value, constraint
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -2856,28 +2652,17 @@ pub extern "C" fn indy_build_auth_rule_request(
     check_useful_json!(constraint, ErrorCode::CommonInvalidParam8, Constraint);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
-    trace!(
+    debug!(
         "indy_build_auth_rule_request ? submitter_did {:?} \
             txn_type {:?} action {:?} field {:?} \
             old_value {:?} new_value {:?} constraint {:?}",
-        submitter_did,
-        txn_type,
-        action,
-        field,
-        old_value,
-        new_value,
-        constraint
+        submitter_did, txn_type, action, field, old_value, new_value, constraint
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_auth_rule_request(
+        let res = locator.ledger_controller.build_auth_rule_request(
             submitter_did,
             txn_type,
             action,
@@ -2891,16 +2676,16 @@ pub extern "C" fn indy_build_auth_rule_request(
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_build_auth_rule_request ? err {:?} res {:?}", err, res);
+        debug!("indy_build_auth_rule_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAuthRuleRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAuthRuleRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_auth_rule_request < {:?}", res);
+    debug!("indy_build_auth_rule_request < {:?}", res);
     res
 }
 
@@ -2942,10 +2727,9 @@ pub extern "C" fn indy_build_auth_rules_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_auth_rules_request > submitter_did {:?} rules {:?}",
-        submitter_did,
-        rules
+        submitter_did, rules
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -2960,41 +2744,36 @@ pub extern "C" fn indy_build_auth_rules_request(
         .into();
     }
 
-    trace!(
+    debug!(
         "indy_build_auth_rules_request ? submitter_did {:?} rules {:?}",
-        submitter_did,
-        rules
+        submitter_did, rules
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_auth_rules_request(submitter_did, rules);
+        let res = locator
+            .ledger_controller
+            .build_auth_rules_request(submitter_did, rules);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_auth_rules_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAuthRulesRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAuthRulesRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_auth_rules_request < {:?}", res);
+    debug!("indy_build_auth_rules_request < {:?}", res);
     res
 }
 
@@ -3033,16 +2812,11 @@ pub extern "C" fn indy_build_get_auth_rule_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_auth_rule_request > submitter_did {:?} \
             txn_type {:?} action {:?} field {:?} \
             old_value {:?} new_value {:?}",
-        submitter_did,
-        txn_type,
-        action,
-        field,
-        old_value,
-        new_value
+        submitter_did, txn_type, action, field, old_value, new_value
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -3053,27 +2827,17 @@ pub extern "C" fn indy_build_get_auth_rule_request(
     check_useful_opt_c_str!(new_value, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!(
+    debug!(
         "indy_build_get_auth_rule_request? submitter_did {:?} \
             txn_type {:?} action {:?} field {:?} \
             old_value {:?} new_value {:?}",
-        submitter_did,
-        txn_type,
-        action,
-        field,
-        old_value,
-        new_value
+        submitter_did, txn_type, action, field, old_value, new_value
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_get_auth_rule_request(
+        let res = locator.ledger_controller.build_get_auth_rule_request(
             submitter_did,
             txn_type,
             action,
@@ -3087,20 +2851,19 @@ pub extern "C" fn indy_build_get_auth_rule_request(
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_get_auth_rule_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetAuthRuleRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetAuthRuleRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_auth_rule_request < {:?}", res);
+    debug!("indy_build_get_auth_rule_request < {:?}", res);
     res
 }
 
@@ -3153,14 +2916,10 @@ pub extern "C" fn indy_build_txn_author_agreement_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_txn_author_agreement_request > submitter_did {:?} \
             text {:?} version {:?} ratification_ts {:?} retirement_ts {:?}",
-        submitter_did,
-        text,
-        version,
-        ratification_ts,
-        retirement_ts
+        submitter_did, text, version, ratification_ts, retirement_ts
     );
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -3170,51 +2929,43 @@ pub extern "C" fn indy_build_txn_author_agreement_request(
     check_useful_opt_u64!(retirement_ts, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!(
+    debug!(
         "indy_build_txn_author_agreement_request ? submitter_did {:?} text {:?} \
             version {:?} ratification_ts {:?} retirement_ts {:?}",
-        submitter_did,
-        text,
-        version,
-        ratification_ts,
-        retirement_ts
+        submitter_did, text, version, ratification_ts, retirement_ts
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_txn_author_agreement_request(
-            submitter_did,
-            text,
-            version,
-            ratification_ts,
-            retirement_ts,
-        );
+        let res = locator
+            .ledger_controller
+            .build_txn_author_agreement_request(
+                submitter_did,
+                text,
+                version,
+                ratification_ts,
+                retirement_ts,
+            );
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_txn_author_agreement_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildTxnAuthorAgreementRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildTxnAuthorAgreementRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_txn_author_agreement_request < {:?}", res);
+    debug!("indy_build_txn_author_agreement_request < {:?}", res);
     res
 }
 
@@ -3241,7 +2992,7 @@ pub extern "C" fn indy_build_disable_all_txn_author_agreements_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_disable_all_txn_author_agreements_request > submitter_did {:?}",
         submitter_did
     );
@@ -3249,41 +3000,37 @@ pub extern "C" fn indy_build_disable_all_txn_author_agreements_request(
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!(
+    debug!(
         "indy_build_disable_all_txn_author_agreements_request? submitter_did {:?}",
         submitter_did
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_disable_all_txn_author_agreements_request(submitter_did);
+        let res = locator
+            .ledger_controller
+            .build_disable_all_txn_author_agreements_request(submitter_did);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_disable_all_txn_author_agreements_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildDisableAllTxnAuthorAgreementsRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildDisableAllTxnAuthorAgreementsRequest, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!(
+    debug!(
         "indy_build_disable_all_txn_author_agreements_request < {:?}",
         res
     );
@@ -3323,10 +3070,9 @@ pub extern "C" fn indy_build_get_txn_author_agreement_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_txn_author_agreement_request > submitter_did {:?} data {:?}?",
-        submitter_did,
-        data
+        submitter_did, data
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -3339,41 +3085,36 @@ pub extern "C" fn indy_build_get_txn_author_agreement_request(
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_build_get_txn_author_agreement_request? submitter_did {:?} data {:?}",
-        submitter_did,
-        data
+        submitter_did, data
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_get_txn_author_agreement_request(submitter_did, data);
+        let res = locator
+            .ledger_controller
+            .build_get_txn_author_agreement_request(submitter_did, data);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_get_txn_author_agreement_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetTxnAuthorAgreementRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetTxnAuthorAgreementRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_txn_author_agreement_request < {:?}", res);
+    debug!("indy_build_get_txn_author_agreement_request < {:?}", res);
     res
 }
 
@@ -3412,7 +3153,7 @@ pub extern "C" fn indy_build_acceptance_mechanisms_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!("indy_build_acceptance_mechanisms_request > submitter_did {:?} aml {:?} version {:?} aml_context {:?}",
+    debug!("indy_build_acceptance_mechanisms_request > submitter_did {:?} aml {:?} version {:?} aml_context {:?}",
            submitter_did, aml, version, aml_context);
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -3421,43 +3162,34 @@ pub extern "C" fn indy_build_acceptance_mechanisms_request(
     check_useful_opt_c_str!(aml_context, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_build_acceptance_mechanisms_request? submitter_did {:?} aml {:?} version {:?} aml_context {:?}",
+    debug!("indy_build_acceptance_mechanisms_request? submitter_did {:?} aml {:?} version {:?} aml_context {:?}",
            submitter_did, aml, version, aml_context);
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.build_acceptance_mechanisms_request(
-            submitter_did,
-            aml,
-            version,
-            aml_context,
-        );
+        let res = locator
+            .ledger_controller
+            .build_acceptance_mechanisms_request(submitter_did, aml, version, aml_context);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_acceptance_mechanisms_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAcceptanceMechanismRequests, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildAcceptanceMechanismRequests, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_acceptance_mechanisms_request < {:?}", res);
+    debug!("indy_build_acceptance_mechanisms_request < {:?}", res);
     res
 }
 
@@ -3490,12 +3222,10 @@ pub extern "C" fn indy_build_get_acceptance_mechanisms_request(
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, request_json: *const c_char),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_build_get_acceptance_mechanisms_request > submitter_did {:?} \
             timestamp {:?} version {:?}",
-        submitter_did,
-        timestamp,
-        version
+        submitter_did, timestamp, version
     );
 
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
@@ -3508,44 +3238,37 @@ pub extern "C" fn indy_build_get_acceptance_mechanisms_request(
         None
     };
 
-    trace!(
+    debug!(
         "indy_build_get_acceptance_mechanisms_request? submitter_did {:?} \
             timestamp {:?} version {:?}",
-        submitter_did,
-        timestamp,
-        version
+        submitter_did, timestamp, version
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res =
-            controller.build_get_acceptance_mechanisms_request(submitter_did, timestamp, version);
+        let res = locator
+            .ledger_controller
+            .build_get_acceptance_mechanisms_request(submitter_did, timestamp, version);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_build_get_acceptance_mechanisms_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetAcceptanceMechanismsRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandBuildGetAcceptanceMechanismsRequest, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_build_get_acceptance_mechanisms_request < {:?}", res);
+    debug!("indy_build_get_acceptance_mechanisms_request < {:?}", res);
     res
 }
 
@@ -3593,16 +3316,11 @@ pub extern "C" fn indy_append_txn_author_agreement_acceptance_to_request(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_append_txn_author_agreement_acceptance_to_request > request_json {:?} \
             text {:?} version {:?} taa_digest {:?} \
             mechanism {:?} time {:?}",
-        request_json,
-        text,
-        version,
-        taa_digest,
-        mechanism,
-        time
+        request_json, text, version, taa_digest, mechanism, time
     );
 
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam2);
@@ -3612,55 +3330,46 @@ pub extern "C" fn indy_append_txn_author_agreement_acceptance_to_request(
     check_useful_c_str!(mechanism, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!(
+    debug!(
         "indy_append_txn_author_agreement_acceptance_to_request? request_json {:?} \
             text {:?} version {:?} taa_digest {:?} \
             mechanism {:?} time {:?}",
-        request_json,
-        text,
-        version,
-        taa_digest,
-        mechanism,
-        time
+        request_json, text, version, taa_digest, mechanism, time
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.append_txn_author_agreement_acceptance_to_request(
-            request_json,
-            text,
-            version,
-            taa_digest,
-            mechanism,
-            time,
-        );
+        let res = locator
+            .ledger_controller
+            .append_txn_author_agreement_acceptance_to_request(
+                request_json,
+                text,
+                version,
+                taa_digest,
+                mechanism,
+                time,
+            );
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
 
-        trace!(
+        debug!(
             "indy_append_txn_author_agreement_acceptance_to_request ? err {:?} res {:?}",
-            err,
-            res
+            err, res
         );
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!(
+    debug!(
         "indy_append_txn_author_agreement_acceptance_to_request < {:?}",
         res
     );
@@ -3700,45 +3409,40 @@ pub extern "C" fn indy_append_request_endorser(
         ),
     >,
 ) -> ErrorCode {
-    trace!(
+    debug!(
         "indy_append_request_endorser > request_json {:?} endorser_did {:?}",
-        request_json,
-        endorser_did
+        request_json, endorser_did
     );
 
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam2);
     check_useful_validatable_string!(endorser_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!(
+    debug!(
         "indy_append_request_endorser? request_json {:?}endorser_did {:?}",
-        request_json,
-        endorser_did
+        request_json, endorser_did
     );
 
-    let (executor, controller) = {
-        let locator = Locator::instance();
-        let executor = locator.executor.clone();
-        let controller = locator.ledger_command_executor.clone();
-        (executor, controller)
-    };
+    let locator = Locator::instance();
 
     let action = async move {
-        let res = controller.append_request_endorser(request_json, endorser_did);
+        let res = locator
+            .ledger_controller
+            .append_request_endorser(request_json, endorser_did);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result_1!(res, String::new());
-        trace!("indy_append_request_endorser ? err {:?} res {:?}", err, res);
+        debug!("indy_append_request_endorser ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
     };
 
-    executor.spawn_ok_instrumented(CommandMetric::LedgerCommandAppendRequestEndorser, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandAppendRequestEndorser, action, cb);
 
     let res = ErrorCode::Success;
-    trace!("indy_append_request_endorser < {:?}", res);
+    debug!("indy_append_request_endorser < {:?}", res);
     res
 }
