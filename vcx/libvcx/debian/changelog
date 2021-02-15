@@ -1,6 +1,19 @@
-libvcx (0.10.1) unstable; urgency=medium
+libvcx (0.11.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 0.11.0
+* IMPORTANT CHANGE: Default `protocol_type` has been changed from `1.0` to `3.0`. It means that we are using Aries by default now.
+* Added Proof Proposal functionality:
+    * Added `vcx_disclosed_proof_create_proposal` function that starts presentation protocol from a proposal
+    * Added `vcx_disclosed_proof_send_proposal` function that sends a proposal through connection
+    * Added `vcx_proof_request_proof` function that sends a proof request in response with new data
+    * Added `vcx_get_proof_proposal` function that returns proof proposal object
+* Supported Ephemeral Proof Request via `~request-attach`:
+    * Added `vcx_proof_get_request_attach` function that generates request attachment from a proof protocol instance.
+    * Added `vcx_proof_set_connection` function that sets the connection for proof request that was send along with OOB proof request
+* Added `vcx_health_check` call that queries Verity instance to see if it is alive.
+* Minor bugfix
 
 ## 0.10.1
 * Fixed deadlock that may have happened when VCX of 0.9.4/1.10.0 versions was used via NodeJS.

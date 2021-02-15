@@ -75,4 +75,4 @@ RUN apt-get update && apt-get install -y \
 RUN add-apt-repository "deb https://repo.corp.evernym.com/deb evernym-agency-dev-ubuntu main"
 
 # install mysql wallet storage
-RUN apt update && apt install -y libmysqlstorage=0.1.10
+RUN apt update && apt install -y libmysqlstorage=0.1.13
