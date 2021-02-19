@@ -33,7 +33,6 @@ use utils::{
 #[cfg(feature = "local_nodes_pool")]
 use utils::callback;
 
-#[allow(temporary_cstring_as_ptr)]
 #[test]
 fn anoncreds_demo_works() {
     Setup::empty();
@@ -148,9 +147,10 @@ fn anoncreds_demo_works() {
 
     let issuer_wallet_config = json!({"id": "issuer_wallet"}).to_string();
 
-    let issuer_wallet_credentials =
-        json!({"key":"issuerKey1111111111111111111111111111111111", "key_derivation_method":"RAW"})
-            .to_string();
+    let issuer_wallet_credentials = json!({
+            "key":"issuerKey1111111111111111111111111111111111",
+            "key_derivation_method":"RAW"})
+    .to_string();
 
     // Issuer Creates Wallet
     let err = unsafe {
@@ -717,7 +717,6 @@ fn anoncreds_demo_works() {
     utils::test::cleanup_storage("prover_wallet");
 }
 
-#[allow(temporary_cstring_as_ptr)]
 #[test]
 #[cfg(feature = "local_nodes_pool")]
 fn ledger_demo_works() {
@@ -1141,7 +1140,6 @@ fn ledger_demo_works() {
     }
 }
 
-#[allow(temporary_cstring_as_ptr)]
 #[test]
 fn crypto_demo_works() {
     Setup::empty();

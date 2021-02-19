@@ -785,7 +785,7 @@ pub mod tests {
 
             let test_data = "str_instead_of_tx_json";
 
-            let _pool_mock = thread::spawn(move || {
+            let pool_mock = thread::spawn(move || {
                 assert_eq!(
                     1,
                     zmq::poll(&mut [recv_cmd_sock.as_poll_item(zmq::POLLIN)], 10_000).unwrap()
