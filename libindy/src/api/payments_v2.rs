@@ -2,9 +2,9 @@ use indy_api_types::CommandHandle;
 use indy_api_types::WalletHandle;
 use indy_api_types::ErrorCode;
 use libc::c_char;
-use crate::commands::CommandExecutor;
-use crate::commands::Command;
-use crate::commands::payments::PaymentsCommand;
+//use crate::commands::CommandExecutor;
+//use crate::commands::Command;
+//use crate::commands::payments::PaymentsCommand;
 use indy_utils::ctypes;
 use indy_api_types::errors::prelude::*;
 use crate::domain::crypto::did::DidValue;
@@ -42,24 +42,24 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
 
     trace!("indy_build_get_payment_sources_with_from_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}, from: {:?}", wallet_handle, submitter_did, payment_address, from);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::BuildGetPaymentSourcesRequest(
-                    wallet_handle,
-                    submitter_did,
-                    payment_address,
-                    from,
-                    Box::new(move |result| {
-                        let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-                        trace!("indy_build_get_payment_sources_with_from_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
-                        let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
-                        let payment_method = ctypes::string_to_cstring(payment_method);
-                        cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
-                    }))
-            ));
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::BuildGetPaymentSourcesRequest(
+//                    wallet_handle,
+//                    submitter_did,
+//                    payment_address,
+//                    from,
+//                    Box::new(move |result| {
+//                        let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+//                        trace!("indy_build_get_payment_sources_with_from_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
+//                        let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
+//                        let payment_method = ctypes::string_to_cstring(payment_method);
+//                        cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
+//                    }))
+//            ));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_build_get_payment_sources_with_from_request: <<< res: {:?}", res);
 
@@ -97,21 +97,21 @@ pub extern fn indy_parse_get_payment_sources_with_from_response(command_handle: 
 
     trace!("indy_parse_get_payment_sources_with_from_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::ParseGetPaymentSourcesResponse(
-                    payment_method,
-                    resp_json,
-                    Box::new(move |result| {
-                        let (err, sources_json, next) = prepare_result_2!(result, String::new(), -1);
-                        trace!("indy_parse_get_payment_sources_with_from_response: sources_json: {:?}", sources_json);
-                        let sources_json = ctypes::string_to_cstring(sources_json);
-                        cb(command_handle, err, sources_json.as_ptr(), next);
-                    }))
-            ));
+//    let result =
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::ParseGetPaymentSourcesResponse(
+//                    payment_method,
+//                    resp_json,
+//                    Box::new(move |result| {
+//                        let (err, sources_json, next) = prepare_result_2!(result, String::new(), -1);
+//                        trace!("indy_parse_get_payment_sources_with_from_response: sources_json: {:?}", sources_json);
+//                        let sources_json = ctypes::string_to_cstring(sources_json);
+//                        cb(command_handle, err, sources_json.as_ptr(), next);
+//                    }))
+//            ));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_parse_get_payment_sources_with_from_response: <<< res: {:?}", res);
 

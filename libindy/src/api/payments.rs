@@ -1,7 +1,5 @@
 use libc::c_char;
 use indy_api_types::{ErrorCode, CommandHandle, WalletHandle};
-use crate::commands::{Command, CommandExecutor};
-use crate::commands::payments::PaymentsCommand;
 use crate::services::payments::PaymentsMethodCBs;
 use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
@@ -431,18 +429,18 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
         sign_with_address,
         verify_with_address
     );
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::RegisterMethod(
-                    payment_method,
-                    cbs,
-                    Box::new(move |result| {
-                        cb(command_handle, result.into());
-                    }))
-            ));
+//    let result =
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::RegisterMethod(
+//                    payment_method,
+//                    cbs,
+//                    Box::new(move |result| {
+//                        cb(command_handle, result.into());
+//                    }))
+//            ));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_register_payment_method: <<< res: {:?}", res);
 
@@ -486,18 +484,18 @@ pub extern fn indy_create_payment_address(command_handle: CommandHandle,
 
     trace!("indy_create_payment_address: entities >>> wallet_handle: {:?}, payment_method: {:?}, config: {:?}", wallet_handle, payment_method, config);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::CreateAddress(
-                    wallet_handle,
-                    payment_method,
-                    config,
-                    boxed_callback_string!("indy_create_payment_address", cb, command_handle)
-                )
-            ));
+//    let result =
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::CreateAddress(
+//                    wallet_handle,
+//                    payment_method,
+//                    config,
+//                    boxed_callback_string!("indy_create_payment_address", cb, command_handle)
+//                )
+//            ));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_create_payment_address: <<< res: {:?}", res);
 
@@ -524,17 +522,17 @@ pub extern fn indy_list_payment_addresses(command_handle: CommandHandle,
 
     trace!("indy_list_payment_address: entities >>> wallet_handle: {:?}", wallet_handle);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::ListAddresses(
-                    wallet_handle,
-                    boxed_callback_string!("indy_list_payment_address", cb, command_handle)
-                )
-            )
-        );
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::ListAddresses(
+//                    wallet_handle,
+//                    boxed_callback_string!("indy_list_payment_address", cb, command_handle)
+//                )
+//            )
+//        );
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_list_payment_address: <<< res: {:?}", res);
 
@@ -595,26 +593,26 @@ pub extern fn indy_add_request_fees(command_handle: CommandHandle,
     trace!("indy_add_request_fees: entities >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::AddRequestFees(
-                    wallet_handle,
-                    submitter_did,
-                    req_json,
-                    inputs_json,
-                    outputs_json,
-                    extra,
-                    Box::new(move |result| {
-                        let (err, req_with_fees_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-                        trace!("indy_add_request_fees: req_with_fees_json: {:?}, payment_method: {:?}", req_with_fees_json, payment_method);
-                        let req_with_fees_json = ctypes::string_to_cstring(req_with_fees_json);
-                        let payment_method = ctypes::string_to_cstring(payment_method);
-                        cb(command_handle, err, req_with_fees_json.as_ptr(), payment_method.as_ptr());
-                    }))
-            ));
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::AddRequestFees(
+//                    wallet_handle,
+//                    submitter_did,
+//                    req_json,
+//                    inputs_json,
+//                    outputs_json,
+//                    extra,
+//                    Box::new(move |result| {
+//                        let (err, req_with_fees_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+//                        trace!("indy_add_request_fees: req_with_fees_json: {:?}, payment_method: {:?}", req_with_fees_json, payment_method);
+//                        let req_with_fees_json = ctypes::string_to_cstring(req_with_fees_json);
+//                        let payment_method = ctypes::string_to_cstring(payment_method);
+//                        cb(command_handle, err, req_with_fees_json.as_ptr(), payment_method.as_ptr());
+//                    }))
+//            ));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_add_request_fees: <<< res: {:?}", res);
 
@@ -650,14 +648,14 @@ pub extern fn indy_parse_response_with_fees(command_handle: CommandHandle,
 
     trace!("indy_parse_response_with_fees: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::ParseResponseWithFees(
-                    payment_method,
-                    resp_json,
-                    boxed_callback_string!("indy_parse_response_with_fees", cb, command_handle))));
-    let res = prepare_result!(result);
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::ParseResponseWithFees(
+//                    payment_method,
+//                    resp_json,
+//                    boxed_callback_string!("indy_parse_response_with_fees", cb, command_handle))));
+    let res = ErrorCode::Success;
 
     trace!("indy_parse_response_with_fees: <<< res: {:?}", res);
 
@@ -693,24 +691,24 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
 
     trace!("indy_build_get_payment_sources_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::BuildGetPaymentSourcesRequest(
-                    wallet_handle,
-                    submitter_did,
-                    payment_address,
-                    None,
-                    Box::new(move |result| {
-                        let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-                        trace!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
-                        let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
-                        let payment_method = ctypes::string_to_cstring(payment_method);
-                        cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
-                    }))
-            ));
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::BuildGetPaymentSourcesRequest(
+//                    wallet_handle,
+//                    submitter_did,
+//                    payment_address,
+//                    None,
+//                    Box::new(move |result| {
+//                        let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+//                        trace!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
+//                        let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
+//                        let payment_method = ctypes::string_to_cstring(payment_method);
+//                        cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
+//                    }))
+//            ));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_build_get_payment_sources_request: <<< res: {:?}", res);
 
@@ -747,21 +745,21 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: CommandHan
 
     trace!("indy_parse_get_payment_sources_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::ParseGetPaymentSourcesResponse(
-                    payment_method,
-                    resp_json,
-                    Box::new(move |result| {
-                        let (err, sources_json, _) = prepare_result_2!(result, String::new(), -1);
-                        trace!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
-                        let sources_json = ctypes::string_to_cstring(sources_json);
-                        cb(command_handle, err, sources_json.as_ptr());
-                    }))
-            ));
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::ParseGetPaymentSourcesResponse(
+//                    payment_method,
+//                    resp_json,
+//                    Box::new(move |result| {
+//                        let (err, sources_json, _) = prepare_result_2!(result, String::new(), -1);
+//                        trace!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
+//                        let sources_json = ctypes::string_to_cstring(sources_json);
+//                        cb(command_handle, err, sources_json.as_ptr());
+//                    }))
+//            ));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_parse_get_payment_sources_response: <<< res: {:?}", res);
 
@@ -815,25 +813,25 @@ pub extern fn indy_build_payment_req(command_handle: CommandHandle,
     trace!("indy_build_payment_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, inputs_json, outputs_json, extra);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::BuildPaymentReq(
-                    wallet_handle,
-                    submitter_did,
-                    inputs_json,
-                    outputs_json,
-                    extra,
-                    Box::new(move |result| {
-                        let (err, payment_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-                        trace!("indy_build_payment_req: payment_req_json: {:?}, payment_method: {:?}", payment_req_json, payment_method);
-                        let payment_req_json = ctypes::string_to_cstring(payment_req_json);
-                        let payment_method = ctypes::string_to_cstring(payment_method);
-                        cb(command_handle, err, payment_req_json.as_ptr(), payment_method.as_ptr());
-                    }))
-            ));
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::BuildPaymentReq(
+//                    wallet_handle,
+//                    submitter_did,
+//                    inputs_json,
+//                    outputs_json,
+//                    extra,
+//                    Box::new(move |result| {
+//                        let (err, payment_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+//                        trace!("indy_build_payment_req: payment_req_json: {:?}, payment_method: {:?}", payment_req_json, payment_method);
+//                        let payment_req_json = ctypes::string_to_cstring(payment_req_json);
+//                        let payment_method = ctypes::string_to_cstring(payment_method);
+//                        cb(command_handle, err, payment_req_json.as_ptr(), payment_method.as_ptr());
+//                    }))
+//            ));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_build_payment_req: <<< res: {:?}", res);
 
@@ -869,15 +867,15 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
 
     trace!("indy_parse_payment_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::ParsePaymentResponse(
-                    payment_method,
-                    resp_json,
-                    boxed_callback_string!("indy_parse_payment_response", cb, command_handle))));
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::ParsePaymentResponse(
+//                    payment_method,
+//                    resp_json,
+//                    boxed_callback_string!("indy_parse_payment_response", cb, command_handle))));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_parse_payment_response: <<< res: {:?}", res);
 
@@ -935,19 +933,20 @@ pub extern fn indy_prepare_payment_extra_with_acceptance_data(command_handle: Co
         mechanism: {:?}, time: {:?}",
            extra_json, text, version, taa_digest, mechanism, time);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Payments(
-            PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(
-                extra_json,
-                text,
-                version,
-                taa_digest,
-                mechanism,
-                time,
-                boxed_callback_string!("indy_prepare_payment_extra_with_acceptance_data", cb, command_handle)
-            )));
+//    let result = Ok(());
+//        CommandExecutor::instance()
+//        .send(Command::Payments(
+//            PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(
+//                extra_json,
+//                text,
+//                version,
+//                taa_digest,
+//                mechanism,
+//                time,
+//                boxed_callback_string!("indy_prepare_payment_extra_with_acceptance_data", cb, command_handle)
+//            )));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_prepare_payment_extra_with_acceptance_data: <<< res: {:?}", res);
 
@@ -989,24 +988,24 @@ pub extern fn indy_build_mint_req(command_handle: CommandHandle,
 
     trace!("indy_build_mint_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::BuildMintReq(
-                    wallet_handle,
-                    submitter_did,
-                    outputs_json,
-                    extra,
-                    Box::new(move |result| {
-                        let (err, mint_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-                        trace!("indy_build_mint_req: mint_req_json: {:?}, payment_method: {:?}", mint_req_json, payment_method);
-                        let mint_req_json = ctypes::string_to_cstring(mint_req_json);
-                        let payment_method = ctypes::string_to_cstring(payment_method);
-                        cb(command_handle, err, mint_req_json.as_ptr(), payment_method.as_ptr());
-                    }))
-            ));
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::BuildMintReq(
+//                    wallet_handle,
+//                    submitter_did,
+//                    outputs_json,
+//                    extra,
+//                    Box::new(move |result| {
+//                        let (err, mint_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+//                        trace!("indy_build_mint_req: mint_req_json: {:?}, payment_method: {:?}", mint_req_json, payment_method);
+//                        let mint_req_json = ctypes::string_to_cstring(mint_req_json);
+//                        let payment_method = ctypes::string_to_cstring(payment_method);
+//                        cb(command_handle, err, mint_req_json.as_ptr(), payment_method.as_ptr());
+//                    }))
+//            ));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_build_mint_req: <<< res: {:?}", res);
 
@@ -1045,17 +1044,17 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: CommandHandle,
 
     trace!("indy_build_set_txn_fees_req: entitites >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::BuildSetTxnFeesReq(
-                    wallet_handle,
-                    submitter_did,
-                    payment_method,
-                    fees_json,
-                    boxed_callback_string!("indy_build_set_txn_fees_req", cb, command_handle))));
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::BuildSetTxnFeesReq(
+//                    wallet_handle,
+//                    submitter_did,
+//                    payment_method,
+//                    fees_json,
+//                    boxed_callback_string!("indy_build_set_txn_fees_req", cb, command_handle))));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_build_set_txn_fees_req: <<< res: {:?}", res);
 
@@ -1087,16 +1086,16 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: CommandHandle,
 
     trace!("indy_build_get_txn_fees_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}", wallet_handle, submitter_did, payment_method);
 
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::BuildGetTxnFeesReq(
-                    wallet_handle,
-                    submitter_did,
-                    payment_method,
-                    boxed_callback_string!("indy_build_get_txn_fees_req", cb, command_handle))));
+//    let result = Ok(());
+//        CommandExecutor::instance().send(
+//            Command::Payments(
+//                PaymentsCommand::BuildGetTxnFeesReq(
+//                    wallet_handle,
+//                    submitter_did,
+//                    payment_method,
+//                    boxed_callback_string!("indy_build_get_txn_fees_req", cb, command_handle))));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_build_get_txn_fees_req: <<< res: {:?}", res);
 
@@ -1131,15 +1130,15 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: CommandHandle,
 
     trace!("indy_parse_get_txn_fees_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
-    let result =
-        CommandExecutor::instance()
-            .send(Command::Payments(
-                PaymentsCommand::ParseGetTxnFeesResponse(
-                    payment_method,
-                    resp_json,
-                    boxed_callback_string!("indy_parse_get_txn_fees_response", cb, command_handle))));
+//    let result = Ok(());
+//        CommandExecutor::instance()
+//            .send(Command::Payments(
+//                PaymentsCommand::ParseGetTxnFeesResponse(
+//                    payment_method,
+//                    resp_json,
+//                    boxed_callback_string!("indy_parse_get_txn_fees_response", cb, command_handle))));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_parse_get_txn_fees_response: <<< res: {:?}", res);
 
@@ -1173,22 +1172,23 @@ pub extern fn indy_build_verify_payment_req(command_handle: CommandHandle,
 
     trace!("indy_build_verify_payment_req: entities >>> wallet_handle {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Payments(
-            PaymentsCommand::BuildVerifyPaymentReq(
-                wallet_handle,
-                submitter_did,
-                receipt,
-                Box::new(move |result| {
-                    let (err, verify_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-                    trace!("indy_build_verify_payment_req: verify_txn_json: {:?}, payment_method: {:?}", verify_txn_json, payment_method);
-                    let verify_txn_json = ctypes::string_to_cstring(verify_txn_json);
-                    let payment_method = ctypes::string_to_cstring(payment_method);
-                    cb(command_handle, err, verify_txn_json.as_ptr(), payment_method.as_ptr());
-                })
-            )));
+//    let result = Ok(());
+//        CommandExecutor::instance()
+//        .send(Command::Payments(
+//            PaymentsCommand::BuildVerifyPaymentReq(
+//                wallet_handle,
+//                submitter_did,
+//                receipt,
+//                Box::new(move |result| {
+//                    let (err, verify_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+//                    trace!("indy_build_verify_payment_req: verify_txn_json: {:?}, payment_method: {:?}", verify_txn_json, payment_method);
+//                    let verify_txn_json = ctypes::string_to_cstring(verify_txn_json);
+//                    let payment_method = ctypes::string_to_cstring(payment_method);
+//                    cb(command_handle, err, verify_txn_json.as_ptr(), payment_method.as_ptr());
+//                })
+//            )));
 
-    let result = prepare_result!(result);
+    let result = ErrorCode::Success;
 
     trace!("indy_build_verify_payment_req: <<< result: {:?}", result);
 
@@ -1226,15 +1226,16 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
 
     trace!("indy_parse_verify_payment_response: entities >>> resp_json: {:?}", resp_json);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Payments(
-            PaymentsCommand::ParseVerifyPaymentResponse(
-                payment_method,
-                resp_json,
-                boxed_callback_string!("indy_parse_verify_payment_response", cb, command_handle)
-            )));
+//    let result = Ok(());
+//        CommandExecutor::instance()
+//        .send(Command::Payments(
+//            PaymentsCommand::ParseVerifyPaymentResponse(
+//                payment_method,
+//                resp_json,
+//                boxed_callback_string!("indy_parse_verify_payment_response", cb, command_handle)
+//            )));
 
-    let result = prepare_result!(result);
+    let result = ErrorCode::Success;
 
     trace!("indy_parse_verify_payment_response: <<< result: {:?}", result);
 
@@ -1290,16 +1291,17 @@ pub extern fn indy_get_request_info(command_handle: CommandHandle,
     trace!("indy_get_request_info: entities >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
            get_auth_rule_response_json, requester_info_json, fees_json);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Payments(
-            PaymentsCommand::GetRequestInfo(
-                get_auth_rule_response_json,
-                requester_info_json,
-                fees_json,
-                boxed_callback_string!("indy_get_request_info", cb, command_handle)
-            )));
+//    let result = Ok(());
+//        CommandExecutor::instance()
+//        .send(Command::Payments(
+//            PaymentsCommand::GetRequestInfo(
+//                get_auth_rule_response_json,
+//                requester_info_json,
+//                fees_json,
+//                boxed_callback_string!("indy_get_request_info", cb, command_handle)
+//            )));
 
-    let result = prepare_result!(result);
+    let result = ErrorCode::Success;
 
     trace!("indy_get_request_info: <<< result: {:?}", result);
 
@@ -1342,21 +1344,22 @@ pub extern fn indy_sign_with_address(command_handle: CommandHandle,
     trace!("indy_sign_with_address: entities >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
            wallet_handle, address, message_raw, message_len);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Payments(
-            PaymentsCommand::SignWithAddressReq(wallet_handle,
-                                                address,
-                                                message_raw,
-                                                Box::new(move |result| {
-                                                    let (err, signature) = prepare_result_1!(result, Vec::new());
-                                                    trace!("indy_sign_with_address: signature: {:?}", signature);
-                                                    let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
-                                                    cb(command_handle, err, signature_raw, signature_len)
-                                        }))
-        ));
+//    let result = Ok(());
+//        CommandExecutor::instance()
+//        .send(Command::Payments(
+//            PaymentsCommand::SignWithAddressReq(wallet_handle,
+//                                                address,
+//                                                message_raw,
+//                                                Box::new(move |result| {
+//                                                    let (err, signature) = prepare_result_1!(result, Vec::new());
+//                                                    trace!("indy_sign_with_address: signature: {:?}", signature);
+//                                                    let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
+//                                                    cb(command_handle, err, signature_raw, signature_len)
+//                                        }))
+//        ));
 
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_sign_with_address: <<< res: {:?}", res);
 
@@ -1403,19 +1406,20 @@ pub extern fn indy_verify_with_address(command_handle: CommandHandle,
     trace!("indy_verify_with_address: entities >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
            address, message_raw, message_len, signature_raw, signature_len);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Payments(PaymentsCommand::VerifyWithAddressReq(
-            address,
-            message_raw,
-            signature_raw,
-            Box::new(move |result| {
-                let (err, valid) = prepare_result_1!(result, false);
-                trace!("indy_verify_with_address: valid: {:?}", valid);
-                cb(command_handle, err, valid)
-            })
-        )));
+//    let result =
+//        CommandExecutor::instance()
+//        .send(Command::Payments(PaymentsCommand::VerifyWithAddressReq(
+//            address,
+//            message_raw,
+//            signature_raw,
+//            Box::new(move |result| {
+//                let (err, valid) = prepare_result_1!(result, false);
+//                trace!("indy_verify_with_address: valid: {:?}", valid);
+//                cb(command_handle, err, valid)
+//            })
+//        )));
 
-    let res = prepare_result!(result);
+    let res = ErrorCode::Success;
 
     trace!("indy_verify_with_address: <<< res: {:?}", res);
 
