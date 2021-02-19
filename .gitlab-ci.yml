@@ -112,19 +112,6 @@ dockerbuild-libindy-ubuntu16:
 
 
 ## - Jobs : Build - ##
-build-consistent-vers-ts:
-  extends: .tags_micro
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18
-  stage: build-pre
-  artifacts:
-    expire_in: 1 week
-    expose_as: 'build_ts'
-    paths:
-      - output/build_ts
-  script:
-    - touch output/build_ts
-    - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
-
 .build-libindy:
   extends: .tags_large
   stage: build
@@ -247,7 +234,7 @@ package-libindy:
     refs:
       - async@dev/vcx/indy-sdk
   script:
-    - libindy/ci/scripts/package.sh
+    - libindy/ci/scripts/package.sh ${CI_PIPELINE_IID}
 
 #.package-java-wrapper:
 #  extends: .tags_micro
