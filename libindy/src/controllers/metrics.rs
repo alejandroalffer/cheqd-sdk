@@ -4,11 +4,6 @@ use indy_wallet::WalletService;
 use std::sync::Arc;
 use serde_json::{Map, Value};
 
-const _THREADPOOL_ACTIVE_COUNT: &str = "active";
-const _THREADPOOL_QUEUED_COUNT: &str = "queued";
-const _THREADPOOL_MAX_COUNT: &str = "max";
-const _THREADPOOL_PANIC_COUNT: &str = "panic";
-const _THREADPOOL_THREADS_COUNT: &str = "threadpool_threads_count";
 const OPENED_WALLETS_COUNT: &str = "opened";
 const OPENED_WALLET_IDS_COUNT: &str = "opened_ids";
 const PENDING_FOR_IMPORT_WALLETS_COUNT: &str = "pending_for_import";
@@ -33,7 +28,6 @@ impl MetricsController {
     pub async fn collect(&self) -> IndyResult<String> {
         trace!("_collect >>>");
         let mut metrics_map = serde_json::Map::new();
-        self.append_threapool_metrics(&mut metrics_map)?;
         self.append_wallet_metrics(&mut metrics_map).await?;
         self.metrics_service
             .append_command_metrics(&mut metrics_map).await?;
@@ -43,41 +37,6 @@ impl MetricsController {
         trace!("_collect <<< res: {:?}", res);
         debug!("collecting metrics from command thread");
         Ok(res)
-    }
-
-    fn append_threapool_metrics(&self, _metrics_map: &mut Map<String, Value>) -> IndyResult<()> {
-        /*
-        let tp_instance = crate::commands::THREADPOOL.lock().unwrap();
-        let mut threadpool_threads_count: Vec<Value> = Vec::new();
-
-        threadpool_threads_count.push( self.get_labeled_metric_json(
-            THREADPOOL_ACTIVE_COUNT,
-            tp_instance.active_count()
-        )?);
-
-        threadpool_threads_count.push(self.get_labeled_metric_json(
-            THREADPOOL_QUEUED_COUNT,
-            tp_instance.queued_count()
-        )?);
-
-        threadpool_threads_count.push(self.get_labeled_metric_json(
-            THREADPOOL_MAX_COUNT,
-            tp_instance.max_count()
-        )?);
-
-        threadpool_threads_count.push(self.get_labeled_metric_json(
-            THREADPOOL_PANIC_COUNT,
-            tp_instance.panic_count()
-        )?);
-
-        metrics_map.insert(
-            THREADPOOL_THREADS_COUNT.to_owned(),
-            serde_json::to_value(threadpool_threads_count)
-                .to_indy(IndyErrorKind::IOError, "Unable to convert json")?,
-        );
-*/
-
-        Ok(())
     }
 
     async fn append_wallet_metrics(&self, metrics_map: &mut Map<String, Value>) -> IndyResult<()> {

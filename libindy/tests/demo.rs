@@ -1,3 +1,4 @@
+#![allow(temporary_cstring_as_ptr)]
 #[macro_use]
 extern crate derivative;
 
