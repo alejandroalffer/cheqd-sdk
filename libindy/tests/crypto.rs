@@ -848,6 +848,7 @@ mod load {
      - DATA_SZ - data size for encryption
     */
     #[test]
+    #[cfg(feature = "mysql_storage")]
     fn parallel_auth_encrypt_mysql() {
         Setup::empty();
 

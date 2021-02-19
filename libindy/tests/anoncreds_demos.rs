@@ -519,6 +519,7 @@ mod demos {
     }
 
     #[test]
+    #[cfg(feature = "mysql_storage")]
     fn anoncreds_works_for_mysql_wallet() {
         Setup::empty();
 
