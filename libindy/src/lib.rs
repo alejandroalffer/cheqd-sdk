@@ -121,8 +121,6 @@ impl Locator {
             error!("Custom panic hook: {:?}", bt);
         }));
 
-
-
         let issuer_service = Arc::new(IssuerService::new());
         let prover_service = Arc::new(ProverService::new());
         let verifier_service = Arc::new(VerifierService::new());

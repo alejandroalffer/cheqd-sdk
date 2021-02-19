@@ -59,24 +59,6 @@ mod collect {
     }
 
     #[test]
-    fn collect_metrics_contains_thread_pool_service_statistics() {
-        let result_metrics = metrics::collect_metrics().unwrap();
-        let metrics_map = serde_json::from_str::<HashMap<String, Value>>(&result_metrics).unwrap();
-
-        assert!(metrics_map.contains_key("threadpool_threads_count"));
-
-        let threadpool_threads_count = metrics_map
-            .get("threadpool_threads_count")
-            .unwrap()
-            .as_array()
-            .unwrap();
-
-        assert!(threadpool_threads_count.contains(&json!({"tags":{"label":"active"},"value":0})));
-        assert!(threadpool_threads_count.contains(&json!({"tags":{"label":"queued"},"value":0})));
-        assert!(threadpool_threads_count.contains(&json!({"tags":{"label":"panic"},"value":0})));
-    }
-
-    #[test]
     fn collect_metrics_includes_commands_count() {
         let setup = Setup::empty();
         let config = config(&setup.name);
