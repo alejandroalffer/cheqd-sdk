@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate serde_derive;
+
 extern crate libc;
 
 pub mod anoncreds;
@@ -14,12 +17,7 @@ pub mod logger;
 pub mod cache;
 pub mod metrics;
 
-extern crate serde;
-
-#[macro_use]
-extern crate serde_derive;
-
-use self::libc::{c_void, c_char};
+use libc::{c_void, c_char};
 
 pub type CVoid = c_void;
 pub type BString = *const u8;
