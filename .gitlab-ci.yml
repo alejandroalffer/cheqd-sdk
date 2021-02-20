@@ -293,5 +293,4 @@ publish-libindy:
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output
     - ls -al ${CI_PROJECT_DIR}/output
     - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
-#    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*xenial*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload
-#    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
