@@ -290,6 +290,7 @@ publish-libindy:
     refs:
       - async@dev/vcx/indy-sdk
   script:
+    - mkdir -p ${CI_PROJECT_DIR}/output
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output
     - ls -al ${CI_PROJECT_DIR}/output
     - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
