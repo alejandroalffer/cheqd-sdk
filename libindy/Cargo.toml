@@ -22,6 +22,7 @@ revocation_tests = []
 force_full_interaction_tests = []
 sodium_static = []
 only_high_cases = []
+mysql_storage = []
 
 # Causes the build to fail on all warnings
 fatal_warnings = []

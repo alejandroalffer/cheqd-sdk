@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use regex::Regex;
 
 lazy_static! {
@@ -11,18 +12,17 @@ pub fn qualify(entity: &str, prefix: &str, method: &str) -> String {
 pub fn to_unqualified(entity: &str) -> String {
     match REGEX.captures(entity) {
         None => entity.to_string(),
-        Some(caps) => {
-            caps.get(2).map(|m| m.as_str().to_string()).unwrap_or(entity.to_string())
-        }
+        Some(caps) => caps
+            .get(2)
+            .map(|m| m.as_str().to_string())
+            .unwrap_or(entity.to_string()),
     }
 }
 
 pub fn method(entity: &str) -> Option<String> {
     match REGEX.captures(entity) {
         None => None,
-        Some(caps) => {
-            caps.get(1).map(|m| m.as_str().to_string())
-        }
+        Some(caps) => caps.get(1).map(|m| m.as_str().to_string()),
     }
 }
 

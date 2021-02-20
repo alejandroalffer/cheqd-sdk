@@ -20,7 +20,8 @@ fi
 
 function test() {
   MODULE_DIR=$1
-  FEATURE_FLAGS=${2:-}
+  shift
+  FEATURE_FLAGS=$*
 
   pushd $MODULE_DIR
   RUST_BACKTRACE=1 cargo test --no-run ${CARGO_FLAGS} ${FEATURE_FLAGS}
@@ -30,7 +31,7 @@ function test() {
 
 set -eux
 
+test libindy --features sodium_static,only_high_cases
 test libindy/indy-api-types
 test libindy/indy-utils
 # test libindy/indy-wallet
-# test libindy '--features "sodium_static only_high_cases"'

@@ -1,21 +1,5 @@
 use variant_count::VariantCount;
-use crate::commands::Command;
-use crate::commands::ledger::LedgerCommand;
-use crate::commands::anoncreds::AnoncredsCommand;
-use crate::commands::anoncreds::issuer::IssuerCommand;
-use crate::commands::anoncreds::prover::ProverCommand;
-use crate::commands::anoncreds::verifier::VerifierCommand;
-use crate::commands::blob_storage::BlobStorageCommand;
-use crate::commands::crypto::CryptoCommand;
-use crate::commands::pool::PoolCommand;
-use crate::commands::did::DidCommand;
-use crate::commands::wallet::WalletCommand;
-use crate::commands::pairwise::PairwiseCommand;
-use crate::commands::non_secrets::NonSecretsCommand;
-use crate::commands::payments::PaymentsCommand;
-use crate::commands::cache::CacheCommand;
 use std::fmt;
-use crate::commands::metrics::MetricsCommand;
 
 impl fmt::Display for CommandMetric {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -34,270 +18,12 @@ impl From<usize> for CommandMetric {
     }
 }
 
-impl From<&IssuerCommand> for CommandMetric {
-    fn from(cmd: &IssuerCommand) -> Self {
-        match cmd {
-            IssuerCommand::CreateSchema(_, _, _, _, _) => {
-                CommandMetric::IssuerCommandCreateSchema
-            }
-            IssuerCommand::CreateAndStoreCredentialDefinition(_, _, _, _, _, _, _) => {
-                CommandMetric::IssuerCommandCreateAndStoreCredentialDefinition
-            }
-            IssuerCommand::CreateAndStoreCredentialDefinitionContinue(_, _, _, _, _, _, _, _) => {
-                CommandMetric::IssuerCommandCreateAndStoreCredentialDefinitionContinue
-            }
-            IssuerCommand::RotateCredentialDefinitionStart(_, _, _, _) => {
-                CommandMetric::IssuerCommandRotateCredentialDefinitionStart
-            }
-            IssuerCommand::RotateCredentialDefinitionStartComplete(_, _, _, _, _, _, _) => {
-                CommandMetric::IssuerCommandRotateCredentialDefinitionStartComplete
-            }
-            IssuerCommand::RotateCredentialDefinitionApply(_, _, _) => {
-                CommandMetric::IssuerCommandRotateCredentialDefinitionApply
-            }
-            IssuerCommand::CreateAndStoreRevocationRegistry(_, _, _, _, _, _, _, _) => {
-                CommandMetric::IssuerCommandCreateAndStoreRevocationRegistry
-            }
-            IssuerCommand::CreateCredentialOffer(_, _, _) => {
-                CommandMetric::IssuerCommandCreateCredentialOffer
-            }
-            IssuerCommand::CreateCredential(_, _, _, _, _, _, _) => {
-                CommandMetric::IssuerCommandCreateCredential
-            }
-            IssuerCommand::RevokeCredential(_, _, _, _, _) => {
-                CommandMetric::IssuerCommandRevokeCredential
-            }
-            IssuerCommand::MergeRevocationRegistryDeltas(_, _, _) => {
-                CommandMetric::IssuerCommandMergeRevocationRegistryDeltas
-            }
-        }
-    }
-}
-
-impl From<&ProverCommand> for CommandMetric {
-    fn from(cmd: &ProverCommand) -> Self {
-        match cmd {
-            ProverCommand::CreateMasterSecret(_, _, _) => { CommandMetric::ProverCommandCreateMasterSecret }
-            ProverCommand::CreateCredentialRequest(_, _, _, _, _, _) => { CommandMetric::ProverCommandCreateCredentialRequest }
-            ProverCommand::SetCredentialAttrTagPolicy(_, _, _, _, _) => { CommandMetric::ProverCommandSetCredentialAttrTagPolicy }
-            ProverCommand::GetCredentialAttrTagPolicy(_, _, _) => { CommandMetric::ProverCommandGetCredentialAttrTagPolicy }
-            ProverCommand::StoreCredential(_, _, _, _, _, _, _) => { CommandMetric::ProverCommandStoreCredential }
-            ProverCommand::GetCredentials(_, _, _) => { CommandMetric::ProverCommandGetCredentials }
-            ProverCommand::GetCredential(_, _, _) => { CommandMetric::ProverCommandGetCredential }
-            ProverCommand::DeleteCredential(_, _, _) => { CommandMetric::ProverCommandDeleteCredential }
-            ProverCommand::SearchCredentials(_, _, _) => { CommandMetric::ProverCommandSearchCredentials }
-            ProverCommand::FetchCredentials(_, _, _) => { CommandMetric::ProverCommandFetchCredentials }
-            ProverCommand::CloseCredentialsSearch(_, _) => { CommandMetric::ProverCommandCloseCredentialsSearch }
-            ProverCommand::GetCredentialsForProofReq(_, _, _) => { CommandMetric::ProverCommandGetCredentialsForProofReq }
-            ProverCommand::SearchCredentialsForProofReq(_, _, _, _) => { CommandMetric::ProverCommandSearchCredentialsForProofReq }
-            ProverCommand::FetchCredentialForProofReq(_, _, _, _) => { CommandMetric::ProverCommandFetchCredentialForProofReq }
-            ProverCommand::CloseCredentialsSearchForProofReq(_, _) => { CommandMetric::ProverCommandCloseCredentialsSearchForProofReq }
-            ProverCommand::CreateProof(_, _, _, _, _, _, _, _) => { CommandMetric::ProverCommandCreateProof }
-            ProverCommand::CreateRevocationState(_, _, _, _, _, _) => { CommandMetric::ProverCommandCreateRevocationState }
-            ProverCommand::UpdateRevocationState(_, _, _, _, _, _, _) => { CommandMetric::ProverCommandUpdateRevocationState }
-        }
-    }
-}
-
-impl From<&VerifierCommand> for CommandMetric {
-    fn from(cmd: &VerifierCommand) -> Self {
-        match cmd {
-            VerifierCommand::VerifyProof(_, _, _, _, _, _, _) => { CommandMetric::VerifierCommandVerifyProof }
-            VerifierCommand::GenerateNonce(_) => { CommandMetric::VerifierCommandGenerateNonce }
-        }
-    }
-}
-
-impl From<&Command> for CommandMetric {
-    fn from(cmd: &Command) -> Self {
-        match cmd {
-            Command::Exit => { CommandMetric::Exit }
-            Command::Anoncreds(cmd) => {
-                match cmd {
-                    AnoncredsCommand::Issuer(cmd) => { cmd.into() }
-                    AnoncredsCommand::Prover(cmd) => { cmd.into() }
-                    AnoncredsCommand::Verifier(cmd) => { cmd.into() }
-                    AnoncredsCommand::ToUnqualified(_, _) => { CommandMetric::AnoncredsCommandToUnqualified }
-                }
-            }
-            Command::BlobStorage(cmd) => {
-                match cmd {
-                    BlobStorageCommand::OpenReader(_, _, _) => { CommandMetric::BlobStorageCommandOpenReader }
-                    BlobStorageCommand::OpenWriter(_, _, _) => { CommandMetric::BlobStorageCommandOpenWriter }
-                }
-            }
-            Command::Crypto(cmd) => {
-                match cmd {
-                    CryptoCommand::CreateKey(_, _, _) => { CommandMetric::CryptoCommandCreateKey }
-                    CryptoCommand::SetKeyMetadata(_, _, _, _) => { CommandMetric::CryptoCommandSetKeyMetadata }
-                    CryptoCommand::GetKeyMetadata(_, _, _) => { CommandMetric::CryptoCommandGetKeyMetadata }
-                    CryptoCommand::CryptoSign(_, _, _, _) => { CommandMetric::CryptoCommandCryptoSign }
-                    CryptoCommand::CryptoVerify(_, _, _, _) => { CommandMetric::CryptoCommandCryptoVerify }
-                    CryptoCommand::AuthenticatedEncrypt(_, _, _, _, _) => { CommandMetric::CryptoCommandAuthenticatedEncrypt }
-                    CryptoCommand::AuthenticatedDecrypt(_, _, _, _) => { CommandMetric::CryptoCommandAuthenticatedDecrypt }
-                    CryptoCommand::AnonymousEncrypt(_, _, _) => { CommandMetric::CryptoCommandAnonymousEncrypt }
-                    CryptoCommand::AnonymousDecrypt(_, _, _, _) => { CommandMetric::CryptoCommandAnonymousDecrypt }
-                    CryptoCommand::PackMessage(_, _, _, _, _) => { CommandMetric::CryptoCommandPackMessage }
-                    CryptoCommand::UnpackMessage(_, _, _) => { CommandMetric::CryptoCommandUnpackMessage }
-                }
-            }
-            Command::Ledger(cmd) => {
-                match cmd {
-                    LedgerCommand::SignAndSubmitRequest(_, _, _, _, _) => { CommandMetric::LedgerCommandSignAndSubmitRequest }
-                    LedgerCommand::SubmitRequest(_, _, _) => { CommandMetric::LedgerCommandSubmitRequest }
-                    LedgerCommand::SubmitAction(_, _, _, _, _) => { CommandMetric::LedgerCommandSubmitAction }
-                    LedgerCommand::SignRequest(_, _, _, _) => { CommandMetric::LedgerCommandSignRequest }
-                    LedgerCommand::MultiSignRequest(_, _, _, _) => { CommandMetric::LedgerCommandMultiSignRequest }
-                    LedgerCommand::BuildGetDdoRequest(_, _, _) => { CommandMetric::LedgerCommandBuildGetDdoRequest }
-                    LedgerCommand::BuildNymRequest(_, _, _, _, _, _) => { CommandMetric::LedgerCommandBuildNymRequest }
-                    LedgerCommand::BuildAttribRequest(_, _, _, _, _, _) => { CommandMetric::LedgerCommandBuildAttribRequest }
-                    LedgerCommand::BuildGetAttribRequest(_, _, _, _, _, _) => { CommandMetric::LedgerCommandBuildGetAttribRequest }
-                    LedgerCommand::BuildGetNymRequest(_, _, _) => { CommandMetric::LedgerCommandBuildGetNymRequest }
-                    LedgerCommand::ParseGetNymResponse(_, _) => { CommandMetric::LedgerCommandParseGetNymResponse }
-                    LedgerCommand::BuildSchemaRequest(_, _, _) => { CommandMetric::LedgerCommandBuildSchemaRequest }
-                    LedgerCommand::BuildGetSchemaRequest(_, _, _) => { CommandMetric::LedgerCommandBuildGetSchemaRequest }
-                    LedgerCommand::ParseGetSchemaResponse(_, _) => { CommandMetric::LedgerCommandParseGetSchemaResponse }
-                    LedgerCommand::BuildCredDefRequest(_, _, _) => { CommandMetric::LedgerCommandBuildCredDefRequest }
-                    LedgerCommand::BuildGetCredDefRequest(_, _, _) => { CommandMetric::LedgerCommandBuildGetCredDefRequest }
-                    LedgerCommand::ParseGetCredDefResponse(_, _) => { CommandMetric::LedgerCommandParseGetCredDefResponse }
-                    LedgerCommand::BuildNodeRequest(_, _, _, _) => { CommandMetric::LedgerCommandBuildNodeRequest }
-                    LedgerCommand::BuildGetValidatorInfoRequest(_, _) => { CommandMetric::LedgerCommandBuildGetValidatorInfoRequest }
-                    LedgerCommand::BuildGetTxnRequest(_, _, _, _) => { CommandMetric::LedgerCommandBuildGetTxnRequest }
-                    LedgerCommand::BuildPoolConfigRequest(_, _, _, _) => { CommandMetric::LedgerCommandBuildPoolConfigRequest }
-                    LedgerCommand::BuildPoolRestartRequest(_, _, _, _) => { CommandMetric::LedgerCommandBuildPoolRestartRequest }
-                    LedgerCommand::BuildPoolUpgradeRequest(_, _, _, _, _, _, _, _, _, _, _, _) => { CommandMetric::LedgerCommandBuildPoolUpgradeRequest }
-                    LedgerCommand::BuildRevocRegDefRequest(_, _, _) => { CommandMetric::LedgerCommandBuildRevocRegDefRequest }
-                    LedgerCommand::BuildGetRevocRegDefRequest(_, _, _) => { CommandMetric::LedgerCommandBuildGetRevocRegDefRequest }
-                    LedgerCommand::ParseGetRevocRegDefResponse(_, _) => { CommandMetric::LedgerCommandParseGetRevocRegDefResponse }
-                    LedgerCommand::BuildRevocRegEntryRequest(_, _, _, _, _) => { CommandMetric::LedgerCommandBuildRevocRegEntryRequest }
-                    LedgerCommand::BuildGetRevocRegRequest(_, _, _, _) => { CommandMetric::LedgerCommandBuildGetRevocRegRequest }
-                    LedgerCommand::ParseGetRevocRegResponse(_, _) => { CommandMetric::LedgerCommandParseGetRevocRegResponse }
-                    LedgerCommand::BuildGetRevocRegDeltaRequest(_, _, _, _, _) => { CommandMetric::LedgerCommandBuildGetRevocRegDeltaRequest }
-                    LedgerCommand::ParseGetRevocRegDeltaResponse(_, _) => { CommandMetric::LedgerCommandParseGetRevocRegDeltaResponse }
-                    LedgerCommand::RegisterSPParser(_, _, _, _) => { CommandMetric::LedgerCommandRegisterSPParser }
-                    LedgerCommand::GetResponseMetadata(_, _) => { CommandMetric::LedgerCommandGetResponseMetadata }
-                    LedgerCommand::BuildAuthRuleRequest(_, _, _, _, _, _, _, _) => { CommandMetric::LedgerCommandBuildAuthRuleRequest }
-                    LedgerCommand::BuildAuthRulesRequest(_, _, _) => { CommandMetric::LedgerCommandBuildAuthRulesRequest }
-                    LedgerCommand::BuildGetAuthRuleRequest(_, _, _, _, _, _, _) => { CommandMetric::LedgerCommandBuildGetAuthRuleRequest }
-                    LedgerCommand::BuildTxnAuthorAgreementRequest(_, _, _, _, _, _) => { CommandMetric::LedgerCommandBuildTxnAuthorAgreementRequest }
-                    LedgerCommand::BuildDisableAllTxnAuthorAgreementsRequest(_, _) => { CommandMetric::LedgerCommandBuildDisableAllTxnAuthorAgreementsRequest }
-                    LedgerCommand::BuildGetTxnAuthorAgreementRequest(_, _, _) => { CommandMetric::LedgerCommandBuildGetTxnAuthorAgreementRequest }
-                    LedgerCommand::BuildAcceptanceMechanismRequests(_, _, _, _, _) => { CommandMetric::LedgerCommandBuildAcceptanceMechanismRequests }
-                    LedgerCommand::BuildGetAcceptanceMechanismsRequest(_, _, _, _) => { CommandMetric::LedgerCommandBuildGetAcceptanceMechanismsRequest }
-                    LedgerCommand::AppendTxnAuthorAgreementAcceptanceToRequest(_, _, _, _, _, _, _) => { CommandMetric::LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest }
-                    LedgerCommand::AppendRequestEndorser(_, _, _) => { CommandMetric::LedgerCommandAppendRequestEndorser }
-                }
-            }
-            Command::Pool(cmd) => {
-                match cmd {
-                    PoolCommand::Create(_, _, _) => { CommandMetric::PoolCommandCreate }
-                    PoolCommand::Delete(_, _) => { CommandMetric::PoolCommandDelete }
-                    PoolCommand::Open(_, _, _) => { CommandMetric::PoolCommandOpen }
-                    PoolCommand::List(_) => { CommandMetric::PoolCommandList }
-                    PoolCommand::Close(_, _) => { CommandMetric::PoolCommandClose }
-                    PoolCommand::Refresh(_, _) => { CommandMetric::PoolCommandRefresh }
-                    PoolCommand::SetProtocolVersion(_, _) => { CommandMetric::PoolCommandSetProtocolVersion }
-                }
-            }
-            Command::Did(cmd) => {
-                match cmd {
-                    DidCommand::CreateAndStoreMyDid(_, _, _) => { CommandMetric::DidCommandCreateAndStoreMyDid }
-                    DidCommand::ReplaceKeysStart(_, _, _, _) => { CommandMetric::DidCommandReplaceKeysStart }
-                    DidCommand::ReplaceKeysApply(_, _, _) => { CommandMetric::DidCommandReplaceKeysApply }
-                    DidCommand::StoreTheirDid(_, _, _) => { CommandMetric::DidCommandStoreTheirDid }
-                    DidCommand::GetMyDidWithMeta(_, _, _) => { CommandMetric::DidCommandGetMyDidWithMeta }
-                    DidCommand::ListMyDidsWithMeta(_, _) => { CommandMetric::DidCommandListMyDidsWithMeta }
-                    DidCommand::KeyForDid(_, _, _, _) => { CommandMetric::DidCommandKeyForDid }
-                    DidCommand::KeyForLocalDid(_, _, _) => { CommandMetric::DidCommandKeyForLocalDid }
-                    DidCommand::SetEndpointForDid(_, _, _, _) => { CommandMetric::DidCommandSetEndpointForDid }
-                    DidCommand::GetEndpointForDid(_, _, _, _) => { CommandMetric::DidCommandGetEndpointForDid }
-                    DidCommand::SetDidMetadata(_, _, _, _) => { CommandMetric::DidCommandSetDidMetadata }
-                    DidCommand::GetDidMetadata(_, _, _) => { CommandMetric::DidCommandGetDidMetadata }
-                    DidCommand::AbbreviateVerkey(_, _, _) => { CommandMetric::DidCommandAbbreviateVerkey }
-                    DidCommand::QualifyDid(_, _, _, _) => { CommandMetric::DidCommandQualifyDid }
-                }
-            }
-            Command::Wallet(cmd) => {
-                match cmd {
-                    WalletCommand::RegisterWalletType(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) => { CommandMetric::WalletCommandRegisterWalletType }
-                    WalletCommand::Create(_, _, _) => { CommandMetric::WalletCommandCreate }
-                    WalletCommand::Open(_, _, _) => { CommandMetric::WalletCommandOpen }
-                    WalletCommand::Close(_, _) => { CommandMetric::WalletCommandClose }
-                    WalletCommand::Delete(_, _, _) => { CommandMetric::WalletCommandDelete }
-                    WalletCommand::Export(_, _, _) => { CommandMetric::WalletCommandExport }
-                    WalletCommand::Import(_, _, _, _) => { CommandMetric::WalletCommandImport }
-                    WalletCommand::GenerateKey(_, _) => { CommandMetric::WalletCommandGenerateKey }
-                }
-            }
-            Command::Pairwise(cmd) => {
-                match cmd {
-                    PairwiseCommand::PairwiseExists(_, _, _) => { CommandMetric::PairwiseCommandPairwiseExists }
-                    PairwiseCommand::CreatePairwise(_, _, _, _, _) => { CommandMetric::PairwiseCommandCreatePairwise }
-                    PairwiseCommand::ListPairwise(_, _) => { CommandMetric::PairwiseCommandListPairwise }
-                    PairwiseCommand::GetPairwise(_, _, _) => { CommandMetric::PairwiseCommandGetPairwise }
-                    PairwiseCommand::SetPairwiseMetadata(_, _, _, _) => { CommandMetric::PairwiseCommandSetPairwiseMetadata }
-                }
-            }
-            Command::NonSecrets(cmd) => {
-                match cmd {
-                    NonSecretsCommand::AddRecord(_, _, _, _, _, _) => { CommandMetric::NonSecretsCommandAddRecord }
-                    NonSecretsCommand::UpdateRecordValue(_, _, _, _, _) => { CommandMetric::NonSecretsCommandUpdateRecordValue }
-                    NonSecretsCommand::UpdateRecordTags(_, _, _, _, _) => { CommandMetric::NonSecretsCommandUpdateRecordTags }
-                    NonSecretsCommand::AddRecordTags(_, _, _, _, _) => { CommandMetric::NonSecretsCommandAddRecordTags }
-                    NonSecretsCommand::DeleteRecordTags(_, _, _, _, _) => { CommandMetric::NonSecretsCommandDeleteRecordTags }
-                    NonSecretsCommand::DeleteRecord(_, _, _, _) => { CommandMetric::NonSecretsCommandDeleteRecord }
-                    NonSecretsCommand::GetRecord(_, _, _, _, _) => { CommandMetric::NonSecretsCommandGetRecord }
-                    NonSecretsCommand::OpenSearch(_, _, _, _, _) => { CommandMetric::NonSecretsCommandOpenSearch }
-                    NonSecretsCommand::FetchSearchNextRecords(_, _, _, _) => { CommandMetric::NonSecretsCommandFetchSearchNextRecords }
-                    NonSecretsCommand::CloseSearch(_, _) => { CommandMetric::NonSecretsCommandCloseSearch }
-                }
-            }
-            Command::Payments(cmd) => {
-                match cmd {
-                    PaymentsCommand::RegisterMethod(_, _, _) => { CommandMetric::PaymentsCommandRegisterMethod }
-                    PaymentsCommand::CreateAddress(_, _, _, _) => { CommandMetric::PaymentsCommandCreateAddress }
-                    PaymentsCommand::ListAddresses(_, _) => { CommandMetric::PaymentsCommandListAddresses }
-                    PaymentsCommand::AddRequestFees(_, _, _, _, _, _, _) => { CommandMetric::PaymentsCommandAddRequestFees }
-                    PaymentsCommand::ParseResponseWithFees(_, _, _) => { CommandMetric::PaymentsCommandParseResponseWithFees }
-                    PaymentsCommand::BuildGetPaymentSourcesRequest(_, _, _, _, _) => { CommandMetric::PaymentsCommandBuildGetPaymentSourcesRequest }
-                    PaymentsCommand::ParseGetPaymentSourcesResponse(_, _, _) => { CommandMetric::PaymentsCommandParseGetPaymentSourcesResponse }
-                    PaymentsCommand::BuildPaymentReq(_, _, _, _, _, _) => { CommandMetric::PaymentsCommandBuildPaymentReq }
-                    PaymentsCommand::ParsePaymentResponse(_, _, _) => { CommandMetric::PaymentsCommandParsePaymentResponse }
-                    PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(_, _, _, _, _, _, _) => { CommandMetric::PaymentsCommandAppendTxnAuthorAgreementAcceptanceToExtra }
-                    PaymentsCommand::BuildMintReq(_, _, _, _, _) => { CommandMetric::PaymentsCommandBuildMintReq }
-                    PaymentsCommand::BuildSetTxnFeesReq(_, _, _, _, _) => { CommandMetric::PaymentsCommandBuildSetTxnFeesReq }
-                    PaymentsCommand::BuildGetTxnFeesReq(_, _, _, _) => { CommandMetric::PaymentsCommandBuildGetTxnFeesReq }
-                    PaymentsCommand::ParseGetTxnFeesResponse(_, _, _) => { CommandMetric::PaymentsCommandParseGetTxnFeesResponse }
-                    PaymentsCommand::BuildVerifyPaymentReq(_, _, _, _) => { CommandMetric::PaymentsCommandBuildVerifyPaymentReq }
-                    PaymentsCommand::ParseVerifyPaymentResponse(_, _, _) => { CommandMetric::PaymentsCommandParseVerifyPaymentResponse }
-                    PaymentsCommand::GetRequestInfo(_, _, _, _) => { CommandMetric::PaymentsCommandGetRequestInfo }
-                    PaymentsCommand::SignWithAddressReq(_, _, _, _) => { CommandMetric::PaymentsCommandSignWithAddressReq }
-                    PaymentsCommand::VerifyWithAddressReq(_, _, _, _) => { CommandMetric::PaymentsCommandVerifyWithAddressReq }
-                }
-            }
-            Command::Cache(cmd) => {
-                match cmd {
-                    CacheCommand::GetSchema(_, _, _, _, _, _) => { CommandMetric::CacheCommandGetSchema }
-                    CacheCommand::GetCredDef(_, _, _, _, _, _) => { CommandMetric::CacheCommandGetCredDef }
-                    CacheCommand::PurgeSchemaCache(_, _, _) => { CommandMetric::CacheCommandPurgeSchemaCache }
-                    CacheCommand::PurgeCredDefCache(_, _, _) => { CommandMetric::CacheCommandPurgeCredDefCache }
-                }
-            }
-            Command::Metrics(cmd) => {
-                match cmd { MetricsCommand::CollectMetrics(_) => { CommandMetric::MetricsCommandCollectMetrics } }
-            }
-        }
-    }
-}
-
-
 #[derive(Debug, PartialEq, Copy, Clone, FromPrimitive, ToPrimitive, VariantCount)]
 #[repr(usize)]
 pub enum CommandMetric {
     // IssuerCommand
     IssuerCommandCreateSchema,
     IssuerCommandCreateAndStoreCredentialDefinition,
-    IssuerCommandCreateAndStoreCredentialDefinitionContinue,
     IssuerCommandRotateCredentialDefinitionStart,
     IssuerCommandRotateCredentialDefinitionStartComplete,
     IssuerCommandRotateCredentialDefinitionApply,
@@ -384,9 +110,7 @@ pub enum CommandMetric {
     LedgerCommandBuildAuthRulesRequest,
     LedgerCommandBuildGetAuthRuleRequest,
     LedgerCommandGetSchema,
-    LedgerCommandGetSchemaContinue,
     LedgerCommandGetCredDef,
-    LedgerCommandGetCredDefContinue,
     LedgerCommandBuildTxnAuthorAgreementRequest,
     LedgerCommandBuildDisableAllTxnAuthorAgreementsRequest,
     LedgerCommandBuildGetTxnAuthorAgreementRequest,
@@ -425,16 +149,11 @@ pub enum CommandMetric {
     // WalletCommand
     WalletCommandRegisterWalletType,
     WalletCommandCreate,
-    WalletCommandCreateContinue,
     WalletCommandOpen,
-    WalletCommandOpenContinue,
     WalletCommandClose,
     WalletCommandDelete,
-    WalletCommandDeleteContinue,
     WalletCommandExport,
-    WalletCommandExportContinue,
     WalletCommandImport,
-    WalletCommandImportContinue,
     WalletCommandGenerateKey,
     WalletCommandDeriveKey,
     // PairwiseCommand
@@ -491,9 +210,7 @@ pub enum CommandMetric {
     PaymentsCommandVerifyWithAddressAck,
     // CacheCommand
     CacheCommandGetSchema,
-    CacheCommandGetSchemaContinue,
     CacheCommandGetCredDef,
-    CacheCommandGetCredDefContinue,
     CacheCommandPurgeSchemaCache,
     CacheCommandPurgeCredDefCache,
     // MetricsCommand
