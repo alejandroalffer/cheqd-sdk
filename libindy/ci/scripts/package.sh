@@ -14,7 +14,7 @@ set -eux
 
 PACKAGE_TYPE=$(lsb_release -cs)
 # REVISION=$(git rev-parse HEAD | cut -c 1-7)
-VERSION=1.15.0~${BUILD_NUM}-${PACKAGE_TYPE}  # TODO: Autodetect main part
+VERSION=1.95.0~${BUILD_NUM}-${PACKAGE_TYPE}  # TODO: Autodetect main part
 
 pushd libindy
 cp Cargo.toml Cargo.toml.backup

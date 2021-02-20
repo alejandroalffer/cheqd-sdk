@@ -1,6 +1,6 @@
 [package]
 name = "libindy"
-version = "1.15.0"
+version = "1.95.0"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 edition = "2018"
 
@@ -105,7 +105,7 @@ maintainer-scripts = "./debian"
 changelog = "./debian/changelog"
 
 [package.metadata.deb.variants.libindy-xenial]
-provides = "libindy (= 1.15.0)"
+provides = "libindy (= 1.95.0)"
 name = "libindy"
 depends = "libzmq5, libsodium18, libssl1.0.0"
 assets = [
@@ -113,7 +113,7 @@ assets = [
 ]
 
 [package.metadata.deb.variants.libindy-bionic]
-provides = "libindy (= 1.15.0)"
+provides = "libindy (= 1.95.0)"
 name = "libindy"
 depends = "libzmq5, libsodium23, libssl1.1"
 assets = [
@@ -121,18 +121,18 @@ assets = [
 ]
 
 [package.metadata.deb.variants.libindy-dev-xenial]
-provides = "libindy-dev (= 1.15.0)"
+provides = "libindy-dev (= 1.95.0)"
 name = "libindy-dev"
-depends = "libindy (= 1.15.0)"
+depends = "libindy (= 1.95.0)"
 assets = [
     ["include/*.h", "usr/include/indy/", "644"],
     ["target/release/libindy.a", "usr/lib/", "644"],
 ]
 
 [package.metadata.deb.variants.libindy-dev-bionic]
-provides = "libindy-dev (= 1.15.0)"
+provides = "libindy-dev (= 1.95.0)"
 name = "libindy-dev"
-depends = "libindy (= 1.15.0)"
+depends = "libindy (= 1.95.0)"
 assets = [
     ["include/*.h", "usr/include/indy/", "644"],
     ["target/release/libindy.a", "usr/lib/", "644"],
