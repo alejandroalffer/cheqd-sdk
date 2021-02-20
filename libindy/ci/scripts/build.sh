@@ -22,5 +22,3 @@ set -eux
 pushd libindy
 cargo build $CARGO_FLAGS --features "fatal_warnings sodium_static"
 popd
-
-cp libindy/target/${BUILD_TYPE}/libindy.so libnullpay
