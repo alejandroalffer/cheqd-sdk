@@ -353,6 +353,7 @@ mod tests {
     use indy_utils::test;
 
     use super::*;
+    use crate::wallet_cache::WalletCache;
 
     async fn export(
         wallet: Wallet,
@@ -746,7 +747,7 @@ mod tests {
 
         let storage = storage_type.open_storage(id, None, None).await.unwrap();
 
-        Wallet::new(id.to_string(), storage, Arc::new(keys))
+        Wallet::new(id.to_string(), storage, Arc::new(keys), WalletCache::new(None))
     }
 
     async fn _assert_is_empty(wallet: &Wallet) {

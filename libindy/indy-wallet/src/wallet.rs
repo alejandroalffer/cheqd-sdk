@@ -10,9 +10,8 @@ use indy_utils::{
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use crate::{
-    encryption::*, iterator::WalletIterator, query_encryption::encrypt_query, storage, WalletRecord,
-};
+use crate::{encryption::*, iterator::WalletIterator, query_encryption::encrypt_query, storage, WalletRecord, wallet_cache::WalletCache, RecordOptions};
+use crate::storage::StorageRecord;
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct Keys {
@@ -135,11 +134,17 @@ pub(super) struct Wallet {
     id: String,
     storage: Box<dyn storage::WalletStorage>,
     keys: Arc<Keys>,
+    cache: WalletCache,
 }
 
 impl Wallet {
-    pub fn new(id: String, storage: Box<dyn storage::WalletStorage>, keys: Arc<Keys>) -> Wallet {
-        Wallet { id, storage, keys }
+    pub fn new(
+        id: String,
+        storage: Box<dyn storage::WalletStorage>,
+        keys: Arc<Keys>,
+        cache: WalletCache,
+    ) -> Wallet {
+        Wallet { id, storage, keys, cache }
     }
 
     pub async fn add(
@@ -171,6 +176,7 @@ impl Wallet {
         );
 
         self.storage.add(&etype, &ename, &evalue, &etags).await?;
+        self.cache.add(type_, &etype, &ename, &evalue, &etags);
 
         Ok(())
     }
@@ -203,6 +209,7 @@ impl Wallet {
         self.storage
             .add_tags(&encrypted_type, &encrypted_name, &encrypted_tags)
             .await?;
+        self.cache.add_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tags);
 
         Ok(())
     }
@@ -235,6 +242,7 @@ impl Wallet {
         self.storage
             .update_tags(&encrypted_type, &encrypted_name, &encrypted_tags)
             .await?;
+        self.cache.update_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tags);
 
         Ok(())
     }
@@ -258,6 +266,7 @@ impl Wallet {
         self.storage
             .delete_tags(&encrypted_type, &encrypted_name, &encrypted_tag_names[..])
             .await?;
+        self.cache.delete_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tag_names[..]);
 
         Ok(())
     }
@@ -280,6 +289,7 @@ impl Wallet {
         self.storage
             .update(&encrypted_type, &encrypted_name, &encrypted_value)
             .await?;
+        self.cache.update(type_, &encrypted_type, &encrypted_name, &encrypted_value);
 
         Ok(())
     }
@@ -297,7 +307,42 @@ impl Wallet {
             &self.keys.item_hmac_key,
         );
 
-        let result = self.storage.get(&etype, &ename, options).await?;
+        let result = if self.cache.is_type_cacheable(type_) {
+            let record_options: RecordOptions = serde_json::from_str(options).to_indy(
+                IndyErrorKind::InvalidStructure,
+                "RecordOptions is malformed json",
+            )?;
+            match self.cache.get(type_, &etype, &ename, &record_options) {
+                Some(result) => result,
+                None => {
+                    // no item in cache, lets retrieve it and put it in cache.
+
+                    // TODO: make this static
+                    let full_record_options = serde_json::to_string(&RecordOptions{
+                        retrieve_type: false,
+                        retrieve_value: true,
+                        retrieve_tags: true
+                    }).to_indy(
+                        IndyErrorKind::InvalidStructure,
+                        "RecordOptions is malformed json",
+                    )?;
+                    let full_result = self.storage.get(&etype, &ename, &full_record_options).await?;
+
+                    // save to cache only if valid data is returned (this should be always true).
+                    if let (Some(evalue), Some(etags)) = (&full_result.value, &full_result.tags) {
+                        self.cache.add(type_, &etype, &ename, evalue, etags);
+                    }
+                    StorageRecord {
+                        id: full_result.id,
+                        type_: if record_options.retrieve_type {Some(etype)} else {None},
+                        value: if record_options.retrieve_value {full_result.value} else {None},
+                        tags: if record_options.retrieve_tags {full_result.tags} else {None},
+                    }
+                }
+            }
+        } else {
+            self.storage.get(&etype, &ename, options).await?
+        };
 
         let value = match result.value {
             None => None,
@@ -332,6 +377,7 @@ impl Wallet {
         );
 
         self.storage.delete(&etype, &ename).await?;
+        self.cache.delete(type_, &etype, &ename);
 
         Ok(())
     }
@@ -3604,7 +3650,7 @@ mod tests {
 
         let storage = storage_type.open_storage(name, None, None).await.unwrap();
 
-        Wallet::new(name.to_string(), storage, Arc::new(keys))
+        Wallet::new(name.to_string(), storage, Arc::new(keys), WalletCache::new(None))
     }
 
     async fn _mysql_wallet(name: &str) -> Wallet {
@@ -3634,7 +3680,7 @@ mod tests {
             .await
             .unwrap();
 
-        Wallet::new(name.to_string(), storage, Arc::new(keys))
+        Wallet::new(name.to_string(), storage, Arc::new(keys), WalletCache::new(None))
     }
 
     async fn _exists_wallet(name: &str) -> Wallet {
@@ -3649,7 +3695,7 @@ mod tests {
         let master_key = _master_key();
         let keys = Keys::deserialize_encrypted(&metadata.keys, &master_key).unwrap();
 
-        Wallet::new(name.to_string(), storage, Arc::new(keys))
+        Wallet::new(name.to_string(), storage, Arc::new(keys), WalletCache::new(None))
     }
 
     fn _master_key() -> chacha20poly1305_ietf::Key {

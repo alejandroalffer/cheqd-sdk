@@ -8,6 +8,14 @@ pub struct Config {
     pub id: String,
     pub storage_type: Option<String>,
     pub storage_config: Option<Value>,
+    pub cache: Option<CacheConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CacheConfig {
+    pub size: Option<usize>,
+    pub entities: Vec<String>,
+    pub algorithm: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

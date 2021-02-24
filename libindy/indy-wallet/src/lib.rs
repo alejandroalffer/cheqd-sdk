@@ -30,6 +30,8 @@ use crate::{
     wallet::{Keys, Wallet},
 };
 pub use crate::encryption::KeyDerivationData;
+use indy_api_types::domain::wallet::CacheConfig;
+use crate::wallet_cache::WalletCache;
 
 //use crate::storage::plugged::PluggedStorageType; FXIME:
 
@@ -43,6 +45,7 @@ pub mod language;
 
 mod export_import;
 mod wallet;
+mod wallet_cache;
 
 pub struct WalletService {
     storage_types: Mutex<HashMap<String, Box<dyn WalletStorageType>>>,
@@ -298,6 +301,7 @@ impl WalletService {
         &self,
         wallet_handle: WalletHandle,
         master_key: (&MasterKey, Option<&MasterKey>),
+        cache_config: Option<CacheConfig>,
     ) -> IndyResult<WalletHandle> {
         let (id, storage, metadata, rekey_data) = self
             .pending_for_open
@@ -314,7 +318,12 @@ impl WalletService {
             storage.set_storage_metadata(&metadata).await?;
         }
 
-        let wallet = Wallet::new(id.clone(), storage, Arc::new(keys));
+        let wallet = Wallet::new(
+            id.clone(),
+            storage,
+            Arc::new(keys),
+            WalletCache::new(cache_config)
+        );
 
         {
             let mut wallets = self.wallets.lock().await;
@@ -828,6 +837,7 @@ impl WalletService {
                 WalletService::_get_wallet_id(&config),
                 storage,
                 Arc::new(keys),
+                WalletCache::new(None),
             );
 
             finish_import(&wallet, reader, import_key, nonce, chunk_size, header_bytes).await
@@ -1210,6 +1220,7 @@ mod tests {
     use lazy_static::lazy_static;
 
     use super::*;
+    use indy_api_types::domain::wallet::CacheConfig;
 
     impl WalletService {
         async fn open_wallet(
@@ -1253,7 +1264,7 @@ mod tests {
                 None => None,
             };
 
-            self.open_wallet_continue(wallet_handle, (&key, rekey.as_ref()))
+            self.open_wallet_continue(wallet_handle, (&key, rekey.as_ref()), config.cache)
                 .await
         }
 
@@ -1886,6 +1897,7 @@ mod tests {
             id: String::from("same_id"),
             storage_type: None,
             storage_config: None,
+            cache: None,
         };
 
         wallet_service
@@ -1904,6 +1916,7 @@ mod tests {
             storage_config: Some(json!({
                 "path": _custom_path("wallet_service_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths")
             })),
+            cache: None
         };
 
         wallet_service
@@ -2171,6 +2184,42 @@ mod tests {
         test::cleanup_wallet(
             "wallet_service_
         cord_works",
+        );
+    }
+
+    #[async_std::test]
+    async fn wallet_service_add_record_works_for_cached() {
+        test::cleanup_wallet("wallet_service_add_record_works_for_cached");
+        {
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(
+                    &_config_default_cached("wallet_service_add_record_works_for_cached"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(&_config_default_cached("wallet_service_add_record_works"), &RAW_CREDENTIAL)
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, "type", "key1", "value1", &HashMap::new())
+                .await
+                .unwrap();
+
+            wallet_service
+                .get_record(wallet_handle, "type", "key1", "{}")
+                .await
+                .unwrap();
+        }
+
+        test::cleanup_wallet(
+            "wallet_service_add_record_works_for_cached",
         );
     }
 
@@ -4372,6 +4421,7 @@ mod tests {
             id: name.to_string(),
             storage_type: None,
             storage_config: None,
+            cache: None,
         }
     }
 
@@ -4380,6 +4430,22 @@ mod tests {
             id: name.to_string(),
             storage_type: Some("default".to_string()),
             storage_config: None,
+            cache: None,
+        }
+    }
+
+    fn _config_default_cached(name: &str) -> Config {
+        Config {
+            id: name.to_string(),
+            storage_type: Some("default".to_string()),
+            storage_config: None,
+            cache: Some(
+                CacheConfig {
+                    size: Some(10),
+                    entities: vec!["did".to_string(), "their_did".to_string()],
+                    algorithm: None,
+                }
+            ),
         }
     }
 
@@ -4388,6 +4454,7 @@ mod tests {
             id: "w1".to_string(),
             storage_type: Some("inmem".to_string()),
             storage_config: None,
+            cache: None,
         }
     }
 
@@ -4396,6 +4463,7 @@ mod tests {
             id: name.to_string(),
             storage_type: Some("unknown".to_string()),
             storage_config: None,
+            cache: None,
         }
     }
 
