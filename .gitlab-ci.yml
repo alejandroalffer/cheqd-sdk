@@ -48,7 +48,7 @@ variables:
     name: gcr.io/kaniko-project/executor:debug-v0.16.0
     entrypoint: [""]
   script:
-    - if [ "$CI_COMMIT_REF_SLUG" == 'master' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
+    - if [ "$CI_COMMIT_REF_SLUG" == 'master' ] || [ "$CI_COMMIT_REF_SLUG" == 'async' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
     - echo "${KANIKO_ARGS}"
     - |
         echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" \
@@ -110,6 +110,17 @@ dockerbuild-libindy-ubuntu16:
       - .gitlab-ci.yml
       - libindy/ci/ubuntu.dockerfile
 
+dockerbuild-libindy-ubuntu18:
+  stage: dockerbuild-pre
+  extends: .dockerbuild-libindy
+  variables:
+    DOCKERFILE_PATH: libindy/ci/ubuntu18.dockerfile
+    DOCKER_IMAGE_NAME: libindy-ubuntu18
+  only:
+    changes:
+      - .gitlab-ci.yml
+      - libindy/ci/ubuntu.dockerfile
+
 
 ## - Jobs : Build - ##
 .build-libindy:
@@ -136,7 +147,6 @@ build-libindy-ubuntu16-from-branch:
   extends: .build-libindy
   image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
   variables:
-    PACKAGE_TYPE: 'xenial'
     BUILD_TYPE: 'debug'
   only:
     refs:
@@ -146,7 +156,6 @@ build-libindy-ubuntu16-from-latest:
   extends: .build-libindy
   image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
   variables:
-    PACKAGE_TYPE: 'xenial'
     BUILD_TYPE: 'debug'
   except:
     refs:
@@ -157,7 +166,34 @@ build-libindy-ubuntu16-release:
   extends: .build-libindy
   image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
   variables:
-    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'release'
+  only:
+    refs:
+      - async@dev/vcx/indy-sdk
+
+build-libindy-ubuntu18-from-branch:
+  extends: .build-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:${CI_COMMIT_REF_SLUG}
+  variables:
+    BUILD_TYPE: 'debug'
+  only:
+    refs:
+      - /^docker-.*/
+
+build-libindy-ubuntu18-from-latest:
+  extends: .build-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  variables:
+    BUILD_TYPE: 'debug'
+  except:
+    refs:
+      - /^docker-.*/
+      - async@dev/vcx/indy-sdk
+
+build-libindy-ubuntu18-release:
+  extends: .build-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  variables:
     BUILD_TYPE: 'release'
   only:
     refs:
@@ -217,24 +253,31 @@ build-libindy-ubuntu16-release:
 
 
 ## - Jobs : Package - ##
-package-libindy:
+.package-libindy:
   extends: .tags_micro
   stage: package
-  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
-  dependencies:
-    - build-libindy-ubuntu16-release
   artifacts:
     expire_in: 1 week
     paths:
       - libindy/target/debian/*.deb
       - libnullpay/target/debian/*.deb
-  variables:
-    PACKAGE_TYPE: 'xenial'
   only:
     refs:
       - async@dev/vcx/indy-sdk
   script:
     - libindy/ci/scripts/package.sh ${CI_PIPELINE_IID}
+
+package-libindy-ubuntu16:
+  extends: .package-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  dependencies:
+    - build-libindy-ubuntu16-release
+
+package-libindy-ubuntu18:
+  extends: .package-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-ubuntu18-release
 
 #.package-java-wrapper:
 #  extends: .tags_micro
@@ -285,13 +328,15 @@ publish-libindy:
   stage: publish
   image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
   dependencies:
-    - package-libindy
+    - package-libindy-ubuntu16
+    - package-libindy-ubuntu18
   only:
     refs:
       - async@dev/vcx/indy-sdk
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output
-    - ls -al ${CI_PROJECT_DIR}/output
+    - ls -al ${CI_PROJECT_DIR}/output/
     - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
