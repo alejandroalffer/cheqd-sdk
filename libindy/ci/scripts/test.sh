@@ -34,4 +34,4 @@ set -eux
 test libindy --features sodium_static,only_high_cases
 test libindy/indy-api-types
 test libindy/indy-utils
-# test libindy/indy-wallet
+test libindy/indy-wallet
