@@ -119,7 +119,7 @@ dockerbuild-libindy-ubuntu18:
   only:
     changes:
       - .gitlab-ci.yml
-      - libindy/ci/ubuntu.dockerfile
+      - libindy/ci/ubuntu18.dockerfile
 
 
 ## - Jobs : Build - ##
