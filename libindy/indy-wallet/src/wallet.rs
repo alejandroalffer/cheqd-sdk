@@ -433,6 +433,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_get_id_works_for_mysql() {
         _mysql_cleanup_wallet("wallet_get_id_works_for_mysql").await;
 
@@ -934,6 +935,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_empty_query_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_empty_query_mysql").await;
 
@@ -1040,6 +1042,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_empty_query_with_count_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_empty_query_with_count_mysql").await;
 
@@ -2010,6 +2013,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_lte_plain_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_lte_plain_mysql").await;
 
@@ -2235,6 +2239,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_lte_encrypted_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_lte_encrypted_mysql").await;
 
@@ -2257,6 +2262,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_like_plain_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_like_plain_mysql").await;
 
@@ -2633,6 +2639,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_in_encrypted_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_in_encrypted_mysql").await;
 
@@ -2935,6 +2942,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_and_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_and_mysql").await;
         
