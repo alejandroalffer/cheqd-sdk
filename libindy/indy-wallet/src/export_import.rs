@@ -391,8 +391,6 @@ mod tests {
                 )
                 .await
                 .unwrap();
-
-                std::mem::drop(wallet);
             }
 
             test::cleanup_wallet("export_import_works_for_empty_wallet1");
