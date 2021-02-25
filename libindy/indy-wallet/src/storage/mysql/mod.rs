@@ -914,6 +914,7 @@ mod tests {
     // docker run --name indy-mysql -e MYSQL_ROOT_PASSWORD=pass@word1 -p 3306:3306 -d mysql:latest
 
     #[async_std::test]
+    #[cfg(feature = "benchmark")]
     async fn mysql_storage_sync_send() {
         use futures::{channel::oneshot, executor::ThreadPool, future::join_all};
         use std::{sync::Arc, time::SystemTime};
@@ -1858,7 +1859,7 @@ mod tests {
                 "read_host": "127.0.0.1",
                 "write_host": "127.0.0.1",
                 "port": 3306,
-                "db_name": "indy"
+                "db_name": "wallet"
             }
             "#,
         )
@@ -1869,7 +1870,7 @@ mod tests {
             r#"
             {
                 "user": "root",
-                "pass": "pass@word1"
+                "pass": "root"
             }
             "#,
         )
