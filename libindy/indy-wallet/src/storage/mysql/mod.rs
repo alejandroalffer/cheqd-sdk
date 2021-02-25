@@ -1859,7 +1859,7 @@ mod tests {
                 "read_host": "127.0.0.1",
                 "write_host": "127.0.0.1",
                 "port": 3306,
-                "db_name": "wallet"
+                "db_name": "indy"
             }
             "#,
         )
@@ -1870,7 +1870,7 @@ mod tests {
             r#"
             {
                 "user": "root",
-                "pass": "root"
+                "pass": "pass@word1"
             }
             "#,
         )
