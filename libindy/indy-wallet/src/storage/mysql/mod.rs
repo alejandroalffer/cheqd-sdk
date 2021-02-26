@@ -914,6 +914,7 @@ mod tests {
     // docker run --name indy-mysql -e MYSQL_ROOT_PASSWORD=pass@word1 -p 3306:3306 -d mysql:latest
 
     #[async_std::test]
+    #[cfg(feature = "benchmark")]
     async fn mysql_storage_sync_send() {
         use futures::{channel::oneshot, executor::ThreadPool, future::join_all};
         use std::{sync::Arc, time::SystemTime};
@@ -1003,6 +1004,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_type_create_works() {
         _cleanup("mysql_storage_type_create_works").await;
 
@@ -1022,6 +1024,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_type_create_works_for_twice() {
         _cleanup("mysql_storage_type_create_works_for_twice").await;
 
@@ -1058,6 +1061,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_get_storage_metadata_works() {
         _cleanup("mysql_storage_get_storage_metadata_works").await;
 
@@ -1072,6 +1076,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_type_delete_works() {
         _cleanup("mysql_storage_type_delete_works").await;
 
@@ -1093,6 +1098,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_type_delete_works_for_non_existing() {
         _cleanup("mysql_storage_type_delete_works_for_non_existing").await;
 
@@ -1124,6 +1130,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_type_open_works() {
         _cleanup("mysql_storage_type_open_works").await;
         _storage("mysql_storage_type_open_works").await;
@@ -1131,6 +1138,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_type_open_works_for_not_created() {
         _cleanup("mysql_storage_type_open_works_for_not_created").await;
 
@@ -1144,6 +1152,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_add_works_for_is_802() {
         _cleanup("mysql_storage_add_works_for_is_802").await;
 
@@ -1166,6 +1175,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_set_get_works() {
         _cleanup("mysql_storage_set_get_works").await;
 
@@ -1194,6 +1204,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_set_get_works_for_twice() {
         _cleanup("mysql_storage_set_get_works_for_twice").await;
 
@@ -1213,6 +1224,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_set_get_works_for_reopen() {
         _cleanup("mysql_storage_set_get_works_for_reopen").await;
 
@@ -1245,6 +1257,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_get_works_for_wrong_key() {
         _cleanup("mysql_storage_get_works_for_wrong_key").await;
 
@@ -1271,6 +1284,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_delete_works() {
         _cleanup("mysql_storage_delete_works").await;
 
@@ -1311,6 +1325,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_delete_works_for_non_existing() {
         _cleanup("mysql_storage_delete_works_for_non_existing").await;
 
@@ -1330,6 +1345,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_delete_returns_error_item_not_found_if_no_such_type() {
         _cleanup("mysql_storage_delete_returns_error_item_not_found_if_no_such_type").await;
 
@@ -1350,6 +1366,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_get_all_works() {
         _cleanup("mysql_storage_get_all_works").await;
 
@@ -1386,6 +1403,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_get_all_works_for_empty() {
         _cleanup("mysql_storage_get_all_works_for_empty").await;
 
@@ -1401,6 +1419,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_update_works() {
         _cleanup("mysql_storage_update_works").await;
 
@@ -1444,6 +1463,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_update_works_for_non_existing_id() {
         _cleanup("mysql_storage_update_works_for_non_existing_id").await;
 
@@ -1474,6 +1494,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_update_works_for_non_existing_type() {
         _cleanup("mysql_storage_update_works_for_non_existing_type").await;
 
@@ -1504,6 +1525,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_add_tags_works() {
         _cleanup("mysql_storage_add_tags_works").await;
 
@@ -1544,6 +1566,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_add_tags_works_for_non_existing_id() {
         _cleanup("mysql_storage_add_tags_works_for_non_existing_id").await;
 
@@ -1563,6 +1586,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_add_tags_works_for_non_existing_type() {
         _cleanup("mysql_storage_add_tags_works_for_non_existing_type").await;
 
@@ -1582,6 +1606,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_add_tags_works_for_already_existing() {
         _cleanup("mysql_storage_add_tags_works_for_already_existing").await;
 
@@ -1628,6 +1653,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_update_tags_works() {
         _cleanup("mysql_storage_update_tags_works").await;
 
@@ -1661,6 +1687,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_update_tags_works_for_non_existing_id() {
         _cleanup("mysql_storage_update_tags_works_for_non_existing_id").await;
 
@@ -1680,6 +1707,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_update_tags_works_for_non_existing_type() {
         _cleanup("mysql_storage_update_tags_works_for_non_existing_type").await;
 
@@ -1699,6 +1727,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_update_tags_works_for_already_existing() {
         _cleanup("mysql_storage_update_tags_works_for_already_existing").await;
         {
@@ -1743,6 +1772,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_delete_tags_works() {
         _cleanup("mysql_storage_delete_tags_works").await;
 
@@ -1788,6 +1818,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_delete_tags_works_for_non_existing_type() {
         _cleanup("mysql_storage_delete_tags_works_for_non_existing_type").await;
 
@@ -1820,6 +1851,7 @@ mod tests {
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn mysql_storage_delete_tags_works_for_non_existing_id() {
         _cleanup("mysql_storage_delete_tags_works_for_non_existing_id").await;
 

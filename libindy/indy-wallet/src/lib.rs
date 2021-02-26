@@ -1217,7 +1217,7 @@ mod tests {
             config: &Config,
             credentials: &Credentials,
         ) -> IndyResult<WalletHandle> {
-            self._is_id_from_config_not_used(config)?;
+            self._is_id_from_config_not_used(config).await?;
 
             let (storage, metadata, key_derivation_data) = self
                 ._open_storage_and_fetch_metadata(config, credentials)

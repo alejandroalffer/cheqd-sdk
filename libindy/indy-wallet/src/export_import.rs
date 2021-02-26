@@ -355,7 +355,7 @@ mod tests {
     use super::*;
 
     async fn export(
-        wallet: &Wallet,
+        wallet: Wallet,
         writer: &mut (dyn Write + Send + Sync),
         passphrase: &str,
         version: u32,
@@ -369,7 +369,7 @@ mod tests {
             KeyDerivationData::from_passphrase_with_new_salt(passphrase, key_derivation_method);
         let key = key_data.calc_master_key()?;
 
-        export_continue(wallet, writer, version, key, &key_data).await
+        export_continue(Arc::new(wallet), writer, version, key, &key_data).await
     }
 
     #[async_std::test]
@@ -383,7 +383,7 @@ mod tests {
                 let mut wallet1 = _wallet("export_import_works_for_empty_wallet1").await;
 
                 export(
-                    &wallet1,
+                    wallet1,
                     &mut output,
                     _passphrase(),
                     _version1(),
@@ -391,8 +391,6 @@ mod tests {
                 )
                 .await
                 .unwrap();
-
-                wallet1.close().await.unwrap();
             }
 
             test::cleanup_wallet("export_import_works_for_empty_wallet1");
@@ -406,7 +404,7 @@ mod tests {
 
             _assert_is_empty(&wallet).await;
 
-            wallet.close().await.unwrap();
+            std::mem::drop(wallet);
         }
 
         test::cleanup_wallet("export_import_works_for_empty_wallet2");
@@ -421,7 +419,7 @@ mod tests {
             let mut output: Vec<u8> = Vec::new();
 
             export(
-                &_add_2_records(_wallet("export_import_works_for_2_items1").await).await,
+                _add_2_records(_wallet("export_import_works_for_2_items1").await).await,
                 &mut output,
                 _passphrase(),
                 _version1(),
@@ -452,7 +450,7 @@ mod tests {
             let mut output: Vec<u8> = Vec::new();
             {
                 export(
-                    &_add_2_records(
+                    _add_2_records(
                         _wallet("export_import_works_for_2_items_and_interactive_method1").await,
                     )
                     .await,
@@ -489,7 +487,7 @@ mod tests {
             let mut output: Vec<u8> = Vec::new();
 
             export(
-                &_add_300_records(_wallet("export_import_works_for_multiple_items1").await).await,
+                _add_300_records(_wallet("export_import_works_for_multiple_items1").await).await,
                 &mut output,
                 _passphrase(),
                 _version1(),
@@ -590,7 +588,7 @@ mod tests {
 
         let mut output: Vec<u8> = Vec::new();
         export(
-            &_wallet("import_works_for_invalid_header_hash1").await,
+            _wallet("import_works_for_invalid_header_hash1").await,
             &mut output,
             _passphrase(),
             _version1(),
@@ -623,7 +621,7 @@ mod tests {
         let mut output: Vec<u8> = Vec::new();
 
         export(
-            &_add_300_records(_wallet("export_import_works_for_changed_record1").await).await,
+            _add_300_records(_wallet("export_import_works_for_changed_record1").await).await,
             &mut output,
             _passphrase(),
             _version1(),
@@ -657,7 +655,7 @@ mod tests {
         let mut output: Vec<u8> = Vec::new();
 
         export(
-            &_add_2_records(_wallet("import_works_for_data_cut1").await).await,
+            _add_2_records(_wallet("import_works_for_data_cut1").await).await,
             &mut output,
             _passphrase(),
             _version1(),
@@ -688,7 +686,7 @@ mod tests {
         let mut output: Vec<u8> = Vec::new();
 
         export(
-            &_add_2_records(_wallet("import_works_for_data_extended1").await).await,
+            _add_2_records(_wallet("import_works_for_data_extended1").await).await,
             &mut output,
             _passphrase(),
             _version1(),
@@ -715,8 +713,8 @@ mod tests {
         test::cleanup_storage(name)
     }
 
-    async fn _cleanup_wallet(wallet: &mut Wallet, name: &str) {
-        wallet.close().await.unwrap();
+    async fn _cleanup_wallet(wallet: Wallet, name: &str) {
+        std::mem::drop(wallet);
         test::cleanup_wallet(name);
     }
 

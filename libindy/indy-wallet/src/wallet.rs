@@ -426,13 +426,14 @@ mod tests {
             let mut wallet = _wallet("wallet_get_id_works").await;
             assert_eq!(wallet.get_id(), "wallet_get_id_works");
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_get_id_works");
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_get_id_works_for_mysql() {
         _mysql_cleanup_wallet("wallet_get_id_works_for_mysql").await;
 
@@ -440,7 +441,7 @@ mod tests {
             let mut wallet = _mysql_wallet("wallet_get_id_works_for_mysql").await;
             assert_eq!(wallet.get_id(), "wallet_get_id_works_for_mysql");
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         _mysql_cleanup_wallet("wallet_get_id_works_for_mysql").await;
@@ -467,7 +468,7 @@ mod tests {
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(record.tags.unwrap(), _tags());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_add_get_works");
@@ -485,7 +486,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
 
             let mut wallet = _exists_wallet("wallet_add_get_works_for_reopen").await;
 
@@ -498,7 +499,7 @@ mod tests {
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(record.tags.unwrap(), _tags());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_add_get_works_for_reopen");
@@ -522,7 +523,7 @@ mod tests {
 
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_get_works_for_non_existing");
@@ -542,7 +543,7 @@ mod tests {
             let res = wallet.add(_type1(), _id1(), _value2(), &_tags()).await;
             assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_add_works_for_already_existing");
@@ -579,7 +580,7 @@ mod tests {
             assert_eq!(record.value.unwrap(), _value2());
             assert_eq!(record.tags.unwrap(), _tags());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_update_works");
@@ -600,7 +601,7 @@ mod tests {
             let res = wallet.update(_type1(), _id2(), _value2()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_update_works_for_non_existing_id");
@@ -621,7 +622,7 @@ mod tests {
             let res = wallet.update(_type2(), _id1(), _value2()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_update_works_for_non_existing_type");
@@ -668,7 +669,7 @@ mod tests {
 
             assert_eq!(record.tags.unwrap(), expected_tags);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_add_tags_works");
@@ -707,7 +708,7 @@ mod tests {
 
             assert_eq!(record.tags.unwrap(), new_tags);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_update_tags_works");
@@ -753,7 +754,7 @@ mod tests {
 
             assert_eq!(record.tags.unwrap(), expected_tags);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_delete_tags_works");
@@ -788,7 +789,7 @@ mod tests {
 
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_delete_works");
@@ -808,7 +809,7 @@ mod tests {
             let res = wallet.delete(_type1(), _id2()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_delete_works_for_non_existing_id");
@@ -829,7 +830,7 @@ mod tests {
             let res = wallet.delete(_type2(), _id1()).await;
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_delete_works_for_non_existing_type");
@@ -927,13 +928,14 @@ mod tests {
             let total_count = iterator.get_total_count().unwrap();
             assert!(total_count.is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_empty_query");
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_empty_query_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_empty_query_mysql").await;
 
@@ -980,7 +982,7 @@ mod tests {
             let total_count = iterator.get_total_count().unwrap();
             assert!(total_count.is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         _mysql_cleanup_wallet("wallet_search_works_for_empty_query_mysql").await;
@@ -1033,13 +1035,14 @@ mod tests {
             let total_count = iterator.get_total_count().unwrap().unwrap();
             assert_eq!(total_count, 2);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_empty_query_with_count");
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_empty_query_with_count_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_empty_query_with_count_mysql").await;
 
@@ -1087,7 +1090,7 @@ mod tests {
             let total_count = iterator.get_total_count().unwrap().unwrap();
             assert_eq!(total_count, 2);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         _mysql_cleanup_wallet("wallet_search_works_for_empty_query_with_count_mysql").await;
@@ -1121,7 +1124,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_empty_query_with_only_count");
@@ -1214,7 +1217,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_eq_encrypted");
@@ -1245,7 +1248,7 @@ mod tests {
 
             assert_kind!(IndyErrorKind::WalletQueryError, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_empty_tag_plain");
@@ -1276,7 +1279,7 @@ mod tests {
 
             assert_kind!(IndyErrorKind::WalletQueryError, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_empty_tag_encrypted");
@@ -1369,7 +1372,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_eq_plan");
@@ -1465,7 +1468,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_neq_encrypted");
@@ -1559,7 +1562,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_neq_plain");
@@ -1653,7 +1656,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_gt_plain");
@@ -1676,7 +1679,7 @@ mod tests {
 
             assert_kind!(IndyErrorKind::WalletQueryError, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_gt_encrypted");
@@ -1770,7 +1773,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_gte_plain");
@@ -1793,7 +1796,7 @@ mod tests {
 
             assert_kind!(IndyErrorKind::WalletQueryError, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_gte_encrypted");
@@ -1886,7 +1889,7 @@ mod tests {
 
             assert!(iterator.next().await.unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_lt_plain");
@@ -1909,7 +1912,7 @@ mod tests {
 
             assert_kind!(IndyErrorKind::WalletQueryError, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_lt_encrypted");
@@ -2003,13 +2006,14 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_lte_plain");
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_lte_plain_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_lte_plain_mysql").await;
 
@@ -2097,7 +2101,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         _mysql_cleanup_wallet("wallet_search_works_for_lte_plain_mysql").await;
@@ -2119,7 +2123,7 @@ mod tests {
                 .await;
 
             assert_kind!(IndyErrorKind::WalletQueryError, res);
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_lte_encrypted");
@@ -2228,13 +2232,14 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_like_plain");
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_lte_encrypted_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_lte_encrypted_mysql").await;
 
@@ -2250,13 +2255,14 @@ mod tests {
                 .await;
 
             assert_kind!(IndyErrorKind::WalletQueryError, res);
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         _mysql_cleanup_wallet("wallet_search_works_for_lte_encrypted_mysql").await;
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_like_plain_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_like_plain_mysql").await;
 
@@ -2359,7 +2365,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         _mysql_cleanup_wallet("wallet_search_works_for_like_plain_mysql").await;
@@ -2382,7 +2388,7 @@ mod tests {
 
             assert_kind!(IndyErrorKind::WalletQueryError, res);
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_like_encrypted");
@@ -2504,7 +2510,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_in_plain");
@@ -2626,13 +2632,14 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_in_encrypted")
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_in_encrypted_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_in_encrypted_mysql").await;
 
@@ -2748,7 +2755,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         _mysql_cleanup_wallet("wallet_search_works_for_in_encrypted_mysql").await
@@ -2928,13 +2935,14 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_and");
     }
 
     #[async_std::test]
+    #[cfg(feature = "mysql")]
     async fn wallet_search_works_for_and_mysql() {
         _mysql_cleanup_wallet("wallet_search_works_for_and_mysql").await;
         
@@ -3109,7 +3117,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         _mysql_cleanup_wallet("wallet_search_works_for_and_mysql").await;
@@ -3294,7 +3302,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_or");
@@ -3423,7 +3431,7 @@ mod tests {
             assert!(iterator.next().await.unwrap().is_none());
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
         test::cleanup_wallet("wallet_search_works_for_not");
     }
@@ -3477,7 +3485,7 @@ mod tests {
             assert_eq!(_fetch_all(&mut iterator).await, expected_records);
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_nested");
@@ -3526,7 +3534,7 @@ mod tests {
             assert_eq!(_fetch_all(&mut iterator).await, expected_records);
             assert!(iterator.get_total_count().unwrap().is_none());
 
-            wallet.close().await.unwrap();
+            wallet.close().unwrap();
         }
 
         test::cleanup_wallet("wallet_search_works_for_nested_empty");
@@ -3710,7 +3718,7 @@ mod tests {
                 "read_host": "127.0.0.1",
                 "write_host": "127.0.0.1",
                 "port": 3306,
-                "db_name": "indy"
+                "db_name": "wallet"
             }
             "#,
         )
@@ -3721,7 +3729,7 @@ mod tests {
             r#"
             {
                 "user": "root",
-                "pass": "pass@word1"
+                "pass": "root"
             }
             "#,
         )
