@@ -1264,7 +1264,7 @@ mod tests {
                 None => None,
             };
 
-            self.open_wallet_continue(wallet_handle, (&key, rekey.as_ref()), config.cache)
+            self.open_wallet_continue(wallet_handle, (&key, rekey.as_ref()), config.cache.clone())
                 .await
         }
 
@@ -2203,7 +2203,7 @@ mod tests {
                 .unwrap();
 
             let wallet_handle = wallet_service
-                .open_wallet(&_config_default_cached("wallet_service_add_record_works"), &RAW_CREDENTIAL)
+                .open_wallet(&_config_default_cached("wallet_service_add_record_works_for_cached"), &RAW_CREDENTIAL)
                 .await
                 .unwrap();
 

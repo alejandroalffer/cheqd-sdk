@@ -1440,6 +1440,7 @@ dependencies = [
  "indy-utils",
  "libc",
  "log",
+ "lru",
  "owning_ref",
  "rmp-serde",
  "rust-base58",
@@ -1534,7 +1535,7 @@ checksum = "1482821306169ec4d07f6aca392a4681f66c75c9918aa49641a2595db64053cb"
 
 [[package]]
 name = "libindy"
-version = "1.15.0"
+version = "1.95.0"
 dependencies = [
  "android_logger",
  "async-std",
@@ -1560,6 +1561,7 @@ dependencies = [
  "log",
  "log-derive",
  "log-panics",
+ "lru",
  "num-derive",
  "num-traits",
  "openssl",
@@ -1664,6 +1666,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae0136257df209261daa18d6c16394757c63e032e27aafd8b07788b051082bef"
 dependencies = [
  "log",
+]
+
+[[package]]
+name = "lru"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f374d42cdfc1d7dbf3d3dec28afab2eb97ffbf43a3234d795b5986dbf4b90ba"
+dependencies = [
+ "hashbrown",
 ]
 
 [[package]]
