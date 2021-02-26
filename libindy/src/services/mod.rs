@@ -16,6 +16,6 @@ pub(crate) use crypto::CryptoService;
 pub(crate) use ledger::LedgerService;
 pub(crate) use metrics::MetricsService;
 pub(crate) use metrics::command_metrics::CommandMetric;
-pub(crate) use payments::PaymentsService;
+pub(crate) use payments::{PaymentsService, PaymentsMethodCBs, RequesterInfo, Fees};
 pub(crate) use pool::PoolService;
 pub(crate) use wallet::WalletService;

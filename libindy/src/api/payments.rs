@@ -1,11 +1,12 @@
-use libc::c_char;
-use indy_api_types::{ErrorCode, CommandHandle, WalletHandle};
-use crate::services::payments::PaymentsMethodCBs;
+use indy_api_types::{CommandHandle, ErrorCode, WalletHandle};
 use indy_api_types::errors::prelude::*;
-use indy_utils::ctypes;
-use crate::services::payments::{RequesterInfo, Fees};
-use crate::domain::crypto::did::DidValue;
 use indy_api_types::validation::Validatable;
+use indy_utils::ctypes;
+use libc::c_char;
+
+use crate::domain::crypto::did::DidValue;
+use crate::Locator;
+use crate::services::{CommandMetric, Fees, PaymentsMethodCBs, RequesterInfo};
 
 /// Create the payment address for this payment method.
 ///
@@ -390,7 +391,7 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
                                            verify_with_address: Option<VerifyWithAddressCB>,
                                            cb: Option<extern fn(command_handle_: CommandHandle,
                                                                 err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_register_payment_method: >>> payment_method: {:?}", payment_method);
+    debug!("indy_register_payment_method: >>> payment_method: {:?}", payment_method);
 
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(create_payment_address, ErrorCode::CommonInvalidParam3);
@@ -410,7 +411,7 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
     check_useful_c_callback!(verify_with_address, ErrorCode::CommonInvalidParam17);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam16);
 
-    trace!("indy_register_payment_method: entities >>> payment_method: {:?}", payment_method);
+    debug!("indy_register_payment_method: entities >>> payment_method: {:?}", payment_method);
 
     let cbs = PaymentsMethodCBs::new(
         create_payment_address,
@@ -429,20 +430,28 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
         sign_with_address,
         verify_with_address
     );
-//    let result =
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::RegisterMethod(
-//                    payment_method,
-//                    cbs,
-//                    Box::new(move |result| {
-//                        cb(command_handle, result.into());
-//                    }))
-//            ));
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .register_method(payment_method, cbs).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let err = prepare_result!(res);
+        debug!("indy_register_payment_method ? err {:?}", err);
+
+        cb(command_handle, err);
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandRegisterMethod, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_register_payment_method: <<< res: {:?}", res);
+    debug!("indy_register_payment_method: <<< res: {:?}", res);
 
     res
 }
@@ -476,28 +485,36 @@ pub extern fn indy_create_payment_address(command_handle: CommandHandle,
                                           cb: Option<extern fn(command_handle_: CommandHandle,
                                                                err: ErrorCode,
                                                                payment_address: *const c_char)>) -> ErrorCode {
-    trace!("indy_create_payment_address: >>> wallet_handle: {:?}, payment_method: {:?}, config: {:?}", wallet_handle, payment_method, config);
+    debug!("indy_create_payment_address: >>> wallet_handle: {:?}, payment_method: {:?}, config: {:?}", wallet_handle, payment_method, config);
 
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(config, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_create_payment_address: entities >>> wallet_handle: {:?}, payment_method: {:?}, config: {:?}", wallet_handle, payment_method, config);
+    debug!("indy_create_payment_address: entities >>> wallet_handle: {:?}, payment_method: {:?}, config: {:?}", wallet_handle, payment_method, config);
 
-//    let result =
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::CreateAddress(
-//                    wallet_handle,
-//                    payment_method,
-//                    config,
-//                    boxed_callback_string!("indy_create_payment_address", cb, command_handle)
-//                )
-//            ));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .create_address(wallet_handle, payment_method, config).await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, address) = prepare_result_1!(res, String::new());
+        debug!("indy_create_payment_address ? err {:?}", err);
+
+        let res = ctypes::string_to_cstring(address);
+        cb(command_handle, err, res.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandCreateAddress, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_create_payment_address: <<< res: {:?}", res);
+    debug!("indy_create_payment_address: <<< res: {:?}", res);
 
     res
 }
@@ -516,25 +533,28 @@ pub extern fn indy_list_payment_addresses(command_handle: CommandHandle,
                                           cb: Option<extern fn(command_handle_: CommandHandle,
                                                                err: ErrorCode,
                                                                payment_addresses_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_list_payment_address: >>> wallet_handle: {:?}", wallet_handle);
+    debug!("indy_list_payment_address: >>> wallet_handle: {:?}", wallet_handle);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_list_payment_address: entities >>> wallet_handle: {:?}", wallet_handle);
+    debug!("indy_list_payment_address: entities >>> wallet_handle: {:?}", wallet_handle);
 
-//    let result = Ok(());
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::ListAddresses(
-//                    wallet_handle,
-//                    boxed_callback_string!("indy_list_payment_address", cb, command_handle)
-//                )
-//            )
-//        );
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .list_addresses(wallet_handle).await;
+        res
+    };
+
+    boxed_callback_string!("indy_list_payment_address", cb, command_handle);
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandListAddresses, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_list_payment_address: <<< res: {:?}", res);
+    debug!("indy_list_payment_address: <<< res: {:?}", res);
 
     res
 }
@@ -581,7 +601,7 @@ pub extern fn indy_add_request_fees(command_handle: CommandHandle,
                                                          err: ErrorCode,
                                                          req_with_fees_json: *const c_char,
                                                          payment_method: *const c_char)>) -> ErrorCode {
-    trace!("indy_add_request_fees: >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
+    debug!("indy_add_request_fees: >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra);
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(req_json, ErrorCode::CommonInvalidParam4);
@@ -590,31 +610,33 @@ pub extern fn indy_add_request_fees(command_handle: CommandHandle,
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_add_request_fees: entities >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
+    debug!("indy_add_request_fees: entities >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra);
 
-//    let result = Ok(());
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::AddRequestFees(
-//                    wallet_handle,
-//                    submitter_did,
-//                    req_json,
-//                    inputs_json,
-//                    outputs_json,
-//                    extra,
-//                    Box::new(move |result| {
-//                        let (err, req_with_fees_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-//                        trace!("indy_add_request_fees: req_with_fees_json: {:?}, payment_method: {:?}", req_with_fees_json, payment_method);
-//                        let req_with_fees_json = ctypes::string_to_cstring(req_with_fees_json);
-//                        let payment_method = ctypes::string_to_cstring(payment_method);
-//                        cb(command_handle, err, req_with_fees_json.as_ptr(), payment_method.as_ptr());
-//                    }))
-//            ));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .add_request_fees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra)
+            .await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, req_with_fees_json, payment_method) = prepare_result_2!(res, String::new(), String::new());
+        debug!("indy_add_request_fees ? err {:?}, payment_method {:?}, req_with_fees_json {:?}", err, payment_method, req_with_fees_json);
+
+        let req_with_fees_json = ctypes::string_to_cstring(req_with_fees_json);
+        let payment_method = ctypes::string_to_cstring(payment_method);
+        cb(command_handle, err, req_with_fees_json.as_ptr(), payment_method.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandAddRequestFees, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_add_request_fees: <<< res: {:?}", res);
+    debug!("indy_add_request_fees: <<< res: {:?}", res);
 
     res
 }
@@ -641,23 +663,28 @@ pub extern fn indy_parse_response_with_fees(command_handle: CommandHandle,
                                             cb: Option<extern fn(command_handle_: CommandHandle,
                                                                  err: ErrorCode,
                                                                  receipts_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_response_with_fees: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    debug!("indy_parse_response_with_fees: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_parse_response_with_fees: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    debug!("indy_parse_response_with_fees: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
-//    let result = Ok(());
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::ParseResponseWithFees(
-//                    payment_method,
-//                    resp_json,
-//                    boxed_callback_string!("indy_parse_response_with_fees", cb, command_handle))));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .parse_response_with_fees(payment_method, resp_json).await;
+        res
+    };
+
+    boxed_callback_string!("indy_parse_response_with_fees", cb, command_handle);
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandParseResponseWithFees, action, cb);
     let res = ErrorCode::Success;
 
-    trace!("indy_parse_response_with_fees: <<< res: {:?}", res);
+    debug!("indy_parse_response_with_fees: <<< res: {:?}", res);
 
     res
 }
@@ -684,33 +711,35 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
                                                                           err: ErrorCode,
                                                                           get_sources_txn_json: *const c_char,
                                                                           payment_method: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_payment_sources_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
+    debug!("indy_build_get_payment_sources_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_build_get_payment_sources_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
+    debug!("indy_build_get_payment_sources_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
 
-//    let result = Ok(());
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::BuildGetPaymentSourcesRequest(
-//                    wallet_handle,
-//                    submitter_did,
-//                    payment_address,
-//                    None,
-//                    Box::new(move |result| {
-//                        let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-//                        trace!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
-//                        let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
-//                        let payment_method = ctypes::string_to_cstring(payment_method);
-//                        cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
-//                    }))
-//            ));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .build_get_payment_sources_request(wallet_handle, submitter_did, payment_address, None).await;
+        res
+    };
+
+    let cb = move |result: IndyResult<_>| {
+        let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+        debug!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
+        let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
+        let payment_method = ctypes::string_to_cstring(payment_method);
+        cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandBuildGetPaymentSourcesRequest, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_build_get_payment_sources_request: <<< res: {:?}", res);
+    debug!("indy_build_get_payment_sources_request: <<< res: {:?}", res);
 
     res
 }
@@ -738,30 +767,34 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: CommandHan
                                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                                            err: ErrorCode,
                                                                            sources_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_get_payment_sources_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    debug!("indy_parse_get_payment_sources_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_parse_get_payment_sources_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    debug!("indy_parse_get_payment_sources_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
-//    let result = Ok(());
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::ParseGetPaymentSourcesResponse(
-//                    payment_method,
-//                    resp_json,
-//                    Box::new(move |result| {
-//                        let (err, sources_json, _) = prepare_result_2!(result, String::new(), -1);
-//                        trace!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
-//                        let sources_json = ctypes::string_to_cstring(sources_json);
-//                        cb(command_handle, err, sources_json.as_ptr());
-//                    }))
-//            ));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .parse_get_payment_sources_response(payment_method, resp_json).await;
+        res
+    };
+
+    let cb = move |result: IndyResult<_>| {
+        let (err, sources_json, _) = prepare_result_2!(result, String::new(), -1);
+        debug!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
+        let sources_json = ctypes::string_to_cstring(sources_json);
+        cb(command_handle, err, sources_json.as_ptr());
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandParseGetPaymentSourcesResponse, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_parse_get_payment_sources_response: <<< res: {:?}", res);
+    debug!("indy_parse_get_payment_sources_response: <<< res: {:?}", res);
 
     res
 }
@@ -802,7 +835,7 @@ pub extern fn indy_build_payment_req(command_handle: CommandHandle,
                                                           err: ErrorCode,
                                                           payment_req_json: *const c_char,
                                                           payment_method: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_payment_req: >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
+    debug!("indy_build_payment_req: >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, inputs_json, outputs_json, extra);
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam4);
@@ -810,30 +843,31 @@ pub extern fn indy_build_payment_req(command_handle: CommandHandle,
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_build_payment_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
+    debug!("indy_build_payment_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, inputs_json, outputs_json, extra);
 
-//    let result = Ok(());
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::BuildPaymentReq(
-//                    wallet_handle,
-//                    submitter_did,
-//                    inputs_json,
-//                    outputs_json,
-//                    extra,
-//                    Box::new(move |result| {
-//                        let (err, payment_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-//                        trace!("indy_build_payment_req: payment_req_json: {:?}, payment_method: {:?}", payment_req_json, payment_method);
-//                        let payment_req_json = ctypes::string_to_cstring(payment_req_json);
-//                        let payment_method = ctypes::string_to_cstring(payment_method);
-//                        cb(command_handle, err, payment_req_json.as_ptr(), payment_method.as_ptr());
-//                    }))
-//            ));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .build_payment_req(wallet_handle, submitter_did, inputs_json, outputs_json, extra).await;
+        res
+    };
+
+    let cb = move |result: IndyResult<_>| {
+        let (err, payment_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+        debug!("indy_build_payment_req: payment_req_json: {:?}, payment_method: {:?}", payment_req_json, payment_method);
+        let payment_req_json = ctypes::string_to_cstring(payment_req_json);
+        let payment_method = ctypes::string_to_cstring(payment_method);
+        cb(command_handle, err, payment_req_json.as_ptr(), payment_method.as_ptr());
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandBuildPaymentReq, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_build_payment_req: <<< res: {:?}", res);
+    debug!("indy_build_payment_req: <<< res: {:?}", res);
 
     res
 }
@@ -860,24 +894,29 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
                                           cb: Option<extern fn(command_handle_: CommandHandle,
                                                                err: ErrorCode,
                                                                receipts_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_payment_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    debug!("indy_parse_payment_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_parse_payment_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    debug!("indy_parse_payment_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
-//    let result = Ok(());
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::ParsePaymentResponse(
-//                    payment_method,
-//                    resp_json,
-//                    boxed_callback_string!("indy_parse_payment_response", cb, command_handle))));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .parse_payment_response(payment_method, resp_json).await;
+        res
+    };
+
+    boxed_callback_string!("indy_parse_payment_response", cb, command_handle);
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandParsePaymentResponse, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_parse_payment_response: <<< res: {:?}", res);
+    debug!("indy_parse_payment_response: <<< res: {:?}", res);
 
     res
 }
@@ -918,7 +957,7 @@ pub extern fn indy_prepare_payment_extra_with_acceptance_data(command_handle: Co
                                                               cb: Option<extern fn(command_handle_: CommandHandle,
                                                                                    err: ErrorCode,
                                                                                    extra_with_acceptance: *const c_char)>) -> ErrorCode {
-    trace!("indy_prepare_payment_extra_with_acceptance_data: >>> extra_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, \
+    debug!("indy_prepare_payment_extra_with_acceptance_data: >>> extra_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, \
         mechanism: {:?}, time: {:?}",
            extra_json, text, version, taa_digest, mechanism, time);
 
@@ -929,26 +968,26 @@ pub extern fn indy_prepare_payment_extra_with_acceptance_data(command_handle: Co
     check_useful_c_str!(mechanism, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_prepare_payment_extra_with_acceptance_data: entities >>> extra_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, \
+    debug!("indy_prepare_payment_extra_with_acceptance_data: entities >>> extra_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, \
         mechanism: {:?}, time: {:?}",
            extra_json, text, version, taa_digest, mechanism, time);
 
-//    let result = Ok(());
-//        CommandExecutor::instance()
-//        .send(Command::Payments(
-//            PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(
-//                extra_json,
-//                text,
-//                version,
-//                taa_digest,
-//                mechanism,
-//                time,
-//                boxed_callback_string!("indy_prepare_payment_extra_with_acceptance_data", cb, command_handle)
-//            )));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .append_txn_author_agreement_acceptance_to_extra(extra_json, text, version, taa_digest, mechanism, time);
+        res
+    };
+
+    boxed_callback_string!("indy_prepare_payment_extra_with_acceptance_data", cb, command_handle);
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandAppendTxnAuthorAgreementAcceptanceToExtra, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_prepare_payment_extra_with_acceptance_data: <<< res: {:?}", res);
+    debug!("indy_prepare_payment_extra_with_acceptance_data: <<< res: {:?}", res);
 
     res
 }
@@ -980,34 +1019,36 @@ pub extern fn indy_build_mint_req(command_handle: CommandHandle,
                                                        err: ErrorCode,
                                                        mint_req_json: *const c_char,
                                                        payment_method: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_mint_req: >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
+    debug!("indy_build_mint_req: >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_build_mint_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
+    debug!("indy_build_mint_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
 
-//    let result = Ok(());
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::BuildMintReq(
-//                    wallet_handle,
-//                    submitter_did,
-//                    outputs_json,
-//                    extra,
-//                    Box::new(move |result| {
-//                        let (err, mint_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-//                        trace!("indy_build_mint_req: mint_req_json: {:?}, payment_method: {:?}", mint_req_json, payment_method);
-//                        let mint_req_json = ctypes::string_to_cstring(mint_req_json);
-//                        let payment_method = ctypes::string_to_cstring(payment_method);
-//                        cb(command_handle, err, mint_req_json.as_ptr(), payment_method.as_ptr());
-//                    }))
-//            ));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .build_mint_req(wallet_handle, submitter_did, outputs_json, extra).await;
+        res
+    };
+
+    let cb = move |result: IndyResult<_>| {
+        let (err, mint_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+        debug!("indy_build_mint_req: mint_req_json: {:?}, payment_method: {:?}", mint_req_json, payment_method);
+        let mint_req_json = ctypes::string_to_cstring(mint_req_json);
+        let payment_method = ctypes::string_to_cstring(payment_method);
+        cb(command_handle, err, mint_req_json.as_ptr(), payment_method.as_ptr());
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandBuildMintReq, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_build_mint_req: <<< res: {:?}", res);
+    debug!("indy_build_mint_req: <<< res: {:?}", res);
 
     res
 }
@@ -1036,27 +1077,30 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: CommandHandle,
                                           cb: Option<extern fn(command_handle_: CommandHandle,
                                                                err: ErrorCode,
                                                                set_txn_fees_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_set_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
+    debug!("indy_build_set_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(fees_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_build_set_txn_fees_req: entitites >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
+    debug!("indy_build_set_txn_fees_req: entitites >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
 
-//    let result = Ok(());
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::BuildSetTxnFeesReq(
-//                    wallet_handle,
-//                    submitter_did,
-//                    payment_method,
-//                    fees_json,
-//                    boxed_callback_string!("indy_build_set_txn_fees_req", cb, command_handle))));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .build_set_txn_fees_req(wallet_handle, submitter_did, payment_method, fees_json).await;
+        res
+    };
+
+    boxed_callback_string!("indy_build_set_txn_fees_req", cb, command_handle);
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandBuildSetTxnFeesReq, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_build_set_txn_fees_req: <<< res: {:?}", res);
+    debug!("indy_build_set_txn_fees_req: <<< res: {:?}", res);
 
     res
 }
@@ -1079,25 +1123,29 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: CommandHandle,
                                           cb: Option<extern fn(command_handle_: CommandHandle,
                                                                err: ErrorCode,
                                                                get_txn_fees_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}", wallet_handle, submitter_did, payment_method);
+    debug!("indy_build_get_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}", wallet_handle, submitter_did, payment_method);
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_build_get_txn_fees_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}", wallet_handle, submitter_did, payment_method);
+    debug!("indy_build_get_txn_fees_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}", wallet_handle, submitter_did, payment_method);
 
-//    let result = Ok(());
-//        CommandExecutor::instance().send(
-//            Command::Payments(
-//                PaymentsCommand::BuildGetTxnFeesReq(
-//                    wallet_handle,
-//                    submitter_did,
-//                    payment_method,
-//                    boxed_callback_string!("indy_build_get_txn_fees_req", cb, command_handle))));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .build_get_txn_fees_req(wallet_handle, submitter_did, payment_method).await;
+        res
+    };
+
+    boxed_callback_string!("indy_build_get_txn_fees_req", cb, command_handle);
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandBuildGetTxnFeesReq, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_build_get_txn_fees_req: <<< res: {:?}", res);
+    debug!("indy_build_get_txn_fees_req: <<< res: {:?}", res);
 
     res
 }
@@ -1123,24 +1171,29 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: CommandHandle,
                                                cb: Option<extern fn(command_handle_: CommandHandle,
                                                                     err: ErrorCode,
                                                                     fees_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_get_txn_fees_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    debug!("indy_parse_get_txn_fees_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_parse_get_txn_fees_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    debug!("indy_parse_get_txn_fees_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
-//    let result = Ok(());
-//        CommandExecutor::instance()
-//            .send(Command::Payments(
-//                PaymentsCommand::ParseGetTxnFeesResponse(
-//                    payment_method,
-//                    resp_json,
-//                    boxed_callback_string!("indy_parse_get_txn_fees_response", cb, command_handle))));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .parse_get_txn_fees_response(payment_method, resp_json).await;
+        res
+    };
+
+    boxed_callback_string!("indy_parse_get_txn_fees_response", cb, command_handle);
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandParseGetTxnFeesResponse, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_parse_get_txn_fees_response: <<< res: {:?}", res);
+    debug!("indy_parse_get_txn_fees_response: <<< res: {:?}", res);
 
     res
 }
@@ -1165,32 +1218,35 @@ pub extern fn indy_build_verify_payment_req(command_handle: CommandHandle,
                                                                  err: ErrorCode,
                                                                  verify_txn_json: *const c_char,
                                                                  payment_method: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_verify_payment_req: >>> wallet_handle {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
+    debug!("indy_build_verify_payment_req: >>> wallet_handle {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
     check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(receipt, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_build_verify_payment_req: entities >>> wallet_handle {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
+    debug!("indy_build_verify_payment_req: entities >>> wallet_handle {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
 
-//    let result = Ok(());
-//        CommandExecutor::instance()
-//        .send(Command::Payments(
-//            PaymentsCommand::BuildVerifyPaymentReq(
-//                wallet_handle,
-//                submitter_did,
-//                receipt,
-//                Box::new(move |result| {
-//                    let (err, verify_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-//                    trace!("indy_build_verify_payment_req: verify_txn_json: {:?}, payment_method: {:?}", verify_txn_json, payment_method);
-//                    let verify_txn_json = ctypes::string_to_cstring(verify_txn_json);
-//                    let payment_method = ctypes::string_to_cstring(payment_method);
-//                    cb(command_handle, err, verify_txn_json.as_ptr(), payment_method.as_ptr());
-//                })
-//            )));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .build_verify_payment_request(wallet_handle, submitter_did, receipt).await;
+        res
+    };
+
+    let cb = move |result: IndyResult<_>| {
+        let (err, verify_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+        debug!("indy_build_verify_payment_req: verify_txn_json: {:?}, payment_method: {:?}", verify_txn_json, payment_method);
+        let verify_txn_json = ctypes::string_to_cstring(verify_txn_json);
+        let payment_method = ctypes::string_to_cstring(payment_method);
+        cb(command_handle, err, verify_txn_json.as_ptr(), payment_method.as_ptr());
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandBuildVerifyPaymentReq, action, cb);
 
     let result = ErrorCode::Success;
 
-    trace!("indy_build_verify_payment_req: <<< result: {:?}", result);
+    debug!("indy_build_verify_payment_req: <<< result: {:?}", result);
 
     result
 }
@@ -1219,25 +1275,29 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
                                                  cb: Option<extern fn(command_handle_: CommandHandle,
                                                                       err: ErrorCode,
                                                                       txn_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_verify_payment_response: >>> resp_json: {:?}", resp_json);
+    debug!("indy_parse_verify_payment_response: >>> resp_json: {:?}", resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_parse_verify_payment_response: entities >>> resp_json: {:?}", resp_json);
+    debug!("indy_parse_verify_payment_response: entities >>> resp_json: {:?}", resp_json);
 
-//    let result = Ok(());
-//        CommandExecutor::instance()
-//        .send(Command::Payments(
-//            PaymentsCommand::ParseVerifyPaymentResponse(
-//                payment_method,
-//                resp_json,
-//                boxed_callback_string!("indy_parse_verify_payment_response", cb, command_handle)
-//            )));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .parse_verify_payment_response(payment_method, resp_json).await;
+        res
+    };
+
+    boxed_callback_string!("indy_parse_verify_payment_response", cb, command_handle);
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandParseVerifyPaymentResponse, action, cb);
 
     let result = ErrorCode::Success;
 
-    trace!("indy_parse_verify_payment_response: <<< result: {:?}", result);
+    debug!("indy_parse_verify_payment_response: <<< result: {:?}", result);
 
     result
 }
@@ -1280,7 +1340,7 @@ pub extern fn indy_get_request_info(command_handle: CommandHandle,
                                     cb: Option<extern fn(command_handle_: CommandHandle,
                                                          err: ErrorCode,
                                                          request_info_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_get_request_info: >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
+    debug!("indy_get_request_info: >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
            get_auth_rule_response_json, requester_info_json, fees_json);
 
     check_useful_c_str!(get_auth_rule_response_json, ErrorCode::CommonInvalidParam2);
@@ -1288,22 +1348,25 @@ pub extern fn indy_get_request_info(command_handle: CommandHandle,
     check_useful_json!(fees_json, ErrorCode::CommonInvalidParam4, Fees);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_get_request_info: entities >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
+    debug!("indy_get_request_info: entities >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
            get_auth_rule_response_json, requester_info_json, fees_json);
 
-//    let result = Ok(());
-//        CommandExecutor::instance()
-//        .send(Command::Payments(
-//            PaymentsCommand::GetRequestInfo(
-//                get_auth_rule_response_json,
-//                requester_info_json,
-//                fees_json,
-//                boxed_callback_string!("indy_get_request_info", cb, command_handle)
-//            )));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .get_request_info(&get_auth_rule_response_json, requester_info_json, &fees_json);
+        res
+    };
+
+    boxed_callback_string!("indy_get_request_info", cb, command_handle);
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandGetRequestInfo, action, cb);
 
     let result = ErrorCode::Success;
 
-    trace!("indy_get_request_info: <<< result: {:?}", result);
+    debug!("indy_get_request_info: <<< result: {:?}", result);
 
     result
 }
@@ -1335,33 +1398,37 @@ pub extern fn indy_sign_with_address(command_handle: CommandHandle,
                                                           err: ErrorCode,
                                                           signature_raw: *const u8,
                                                           signature_len: u32)>) -> ErrorCode {
-    trace!("indy_sign_with_address: >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
+    debug!("indy_sign_with_address: >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
            wallet_handle, address, message_raw, message_len);
     check_useful_c_str!(address, ErrorCode::CommonInvalidParam3);
     check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_sign_with_address: entities >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
+    debug!("indy_sign_with_address: entities >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
            wallet_handle, address, message_raw, message_len);
 
-//    let result = Ok(());
-//        CommandExecutor::instance()
-//        .send(Command::Payments(
-//            PaymentsCommand::SignWithAddressReq(wallet_handle,
-//                                                address,
-//                                                message_raw,
-//                                                Box::new(move |result| {
-//                                                    let (err, signature) = prepare_result_1!(result, Vec::new());
-//                                                    trace!("indy_sign_with_address: signature: {:?}", signature);
-//                                                    let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
-//                                                    cb(command_handle, err, signature_raw, signature_len)
-//                                        }))
-//        ));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .sign_with_address(wallet_handle, address, &message_raw).await;
+        res
+    };
+
+    let cb = move |result: IndyResult<_>| {
+        let (err, signature) = prepare_result_1!(result, Vec::new());
+        debug!("indy_sign_with_address: signature: {:?}", signature);
+        let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
+        cb(command_handle, err, signature_raw, signature_len)
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandSignWithAddressReq, action, cb);
 
 
     let res = ErrorCode::Success;
 
-    trace!("indy_sign_with_address: <<< res: {:?}", res);
+    debug!("indy_sign_with_address: <<< res: {:?}", res);
 
     res
 }
@@ -1395,7 +1462,7 @@ pub extern fn indy_verify_with_address(command_handle: CommandHandle,
                                        cb: Option<extern fn(command_handle_: CommandHandle,
                                                             err: ErrorCode,
                                                             result: bool)>) -> ErrorCode {
-    trace!("indy_verify_with_address: >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
+    debug!("indy_verify_with_address: >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
            address, message_raw, message_len, signature_raw, signature_len);
 
     check_useful_c_str!(address, ErrorCode::CommonInvalidParam2);
@@ -1403,25 +1470,29 @@ pub extern fn indy_verify_with_address(command_handle: CommandHandle,
     check_useful_c_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_verify_with_address: entities >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
+    debug!("indy_verify_with_address: entities >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
            address, message_raw, message_len, signature_raw, signature_len);
 
-//    let result =
-//        CommandExecutor::instance()
-//        .send(Command::Payments(PaymentsCommand::VerifyWithAddressReq(
-//            address,
-//            message_raw,
-//            signature_raw,
-//            Box::new(move |result| {
-//                let (err, valid) = prepare_result_1!(result, false);
-//                trace!("indy_verify_with_address: valid: {:?}", valid);
-//                cb(command_handle, err, valid)
-//            })
-//        )));
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .payment_controller
+            .verify_with_address(address, &message_raw, &signature_raw).await;
+        res
+    };
+
+    let cb = move |result: IndyResult<_>| {
+        let (err, valid) = prepare_result_1!(result, false);
+        debug!("indy_verify_with_address: valid: {:?}", valid);
+        cb(command_handle, err, valid)
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::PaymentsCommandVerifyWithAddressReq, action, cb);
 
     let res = ErrorCode::Success;
 
-    trace!("indy_verify_with_address: <<< res: {:?}", res);
+    debug!("indy_verify_with_address: <<< res: {:?}", res);
 
     res
 }

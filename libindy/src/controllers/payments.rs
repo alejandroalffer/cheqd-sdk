@@ -1,30 +1,27 @@
 use std::{
     collections::HashMap,
-    sync::Arc,
     string::String,
-    vec::Vec
+    sync::Arc,
+    vec::Vec,
 };
 
 use hex;
-
+use indy_api_types::errors::prelude::*;
+use indy_api_types::WalletHandle;
+use indy_wallet::{RecordOptions, WalletService};
 use serde_json;
 
-use indy_api_types::errors::prelude::*;
 use crate::{
+    domain::{
+        crypto::did::DidValue,
+        ledger::auth_rule::AuthRule,
+    },
     services::{
         CryptoService,
-        LedgerService,
-        payments::{
-            PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees
-        }
+        Fees,
+        LedgerService, PaymentsMethodCBs, PaymentsService, RequesterInfo,
     },
-    domain::{
-        ledger::auth_rule::AuthRule,
-        crypto::did::DidValue
-    }
 };
-use indy_wallet::{RecordOptions, WalletService};
-use indy_api_types::WalletHandle;
 
 pub struct PaymentsController {
     payments_service:Arc<PaymentsService>,
@@ -43,10 +40,10 @@ impl PaymentsController {
         }
     }
 
-    fn register_method(&self, type_: String, methods: PaymentsMethodCBs) -> IndyResult<()> {
+    pub(crate) async fn register_method(&self, type_: String, methods: PaymentsMethodCBs) -> IndyResult<()> {
         trace!("register_method > type_ {:?} methods {:?}", type_, methods);
 
-        self.payments_service.register_payment_method(&type_, methods);
+        self.payments_service.register_payment_method(&type_, methods).await;
         let res = Ok(());
 
         trace!("register_method << res {:?}", res);
@@ -237,13 +234,13 @@ impl PaymentsController {
         Ok((req, method))
     }
 
-    fn append_txn_author_agreement_acceptance_to_extra(&self,
-                                                       extra: Option<String>,
-                                                       text: Option<String>,
-                                                       version: Option<String>,
-                                                       taa_digest: Option<String>,
-                                                       mechanism: String,
-                                                       time: u64) -> IndyResult<String> {
+    pub(crate) fn append_txn_author_agreement_acceptance_to_extra(&self,
+                                                                  extra: Option<String>,
+                                                                  text: Option<String>,
+                                                                  version: Option<String>,
+                                                                  taa_digest: Option<String>,
+                                                                  mechanism: String,
+                                                                  time: u64) -> IndyResult<String> {
         debug!("append_txn_author_agreement_acceptance_to_extra > \
                extra {:?} text {:?} version {:?} taa_digest {:?} \
                mechanism {:?} time {:?}", extra, text, version,
