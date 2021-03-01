@@ -31,7 +31,7 @@ use crate::{
 };
 pub use crate::encryption::KeyDerivationData;
 use indy_api_types::domain::wallet::CacheConfig;
-use crate::wallet_cache::{WalletCache, WalletCacheHitMetrics};
+use crate::wallet_cache::{WalletCache, WalletCacheHitMetrics, WalletCacheHitData};
 
 //use crate::storage::plugged::PluggedStorageType; FXIME:
 
@@ -872,6 +872,10 @@ impl WalletService {
 
     pub async fn get_pending_for_open_count(&self) -> usize {
         self.pending_for_open.lock().await.len()
+    }
+
+    pub async fn get_wallet_cache_hit_metrics_data(&self) -> HashMap<String, WalletCacheHitData> {
+        self.cache_hit_metrics.get_data().await
     }
 
     fn _get_config_and_cred_for_storage<'a>(
