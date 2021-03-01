@@ -13,6 +13,7 @@ use zeroize::Zeroize;
 use crate::{encryption::*, iterator::WalletIterator, query_encryption::encrypt_query, storage, WalletRecord, wallet_cache::WalletCache, RecordOptions};
 use crate::storage::StorageRecord;
 use crate::wallet_cache::WalletCacheHitMetrics;
+use futures::future::join;
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct Keys {
@@ -327,10 +328,12 @@ impl Wallet {
                     result
                 },
                 None => {
-                    cache_hit_metrics.inc_cache_miss(type_).await;
-
                     // no item in cache, lets retrieve it and put it in cache.
-                    let full_result = self.storage.get(&etype, &ename, &RecordOptions::id_value_tags()).await?;
+                    let metrics_fut = cache_hit_metrics.inc_cache_miss(type_);
+                    let full_options = RecordOptions::id_value_tags();
+                    let storage_fut = self.storage.get(&etype, &ename, &full_options);
+                    // run these two futures in parallel.
+                    let full_result = join(metrics_fut, storage_fut).await.1?;
 
                     // save to cache only if valid data is returned (this should be always true).
                     if let (Some(evalue), Some(etags)) = (&full_result.value, &full_result.tags) {
@@ -345,8 +348,10 @@ impl Wallet {
                 }
             }
         } else {
-            cache_hit_metrics.inc_not_cached(type_).await;
-            self.storage.get(&etype, &ename, options).await?
+            let metrics_fut = cache_hit_metrics.inc_not_cached(type_);
+            let storage_fut = self.storage.get(&etype, &ename, options);
+            // run these two futures in parallel.
+            join(metrics_fut, storage_fut).await.1?
         };
 
         let value = match result.value {

@@ -313,6 +313,7 @@ impl WalletCacheHitMetrics {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn get_data_for_type(&self, type_: &str) -> Option<WalletCacheHitData> {
         self.data.read().await.get(type_).map(|x|x.clone())
     }
