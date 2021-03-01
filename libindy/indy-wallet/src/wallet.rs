@@ -177,7 +177,7 @@ impl Wallet {
         );
 
         self.storage.add(&etype, &ename, &evalue, &etags).await?;
-        self.cache.add(type_, &etype, &ename, &evalue, &etags);
+        self.cache.add(type_, &etype, &ename, &evalue, &etags).await;
 
         Ok(())
     }
@@ -210,7 +210,9 @@ impl Wallet {
         self.storage
             .add_tags(&encrypted_type, &encrypted_name, &encrypted_tags)
             .await?;
-        self.cache.add_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tags);
+        self.cache
+            .add_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tags)
+            .await;
 
         Ok(())
     }
@@ -243,7 +245,9 @@ impl Wallet {
         self.storage
             .update_tags(&encrypted_type, &encrypted_name, &encrypted_tags)
             .await?;
-        self.cache.update_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tags);
+        self.cache
+            .update_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tags)
+            .await;
 
         Ok(())
     }
@@ -267,7 +271,9 @@ impl Wallet {
         self.storage
             .delete_tags(&encrypted_type, &encrypted_name, &encrypted_tag_names[..])
             .await?;
-        self.cache.delete_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tag_names[..]);
+        self.cache
+            .delete_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tag_names[..])
+            .await;
 
         Ok(())
     }
@@ -290,7 +296,9 @@ impl Wallet {
         self.storage
             .update(&encrypted_type, &encrypted_name, &encrypted_value)
             .await?;
-        self.cache.update(type_, &encrypted_type, &encrypted_name, &encrypted_value);
+        self.cache
+            .update(type_, &encrypted_type, &encrypted_name, &encrypted_value)
+            .await;
 
         Ok(())
     }
@@ -313,7 +321,7 @@ impl Wallet {
                 IndyErrorKind::InvalidStructure,
                 "RecordOptions is malformed json",
             )?;
-            match self.cache.get(type_, &etype, &ename, &record_options) {
+            match self.cache.get(type_, &etype, &ename, &record_options).await {
                 Some(result) => {
                     cache_hit_metrics.inc_cache_hit(type_).await;
                     result
@@ -326,7 +334,7 @@ impl Wallet {
 
                     // save to cache only if valid data is returned (this should be always true).
                     if let (Some(evalue), Some(etags)) = (&full_result.value, &full_result.tags) {
-                        self.cache.add(type_, &etype, &ename, evalue, etags);
+                        self.cache.add(type_, &etype, &ename, evalue, etags).await;
                     }
                     StorageRecord {
                         id: full_result.id,
@@ -374,7 +382,7 @@ impl Wallet {
         );
 
         self.storage.delete(&etype, &ename).await?;
-        self.cache.delete(type_, &etype, &ename);
+        self.cache.delete(type_, &etype, &ename).await;
 
         Ok(())
     }

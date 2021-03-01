@@ -2,13 +2,12 @@ use lru::LruCache;
 use crate::wallet::EncryptedValue;
 use crate::storage::{StorageRecord, Tag, TagName};
 use crate::RecordOptions;
-use std::sync::Mutex;
 use indy_api_types::domain::wallet::CacheConfig;
 use std::collections::{HashSet, HashMap};
 use std::iter::FromIterator;
 use crate::storage::Tag::{Encrypted, PlainText};
 use crate::storage::TagName::{OfEncrypted, OfPlain};
-use async_std::sync::RwLock;
+use async_std::sync::{RwLock, Mutex};
 use std::sync::atomic::{AtomicU32, Ordering};
 
 const DEFAULT_CACHE_SIZE: usize = 10;
@@ -51,7 +50,7 @@ impl WalletCache {
         self.cache.is_some() && self.cache_entities.contains(&type_.to_owned())
     }
 
-    pub fn add(
+    pub async fn add(
         &self,
         type_: &str,
         etype: &[u8],
@@ -69,12 +68,12 @@ impl WalletCache {
                     value: evalue.to_owned(),
                     tags: etags.to_owned(),
                 };
-                let _ = protected_cache.lock().map(|mut cache|{cache.put(key, value)});
+                let _ = protected_cache.lock().await.put(key, value);
             }
         }
     }
 
-    pub fn add_tags(
+    pub async fn add_tags(
         &self,
         type_: &str,
         etype: &[u8],
@@ -87,16 +86,14 @@ impl WalletCache {
                     type_: etype.to_owned(),
                     id: eid.to_owned(),
                 };
-                let _ = protected_cache.lock().map(|mut cache|{
-                    let _ = cache.get_mut(&key).map(|v|{
-                        v.tags.append(&mut etags.to_owned())
-                    });
+                let _ = protected_cache.lock().await.get_mut(&key).map(|v|{
+                    v.tags.append(&mut etags.to_owned())
                 });
             }
         }
     }
 
-    pub fn update_tags(
+    pub async fn update_tags(
         &self,
         type_: &str,
         etype: &[u8],
@@ -109,16 +106,14 @@ impl WalletCache {
                     type_: etype.to_owned(),
                     id: eid.to_owned(),
                 };
-                let _ = protected_cache.lock().map(|mut cache|{
-                    let _ = cache.get_mut(&key).map(|v|{
-                        v.tags = etags.to_vec()
-                    });
+                let _ = protected_cache.lock().await.get_mut(&key).map(|v|{
+                    v.tags = etags.to_vec()
                 });
             }
         }
     }
 
-    pub fn delete_tags(
+    pub async fn delete_tags(
         &self,
         type_: &str,
         etype: &[u8],
@@ -139,25 +134,23 @@ impl WalletCache {
                         OfPlain(value) => plain_tag_names.insert(value),
                     };
                 }
-                let _ = protected_cache.lock().map(|mut cache|{
-                    let _ = cache.get_mut(&key).map(|v|{
-                        v.tags.retain(|el| {
-                            match el {
-                                Encrypted(tag_name, _) => {
-                                    !enc_tag_names.contains(tag_name)
-                                },
-                                PlainText(tag_name, _) => {
-                                    !plain_tag_names.contains(tag_name)
-                                }
+                let _ = protected_cache.lock().await.get_mut(&key).map(|v|{
+                    v.tags.retain(|el| {
+                        match el {
+                            Encrypted(tag_name, _) => {
+                                !enc_tag_names.contains(tag_name)
+                            },
+                            PlainText(tag_name, _) => {
+                                !plain_tag_names.contains(tag_name)
                             }
-                        })
+                        }
                     });
                 });
             }
         }
     }
 
-    pub fn update(
+    pub async fn update(
         &self,
         type_: &str,
         etype: &[u8],
@@ -170,16 +163,14 @@ impl WalletCache {
                     type_: etype.to_owned(),
                     id: eid.to_owned(),
                 };
-                let _ = protected_cache.lock().map(|mut cache|{
-                    let _ = cache.get_mut(&key).map(|v|{
-                        v.value = evalue.to_owned()
-                    });
+                let _ = protected_cache.lock().await.get_mut(&key).map(|v|{
+                    v.value = evalue.to_owned()
                 });
             }
         }
     }
 
-    pub fn get(
+    pub async fn get(
         &self,
         type_: &str,
         etype: &[u8],
@@ -192,8 +183,7 @@ impl WalletCache {
                     type_: etype.to_owned(),
                     id: eid.to_owned(),
                 };
-                let mut cache = protected_cache.lock().unwrap();
-                (*cache).get(&key).map(|v|{
+                protected_cache.lock().await.get(&key).map(|v|{
                     StorageRecord {
                         id: eid.to_owned(),
                         value: if options.retrieve_value {Some(v.value.clone())} else {None},
@@ -209,16 +199,14 @@ impl WalletCache {
         }
     }
 
-    pub fn delete(&self, type_: &str, etype: &[u8], eid: &[u8]) {
+    pub async fn delete(&self, type_: &str, etype: &[u8], eid: &[u8]) {
         if let Some(protected_cache) = &self.cache {
             if self.cache_entities.contains(&type_.to_owned()) {
                 let key = WalletCacheKey {
                     type_: etype.to_owned(),
                     id: eid.to_owned(),
                 };
-                let _ = protected_cache.lock().map(|mut cache|{
-                    cache.pop(&key)
-                });
+                let _ = protected_cache.lock().await.pop(&key);
             }
         }
     }
@@ -453,8 +441,8 @@ mod tests {
         let wallet_cache = WalletCache::new(Some(config));
         assert!(wallet_cache.cache.is_some());
         let mut cache = wallet_cache.cache.unwrap();
-        assert_eq!(cache.get_mut().unwrap().cap(), DEFAULT_CACHE_SIZE);
-        assert_eq!(cache.get_mut().unwrap().len(), 0);
+        assert_eq!(cache.get_mut().cap(), DEFAULT_CACHE_SIZE);
+        assert_eq!(cache.get_mut().len(), 0);
         assert_eq!(wallet_cache.cache_entities.len(), 2);
         assert_eq!(wallet_cache.cache_entities, _vec_to_hash_set(&[TYPE_A, TYPE_B]));
     }
@@ -469,8 +457,8 @@ mod tests {
         let wallet_cache = WalletCache::new(Some(config));
         assert!(wallet_cache.cache.is_some());
         let mut cache = wallet_cache.cache.unwrap();
-        assert_eq!(cache.get_mut().unwrap().cap(), 20);
-        assert_eq!(cache.get_mut().unwrap().len(), 0);
+        assert_eq!(cache.get_mut().cap(), 20);
+        assert_eq!(cache.get_mut().len(), 0);
         assert_eq!(wallet_cache.cache_entities.len(), 2);
         assert_eq!(wallet_cache.cache_entities, _vec_to_hash_set(&[TYPE_A, TYPE_B]));
     }
@@ -496,15 +484,15 @@ mod tests {
         assert_eq!(result, false);
     }
 
-    #[test]
-    fn add_works() {
+    #[async_std::test]
+    async fn add_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -512,20 +500,20 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![tag1, tag2]);
     }
 
-    #[test]
-    fn add_without_tags_works() {
+    #[async_std::test]
+    async fn add_without_tags_works() {
         let value = _enc_value();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -533,42 +521,42 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![]);
     }
 
-    #[test]
-    fn add_for_non_cacheable_type_works() {
+    #[async_std::test]
+    async fn add_for_non_cacheable_type_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]);
+        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]).await;
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 0);
     }
 
-    #[test]
-    fn add_for_no_cache_enabled_works() {
+    #[async_std::test]
+    async fn add_for_no_cache_enabled_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _no_cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]).await;
         assert!(cache.cache.is_none());
     }
 
-    #[test]
-    fn add_tags_works() {
+    #[async_std::test]
+    async fn add_tags_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
@@ -576,8 +564,8 @@ mod tests {
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        cache.add_tags(TYPE_A, ETYPE1, EID1, &[tag3.clone()]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        cache.add_tags(TYPE_A, ETYPE1, EID1, &[tag3.clone()]).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -585,23 +573,23 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![tag1, tag2, tag3]);
     }
 
-    #[test]
-    fn add_tags_on_item_without_tags_works() {
+    #[async_std::test]
+    async fn add_tags_on_item_without_tags_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]);
-        cache.add_tags(TYPE_A, ETYPE1, EID1, &[tag1.clone(), tag2.clone()]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]).await;
+        cache.add_tags(TYPE_A, ETYPE1, EID1, &[tag1.clone(), tag2.clone()]).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -609,15 +597,15 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![tag1, tag2]);
     }
 
-    #[test]
-    fn add_tags_on_non_cached_item_works() {
+    #[async_std::test]
+    async fn add_tags_on_non_cached_item_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
@@ -625,8 +613,8 @@ mod tests {
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        cache.add_tags(TYPE_A, ETYPE1, EID2, &[tag3]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        cache.add_tags(TYPE_A, ETYPE1, EID2, &[tag3]).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -634,7 +622,7 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
@@ -648,8 +636,8 @@ mod tests {
         assert!(lru.peek(&key2).is_none());
     }
 
-    #[test]
-    fn add_tags_for_non_cacheable_type_works() {
+    #[async_std::test]
+    async fn add_tags_for_non_cacheable_type_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
@@ -657,16 +645,16 @@ mod tests {
 
         let cache = _cache();
 
-        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]);
-        cache.add_tags(TYPE_NON_CACHED, ETYPE1, EID1, &[tag3]);
+        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        cache.add_tags(TYPE_NON_CACHED, ETYPE1, EID1, &[tag3]).await;
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 0);
     }
 
-    #[test]
-    fn add_tags_for_no_cache_enabled_works() {
+    #[async_std::test]
+    async fn add_tags_for_no_cache_enabled_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
@@ -674,14 +662,14 @@ mod tests {
 
         let cache = _no_cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]);
-        cache.add_tags(TYPE_A, ETYPE1, EID1, &[tag3]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        cache.add_tags(TYPE_A, ETYPE1, EID1, &[tag3]).await;
 
         assert!(cache.cache.is_none());
     }
 
-    #[test]
-    fn update_tags_works() {
+    #[async_std::test]
+    async fn update_tags_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
@@ -689,8 +677,8 @@ mod tests {
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]);
-        cache.update_tags(TYPE_A, ETYPE1, EID1, &[tag3.clone()]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        cache.update_tags(TYPE_A, ETYPE1, EID1, &[tag3.clone()]).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -698,22 +686,22 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![tag3]);
     }
 
-    #[test]
-    fn update_tags_on_item_without_tags_works() {
+    #[async_std::test]
+    async fn update_tags_on_item_without_tags_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]);
-        cache.update_tags(TYPE_A, ETYPE1, EID1, &[tag1.clone()]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]).await;
+        cache.update_tags(TYPE_A, ETYPE1, EID1, &[tag1.clone()]).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -721,15 +709,15 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![tag1]);
     }
 
-    #[test]
-    fn update_tags_on_non_cached_item_works() {
+    #[async_std::test]
+    async fn update_tags_on_non_cached_item_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
@@ -738,8 +726,8 @@ mod tests {
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        cache.update_tags(TYPE_A, ETYPE1, EID2, &[tag3, tag4]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        cache.update_tags(TYPE_A, ETYPE1, EID2, &[tag3, tag4]).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -747,7 +735,7 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
@@ -761,8 +749,8 @@ mod tests {
         assert!(lru.peek(&key2).is_none());
     }
 
-    #[test]
-    fn update_tags_for_non_cacheable_type_works() {
+    #[async_std::test]
+    async fn update_tags_for_non_cacheable_type_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
@@ -770,16 +758,16 @@ mod tests {
 
         let cache = _cache();
 
-        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]);
-        cache.update_tags(TYPE_NON_CACHED, ETYPE1, EID1, &[tag3]);
+        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        cache.update_tags(TYPE_NON_CACHED, ETYPE1, EID1, &[tag3]).await;
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 0);
     }
 
-    #[test]
-    fn update_tags_for_no_cache_enabled_works() {
+    #[async_std::test]
+    async fn update_tags_for_no_cache_enabled_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
@@ -787,14 +775,14 @@ mod tests {
 
         let cache = _no_cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]);
-        cache.update_tags(TYPE_A, ETYPE1, EID1, &[tag3]);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        cache.update_tags(TYPE_A, ETYPE1, EID1, &[tag3]).await;
 
         assert!(cache.cache.is_none());
     }
 
-    #[test]
-    fn delete_tags_works() {
+    #[async_std::test]
+    async fn delete_tags_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
@@ -802,8 +790,8 @@ mod tests {
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        cache.delete_tags(TYPE_A, ETYPE1, EID1, &_tag_names(&[tag1, tag3]));
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        cache.delete_tags(TYPE_A, ETYPE1, EID1, &_tag_names(&[tag1, tag3])).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -811,22 +799,22 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![tag2]);
     }
 
-    #[test]
-    fn delete_tags_on_item_without_tags_works() {
+    #[async_std::test]
+    async fn delete_tags_on_item_without_tags_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]);
-        cache.delete_tags(TYPE_A, ETYPE1, EID1, &_tag_names(&[tag1]));
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]).await;
+        cache.delete_tags(TYPE_A, ETYPE1, EID1, &_tag_names(&[tag1])).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -834,23 +822,23 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![]);
     }
 
-    #[test]
-    fn delete_tags_on_non_cached_item_works() {
+    #[async_std::test]
+    async fn delete_tags_on_non_cached_item_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        cache.delete_tags(TYPE_A, ETYPE1, EID2, &_tag_names(&[tag1.clone()]));
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        cache.delete_tags(TYPE_A, ETYPE1, EID2, &_tag_names(&[tag1.clone()])).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -858,7 +846,7 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
@@ -872,38 +860,38 @@ mod tests {
         assert!(lru.peek(&key2).is_none());
     }
 
-    #[test]
-    fn delete_tags_for_non_cacheable_type_works() {
+    #[async_std::test]
+    async fn delete_tags_for_non_cacheable_type_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        cache.delete_tags(TYPE_NON_CACHED, ETYPE1, EID1, &_tag_names(&[tag1.clone()]));
+        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        cache.delete_tags(TYPE_NON_CACHED, ETYPE1, EID1, &_tag_names(&[tag1.clone()])).await;
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 0);
     }
 
-    #[test]
-    fn delete_tags_for_no_cache_enabled_works() {
+    #[async_std::test]
+    async fn delete_tags_for_no_cache_enabled_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _no_cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        cache.delete_tags(TYPE_A, ETYPE1, EID1, &_tag_names(&[tag1]));
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        cache.delete_tags(TYPE_A, ETYPE1, EID1, &_tag_names(&[tag1])).await;
 
         assert!(cache.cache.is_none());
     }
 
-    #[test]
-    fn update_works() {
+    #[async_std::test]
+    async fn update_works() {
         let value = _enc_value();
         let value2 = _enc_value();
         let tag1 = _enc_tag();
@@ -911,8 +899,8 @@ mod tests {
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        cache.update(TYPE_A, ETYPE1, EID1, &value2);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        cache.update(TYPE_A, ETYPE1, EID1, &value2).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -920,22 +908,22 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value2);
         assert_eq!(cached.tags, vec![tag1, tag2]);
     }
 
-    #[test]
-    fn update_on_item_without_tags_works() {
+    #[async_std::test]
+    async fn update_on_item_without_tags_works() {
         let value = _enc_value();
         let value2 = _enc_value();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]);
-        cache.update(TYPE_A, ETYPE1, EID1, &value2);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]).await;
+        cache.update(TYPE_A, ETYPE1, EID1, &value2).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -943,15 +931,15 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value2);
         assert_eq!(cached.tags, vec![]);
     }
 
-    #[test]
-    fn update_on_non_cached_item_works() {
+    #[async_std::test]
+    async fn update_on_non_cached_item_works() {
         let value = _enc_value();
         let value2 = _enc_value();
         let tag1 = _enc_tag();
@@ -959,8 +947,8 @@ mod tests {
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        cache.update(TYPE_A, ETYPE1, EID2, &value2);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        cache.update(TYPE_A, ETYPE1, EID2, &value2).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -968,7 +956,7 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
@@ -982,8 +970,8 @@ mod tests {
         assert!(lru.peek(&key2).is_none());
     }
 
-    #[test]
-    fn update_for_non_cacheable_type_works() {
+    #[async_std::test]
+    async fn update_for_non_cacheable_type_works() {
         let value = _enc_value();
         let value2 = _enc_value();
         let tag1 = _enc_tag();
@@ -991,16 +979,16 @@ mod tests {
 
         let cache = _cache();
 
-        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]);
-        cache.update(TYPE_NON_CACHED, ETYPE1, EID1, &value2);
+        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        cache.update(TYPE_NON_CACHED, ETYPE1, EID1, &value2).await;
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 0);
     }
 
-    #[test]
-    fn update_for_no_cache_enabled_works() {
+    #[async_std::test]
+    async fn update_for_no_cache_enabled_works() {
         let value = _enc_value();
         let value2 = _enc_value();
         let tag1 = _enc_tag();
@@ -1008,22 +996,22 @@ mod tests {
 
         let cache = _no_cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]);
-        cache.update(TYPE_A, ETYPE1, EID1, &value2);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        cache.update(TYPE_A, ETYPE1, EID1, &value2).await;
 
         assert!(cache.cache.is_none());
     }
 
-    #[test]
-    fn delete_works() {
+    #[async_std::test]
+    async fn delete_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]);
-        cache.delete(TYPE_A, ETYPE1, EID1);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        cache.delete(TYPE_A, ETYPE1, EID1).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -1031,19 +1019,19 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 0);
         assert!(lru.peek(&key).is_none());
     }
 
-    #[test]
-    fn delete_on_item_without_tags_works() {
+    #[async_std::test]
+    async fn delete_on_item_without_tags_works() {
         let value = _enc_value();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]);
-        cache.delete(TYPE_A, ETYPE1, EID1);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]).await;
+        cache.delete(TYPE_A, ETYPE1, EID1).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -1051,21 +1039,21 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 0);
         assert!(lru.peek(&key).is_none());
     }
 
-    #[test]
-    fn delete_on_non_cached_item_works() {
+    #[async_std::test]
+    async fn delete_on_non_cached_item_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        cache.delete(TYPE_A, ETYPE1, EID2);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        cache.delete(TYPE_A, ETYPE1, EID2).await;
 
         let key = WalletCacheKey {
             type_: ETYPE1.to_vec(),
@@ -1073,7 +1061,7 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
@@ -1087,46 +1075,46 @@ mod tests {
         assert!(lru.peek(&key2).is_none());
     }
 
-    #[test]
-    fn delete_for_non_cacheable_type_works() {
+    #[async_std::test]
+    async fn delete_for_non_cacheable_type_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]);
-        cache.delete(TYPE_NON_CACHED, ETYPE1, EID1);
+        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        cache.delete(TYPE_NON_CACHED, ETYPE1, EID1).await;
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 0);
     }
 
-    #[test]
-    fn delete_for_no_cache_enabled_works() {
+    #[async_std::test]
+    async fn delete_for_no_cache_enabled_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _no_cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]);
-        cache.delete(TYPE_A, ETYPE1, EID1);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        cache.delete(TYPE_A, ETYPE1, EID1).await;
 
         assert!(cache.cache.is_none());
     }
 
-    #[test]
-    fn get_works() {
+    #[async_std::test]
+    async fn get_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        let result = cache.get(TYPE_A, ETYPE1, EID1, &FULL_OPTIONS).unwrap();
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        let result = cache.get(TYPE_A, ETYPE1, EID1, &FULL_OPTIONS).await.unwrap();
 
         assert_eq!(result.id, EID1);
         assert_eq!(result.type_, Some(ETYPE1.to_owned()));
@@ -1139,21 +1127,21 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![tag1, tag2]);
     }
 
-    #[test]
-    fn get_for_item_without_tags_works() {
+    #[async_std::test]
+    async fn get_for_item_without_tags_works() {
         let value = _enc_value();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]);
-        let result = cache.get(TYPE_A, ETYPE1, EID1, &FULL_OPTIONS).unwrap();
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[]).await;
+        let result = cache.get(TYPE_A, ETYPE1, EID1, &FULL_OPTIONS).await.unwrap();
 
         assert_eq!(result.id, EID1);
         assert_eq!(result.type_, Some(ETYPE1.to_owned()));
@@ -1166,23 +1154,23 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![]);
     }
 
-    #[test]
-    fn get_for_non_cached_item_works() {
+    #[async_std::test]
+    async fn get_for_non_cached_item_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]);
-        let result = cache.get(TYPE_A, ETYPE1, EID2, &FULL_OPTIONS);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1.clone(), tag2.clone()]).await;
+        let result = cache.get(TYPE_A, ETYPE1, EID2, &FULL_OPTIONS).await;
 
         assert!(result.is_none());
 
@@ -1192,41 +1180,41 @@ mod tests {
         };
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 1);
         let cached = lru.peek(&key).unwrap();
         assert_eq!(cached.value, value);
         assert_eq!(cached.tags, vec![tag1, tag2]);
     }
 
-    #[test]
-    fn get_for_non_cacheable_type_works() {
+    #[async_std::test]
+    async fn get_for_non_cacheable_type_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _cache();
 
-        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]);
-        let result = cache.get(TYPE_A, ETYPE1, EID1, &FULL_OPTIONS);
+        cache.add(TYPE_NON_CACHED, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        let result = cache.get(TYPE_A, ETYPE1, EID1, &FULL_OPTIONS).await;
 
         assert!(result.is_none());
 
         let mut internal_cache = cache.cache.unwrap();
-        let lru = internal_cache.get_mut().unwrap();
+        let lru = internal_cache.get_mut();
         assert_eq!(lru.len(), 0);
     }
 
-    #[test]
-    fn get_for_no_cache_enabled_works() {
+    #[async_std::test]
+    async fn get_for_no_cache_enabled_works() {
         let value = _enc_value();
         let tag1 = _enc_tag();
         let tag2 = _enc_tag();
 
         let cache = _no_cache();
 
-        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]);
-        let result = cache.get(TYPE_A, ETYPE1, EID1, &FULL_OPTIONS);
+        cache.add(TYPE_A, ETYPE1, EID1, &value, &[tag1, tag2]).await;
+        let result = cache.get(TYPE_A, ETYPE1, EID1, &FULL_OPTIONS).await;
 
         assert!(result.is_none());
 
@@ -1238,8 +1226,6 @@ mod tests {
         let mut metrics = WalletCacheHitMetrics::new();
 
         assert!(metrics.data.get_mut().is_empty());
-                assert!(metrics.get_data_for_type(TYPE_A).await.is_none());
-
     }
 
     #[async_std::test]
