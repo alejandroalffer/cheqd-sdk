@@ -4,10 +4,12 @@ use crate::storage::{StorageRecord, Tag, TagName};
 use crate::RecordOptions;
 use std::sync::Mutex;
 use indy_api_types::domain::wallet::CacheConfig;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::iter::FromIterator;
 use crate::storage::Tag::{Encrypted, PlainText};
 use crate::storage::TagName::{OfEncrypted, OfPlain};
+use async_std::sync::RwLock;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 const DEFAULT_CACHE_SIZE: usize = 10;
 
@@ -222,6 +224,116 @@ impl WalletCache {
     }
 }
 
+#[derive(Default)]
+pub struct WalletCacheHitData {
+    pub hit: AtomicU32,
+    pub miss: AtomicU32,
+    pub not_cached: AtomicU32,
+}
+
+impl WalletCacheHitData {
+    fn inc(var: &AtomicU32, increment: u32) -> u32 {
+        var.fetch_add(increment, Ordering::Relaxed)
+    }
+
+    fn get(var: &AtomicU32) -> u32 {
+        var.load(Ordering::Relaxed)
+    }
+
+    pub fn inc_hit(&self) -> u32 {
+        WalletCacheHitData::inc(&self.hit, 1)
+    }
+
+    pub fn inc_miss(&self) -> u32 {
+        WalletCacheHitData::inc(&self.miss, 1)
+    }
+    pub fn inc_not_cached(&self) -> u32 {
+        WalletCacheHitData::inc(&self.not_cached, 1)
+    }
+
+    pub fn get_hit(&self) -> u32 {
+        WalletCacheHitData::get(&self.hit)
+    }
+
+    pub fn get_miss(&self) -> u32 {
+        WalletCacheHitData::get(&self.miss)
+    }
+
+    pub fn get_not_cached(&self) -> u32 {
+        WalletCacheHitData::get(&self.not_cached)
+    }
+}
+
+impl Clone for WalletCacheHitData {
+    fn clone(&self) -> Self {
+        WalletCacheHitData {
+            hit: AtomicU32::from(self.get_hit()),
+            miss: AtomicU32::from(self.get_miss()),
+            not_cached: AtomicU32::from(self.get_not_cached())
+        }
+    }
+
+    fn clone_from(&mut self, source: &Self) {
+        *self.hit.get_mut() = source.get_hit();
+        *self.miss.get_mut() = source.get_miss();
+        *self.not_cached.get_mut() = source.get_not_cached();
+    }
+}
+
+pub struct WalletCacheHitMetrics {
+    pub data: RwLock<HashMap<String, WalletCacheHitData>>,
+}
+
+impl WalletCacheHitMetrics {
+    pub fn new() -> Self {
+        WalletCacheHitMetrics {
+            data: RwLock::new(HashMap::new())
+        }
+    }
+
+    pub async fn inc_cache_hit(&self, type_: &str) -> u32 {
+        self.update_data(type_, |x| x.inc_hit()).await
+    }
+
+    pub async fn inc_cache_miss(&self, type_: &str) -> u32 {
+        self.update_data(type_, |x| x.inc_miss()).await
+    }
+
+    pub async fn inc_not_cached(&self, type_: &str) -> u32 {
+        self.update_data(type_, |x| x.inc_not_cached()).await
+    }
+
+    async fn update_data(&self, type_: &str, f: fn(&WalletCacheHitData) -> u32) -> u32 {
+        let read_guard = self.data.read().await;
+        match read_guard.get(type_) {
+            Some(x) => f(x),
+            None => {
+                drop(read_guard);
+                let mut write_guard = self.data.write().await;
+                // check if data is inserted in the mean time until write lock is acquired.
+                match write_guard.get(type_) {
+                    Some(x) => f(x),
+                    None => {
+                        // we are now holding exclusive access, so insert the item in map.
+                        let d = Default::default();
+                        let result = f(&d);
+                        write_guard.insert(type_.to_string(), d);
+                        result
+                    }
+                }
+            }
+        }
+    }
+
+    pub async fn get_data_for_type(&self, type_: &str) -> Option<WalletCacheHitData> {
+        self.data.read().await.get(type_).map(|x|x.clone())
+    }
+
+    pub async fn get_data(&self) -> HashMap<String, WalletCacheHitData> {
+        self.data.read().await.clone()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     extern crate rand;
@@ -229,6 +341,8 @@ mod tests {
     use super::*;
     use crate::storage::{Tag, TagName};
     use rand::{distributions::Uniform, distributions::Alphanumeric, Rng};
+    use futures::Future;
+    use std::time::Duration;
 
     const TYPE_A: &str = "TypeA";
     const TYPE_B: &str = "TypeB";
@@ -1117,5 +1231,156 @@ mod tests {
         assert!(result.is_none());
 
         assert!(cache.cache.is_none());
+    }
+
+    #[async_std::test]
+    async fn wallet_cache_hit_metrics_new_works() {
+        let mut metrics = WalletCacheHitMetrics::new();
+
+        assert!(metrics.data.get_mut().is_empty());
+                assert!(metrics.get_data_for_type(TYPE_A).await.is_none());
+
+    }
+
+    #[async_std::test]
+    async fn wallet_cache_hit_metrics_inc_cache_hit_works() {
+        let metrics = WalletCacheHitMetrics::new();
+
+        metrics.inc_cache_hit(TYPE_A).await;
+
+        let type_data = metrics.get_data_for_type(TYPE_A).await.unwrap();
+        assert_eq!(type_data.get_hit(), 1);
+        assert_eq!(type_data.get_miss(), 0);
+        assert_eq!(type_data.get_not_cached(), 0);
+    }
+
+    #[async_std::test]
+    async fn wallet_cache_hit_metrics_inc_cache_miss_works() {
+        let metrics = WalletCacheHitMetrics::new();
+
+        metrics.inc_cache_miss(TYPE_A).await;
+
+        let type_data = metrics.get_data_for_type(TYPE_A).await.unwrap();
+        assert_eq!(type_data.get_hit(), 0);
+        assert_eq!(type_data.get_miss(), 1);
+        assert_eq!(type_data.get_not_cached(), 0);
+    }
+
+    #[async_std::test]
+    async fn wallet_cache_hit_metrics_inc_not_cached_works() {
+        let metrics = WalletCacheHitMetrics::new();
+
+        metrics.inc_not_cached(TYPE_A).await;
+
+        let type_data = metrics.get_data_for_type(TYPE_A).await.unwrap();
+        assert_eq!(type_data.get_hit(), 0);
+        assert_eq!(type_data.get_miss(), 0);
+        assert_eq!(type_data.get_not_cached(), 1);
+    }
+
+    #[async_std::test]
+    async fn wallet_cache_hit_metrics_get_data_works() {
+        let metrics = WalletCacheHitMetrics::new();
+
+        let fut1 = metrics.inc_cache_hit(TYPE_A);
+        let fut2 = metrics.inc_cache_miss(TYPE_A);
+        let fut3 = metrics.inc_cache_miss(TYPE_B);
+        let fut4 = metrics.inc_not_cached(TYPE_NON_CACHED);
+
+        let result = futures::future::join4(fut1, fut2, fut3, fut4).await;
+        assert_eq!(result, (0, 0, 0, 0));
+
+        let data = metrics.get_data().await;
+
+        assert_eq!(data.len(), 3);
+        assert_eq!(data.get(TYPE_A).unwrap().get_hit(), 1);
+        assert_eq!(data.get(TYPE_A).unwrap().get_miss(), 1);
+        assert_eq!(data.get(TYPE_A).unwrap().get_not_cached(), 0);
+        assert_eq!(data.get(TYPE_B).unwrap().get_hit(), 0);
+        assert_eq!(data.get(TYPE_B).unwrap().get_miss(), 1);
+        assert_eq!(data.get(TYPE_B).unwrap().get_not_cached(), 0);
+        assert_eq!(data.get(TYPE_NON_CACHED).unwrap().get_hit(), 0);
+        assert_eq!(data.get(TYPE_NON_CACHED).unwrap().get_miss(), 0);
+        assert_eq!(data.get(TYPE_NON_CACHED).unwrap().get_not_cached(), 1);
+    }
+
+    #[async_std::test]
+    async fn wallet_cache_hit_metrics_get_data_for_type_works() {
+        let metrics = WalletCacheHitMetrics::new();
+
+        let fut1 = metrics.inc_cache_hit(TYPE_A);
+        let fut2 = metrics.inc_cache_miss(TYPE_A);
+        let fut3 = metrics.inc_cache_miss(TYPE_B);
+        let fut4 = metrics.inc_not_cached(TYPE_NON_CACHED);
+
+        let result = futures::future::join4(fut1, fut2, fut3, fut4).await;
+        assert_eq!(result, (0, 0, 0, 0));
+
+        let data_a = metrics.get_data_for_type(TYPE_A).await.unwrap();
+        let data_b = metrics.get_data_for_type(TYPE_B).await.unwrap();
+        let data_nc = metrics.get_data_for_type(TYPE_NON_CACHED).await.unwrap();
+
+        assert_eq!(data_a.get_hit(), 1);
+        assert_eq!(data_a.get_miss(), 1);
+        assert_eq!(data_a.get_not_cached(), 0);
+        assert_eq!(data_b.get_hit(), 0);
+        assert_eq!(data_b.get_miss(), 1);
+        assert_eq!(data_b.get_not_cached(), 0);
+        assert_eq!(data_nc.get_hit(), 0);
+        assert_eq!(data_nc.get_miss(), 0);
+        assert_eq!(data_nc.get_not_cached(), 1);
+    }
+
+    #[async_std::test]
+    async fn wallet_cache_hit_metrics_get_data_works_with_empty() {
+        let metrics = WalletCacheHitMetrics::new();
+
+        assert!(metrics.get_data().await.is_empty());
+    }
+
+    #[async_std::test]
+    async fn wallet_cache_hit_metrics_get_data_for_type_works_with_empty() {
+        let metrics = WalletCacheHitMetrics::new();
+
+        assert!(metrics.get_data_for_type(TYPE_A).await.is_none());
+    }
+
+    async fn _execute_with_random_delay<F>(future: F) -> u32
+        where F: Future<Output=u32>
+    {
+        async_std::task::sleep(Duration::from_millis(rand::thread_rng().gen_range(0, 1000))).await;
+        future.await + 0
+    }
+
+    #[async_std::test]
+    async fn wallet_cache_hit_metrics_work_correctly_under_concurrent_load() {
+        let metrics = WalletCacheHitMetrics::new();
+        let mut futures1 = vec![];
+        let mut futures2 = vec![];
+        let mut futures3 = vec![];
+
+        for _ in 0..1000 {
+            futures1.push(_execute_with_random_delay(metrics.inc_cache_hit(TYPE_A)));
+            futures2.push(_execute_with_random_delay(metrics.inc_cache_miss(TYPE_A)));
+            futures3.push(_execute_with_random_delay(metrics.inc_not_cached(TYPE_NON_CACHED)));
+        }
+
+        let result = futures::future::join3(
+            futures::future::join_all(futures1),
+            futures::future::join_all(futures2),
+            futures::future::join_all(futures3)
+        ).await;
+        println!("result: {:?}", result);
+
+        let type_a_data = metrics.get_data_for_type(TYPE_A).await.unwrap();
+        assert!(metrics.get_data_for_type(TYPE_B).await.is_none());
+        let type_b_data = metrics.get_data_for_type(TYPE_NON_CACHED).await.unwrap();
+
+        assert_eq!(type_a_data.get_hit(), 1000);
+        assert_eq!(type_a_data.get_miss(), 1000);
+        assert_eq!(type_a_data.get_not_cached(), 0);
+        assert_eq!(type_b_data.get_hit(), 0);
+        assert_eq!(type_b_data.get_miss(), 0);
+        assert_eq!(type_b_data.get_not_cached(), 1000);
     }
 }

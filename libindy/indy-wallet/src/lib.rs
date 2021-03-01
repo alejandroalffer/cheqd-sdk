@@ -31,7 +31,7 @@ use crate::{
 };
 pub use crate::encryption::KeyDerivationData;
 use indy_api_types::domain::wallet::CacheConfig;
-use crate::wallet_cache::WalletCache;
+use crate::wallet_cache::{WalletCache, WalletCacheHitMetrics};
 
 //use crate::storage::plugged::PluggedStorageType; FXIME:
 
@@ -74,6 +74,7 @@ pub struct WalletService {
             ),
         >,
     >,
+    cache_hit_metrics: WalletCacheHitMetrics,
 }
 
 impl WalletService {
@@ -91,6 +92,7 @@ impl WalletService {
             wallet_ids: Mutex::new(HashSet::new()),
             pending_for_open: Mutex::new(HashMap::new()),
             pending_for_import: Mutex::new(HashMap::new()),
+            cache_hit_metrics: WalletCacheHitMetrics::new(),
         }
     }
 
@@ -563,7 +565,7 @@ impl WalletService {
         options_json: &str,
     ) -> IndyResult<WalletRecord> {
         let wallet = self.get_wallet(wallet_handle).await?;
-        wallet.get(type_, name, options_json).await
+        wallet.get(type_, name, options_json, &self.cache_hit_metrics).await
             .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name))
     }
 
@@ -596,8 +598,7 @@ impl WalletService {
     {
         let type_ = short_type_name::<T>();
 
-        let wallet = self.get_wallet(wallet_handle).await?;
-        let record = wallet.get(&self.add_prefix(type_), name, options_json).await?;
+        let record = self.get_record(wallet_handle, &self.add_prefix(type_), name, options_json).await?;
 
         let record_value = record
             .get_value()
@@ -719,10 +720,10 @@ impl WalletService {
     where
         T: Sized,
     {
-        let wallet = self.get_wallet(wallet_handle).await?;
-        match wallet.get(&self.add_prefix(short_type_name::<T>()),
-                         name,
-                         &RecordOptions::id()).await {
+        match self.get_record(wallet_handle,
+                              &self.add_prefix(short_type_name::<T>()),
+                              name,
+                              &RecordOptions::id()).await {
             Ok(_) => Ok(true),
             Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => Ok(false),
             Err(err) => Err(err),
@@ -4709,4 +4710,10 @@ mod tests {
     fn short_type_name_works() {
         assert_eq!("WalletRecord", short_type_name::<WalletRecord>());
     }
+
+    // #[test]
+    // fn short_type_name_works2() {
+    //     assert_eq!("WalletRecord2", short_type_name::<Key>());
+    // }
+
 }
