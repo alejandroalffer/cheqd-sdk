@@ -1140,6 +1140,16 @@ impl RecordOptions {
 
         serde_json::to_string(&options).unwrap()
     }
+
+    pub fn id_value_tags() -> String {
+        let options = RecordOptions {
+            retrieve_type: false,
+            retrieve_value: true,
+            retrieve_tags: true,
+        };
+
+        serde_json::to_string(&options).unwrap()
+    }
 }
 
 impl Default for RecordOptions {

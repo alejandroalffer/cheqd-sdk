@@ -79,13 +79,13 @@ impl MetricsController {
 
         for (type_, data) in metrics_data.into_iter() {
             cache_metrics.push(
-                self.get_typed_metric_json(&type_, "hit", data.get_hit() as usize)
+                self.get_typed_metric_json(&type_, "hit", data.get_hit() as usize)?
             );
             cache_metrics.push(
-                self.get_typed_metric_json(&type_, "miss", data.get_miss() as usize)
+                self.get_typed_metric_json(&type_, "miss", data.get_miss() as usize)?
             );
             cache_metrics.push(
-                self.get_typed_metric_json(&type_, "uncached", data.get_not_cached() as usize)
+                self.get_typed_metric_json(&type_, "uncached", data.get_not_cached() as usize)?
             );
         }
 

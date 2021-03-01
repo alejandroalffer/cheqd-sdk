@@ -322,17 +322,7 @@ impl Wallet {
                     cache_hit_metrics.inc_cache_miss(type_).await;
 
                     // no item in cache, lets retrieve it and put it in cache.
-
-                    // TODO: make this static
-                    let full_record_options = serde_json::to_string(&RecordOptions{
-                        retrieve_type: false,
-                        retrieve_value: true,
-                        retrieve_tags: true
-                    }).to_indy(
-                        IndyErrorKind::InvalidStructure,
-                        "RecordOptions is malformed json",
-                    )?;
-                    let full_result = self.storage.get(&etype, &ename, &full_record_options).await?;
+                    let full_result = self.storage.get(&etype, &ename, &RecordOptions::id_value_tags()).await?;
 
                     // save to cache only if valid data is returned (this should be always true).
                     if let (Some(evalue), Some(etags)) = (&full_result.value, &full_result.tags) {
