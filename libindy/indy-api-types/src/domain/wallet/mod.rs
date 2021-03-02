@@ -12,10 +12,28 @@ pub struct Config {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum CachingAlgorithm {
+    #[serde(rename = "lru")]
+    LRU,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CacheConfig {
-    pub size: Option<usize>,
+    #[serde(default = "default_cache_size")]
+    pub size: usize,
     pub entities: Vec<String>,
-    pub algorithm: Option<String>,
+    #[serde(default = "default_caching_algorithm")]
+    pub algorithm: CachingAlgorithm,
+}
+
+pub const DEFAULT_CACHE_SIZE: usize = 10;
+
+fn default_cache_size() -> usize {
+    DEFAULT_CACHE_SIZE
+}
+
+fn default_caching_algorithm() -> CachingAlgorithm {
+    CachingAlgorithm::LRU
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

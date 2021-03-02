@@ -10,9 +10,9 @@ use indy_utils::{
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use crate::{encryption::*, iterator::WalletIterator, query_encryption::encrypt_query, storage, WalletRecord, wallet_cache::WalletCache, RecordOptions};
+use crate::{encryption::*, iterator::WalletIterator, query_encryption::encrypt_query, storage, WalletRecord, cache::wallet_cache::WalletCache, RecordOptions};
 use crate::storage::StorageRecord;
-use crate::wallet_cache::WalletCacheHitMetrics;
+use crate::cache::wallet_cache::WalletCacheHitMetrics;
 use futures::future::join;
 
 #[derive(Serialize, Deserialize)]

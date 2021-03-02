@@ -1,3 +1,7 @@
+#[allow(unused)]
+#[macro_use]
+extern crate serde_json;
+
 use std::{
     collections::{HashMap, HashSet},
     fs,
@@ -28,10 +32,10 @@ use crate::{
         default::SQLiteStorageType, mysql::MySqlStorageType, WalletStorage, WalletStorageType,
     },
     wallet::{Keys, Wallet},
+    cache::wallet_cache::{WalletCache, WalletCacheHitMetrics, WalletCacheHitData},
 };
 pub use crate::encryption::KeyDerivationData;
 use indy_api_types::domain::wallet::CacheConfig;
-use crate::wallet_cache::{WalletCache, WalletCacheHitMetrics, WalletCacheHitData};
 
 //use crate::storage::plugged::PluggedStorageType; FXIME:
 
@@ -45,7 +49,7 @@ pub mod language;
 
 mod export_import;
 mod wallet;
-mod wallet_cache;
+mod cache;
 
 pub struct WalletService {
     storage_types: Mutex<HashMap<String, Box<dyn WalletStorageType>>>,
@@ -1226,7 +1230,11 @@ fn short_type_name<T>() -> &'static str {
 mod tests {
     use std::{collections::HashMap, fs, path::Path};
 
-    use indy_api_types::{domain::wallet::KeyDerivationMethod, INVALID_WALLET_HANDLE};
+    use indy_api_types::{
+        domain::wallet::{
+            KeyDerivationMethod,
+            CachingAlgorithm
+        }, INVALID_WALLET_HANDLE};
     use indy_utils::{
         assert_kind, assert_match, environment, inmem_wallet::InmemWallet, next_wallet_handle, test,
     };
@@ -4456,9 +4464,9 @@ mod tests {
             storage_config: None,
             cache: Some(
                 CacheConfig {
-                    size: Some(10),
+                    size: 10,
                     entities: vec!["did".to_string(), "their_did".to_string()],
-                    algorithm: None,
+                    algorithm: CachingAlgorithm::LRU,
                 }
             ),
         }
