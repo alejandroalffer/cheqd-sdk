@@ -353,7 +353,7 @@ mod tests {
     use indy_utils::test;
 
     use super::*;
-    use crate::wallet_cache::{WalletCache, WalletCacheHitMetrics};
+    use crate::cache::wallet_cache::{WalletCache, WalletCacheHitMetrics};
 
     async fn export(
         wallet: Wallet,

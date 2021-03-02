@@ -1,16 +1,23 @@
-use lru::LruCache;
-use crate::wallet::EncryptedValue;
-use crate::storage::{StorageRecord, Tag, TagName};
-use crate::RecordOptions;
-use indy_api_types::domain::wallet::CacheConfig;
-use std::collections::{HashSet, HashMap};
-use std::iter::FromIterator;
-use crate::storage::Tag::{Encrypted, PlainText};
-use crate::storage::TagName::{OfEncrypted, OfPlain};
+use crate::{
+    cache::{
+        lru::LruCache,
+        cache::Cache,
+    },
+    storage::{
+        Tag::{Encrypted, PlainText},
+        TagName::{OfEncrypted, OfPlain},
+        StorageRecord, Tag, TagName,
+    },
+    wallet::EncryptedValue,
+    RecordOptions,
+};
+use std::{
+    collections::{HashSet, HashMap},
+    iter::FromIterator,
+    sync::atomic::{AtomicU32, Ordering},
+};
+use indy_api_types::domain::wallet::{CacheConfig, CachingAlgorithm};
 use async_std::sync::{RwLock, Mutex};
-use std::sync::atomic::{AtomicU32, Ordering};
-
-const DEFAULT_CACHE_SIZE: usize = 10;
 
 #[derive(PartialEq, Eq, Hash)]
 pub struct WalletCacheKey {
@@ -24,16 +31,19 @@ pub struct WalletCacheValue {
 }
 
 pub struct WalletCache {
-    cache: Option<Mutex<LruCache<WalletCacheKey, WalletCacheValue>>>,
+    cache: Option<Mutex<Box<dyn Cache + Send>>>,
     cache_entities: HashSet<String>,
 }
 
 impl WalletCache {
     pub fn new(config: Option<CacheConfig>) -> Self {
         match config {
-            Some(cache_config) if cache_config.size.unwrap_or(DEFAULT_CACHE_SIZE) > 0 && !cache_config.entities.is_empty() => {
+            Some(cache_config) if cache_config.size > 0 && !cache_config.entities.is_empty() => {
+                let cache = match cache_config.algorithm {
+                    CachingAlgorithm::LRU => LruCache::new(cache_config.size),
+                };
                 WalletCache {
-                    cache: Some(Mutex::new(LruCache::new(cache_config.size.unwrap_or(10)))),
+                    cache: Some(Mutex::new(Box::new(cache))),
                     cache_entities: HashSet::from_iter(cache_config.entities.iter().cloned()),
                 }
             }
@@ -330,6 +340,7 @@ mod tests {
     use super::*;
     use crate::storage::{Tag, TagName};
     use rand::{distributions::Uniform, distributions::Alphanumeric, Rng};
+    use indy_api_types::domain::wallet::DEFAULT_CACHE_SIZE;
     use futures::Future;
     use std::time::Duration;
 
@@ -372,18 +383,18 @@ mod tests {
 
     fn _cache() -> WalletCache {
         let config = CacheConfig {
-            size: None,
+            size: 10,
             entities: vec![TYPE_A.to_string(), TYPE_B.to_string()],
-            algorithm: None
+            algorithm: CachingAlgorithm::LRU
         };
         WalletCache::new(Some(config))
     }
 
     fn _no_cache() -> WalletCache {
         let config = CacheConfig {
-            size: None,
+            size: 10,
             entities: vec![],
-            algorithm: None
+            algorithm: CachingAlgorithm::LRU
         };
         WalletCache::new(Some(config))
     }
@@ -411,9 +422,9 @@ mod tests {
     #[test]
     fn new_with_default_config_works() {
         let config = CacheConfig {
-            size: None,
+            size: DEFAULT_CACHE_SIZE,
             entities: vec![],
-            algorithm: None
+            algorithm: CachingAlgorithm::LRU
         };
         let cache = WalletCache::new(Some(config));
         assert!(cache.cache.is_none());
@@ -423,9 +434,9 @@ mod tests {
     #[test]
     fn new_with_size_but_no_entities_in_config_works() {
         let config = CacheConfig {
-            size: Some(20),
+            size: 20,
             entities: vec![],
-            algorithm: None
+            algorithm: CachingAlgorithm::LRU
         };
         let cache = WalletCache::new(Some(config));
         assert!(cache.cache.is_none());
@@ -434,11 +445,10 @@ mod tests {
 
     #[test]
     fn new_with_default_size_in_config_works() {
-        let config = CacheConfig {
-            size: None,
-            entities: vec![TYPE_A.to_string(), TYPE_B.to_string()],
-            algorithm: None
-        };
+        let config_str = json!({
+            "entities": vec![TYPE_A.to_string(), TYPE_B.to_string()]
+        }).to_string();
+        let config: CacheConfig = serde_json::from_str(&config_str).unwrap();
         let wallet_cache = WalletCache::new(Some(config));
         assert!(wallet_cache.cache.is_some());
         let mut cache = wallet_cache.cache.unwrap();
@@ -451,9 +461,9 @@ mod tests {
     #[test]
     fn new_with_size_in_config_works() {
         let config = CacheConfig {
-            size: Some(20),
+            size: 20,
             entities: vec![TYPE_A.to_string(), TYPE_B.to_string()],
-            algorithm: None
+            algorithm: CachingAlgorithm::LRU
         };
         let wallet_cache = WalletCache::new(Some(config));
         assert!(wallet_cache.cache.is_some());
