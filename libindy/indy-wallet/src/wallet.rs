@@ -333,7 +333,7 @@ impl Wallet {
                     let full_options = RecordOptions::id_value_tags();
                     let storage_fut = self.storage.get(&etype, &ename, &full_options);
                     // run these two futures in parallel.
-                    let full_result = join(metrics_fut, storage_fut).await.1?;
+                    let full_result = join(storage_fut, metrics_fut).await.0?;
 
                     // save to cache only if valid data is returned (this should be always true).
                     if let (Some(evalue), Some(etags)) = (&full_result.value, &full_result.tags) {
@@ -351,7 +351,7 @@ impl Wallet {
             let metrics_fut = cache_hit_metrics.inc_not_cached(type_);
             let storage_fut = self.storage.get(&etype, &ename, options);
             // run these two futures in parallel.
-            join(metrics_fut, storage_fut).await.1?
+            join(storage_fut, metrics_fut).await.0?
         };
 
         let value = match result.value {

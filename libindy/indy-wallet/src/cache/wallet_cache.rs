@@ -222,7 +222,7 @@ impl WalletCache {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct WalletCacheHitData {
     pub hit: AtomicU32,
     pub miss: AtomicU32,
