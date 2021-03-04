@@ -10,7 +10,7 @@ pub mod did;
 pub mod ledger;
 pub mod non_secrets;
 pub mod pairwise;
-//pub mod payments;
+pub mod payments;
 pub mod pool;
 pub mod wallet;
 pub mod logger;

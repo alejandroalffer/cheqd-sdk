@@ -140,8 +140,8 @@ dockerbuild-libindy-ubuntu18:
     # - libindy/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
     - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
-    # - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
-    # - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+    - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
+    - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
 
 build-libindy-ubuntu16-from-branch:
   extends: .build-libindy
