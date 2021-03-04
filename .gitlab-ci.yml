@@ -139,7 +139,7 @@ dockerbuild-libindy-ubuntu18:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     # - libindy/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
-    # - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+    - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
     - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
 
