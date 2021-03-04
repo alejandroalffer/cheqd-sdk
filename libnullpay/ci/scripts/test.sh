@@ -24,5 +24,5 @@ cp libindy/target/${BUILD_TYPE}/libindy.so libnullpay
 
 pushd libnullpay
 LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test ${CARGO_FLAGS} --no-run
-LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 cargo test ${CARGO_FLAGS}
+LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 cargo test ${CARGO_FLAGS}
 popd

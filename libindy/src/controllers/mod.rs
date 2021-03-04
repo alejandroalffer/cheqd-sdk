@@ -7,11 +7,10 @@ mod did;
 mod ledger;
 mod metrics;
 mod non_secrets;
+pub mod payments;
 mod pairwise;
 mod pool;
 mod wallet;
-
-//pub mod payments;
 
 pub(crate) use anoncreds::{IssuerController, ProverController, VerifierController};
 pub(crate) use blob_storage::BlobStorageController;
