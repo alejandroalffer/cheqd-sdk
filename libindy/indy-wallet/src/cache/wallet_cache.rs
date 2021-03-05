@@ -14,7 +14,7 @@ use crate::{
 use std::{
     collections::{HashSet, HashMap},
     iter::FromIterator,
-    sync::atomic::{AtomicU32, Ordering},
+    sync::atomic::{AtomicUsize, Ordering},
 };
 use indy_api_types::domain::wallet::{CacheConfig, CachingAlgorithm};
 use async_std::sync::{RwLock, Mutex};
@@ -224,40 +224,41 @@ impl WalletCache {
 
 #[derive(Default, Debug)]
 pub struct WalletCacheHitData {
-    pub hit: AtomicU32,
-    pub miss: AtomicU32,
-    pub not_cached: AtomicU32,
+    pub hit: AtomicUsize,
+    pub miss: AtomicUsize,
+    pub not_cached: AtomicUsize,
 }
 
 impl WalletCacheHitData {
-    fn inc(var: &AtomicU32, increment: u32) -> u32 {
+    fn inc(var: &AtomicUsize, increment: usize) -> usize {
         var.fetch_add(increment, Ordering::Relaxed)
     }
 
-    fn get(var: &AtomicU32) -> u32 {
+    fn get(var: &AtomicUsize) -> usize {
         var.load(Ordering::Relaxed)
     }
 
-    pub fn inc_hit(&self) -> u32 {
+    pub fn inc_hit(&self) -> usize {
         WalletCacheHitData::inc(&self.hit, 1)
     }
 
-    pub fn inc_miss(&self) -> u32 {
+    pub fn inc_miss(&self) -> usize {
         WalletCacheHitData::inc(&self.miss, 1)
     }
-    pub fn inc_not_cached(&self) -> u32 {
+
+    pub fn inc_not_cached(&self) -> usize {
         WalletCacheHitData::inc(&self.not_cached, 1)
     }
 
-    pub fn get_hit(&self) -> u32 {
+    pub fn get_hit(&self) -> usize {
         WalletCacheHitData::get(&self.hit)
     }
 
-    pub fn get_miss(&self) -> u32 {
+    pub fn get_miss(&self) -> usize {
         WalletCacheHitData::get(&self.miss)
     }
 
-    pub fn get_not_cached(&self) -> u32 {
+    pub fn get_not_cached(&self) -> usize {
         WalletCacheHitData::get(&self.not_cached)
     }
 }
@@ -265,9 +266,9 @@ impl WalletCacheHitData {
 impl Clone for WalletCacheHitData {
     fn clone(&self) -> Self {
         WalletCacheHitData {
-            hit: AtomicU32::from(self.get_hit()),
-            miss: AtomicU32::from(self.get_miss()),
-            not_cached: AtomicU32::from(self.get_not_cached())
+            hit: AtomicUsize::from(self.get_hit()),
+            miss: AtomicUsize::from(self.get_miss()),
+            not_cached: AtomicUsize::from(self.get_not_cached())
         }
     }
 
@@ -289,19 +290,19 @@ impl WalletCacheHitMetrics {
         }
     }
 
-    pub async fn inc_cache_hit(&self, type_: &str) -> u32 {
+    pub async fn inc_cache_hit(&self, type_: &str) -> usize {
         self.update_data(type_, |x| x.inc_hit()).await
     }
 
-    pub async fn inc_cache_miss(&self, type_: &str) -> u32 {
+    pub async fn inc_cache_miss(&self, type_: &str) -> usize {
         self.update_data(type_, |x| x.inc_miss()).await
     }
 
-    pub async fn inc_not_cached(&self, type_: &str) -> u32 {
+    pub async fn inc_not_cached(&self, type_: &str) -> usize {
         self.update_data(type_, |x| x.inc_not_cached()).await
     }
 
-    async fn update_data(&self, type_: &str, f: fn(&WalletCacheHitData) -> u32) -> u32 {
+    async fn update_data(&self, type_: &str, f: fn(&WalletCacheHitData) -> usize) -> usize {
         let read_guard = self.data.read().await;
         match read_guard.get(type_) {
             Some(x) => f(x),
@@ -1342,8 +1343,8 @@ mod tests {
         assert!(metrics.get_data_for_type(TYPE_A).await.is_none());
     }
 
-    async fn _execute_with_random_delay<F>(future: F) -> u32
-        where F: Future<Output=u32>
+    async fn _execute_with_random_delay<F>(future: F) -> usize
+        where F: Future<Output=usize>
     {
         async_std::task::sleep(Duration::from_millis(rand::thread_rng().gen_range(0, 1000))).await;
         future.await + 0
