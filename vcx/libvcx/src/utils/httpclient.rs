@@ -69,7 +69,7 @@ fn send_http_message(body_content: &Vec<u8>, url: &str, request_type: RequestTyp
             .build()
             .map_err(|err| VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Could not prepare HTTP client. Err: {:?}", err)))?;
 
-    debug!("Posting encrypted bundle to: \"{}\"", secret!(url));
+    info!("Posting encrypted bundle to: \"{}\"", secret!(url));
 
     let mut response = match request_type {
         RequestType::POST => client.post(url)
@@ -81,6 +81,8 @@ fn send_http_message(body_content: &Vec<u8>, url: &str, request_type: RequestTyp
          error!("error: {}", err);
          VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Could send HTTP message. Error: {:?}", err))
      })?;
+
+    info!("Response received: url {:?}", secret!(url));
 
     trace!("Response Header: {:?}", response);
     if !response.status().is_success() {
