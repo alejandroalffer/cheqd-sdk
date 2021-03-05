@@ -7,12 +7,11 @@ pub mod ledger;
 pub mod logger;
 pub mod metrics;
 pub mod non_secrets;
+pub mod payments;
+pub mod payments_v2;
 pub mod pairwise;
 pub mod pool;
 pub mod wallet;
-
-//pub mod payments;
-//pub mod payments_v2;
 
 use indy_api_types::{errors::prelude::*, validation::Validatable, ErrorCode};
 use indy_utils::ctypes;
