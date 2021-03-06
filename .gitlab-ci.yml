@@ -131,7 +131,7 @@ dockerbuild-libindy-ubuntu18:
     paths:
       - libindy/target/${BUILD_TYPE}/libindy.so
       - libnullpay/target/${BUILD_TYPE}/libnullpay.so
-      - cli/target/${BUILD_TYPE}/indy_cli
+      - cli/target/${BUILD_TYPE}/indy-cli
   services:
     - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
