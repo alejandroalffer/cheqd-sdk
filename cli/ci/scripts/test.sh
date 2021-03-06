@@ -20,7 +20,7 @@ fi
 
 set -eux
 
-pushd libnullpay
-LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test ${CARGO_FLAGS} --no-run
-LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 cargo test ${CARGO_FLAGS}
+pushd cli
+LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test ${CARGO_FLAGS} --features "nullpay_plugin" --no-run
+LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 cargo test ${CARGO_FLAGS} --features "nullpay_plugin"
 popd

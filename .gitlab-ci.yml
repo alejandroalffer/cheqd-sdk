@@ -131,17 +131,21 @@ dockerbuild-libindy-ubuntu18:
     paths:
       - libindy/target/${BUILD_TYPE}/libindy.so
       - libnullpay/target/${BUILD_TYPE}/libnullpay.so
+      - cli/target/${BUILD_TYPE}/indy_cli
   services:
     - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
-  timeout: 2h
+  timeout: 3h
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     # - libindy/ci/scripts/lint.sh
+    # - cli/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
     - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
     - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+    - cli/ci/scripts/build.sh ${BUILD_TYPE}
+    - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
 
 build-libindy-ubuntu16-from-branch:
   extends: .build-libindy
@@ -261,12 +265,14 @@ build-libindy-ubuntu18-release:
     paths:
       - libindy/target/debian/*.deb
       - libnullpay/target/debian/*.deb
+      - cli/target/debian/*.deb
   only:
     refs:
       - async@dev/vcx/indy-sdk
   script:
     - libindy/ci/scripts/package.sh ${CI_PIPELINE_IID}
     - libnullpay/ci/scripts/package.sh ${CI_PIPELINE_IID}
+    - cli/ci/scripts/package.sh ${CI_PIPELINE_IID}
 
 package-libindy-ubuntu16:
   extends: .package-libindy
@@ -338,9 +344,12 @@ publish-libindy:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output
     - cp libnullpay/target/debian/*.deb ${CI_PROJECT_DIR}/output
+    - cp cli/target/debian/*.deb ${CI_PROJECT_DIR}/output
     - ls -al ${CI_PROJECT_DIR}/output/
     - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
