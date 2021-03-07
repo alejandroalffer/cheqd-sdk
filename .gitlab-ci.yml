@@ -205,55 +205,55 @@ build-libindy-ubuntu18-release:
 
 
 ## - Jobs : Test - ##
-#.test-libindy-java-wrapper:
-#  extends: .tags_micro
-#  stage: test
-#  services:
-#    - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
-#      alias: pool_network
-#  script:
-#    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-#    - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
-#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
-#    - pushd wrappers/java
-#    - RUST_LOG=indy::=debug mvn clean test
-#    - popd
-#test-libindy-java-wrapper-from-branch:
-#  extends: .test-libindy-java-wrapper
-#  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
-#  dependencies:
-#    - build-libindy-ubuntu16-from-branch
-#  variables:
-#    PACKAGE_TYPE: 'xenial'
-#    BUILD_TYPE: 'debug'
-#  only:
-#    refs:
-#      - /^docker-.*/
-#test-libindy-java-wrapper-from-latest:
-#  extends: .test-libindy-java-wrapper
-#  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
-#  dependencies:
-#    - build-libindy-ubuntu16-from-latest
-#  variables:
-#    PACKAGE_TYPE: 'xenial'
-#    BUILD_TYPE: 'debug'
-#  except:
-#    refs:
-#      - /^docker-.*/
-#      - async@dev/vcx/indy-sdk
-#      - master@dev/vcx/indy-sdk
-#      - stable@dev/vcx/indy-sdk
-#test-libindy-java-wrapper-release:
-#  extends: .test-libindy-java-wrapper
-#  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
-#  dependencies:
-#    - build-libindy-ubuntu16-from-latest
-#  variables:
-#    PACKAGE_TYPE: 'xenial'
-#    BUILD_TYPE: 'release'
-#  only:
-#    refs:
-#      - async@dev/vcx/indy-sdk
+.test-libindy-java-wrapper:
+  extends: .tags_micro
+  stage: test
+  services:
+    - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
+      alias: pool_network
+  script:
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
+    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
+    - pushd wrappers/java
+    - RUST_LOG=indy::=debug mvn clean test
+    - popd
+test-libindy-java-wrapper-from-branch:
+  extends: .test-libindy-java-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
+  dependencies:
+    - build-libindy-ubuntu16-from-branch
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'debug'
+  only:
+    refs:
+      - /^docker-.*/
+test-libindy-java-wrapper-from-latest:
+  extends: .test-libindy-java-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  dependencies:
+    - build-libindy-ubuntu16-from-latest
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'debug'
+  except:
+    refs:
+      - /^docker-.*/
+      - async@dev/vcx/indy-sdk
+      - master@dev/vcx/indy-sdk
+      - stable@dev/vcx/indy-sdk
+test-libindy-java-wrapper-release:
+  extends: .test-libindy-java-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  dependencies:
+    - build-libindy-ubuntu16-from-latest
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'release'
+  only:
+    refs:
+      - async@dev/vcx/indy-sdk
 
 
 ## - Jobs : Package - ##
