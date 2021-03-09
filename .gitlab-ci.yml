@@ -140,8 +140,8 @@ dockerbuild-libindy-ubuntu18:
     # - libindy/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
     - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
-    # - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
-    # - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+    - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
+    - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
 
 build-libindy-ubuntu16-from-branch:
   extends: .build-libindy
@@ -266,6 +266,7 @@ build-libindy-ubuntu18-release:
       - async@dev/vcx/indy-sdk
   script:
     - libindy/ci/scripts/package.sh ${CI_PIPELINE_IID}
+    - libnullpay/ci/scripts/package.sh ${CI_PIPELINE_IID}
 
 package-libindy-ubuntu16:
   extends: .package-libindy
@@ -336,7 +337,10 @@ publish-libindy:
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output
+    - cp libnullpay/target/debian/*.deb ${CI_PROJECT_DIR}/output
     - ls -al ${CI_PROJECT_DIR}/output/
     - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload

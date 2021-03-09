@@ -49,6 +49,8 @@ use crate::{
 use indy_api_types::errors::IndyResult;
 use std::future::Future;
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::services::PaymentsService;
+use crate::controllers::payments::PaymentsController;
 
 fn get_cur_time() -> u128 {
     let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time has gone backwards");
@@ -99,6 +101,7 @@ pub(crate) struct Locator {
     pub(crate) did_controller: DidController,
     pub(crate) wallet_controller: WalletController,
     pub(crate) pairwise_controller: PairwiseController,
+    pub(crate) payment_controller: PaymentsController,
     pub(crate) blob_storage_controller: BlobStorageController,
     pub(crate) non_secret_controller: NonSecretsController,
     pub(crate) cache_controller: CacheController,
@@ -129,6 +132,7 @@ impl Locator {
         let ledger_service = Arc::new(LedgerService::new());
         let metrics_service = Arc::new(MetricsService::new());
         let pool_service = Arc::new(PoolService::new());
+        let payment_service = Arc::new(PaymentsService::new());
         let wallet_service = Arc::new(WalletService::new());
 
         let executor = InstrumentedThreadPool {
@@ -162,6 +166,13 @@ impl Locator {
             pool_service.clone(),
             crypto_service.clone(),
             wallet_service.clone(),
+            ledger_service.clone(),
+        );
+
+        let payment_controller = PaymentsController::new(
+            payment_service.clone(),
+            wallet_service.clone(),
+            crypto_service.clone(),
             ledger_service.clone(),
         );
 
@@ -200,6 +211,7 @@ impl Locator {
             did_controller,
             wallet_controller,
             pairwise_controller,
+            payment_controller,
             blob_storage_controller,
             non_secret_controller,
             cache_controller,
