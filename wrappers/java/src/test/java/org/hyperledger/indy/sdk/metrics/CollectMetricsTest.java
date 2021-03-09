@@ -16,6 +16,6 @@ public class CollectMetricsTest extends IndyIntegrationTest {
 		String metricsResult = Metrics.collectMetrics().get();
 		assertNotNull(metricsResult);
 		Map<String, Object> metricMap = (new JSONObject(metricsResult)).toMap();
-		assert(metricMap.containsKey("threadpool_threads_count"));
+		assert(metricMap.containsKey("wallet_count"));
 	}
 }
