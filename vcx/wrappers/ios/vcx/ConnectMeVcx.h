@@ -309,6 +309,12 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
       withConnectionHandle:(vcx_connection_handle_t)connection_handle
       withCompletion: (void (^)(NSError *error))completion;
 
+- (void) proofDeclinePresentationRequest:(vcx_proof_handle_t)proof_handle
+                    withConnectionHandle:(vcx_connection_handle_t)connection_handle
+                              withReason:(NSString *)reason
+                            withProposal:(NSString *)proposal
+                          withCompletion:(void (^)(NSError *error))completion;
+
 - (void) getProofMsg:(vcx_proof_handle_t) proofHandle
       withCompletion:(void (^)(NSError *error, NSString *proofMsg))completion;
 
