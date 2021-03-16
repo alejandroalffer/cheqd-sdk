@@ -3,7 +3,6 @@ import json
 from time import sleep
 
 from vcx.api.connection import Connection
-from vcx.api.credential import Credential
 from vcx.api.disclosed_proof import DisclosedProof
 from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
@@ -29,24 +28,18 @@ async def main():
     print("#1 Make a Connection")
     connection_to_faber = await connect()
 
-    input('Press enter to start checking Credential Offers ')
-    print("#2 Accept Credential")
-    offers = await Credential.get_offers(connection_to_faber)
-    print("Offer: " + json.dumps(offers[0]))
-    credential = await Credential.create('credential', offers[0])
-    await accept_offer(connection_to_faber, credential)
-
-    print("#3 Propose Proof for the Credential")
-    connection_to_faber = await propose_proof(credential)
+    print("#2 Propose Proof for the Credential")
+    await propose_proof(connection_to_faber)
 
     input('Press enter to start checking Presentation Request')
-    print("4. Create Proof for the Credential")
+    print("3. Create Proof for the Credential")
     requests = await DisclosedProof.get_requests(connection_to_faber)
     print("Proof Request: " + json.dumps(requests[0]))
     proof = await DisclosedProof.create('proof', requests[0])
     await create_proof(connection_to_faber, proof)
 
     print("Finished")
+
 
 async def init():
     print("#7 Provision an agent and wallet, get back configuration details")
@@ -55,59 +48,47 @@ async def init():
     await vcx_init_with_config(config)
 
 
-async def complete_connection(connection):
-    print("#6 Poll agency and wait for faber to accept the invitation")
-    connection_state = await connection.get_state()
-    while connection_state != State.Accepted:
-        sleep(2)
-        await connection.update_state()
-        connection_state = await connection.get_state()
-
-    print("Connection is established")
-
-
 async def connect():
-    print("#9 Input faber.py invitation details")
-    details = input('invite details: ')
-
-    print("#10 Convert to valid json and string and create a connection to faber")
-    jdetails = json.loads(details)
-    connection_to_faber = await Connection.accept_connection_invite('faber', json.dumps(jdetails))
-    await complete_connection(connection_to_faber)
-    return connection_to_faber
-
-
-async def accept_offer(connection_to_faber, credential):
-    print("#15 After receiving credential offer, send credential request")
-    await credential.send_request(connection_to_faber, 0)
-
-    print("#16 Poll agency and accept credential offer from faber")
-    credential_state = await credential.get_state()
-    while credential_state != State.Accepted:
-        sleep(2)
-        await credential.update_state()
-        credential_state = await credential.get_state()
-
-    return credential
-
-
-async def propose_proof(credential):
-    presentation_proposal = await credential.get_presentation_proposal()
-    print("Presentation Proposal: " + json.dumps(presentation_proposal))
-
     connection_to_faber = await Connection.create_outofband("Connection Proposal",
                                                             "Presentation Proposal",
                                                             None,
                                                             True,
-                                                            json.dumps(presentation_proposal))
+                                                            None)
     await connection_to_faber.connect('{"use_public_did": true}')
     details = await connection_to_faber.invite_details(False)
     print("**invite details**")
     print(json.dumps(details))
     print("******************")
 
-    await complete_connection(connection_to_faber)
+    print("#6 Poll agency and wait for faber to accept the invitation")
+    connection_state = await connection_to_faber.get_state()
+    while connection_state != State.Accepted:
+        sleep(2)
+        connection_state = await connection_to_faber.update_state()
+
+    print("Connection is established")
     return connection_to_faber
+
+
+async def propose_proof(connection_to_faber):
+    presentation_proposal = {
+        "attributes": [
+            {
+                "name": "FirstName",
+                "cred_def_id": "V4SGRU86Z58d6TV7PBUe6f:3:CL:194217:tag",
+                "value": "Rebecca"
+            },
+            {
+                "name": "MemberID",
+                "cred_def_id": "V4SGRU86Z58d6TV7PBUe6f:3:CL:194217:tag",
+                "value": "435345"
+            },
+        ],
+        "predicates": []
+    }
+    print("Presentation Proposal: " + json.dumps(presentation_proposal))
+    proof = await DisclosedProof.create_proposal("Presentation Proposal", presentation_proposal, "Share Credentials")
+    await proof.send_proposal(connection_to_faber)
 
 
 async def create_proof(connection_to_faber, proof):

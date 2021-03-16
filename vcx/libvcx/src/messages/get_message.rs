@@ -446,6 +446,9 @@ impl Message {
             credential @ AriesA2AMessage::Credential(_) => {
                 (PayloadKinds::Other(String::from("credential")), json!(&credential).to_string())
             }
+            presentation_proposal @ AriesA2AMessage::PresentationProposal(_) => {
+                (PayloadKinds::Other(String::from(AriesA2AMessage::PROPOSE_PRESENTATION)), json!(&presentation_proposal).to_string())
+            }
             presentation @ AriesA2AMessage::Presentation(_) => {
                 (PayloadKinds::Other(String::from(AriesA2AMessage::PRESENTATION)), json!(&presentation).to_string())
             }
