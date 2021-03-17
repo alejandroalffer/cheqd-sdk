@@ -1,6 +1,9 @@
-libvcx (0.11.0) unstable; urgency=medium
+libvcx (0.11.1) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 0.11.1
+* Minor bugfix
 
 ## 0.11.0
 * IMPORTANT CHANGE: Default `protocol_type` has been changed from `1.0` to `3.0`. It means that we are using Aries by default now.
