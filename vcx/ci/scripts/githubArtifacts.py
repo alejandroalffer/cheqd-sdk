@@ -5,7 +5,7 @@ import json
 import requests
 import argparse
 
-def main(file_list):
+def main(version, file_list):
     """main program body"""
 
     #check for required variables
@@ -25,14 +25,15 @@ def main(file_list):
         env_set = False
 
     try:
-        release_tag = os.environ['CI_PIPELINE_ID']
+        release_tag = version
+        if os.environ.get("CI_COMMIT_REF_SLUG") != "stable":
+            release_tag = version + "-" + os.environ['CI_PIPELINE_ID']
     except KeyError:
         print("Missing required environment variable. Please set 'CI_PIPELINE_ID'")
         env_set = False
 
     if not env_set:
         sys.exit(1)
-
 
     # release_tag - os.environ['CI_PIPELINE_ID']
     # file_list - list of files to upload
@@ -86,6 +87,7 @@ def main(file_list):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument('version', help='Package version')
     parser.add_argument('file_list', nargs="*", help='Additional artifacts to upload')
     args = parser.parse_args()
-    main(file_list=args.file_list)
+    main(version=args.version, file_list=args.file_list)

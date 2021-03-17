@@ -24,6 +24,7 @@ variables:
   indyFullDebVersion: "1.16.0~170" # DEB package name
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
+  msdkVersion: "1.4.0" # CHANGE_ME for every VCX stable release (0.11.0 VCX)
 
 ## - Anchors - ##
 .tags_micro:
@@ -750,4 +751,4 @@ publish-mobile-sdk:
       - master@dev/vcx/indy-sdk
       - stable@dev/vcx/indy-sdk
   script:
-    - vcx/ci/scripts/githubArtifacts.py vcx/wrappers/java/artifacts/aar/*.aar IOSBuilds/libvcx{partial,all}/vcx.libvcx*.zip
+    - vcx/ci/scripts/githubArtifacts.py ${msdkVersion} vcx/wrappers/java/artifacts/aar/*.aar IOSBuilds/libvcx{partial,all}/vcx.libvcx*.zip
