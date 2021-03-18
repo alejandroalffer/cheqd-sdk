@@ -1,6 +1,10 @@
-libvcx (0.11.1) unstable; urgency=medium
+libvcx (0.11.2) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 0.11.2
+* Bugfixes
+    * Provisioning with token does not work after its enforcing (disabling of old provisioning protocol) on the Agency side.
 
 ## 0.11.1
 * Minor bugfix
