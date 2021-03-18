@@ -78,11 +78,10 @@ impl TokenRequestBuilder {
         );
 
         let agency_did = self.agency_did.clone().ok_or(init_err("agency_did"))?;
-        let version = self.version.clone().ok_or(init_err("protocol version"))?;
         let message = A2AMessage::Version2(
             A2AMessageV2::TokenRequest(
                 TokenRequest {
-                    msg_type: MessageTypes::build(A2AMessageKinds::TokenRequest),
+                    msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::TokenRequest)),
                     sponsee_id: self.sponsee_id.clone().ok_or(init_err("sponsee_id"))?,
                     sponsor_id: self.sponsor_id.clone().ok_or(init_err("sponsor_id"))?,
                     push_id: self.push_id.clone().ok_or(init_err("push_id"))?,
@@ -92,7 +91,7 @@ impl TokenRequestBuilder {
 
         trace!("TokenRequestBuilder::prepare_request >>> message: {:?}", secret!(message));
 
-        prepare_message_for_agency(&message, &agency_did, &version)
+        prepare_message_for_agency(&message, &agency_did, &ProtocolTypes::V3)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<String> {

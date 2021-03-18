@@ -121,7 +121,7 @@ impl UpdateProfileDataBuilder {
                 A2AMessage::Version2(
                     A2AMessageV2::UpdateConfigs(
                         UpdateConfigs {
-                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateConfigs),
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::UpdateConfigs)),
                             configs: self.configs.clone(),
                         }
                     )
