@@ -24,7 +24,7 @@ variables:
   indyFullDebVersion: "1.16.0~170" # DEB package name
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
-  msdkVersion: "1.4.0" # CHANGE_ME for every VCX stable release (0.11.0 VCX)
+  msdkVersion: "1.4.1" # CHANGE_ME for every VCX stable release (0.11.2 VCX)
 
 ## - Anchors - ##
 .tags_micro:
