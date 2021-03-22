@@ -205,55 +205,56 @@ build-libindy-ubuntu18-release:
 
 
 ## - Jobs : Test - ##
-#.test-libindy-java-wrapper:
-#  extends: .tags_micro
-#  stage: test
-#  services:
-#    - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
-#      alias: pool_network
-#  script:
-#    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-#    - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
-#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
-#    - pushd wrappers/java
-#    - RUST_LOG=indy::=debug mvn clean test
-#    - popd
-#test-libindy-java-wrapper-from-branch:
-#  extends: .test-libindy-java-wrapper
-#  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
-#  dependencies:
-#    - build-libindy-ubuntu16-from-branch
-#  variables:
-#    PACKAGE_TYPE: 'xenial'
-#    BUILD_TYPE: 'debug'
-#  only:
-#    refs:
-#      - /^docker-.*/
-#test-libindy-java-wrapper-from-latest:
-#  extends: .test-libindy-java-wrapper
-#  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
-#  dependencies:
-#    - build-libindy-ubuntu16-from-latest
-#  variables:
-#    PACKAGE_TYPE: 'xenial'
-#    BUILD_TYPE: 'debug'
-#  except:
-#    refs:
-#      - /^docker-.*/
-#      - async@dev/vcx/indy-sdk
-#      - master@dev/vcx/indy-sdk
-#      - stable@dev/vcx/indy-sdk
-#test-libindy-java-wrapper-release:
-#  extends: .test-libindy-java-wrapper
-#  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
-#  dependencies:
-#    - build-libindy-ubuntu16-from-latest
-#  variables:
-#    PACKAGE_TYPE: 'xenial'
-#    BUILD_TYPE: 'release'
-#  only:
-#    refs:
-#      - async@dev/vcx/indy-sdk
+.test-libindy-java-wrapper:
+  extends: .tags_micro
+  stage: test
+  services:
+    - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
+      alias: pool_network
+  script:
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
+    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
+    - wrappers/java/ci/test.sh ${TEST_POOL_IP}
+
+test-libindy-java-wrapper-from-branch:
+  extends: .test-libindy-java-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
+  dependencies:
+    - build-libindy-ubuntu16-from-branch
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'debug'
+  only:
+    refs:
+      - /^docker-.*/
+
+test-libindy-java-wrapper-from-latest:
+  extends: .test-libindy-java-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  dependencies:
+    - build-libindy-ubuntu16-from-latest
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'debug'
+  except:
+    refs:
+      - /^docker-.*/
+      - async@dev/vcx/indy-sdk
+      - master@dev/vcx/indy-sdk
+      - stable@dev/vcx/indy-sdk
+
+test-libindy-java-wrapper-release:
+  extends: .test-libindy-java-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  dependencies:
+    - build-libindy-ubuntu16-from-latest
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'release'
+  only:
+    refs:
+      - async@dev/vcx/indy-sdk
 
 
 ## - Jobs : Package - ##
@@ -286,49 +287,18 @@ package-libindy-ubuntu18:
   dependencies:
     - build-libindy-ubuntu18-release
 
-#.package-java-wrapper:
-#  extends: .tags_micro
-#  artifacts:
-#    expire_in: 1 week
-#    paths:
-#      - vcx/wrappers/java/artifacts/
-#  script:
-#    - sudo dpkg -i ${CI_PROJECT_DIR}/output/libvcx*bionic*.deb
-#    - cd vcx/libvcx && ./../ci/scripts/cargo-update-version
-#    - cd -
-#    - vcx/wrappers/java/ci/buildJar.sh $(python3 vcx/ci/scripts/toml_utils.py vcx/libvcx/Cargo.toml)
-#package-java-wrapper-from-branch:
-#  extends: .package-java-wrapper
-#  stage: package
-#  image: ${CI_REGISTRY_IMAGE}/vcx-java:${CI_COMMIT_REF_SLUG}
-#  dependencies:
-#    - build-libvcx-ubuntu18-from-branch
-#  only:
-#    refs:
-#      - /^docker-.*/
-#package-java-wrapper-from-latest:
-#  extends: .package-java-wrapper
-#  stage: package
-#  image: ${CI_REGISTRY_IMAGE}/vcx-java:latest
-#  dependencies:
-#    - build-libvcx-ubuntu18-from-latest
-#  except:
-#    refs:
-#      - /^docker-.*/
 
-
-## - Jobs : Publish - ##
-#publish-java-wrapper:
-#  stage: publish
-#  image: ${CI_REGISTRY_IMAGE}/vcx-java:latest
-#  extends: .tags_micro
-#  only:
-#    refs:
-#      - async@dev/vcx/indy-sdk
-#  script:
-#    - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
-#    - sudo chmod +x vcx/wrappers/java/ci/publishJar.sh
-#    - vcx/wrappers/java/ci/publishJar.sh
+# - Jobs : Publish - ##
+publish-libindy-java-wrapper:
+  stage: publish
+  image: ${CI_REGISTRY_IMAGE}/vcx-java:latest
+  extends: .tags_micro
+  only:
+    refs:
+      - async@dev/vcx/indy-sdk
+  script:
+    - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
+    - wrappers/java/ci/publish.sh ${CI_COMMIT_BRANCH} ${CI_PIPELINE_IID}
 
 publish-libindy:
   extends: .tags_micro
