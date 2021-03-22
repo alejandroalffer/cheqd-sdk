@@ -1,10 +1,14 @@
-use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds};
-use utils::libindy::wallet;
+use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, parse_response_from_agency, prepare_forward_message};
+use utils::libindy::{wallet, crypto};
 use error::prelude::*;
-use messages::agent_utils::{parse_config, set_config_values, configure_wallet, get_final_config, connect_v2, send_message_to_agency};
+use messages::agent_utils::{parse_config, set_config_values, configure_wallet, get_final_config};
 use serde_json::from_str;
 use messages::message_type::MessageTypes;
-
+use messages::thread::Thread;
+use utils::uuid::uuid;
+use settings;
+use utils::httpclient;
+use settings::ProtocolTypes;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProvisionToken {
@@ -37,7 +41,9 @@ pub struct ProvisionAgent {
     token: Option<ProvisionToken>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "requesterKeys")]
-    requester_keys: Option<RequesterKeys>
+    requester_keys: Option<RequesterKeys>,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -56,9 +62,10 @@ pub struct ProblemReport {
 impl ProvisionAgent {
     pub fn build(token: Option<ProvisionToken>, keys: Option<RequesterKeys>) -> ProvisionAgent {
         ProvisionAgent {
-            msg_type: MessageTypes::build(A2AMessageKinds::ProvisionAgent),
+            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::ProvisionAgent)),
             requester_keys: keys,
             token,
+            thread: Thread::new().set_thid(uuid())
         }
     }
 }
@@ -77,19 +84,18 @@ pub fn provision(config: &str, token: &str) -> VcxResult<String> {
     let (my_did, my_vk, wallet_name) = configure_wallet(&my_config)?;
 
     debug!("Connecting to Agency");
-    let (agent_did, agent_vk) = create_agent(&my_did, &my_vk, &my_config.agency_did, token)?;
+    let (agent_did, agent_vk) = create_agent(&my_did, &my_vk, token)?;
+
+    debug!("Building config");
+    let config = get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)?;
 
     wallet::close_wallet()?;
 
-    debug!("Building config");
-    get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)
+    Ok(config)
 }
 
-pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: ProvisionToken) -> VcxResult<(String, String)> {
-    debug!("Connecting with Evernym's Agency");
-    let (agency_pw_did, _) = connect_v2(my_did, my_vk, agency_did)?;
-
-    /* STEP 2 - CREATE AGENT */
+pub fn create_agent(my_did: &str, my_vk: &str, token: ProvisionToken) -> VcxResult<(String, String)> {
+    /* STEP 1 - CREATE AGENT */
     debug!("Creating an agent");
 
     let keys = RequesterKeys {my_did: my_did.to_string(), my_vk: my_vk.to_string()};
@@ -99,7 +105,7 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
         )
     );
 
-    let mut response = send_message_to_agency(&message, &agency_pw_did)?;
+    let mut response = provisioning_v0_7_send_message_to_agency(&message, &my_vk)?;
 
     let response: AgentCreated =
         match response.remove(0) {
@@ -111,6 +117,36 @@ pub fn create_agent(my_did: &str, my_vk: &str, agency_did: &str, token: Provisio
         };
 
     Ok((response.self_did, response.agent_vk))
+}
+
+pub fn provisioning_v0_7_send_message_to_agency(message: &A2AMessage, from_vk: &str) -> VcxResult<Vec<A2AMessage>> {
+    let data = provisioning_v0_7_pack_for_agency(message, from_vk)?;
+
+    let response = httpclient::post_u8(&data)?;
+
+    parse_response_from_agency(&response, &ProtocolTypes::V3)
+}
+
+pub fn provisioning_v0_7_pack_for_agency(message: &A2AMessage, from_vk: &str) -> VcxResult<Vec<u8>> {
+    trace!("provisioning_v0_7_pack_for_agency >>>");
+
+    /*
+    * 1. encodes message using provided verkey and sets Agency verkey as recipient
+    * 2. wraps encoded message into Forward to Agency DID (itself)
+    */
+
+    let agency_did = settings::get_config_value(settings::CONFIG_AGENCY_DID)?;
+    let agency_verkey = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
+
+    let message = json!(message).to_string();
+    let receiver_keys =  json!(vec![&agency_verkey]).to_string();
+
+    let message = crypto::pack_message(Some(from_vk), &receiver_keys, message.as_bytes())?;
+
+    let forward = prepare_forward_message(message, &agency_did, ProtocolTypes::V3)?;
+
+    trace!("provisioning_v0_7_pack_for_agency <<<");
+    Ok(forward)
 }
 
 #[cfg(test)]
@@ -165,6 +201,7 @@ mod tests {
         (enterprise_wallet_name, config, token)
     }
 
+    #[ignore]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]

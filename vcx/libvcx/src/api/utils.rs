@@ -5,7 +5,7 @@ use std::ptr;
 use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
-use utils::libindy::payments;
+use utils::libindy::{payments, wallet};
 use std::thread;
 use error::prelude::*;
 use indy_sys::CommandHandle;
@@ -77,6 +77,7 @@ pub extern fn vcx_provision_agent_with_token(config: *const c_char, token: *cons
     match messages::agent_provisioning::agent_provisioning_v0_7::provision(&config, &token) {
         Err(e) => {
             error!("Provision Agent Error {}.", e);
+            wallet::close_wallet().ok();
             let _res: u32 = e.into();
             ptr::null_mut()
         }
@@ -114,6 +115,7 @@ pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
     match messages::agent_utils::connect_register_provision(&config) {
         Err(e) => {
             error!("Provision Agent Error {}.", e);
+            wallet::close_wallet().ok();
             let _res: u32 = e.into();
             ptr::null_mut()
         }
