@@ -64,7 +64,7 @@ pub extern "C" fn indy_create_key(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, verkey) = prepare_result_1!(res, String::new());
+        let (err, verkey) = prepare_result!(res, String::new());
 
         debug!("indy_create_key ? err {:?} verkey {:?}", err, &verkey);
 
@@ -196,7 +196,7 @@ pub extern "C" fn indy_get_key_metadata(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, metadata) = prepare_result_1!(res, String::new());
+        let (err, metadata) = prepare_result!(res, String::new());
 
         debug!(
             "indy_get_key_metadata ? err {:?} metadata {:?}",
@@ -282,7 +282,7 @@ pub extern "C" fn indy_crypto_sign(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, signature) = prepare_result_1!(res, Vec::new());
+        let (err, signature) = prepare_result!(res, Vec::new());
 
         debug!(
             "indy_crypto_sign ? err {:?} signature {:?}",
@@ -369,7 +369,7 @@ pub extern "C" fn indy_crypto_verify(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, valid) = prepare_result_1!(res, false);
+        let (err, valid) = prepare_result!(res, false);
 
         debug!("indy_crypto_verify ? err {:?} valid {:?}", err, valid);
         cb(command_handle, err, valid)
@@ -457,7 +457,7 @@ pub extern "C" fn indy_crypto_auth_crypt(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, encrypted_msg) = prepare_result_1!(res, Vec::new());
+        let (err, encrypted_msg) = prepare_result!(res, Vec::new());
 
         debug!(
             "indy_crypto_auth_crypt ? err {:?} encrypted_msg {:?}",
@@ -549,7 +549,7 @@ pub extern "C" fn indy_crypto_auth_decrypt(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, sender_vk, msg) = prepare_result_2!(res, String::new(), Vec::new());
+        let (err, (sender_vk, msg)) = prepare_result!(res, String::new(), Vec::new());
 
         debug!(
             "indy_crypto_auth_decrypt ? err {:?} sender_vk {:?} msg {:?}",
@@ -641,7 +641,7 @@ pub extern "C" fn indy_crypto_anon_crypt(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, encrypted_msg) = prepare_result_1!(res, Vec::new());
+        let (err, encrypted_msg) = prepare_result!(res, Vec::new());
 
         debug!(
             "indy_crypto_anon_crypt ? err {:?} encrypted_msg {:?}",
@@ -731,7 +731,7 @@ pub extern "C" fn indy_crypto_anon_decrypt(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, msg) = prepare_result_1!(res, Vec::new());
+        let (err, msg) = prepare_result!(res, Vec::new());
         debug!("indy_crypto_anon_decrypt ? err {:?} msg{:?}", err, msg);
 
         let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
@@ -883,7 +883,7 @@ pub extern "C" fn indy_pack_message(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, jwe) = prepare_result_1!(res, Vec::new());
+        let (err, jwe) = prepare_result!(res, Vec::new());
         debug!("indy_auth_pack_message ? err{:?} jwe{:?}", err, jwe);
 
         let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
@@ -979,7 +979,7 @@ pub extern "C" fn indy_unpack_message(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res_json) = prepare_result_1!(res, Vec::new());
+        let (err, res_json) = prepare_result!(res, Vec::new());
 
         debug!("indy_unpack_message ? err{:?} res_json{:?}", err, res_json);
 

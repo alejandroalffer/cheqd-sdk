@@ -440,7 +440,7 @@ pub extern "C" fn indy_get_wallet_record(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_get_wallet_record ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -521,7 +521,7 @@ pub extern "C" fn indy_open_wallet_search(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, handle) = prepare_result_1!(res, INVALID_SEARCH_HANDLE);
+        let (err, handle) = prepare_result!(res, INVALID_SEARCH_HANDLE);
 
         debug!(
             "indy_open_wallet_search ? err {:?} handle {:?}",
@@ -593,7 +593,7 @@ pub extern "C" fn indy_fetch_wallet_search_next_records(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_fetch_wallet_search_next_records ? err {:?} res {:?}",

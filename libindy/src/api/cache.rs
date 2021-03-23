@@ -80,7 +80,7 @@ pub extern "C" fn indy_get_cred_def(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, cred_def) = prepare_result_1!(res, String::new());
+        let (err, cred_def) = prepare_result!(res, String::new());
         debug!("indy_get_cred_def ? err {:?} cred_def {:?}", err, cred_def);
 
         let cred_def = ctypes::string_to_cstring(cred_def);
@@ -160,7 +160,7 @@ pub extern "C" fn indy_get_schema(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, schema) = prepare_result_1!(res, String::new());
+        let (err, schema) = prepare_result!(res, String::new());
         debug!("indy_get_cred_def ? err {:?} schema {:?}", err, schema);
 
         let schema = ctypes::string_to_cstring(schema);

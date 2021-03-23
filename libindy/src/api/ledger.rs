@@ -90,7 +90,7 @@ pub extern "C" fn indy_sign_and_submit_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_sign_and_submit_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -157,7 +157,7 @@ pub extern "C" fn indy_submit_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_submit_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -239,7 +239,7 @@ pub extern "C" fn indy_submit_action(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_submit_action ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -312,7 +312,7 @@ pub extern "C" fn indy_sign_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_sign_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -386,7 +386,7 @@ pub extern "C" fn indy_multi_sign_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_multi_sign_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -446,7 +446,7 @@ pub extern "C" fn indy_build_get_ddo_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_build_get_ddo_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -526,7 +526,7 @@ pub extern "C" fn indy_build_nym_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_build_nym_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -586,7 +586,7 @@ pub extern "C" fn indy_build_get_nym_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_build_get_nym_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -655,7 +655,7 @@ pub extern "C" fn indy_parse_get_nym_response(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_parse_get_nym_response ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -737,7 +737,7 @@ pub extern "C" fn indy_build_attrib_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_build_attrib_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -816,7 +816,7 @@ pub extern "C" fn indy_build_get_attrib_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_get_attrib_request ? err {:?} res {:?}",
@@ -888,7 +888,7 @@ pub extern "C" fn indy_build_schema_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_build_schema_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -948,7 +948,7 @@ pub extern "C" fn indy_build_get_schema_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_get_schema_request ? err {:?} res {:?}",
@@ -1021,7 +1021,7 @@ pub extern "C" fn indy_parse_get_schema_response(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, schema_id, schema_json) = prepare_result_2!(res, String::new(), String::new());
+        let (err, (schema_id, schema_json)) = prepare_result!(res, String::new(), String::new());
 
         debug!(
             "indy_parse_get_schema_response ? err {:?} \
@@ -1110,7 +1110,7 @@ pub extern "C" fn indy_build_cred_def_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_build_cred_def_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -1171,7 +1171,7 @@ pub extern "C" fn indy_build_get_cred_def_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_get_cred_def_request ? err {:?} res {:?}",
@@ -1248,8 +1248,8 @@ pub extern "C" fn indy_parse_get_cred_def_response(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, cred_def_id, cred_def_json) =
-            prepare_result_2!(res, String::new(), String::new());
+        let (err, (cred_def_id, cred_def_json)) =
+            prepare_result!(res, String::new(), String::new());
 
         debug!(
             "indy_parse_get_cred_def_response ? err {:?} cred_def_id {:?} cred_def_json {:?}",
@@ -1333,7 +1333,7 @@ pub extern "C" fn indy_build_node_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!("indy_build_node_request ? err {:?} res {:?}", err, res);
 
@@ -1386,7 +1386,7 @@ pub extern "C" fn indy_build_get_validator_info_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_get_validator_info_request ? err {:?} res {:?}",
@@ -1459,7 +1459,7 @@ pub extern "C" fn indy_build_get_txn_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_build_get_txn_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -1525,7 +1525,7 @@ pub extern "C" fn indy_build_pool_config_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_pool_config_request ? err {:?} res {:?}",
@@ -1604,7 +1604,7 @@ pub extern "C" fn indy_build_pool_restart_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_pool_restart_request ? err {:?} res {:?}",
@@ -1752,7 +1752,7 @@ pub extern "C" fn indy_build_pool_upgrade_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_pool_upgrade_request ? err {:?} res {:?}",
@@ -1840,7 +1840,7 @@ pub extern "C" fn indy_build_revoc_reg_def_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_revoc_reg_def_request ? err {:?} res {:?}",
@@ -1905,7 +1905,7 @@ pub extern "C" fn indy_build_get_revoc_reg_def_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_get_revoc_reg_def_request ? err {:?} res {:?}",
@@ -1986,8 +1986,8 @@ pub extern "C" fn indy_parse_get_revoc_reg_def_response(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, revoc_reg_def_id, revoc_reg_def_json) =
-            prepare_result_2!(res, String::new(), String::new());
+        let (err, (revoc_reg_def_id, revoc_reg_def_json)) =
+            prepare_result!(res, String::new(), String::new());
 
         debug!(
             "indy_parse_get_revoc_reg_def_response ? err {:?} \
@@ -2094,7 +2094,7 @@ pub extern "C" fn indy_build_revoc_reg_entry_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_revoc_reg_entry_request ? err {:?} res {:?}",
@@ -2171,7 +2171,7 @@ pub extern "C" fn indy_build_get_revoc_reg_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_get_revoc_reg_request ? err {:?} res {:?}",
@@ -2244,8 +2244,8 @@ pub extern "C" fn indy_parse_get_revoc_reg_response(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, revoc_reg_def_id, revoc_reg_json, timestamp) =
-            prepare_result_3!(res, String::new(), String::new(), 0);
+        let (err, (revoc_reg_def_id, revoc_reg_json, timestamp)) =
+            prepare_result!(res, String::new(), String::new(), 0);
 
         debug!(
             "indy_parse_get_revoc_reg_response ? revoc_reg_def_id {:?} \
@@ -2337,7 +2337,7 @@ pub extern "C" fn indy_build_get_revoc_reg_delta_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_get_revoc_reg_delta_request ? err {:?} res {:?}",
@@ -2413,8 +2413,8 @@ pub extern "C" fn indy_parse_get_revoc_reg_delta_response(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, revoc_reg_def_id, revoc_reg_delta_json, timestamp) =
-            prepare_result_3!(res, String::new(), String::new(), 0);
+        let (err, (revoc_reg_def_id, revoc_reg_delta_json, timestamp)) =
+            prepare_result!(res, String::new(), String::new(), 0);
 
         debug!(
             "indy_parse_get_revoc_reg_delta_response ? err {:?} revoc_reg_def_id {:?} \
@@ -2569,7 +2569,7 @@ pub extern "C" fn indy_get_response_metadata(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_get_response_metadata ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -2675,7 +2675,7 @@ pub extern "C" fn indy_build_auth_rule_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_build_auth_rule_request ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -2759,7 +2759,7 @@ pub extern "C" fn indy_build_auth_rules_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_auth_rules_request ? err {:?} res {:?}",
@@ -2849,7 +2849,7 @@ pub extern "C" fn indy_build_get_auth_rule_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_get_auth_rule_request ? err {:?} res {:?}",
@@ -2951,7 +2951,7 @@ pub extern "C" fn indy_build_txn_author_agreement_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_txn_author_agreement_request ? err {:?} res {:?}",
@@ -3015,7 +3015,7 @@ pub extern "C" fn indy_build_disable_all_txn_author_agreements_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_disable_all_txn_author_agreements_request ? err {:?} res {:?}",
@@ -3100,7 +3100,7 @@ pub extern "C" fn indy_build_get_txn_author_agreement_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_get_txn_author_agreement_request ? err {:?} res {:?}",
@@ -3175,7 +3175,7 @@ pub extern "C" fn indy_build_acceptance_mechanisms_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_acceptance_mechanisms_request ? err {:?} res {:?}",
@@ -3254,7 +3254,7 @@ pub extern "C" fn indy_build_get_acceptance_mechanisms_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_build_get_acceptance_mechanisms_request ? err {:?} res {:?}",
@@ -3354,7 +3354,7 @@ pub extern "C" fn indy_append_txn_author_agreement_acceptance_to_request(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
 
         debug!(
             "indy_append_txn_author_agreement_acceptance_to_request ? err {:?} res {:?}",
@@ -3433,7 +3433,7 @@ pub extern "C" fn indy_append_request_endorser(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_append_request_endorser ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);

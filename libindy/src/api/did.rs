@@ -96,7 +96,7 @@ pub extern "C" fn indy_create_and_store_my_did(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, did, verkey) = prepare_result_2!(res, String::new(), String::new());
+        let (err, (did, verkey)) = prepare_result!(res, String::new(), String::new());
 
         debug!(
             "indy_create_and_store_my_did ? err {:?} did {:?} verkey {:?}",
@@ -182,7 +182,7 @@ pub extern "C" fn indy_replace_keys_start(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_replace_keys_start ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -391,7 +391,7 @@ pub extern "C" fn indy_key_for_did(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_key_for_did ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -464,7 +464,7 @@ pub extern "C" fn indy_key_for_local_did(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_key_for_local_did ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -609,7 +609,7 @@ pub extern "C" fn indy_get_endpoint_for_did(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, address, transport_vk) = prepare_result_2!(res, String::new(), None);
+        let (err, (address, transport_vk)) = prepare_result!(res, String::new(), None);
 
         debug!(
             "indy_get_endpoint_for_did ? err {:?} address {:?} transport_vk {:?}",
@@ -753,7 +753,7 @@ pub extern "C" fn indy_get_did_metadata(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_get_did_metadata ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -825,7 +825,7 @@ pub extern "C" fn indy_get_my_did_with_meta(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_get_my_did_with_meta ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -890,7 +890,7 @@ pub extern "C" fn indy_list_my_dids_with_meta(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_list_my_dids_with_meta ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -956,7 +956,7 @@ pub extern "C" fn indy_abbreviate_verkey(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_abbreviate_verkey ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -1031,7 +1031,7 @@ pub extern "C" fn indy_qualify_did(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_qualify_did ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
