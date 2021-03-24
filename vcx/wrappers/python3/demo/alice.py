@@ -2,43 +2,41 @@ import asyncio
 import json
 from time import sleep
 
-from demo.demo_utils import download_message, update_message_as_read
 from vcx.api.connection import Connection
 from vcx.api.credential import Credential
 from vcx.api.disclosed_proof import DisclosedProof
 from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State
-from vc_auth_oidc.alice_vc_auth import handle_challenge
-
 
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
 provisionConfig = {
-    'agency_url': 'https://agency-team1.pdev.evernym.com',
-    'agency_did': 'TGLBMTcW9fHdkSqown9jD8',
-    'agency_verkey': 'FKGV9jKvorzKPtPJPNLZkYPkLhiS1VbxdvBgd1RjcQHR',
+    'agency_url': 'https://agency.pstg.evernym.com',
+    'agency_did': 'LqnB96M6wBALqRZsrTTwda',
+    'agency_verkey': 'BpDPZHLbJFu67sWujecoreojiWZbi2dgf4xnYemUzFvB',
     'wallet_name': 'alice_wallet',
     'wallet_key': '123',
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
-    'protocol_type': '1.0',
+    'protocol_type': '3.0',
+    'name': 'alice',
+    'logo': 'http://robohash.org/456',
+    'path': 'docker.txn',
 }
 
 
 async def main():
     await init()
     connection_to_faber = None
+    credential_o = None
     while True:
         answer = input(
             "Would you like to do? \n "
             "0 - establish connection \n "
             "1 - check for credential offer \n "
             "2 - check for proof request \n "
-            "3 - pass vc_auth_oidc-challenge \n "
-            "4 - check for questions \n "
-            "5 - establish out-of-band connection \n "
-            "6 - check for messages\n "
+            "3 - propose proof\n "
             "else finish \n") \
             .lower().strip()
         if answer == '0':
@@ -55,7 +53,7 @@ async def main():
                 "else finish \n") \
                 .lower().strip()
             if accept_offer_answer == '0':
-                await accept_offer(connection_to_faber, credential)
+                credential_o = await accept_offer(connection_to_faber, credential)
             elif accept_offer_answer == '1':
                 await reject_offer(connection_to_faber, credential)
             else:
@@ -79,41 +77,15 @@ async def main():
             else:
                 break
         elif answer == '3':
-            request = await handle_challenge()
-            print("#23 Create a Disclosed proof object from proof request")
-            proof = await DisclosedProof.create('proof', request)
-            await create_proof(None, proof)
-        elif answer == '4':
-            print("Check agency for a questions")
-            pw_did = await connection_to_faber.get_my_pw_did()
-            uid, question, _ = await download_message(pw_did, 'question')
-            question = json.loads(question)
-            answer = question['valid_responses'][0]
-            await connection_to_faber.send_answer(json.dumps(question), json.dumps(answer))
-            await update_message_as_read(pw_did, uid)
-        elif answer == '5':
-            connection_to_faber = await outofband_connect()
-        elif answer == '6':
-            pw_did = await connection_to_faber.get_my_pw_did()
-            uid, question, _ = await download_message(pw_did, None)
+            connection_to_faber = await propose_proof(credential_o)
         else:
             break
 
     print("Finished")
 
-
 async def init():
     print("#7 Provision an agent and wallet, get back configuration details")
     config = await vcx_agent_provision(json.dumps(provisionConfig))
-    config = json.loads(config)
-    # Set some additional configuration options specific to alice
-    config['institution_name'] = 'alice'
-    config['institution_logo_url'] = 'http://robohash.org/456'
-    config['genesis_path'] = 'docker.txn'
-    config['payment_method'] = 'null'
-
-    config = json.dumps(config)
-
     print("#8 Initialize libvcx with new configuration")
     await vcx_init_with_config(config)
 
@@ -135,24 +107,6 @@ async def connect():
     return connection_to_faber
 
 
-async def outofband_connect():
-    print("#9 Input faber.py invitation details")
-    details = input('invite details: ')
-
-    print("#10 Convert to valid json and string and create a connection to faber")
-    jdetails = json.loads(details)
-    connection_to_faber = await Connection.create_with_outofband_invite('faber', json.dumps(jdetails))
-    await connection_to_faber.connect('{"use_public_did": true}')
-    connection_state = await connection_to_faber.update_state()
-    while connection_state != State.Accepted:
-        sleep(2)
-        await connection_to_faber.update_state()
-        connection_state = await connection_to_faber.get_state()
-
-    print("Connection is established")
-    return connection_to_faber
-
-
 async def accept_offer(connection_to_faber, credential):
     print("#15 After receiving credential offer, send credential request")
     await credential.send_request(connection_to_faber, 0)
@@ -164,6 +118,8 @@ async def accept_offer(connection_to_faber, credential):
         await credential.update_state()
         credential_state = await credential.get_state()
 
+    return credential
+
 
 async def reject_offer(connection_to_faber, credential):
     print("#15 Reject credential offer")
@@ -172,6 +128,30 @@ async def reject_offer(connection_to_faber, credential):
     print("#16 Check credential offer state")
     credential_state = await credential.get_state()
     assert credential_state == State.Rejected
+
+
+async def propose_proof(credential):
+    proposal = await credential.get_presentation_proposal()
+    print("Presentation Proposal")
+    print(proposal)
+
+    new_connection = await Connection.create_outofband("Connection Proposal", "Presentation", None, True,
+                                                       json.dumps(proposal))
+    await new_connection.connect('{"use_public_did": true}')
+    details = await new_connection.invite_details(False)
+    print("**invite details**")
+    print(json.dumps(details))
+    print("******************")
+
+    print("#6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
+    connection_state = await new_connection.get_state()
+    while connection_state != State.Accepted:
+        sleep(2)
+        await new_connection.update_state()
+        connection_state = await new_connection.get_state()
+
+    print("Connection is established")
+    return new_connection
 
 
 async def create_proof(connection_to_faber, proof):
