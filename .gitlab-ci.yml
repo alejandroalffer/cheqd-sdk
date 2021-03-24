@@ -248,7 +248,7 @@ test-libindy-java-wrapper-release:
   extends: .test-libindy-java-wrapper
   image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
   dependencies:
-    - build-libindy-ubuntu16-from-latest
+    - build-libindy-ubuntu16-release
   variables:
     PACKAGE_TYPE: 'xenial'
     BUILD_TYPE: 'release'
