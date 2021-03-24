@@ -65,12 +65,6 @@ struct Config {
     pub write_host: String,
     pub port: u16,
     pub db_name: String,
-    #[serde(default="default_connection_limit")]
-    pub connection_limit: u32,
-}
-
-fn default_connection_limit() -> u32 {
-    100
 }
 
 #[derive(Deserialize)]
@@ -149,7 +143,7 @@ impl MySqlStorageType {
         my_sql_connect_options.log_statements(LevelFilter::Debug);
 
         let connection = MySqlPoolOptions::default()
-            .max_connections(config.connection_limit)
+            .max_connections(4000)
             .test_before_acquire(false)
             .connect_with(
                 my_sql_connect_options,
