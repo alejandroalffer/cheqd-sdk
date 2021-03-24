@@ -503,7 +503,7 @@ pub extern fn indy_create_payment_address(command_handle: CommandHandle,
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, address) = prepare_result_1!(res, String::new());
+        let (err, address) = prepare_result!(res, String::new());
         debug!("indy_create_payment_address ? err {:?}", err);
 
         let res = ctypes::string_to_cstring(address);
@@ -624,7 +624,7 @@ pub extern fn indy_add_request_fees(command_handle: CommandHandle,
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, req_with_fees_json, payment_method) = prepare_result_2!(res, String::new(), String::new());
+        let (err, (req_with_fees_json, payment_method)) = prepare_result!(res, String::new(), String::new());
         debug!("indy_add_request_fees ? err {:?}, payment_method {:?}, req_with_fees_json {:?}", err, payment_method, req_with_fees_json);
 
         let req_with_fees_json = ctypes::string_to_cstring(req_with_fees_json);
@@ -728,7 +728,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
     };
 
     let cb = move |result: IndyResult<_>| {
-        let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+        let (err, (get_sources_txn_json, payment_method)) = prepare_result!(result, String::new(), String::new());
         debug!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
         let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
         let payment_method = ctypes::string_to_cstring(payment_method);
@@ -784,7 +784,7 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: CommandHan
     };
 
     let cb = move |result: IndyResult<_>| {
-        let (err, sources_json, _) = prepare_result_2!(result, String::new(), -1);
+        let (err, (sources_json, _)) = prepare_result!(result, String::new(), -1);
         debug!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
         let sources_json = ctypes::string_to_cstring(sources_json);
         cb(command_handle, err, sources_json.as_ptr());
@@ -856,7 +856,7 @@ pub extern fn indy_build_payment_req(command_handle: CommandHandle,
     };
 
     let cb = move |result: IndyResult<_>| {
-        let (err, payment_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+        let (err, (payment_req_json, payment_method)) = prepare_result!(result, String::new(), String::new());
         debug!("indy_build_payment_req: payment_req_json: {:?}, payment_method: {:?}", payment_req_json, payment_method);
         let payment_req_json = ctypes::string_to_cstring(payment_req_json);
         let payment_method = ctypes::string_to_cstring(payment_method);
@@ -1037,7 +1037,7 @@ pub extern fn indy_build_mint_req(command_handle: CommandHandle,
     };
 
     let cb = move |result: IndyResult<_>| {
-        let (err, mint_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+        let (err, (mint_req_json, payment_method)) = prepare_result!(result, String::new(), String::new());
         debug!("indy_build_mint_req: mint_req_json: {:?}, payment_method: {:?}", mint_req_json, payment_method);
         let mint_req_json = ctypes::string_to_cstring(mint_req_json);
         let payment_method = ctypes::string_to_cstring(payment_method);
@@ -1235,7 +1235,7 @@ pub extern fn indy_build_verify_payment_req(command_handle: CommandHandle,
     };
 
     let cb = move |result: IndyResult<_>| {
-        let (err, verify_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+        let (err, (verify_txn_json, payment_method)) = prepare_result!(result, String::new(), String::new());
         debug!("indy_build_verify_payment_req: verify_txn_json: {:?}, payment_method: {:?}", verify_txn_json, payment_method);
         let verify_txn_json = ctypes::string_to_cstring(verify_txn_json);
         let payment_method = ctypes::string_to_cstring(payment_method);
@@ -1417,7 +1417,7 @@ pub extern fn indy_sign_with_address(command_handle: CommandHandle,
     };
 
     let cb = move |result: IndyResult<_>| {
-        let (err, signature) = prepare_result_1!(result, Vec::new());
+        let (err, signature) = prepare_result!(result, Vec::new());
         debug!("indy_sign_with_address: signature: {:?}", signature);
         let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
         cb(command_handle, err, signature_raw, signature_len)
@@ -1483,7 +1483,7 @@ pub extern fn indy_verify_with_address(command_handle: CommandHandle,
     };
 
     let cb = move |result: IndyResult<_>| {
-        let (err, valid) = prepare_result_1!(result, false);
+        let (err, valid) = prepare_result!(result, false);
         debug!("indy_verify_with_address: valid: {:?}", valid);
         cb(command_handle, err, valid)
     };

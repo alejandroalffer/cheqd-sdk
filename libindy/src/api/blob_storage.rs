@@ -37,7 +37,7 @@ pub extern "C" fn indy_open_blob_storage_reader(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, handle) = prepare_result_1!(res, 0);
+        let (err, handle) = prepare_result!(res, 0);
 
         debug!(
             "indy_open_blob_storage_reader ? err {:?} handle {:?}",
@@ -86,7 +86,7 @@ pub extern "C" fn indy_open_blob_storage_writer(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, handle) = prepare_result_1!(res, 0);
+        let (err, handle) = prepare_result!(res, 0);
 
         debug!(
             "indy_open_blob_storage_writer ? err {:?} handle {:?}",

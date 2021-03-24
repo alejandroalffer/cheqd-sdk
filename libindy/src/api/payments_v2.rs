@@ -52,7 +52,7 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
     };
 
     let cb = move |result: IndyResult<_>| {
-        let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+        let (err, (get_sources_txn_json, payment_method)) = prepare_result!(result, String::new(), String::new());
         debug!("indy_build_get_payment_sources_with_from_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
         let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
         let payment_method = ctypes::string_to_cstring(payment_method);
@@ -109,7 +109,7 @@ pub extern fn indy_parse_get_payment_sources_with_from_response(command_handle: 
     };
 
     let cb = move |result: IndyResult<_>| {
-        let (err, sources_json, next) = prepare_result_2!(result, String::new(), -1);
+        let (err, (sources_json, next)) = prepare_result!(result, String::new(), -1);
         debug!("indy_parse_get_payment_sources_with_from_response: sources_json: {:?}", sources_json);
         let sources_json = ctypes::string_to_cstring(sources_json);
         cb(command_handle, err, sources_json.as_ptr(), next);

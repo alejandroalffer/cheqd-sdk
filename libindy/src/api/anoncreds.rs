@@ -121,7 +121,7 @@ pub extern "C" fn indy_issuer_create_schema(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, id, schema_json) = prepare_result_2!(res, String::new(), String::new());
+        let (err, (id, schema_json)) = prepare_result!(res, String::new(), String::new());
 
         debug!(
             "indy_issuer_create_schema ? err {:?} id {:?} schema_json {:?}",
@@ -263,8 +263,8 @@ pub extern "C" fn indy_issuer_create_and_store_credential_def(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, cred_def_id, cred_def_json) =
-            prepare_result_2!(res, String::new(), String::new());
+        let (err, (cred_def_id, cred_def_json)) =
+            prepare_result!(res, String::new(), String::new());
 
         debug!(
             "indy_issuer_create_and_store_credential_def ? err {:?} \
@@ -369,7 +369,7 @@ pub extern "C" fn indy_issuer_rotate_credential_def_start(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, cred_def_json) = prepare_result_1!(res, String::new());
+        let (err, cred_def_json) = prepare_result!(res, String::new());
 
         debug!(
             "indy_issuer_rotate_credential_def_start ? err {:?} cred_def_json {:?}",
@@ -610,8 +610,8 @@ pub extern "C" fn indy_issuer_create_and_store_revoc_reg(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, revoc_reg_id, revoc_reg_def_json, revoc_reg_json) =
-            prepare_result_3!(res, String::new(), String::new(), String::new());
+        let (err, (revoc_reg_id, revoc_reg_def_json, revoc_reg_json)) =
+            prepare_result!(res, String::new(), String::new(), String::new());
 
         debug!(
             "indy_issuer_create_and_store_credential_def > revoc_reg_id {:?} \
@@ -707,7 +707,7 @@ pub extern "C" fn indy_issuer_create_credential_offer(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, cred_offer_json) = prepare_result_1!(res, String::new());
+        let (err, cred_offer_json) = prepare_result!(res, String::new());
 
         debug!(
             "indy_issuer_create_credential_offer ? err {:?} cred_offer_json {:?}",
@@ -875,8 +875,8 @@ pub extern "C" fn indy_issuer_create_credential(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, cred_json, revoc_id, revoc_reg_delta_json) =
-            prepare_result_3!(res, String::new(), None, None);
+        let (err, (cred_json, revoc_id, revoc_reg_delta_json)) =
+            prepare_result!(res, String::new(), None, None);
 
         debug!(
             "indy_issuer_create_credential ? err {:?} \
@@ -1001,7 +1001,7 @@ pub extern "C" fn indy_issuer_revoke_credential(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, revoc_reg_delta_json) = prepare_result_1!(res, String::new());
+        let (err, revoc_reg_delta_json) = prepare_result!(res, String::new());
 
         debug!(
             "indy_issuer_revoke_credential ? err {:?} \
@@ -1073,7 +1073,7 @@ pub extern fn indy_issuer_recover_credential(command_handle: CommandHandle,
                     rev_reg_id,
                     cred_revoc_id,
                     Box::new(move |result| {
-                        let (err, revoc_reg_update_json) = prepare_result_1!(result, String::new());
+                        let (err, revoc_reg_update_json) = prepare_result!(result, String::new());
                         let revoc_reg_update_json = ctypes::string_to_cstring(revoc_reg_update_json);
                         cb(command_handle, err, revoc_reg_update_json.as_ptr())
                     })
@@ -1166,7 +1166,7 @@ pub extern "C" fn indy_issuer_merge_revocation_registry_deltas(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, merged_rev_reg_delta) = prepare_result_1!(res, String::new());
+        let (err, merged_rev_reg_delta) = prepare_result!(res, String::new());
 
         debug!(
             "indy_issuer_merge_revocation_registry_deltas ? err {:?} \
@@ -1239,7 +1239,7 @@ pub extern "C" fn indy_prover_create_master_secret(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, master_secret_id) = prepare_result_1!(res, String::new());
+        let (err, master_secret_id) = prepare_result!(res, String::new());
 
         debug!(
             "indy_prover_create_master_secret ? err {:?} master_secret_id {:?}",
@@ -1362,8 +1362,8 @@ pub extern "C" fn indy_prover_create_credential_req(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, cred_req_json, cred_req_metadata_json) =
-            prepare_result_2!(res, String::new(), String::new());
+        let (err, (cred_req_json, cred_req_metadata_json)) =
+            prepare_result!(res, String::new(), String::new());
 
         debug!(
             "indy_prover_create_credential_req ? err {:?} \
@@ -1545,7 +1545,7 @@ pub extern "C" fn indy_prover_get_credential_attr_tag_policy(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, catpol) = prepare_result_1!(res, String::new());
+        let (err, catpol) = prepare_result!(res, String::new());
 
         debug!(
             "indy_prover_set_credential_attr_tag_policy ? err {:?} catpol {:?}",
@@ -1681,7 +1681,7 @@ pub extern "C" fn indy_prover_store_credential(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, cred_id) = prepare_result_1!(res, String::new());
+        let (err, cred_id) = prepare_result!(res, String::new());
 
         debug!(
             "indy_prover_store_credential ? err {:?} cred_id {:?}",
@@ -1758,7 +1758,7 @@ pub extern "C" fn indy_prover_get_credential(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, credential) = prepare_result_1!(res, String::new());
+        let (err, credential) = prepare_result!(res, String::new());
 
         debug!(
             "indy_prover_get_credential ? err {:?} credential {:?}",
@@ -1901,7 +1901,7 @@ pub extern "C" fn indy_prover_get_credentials(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, credentials) = prepare_result_1!(res, String::new());
+        let (err, credentials) = prepare_result!(res, String::new());
 
         debug!(
             "indy_prover_get_credentials ? err {:?} credentials {:?}",
@@ -1978,7 +1978,7 @@ pub extern "C" fn indy_prover_search_credentials(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, handle, total_count) = prepare_result_2!(res, INVALID_SEARCH_HANDLE, 0);
+        let (err, (handle, total_count)) = prepare_result!(res, INVALID_SEARCH_HANDLE, 0);
 
         debug!(
             "indy_prover_search_credentials ? err {:?} handle {:?} total_count {:?}",
@@ -2054,7 +2054,7 @@ pub extern "C" fn indy_prover_fetch_credentials(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, credentials) = prepare_result_1!(res, String::new());
+        let (err, credentials) = prepare_result!(res, String::new());
 
         debug!(
             "indy_prover_fetch_credentials ? err {:?} credentials {:?}",
@@ -2266,7 +2266,7 @@ pub extern "C" fn indy_prover_get_credentials_for_proof_req(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, credentials) = prepare_result_1!(res, String::new());
+        let (err, credentials) = prepare_result!(res, String::new());
 
         debug!(
             "indy_prover_get_credentials_for_proof_req ? err {:?} credentials {:?}",
@@ -2419,7 +2419,7 @@ pub extern "C" fn indy_prover_search_credentials_for_proof_req(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, search_handle) = prepare_result_1!(res, INVALID_SEARCH_HANDLE);
+        let (err, search_handle) = prepare_result!(res, INVALID_SEARCH_HANDLE);
 
         debug!(
             "indy_prover_search_credentials_for_proof_req ? err {:?} search_handle {:?}",
@@ -2512,7 +2512,7 @@ pub extern "C" fn indy_prover_fetch_credentials_for_proof_req(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, credentials) = prepare_result_1!(res, String::new());
+        let (err, credentials) = prepare_result!(res, String::new());
 
         debug!(
             "indy_prover_fetch_credentials_for_proof_request ? err {:?} credentials {:?}",
@@ -2839,7 +2839,7 @@ pub extern "C" fn indy_prover_create_proof(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, proof) = prepare_result_1!(res, String::new());
+        let (err, proof) = prepare_result!(res, String::new());
         debug!("indy_prover_create_proof ? err {:?} proof {:?}", err, proof);
         let proof = ctypes::string_to_cstring(proof);
         cb(command_handle, err, proof.as_ptr())
@@ -3080,7 +3080,7 @@ pub extern "C" fn indy_verifier_verify_proof(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, valid) = prepare_result_1!(res, false);
+        let (err, valid) = prepare_result!(res, false);
 
         debug!(
             "indy_verifier_verify_proof ? err {:?} valid {:?}",
@@ -3190,7 +3190,7 @@ pub extern "C" fn indy_create_revocation_state(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, rev_state) = prepare_result_1!(res, String::new());
+        let (err, rev_state) = prepare_result!(res, String::new());
 
         debug!(
             "indy_create_revocation_state ? err {:?} rev_state {:?}",
@@ -3319,7 +3319,7 @@ pub extern "C" fn indy_update_revocation_state(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, rev_state) = prepare_result_1!(res, String::new());
+        let (err, rev_state) = prepare_result!(res, String::new());
 
         debug!(
             "indy_update_revocation_state ? err {:?} rev_state {:?}",
@@ -3363,7 +3363,7 @@ pub extern "C" fn indy_generate_nonce(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, nonce) = prepare_result_1!(res, String::new());
+        let (err, nonce) = prepare_result!(res, String::new());
 
         debug!("indy_generate_nonce ? err {:?} nonce {:?}", err, nonce);
 
@@ -3423,7 +3423,7 @@ pub extern "C" fn indy_to_unqualified(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, did) = prepare_result_1!(res, String::new());
+        let (err, did) = prepare_result!(res, String::new());
 
         debug!("indy_to_unqualified ? err {:?} did {:?}", err, did);
 
