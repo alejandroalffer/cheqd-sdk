@@ -52,6 +52,8 @@ variables:
   image:
     name: gcr.io/kaniko-project/executor:debug-v0.16.0
     entrypoint: [""]
+  variables:
+    DOCKER_CONTEXT: "${CI_PROJECT_DIR}"
   script:
     - if [ "$CI_COMMIT_REF_SLUG" == 'main' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
     - echo "${KANIKO_ARGS}"
@@ -90,7 +92,7 @@ variables:
         Tw6APXtEnjfD2H8HOpOX/7ef4gWK0O1Q7A==
         -----END CERTIFICATE-----" >> /kaniko/ssl/certs/ca-certificates.crt
     - |
-        /kaniko/executor ${KANIKO_ARGS} --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/${DOCKERFILE_PATH} \
+        /kaniko/executor ${KANIKO_ARGS} --context ${DOCKER_CONTEXT} --dockerfile $CI_PROJECT_DIR/${DOCKERFILE_PATH} \
         --destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:${CI_COMMIT_REF_SLUG}
 
 
@@ -127,6 +129,28 @@ dockerbuild-libindy-ubuntu18:
     changes:
       - .gitlab-ci.yml
       - libindy/ci/ubuntu18.dockerfile
+
+dockerbuild-libindy-android:
+  stage: dockerbuild
+  extends: .kaniko_large
+  dependencies:
+    - dockerbuild-libindy-ubuntu16
+  variables:
+    DOCKERFILE_PATH: libindy/ci/android.dockerfile
+    DOCKER_IMAGE_NAME: libindy-android
+    DOCKER_CONTEXT: "${CI_PROJECT_DIR}/libindy/ci/"
+  only:
+    refs:
+      - master
+      - stable
+      - /^docker-.*/
+    changes:
+      - .gitlab-ci.yml
+      - libindy/ci/ubuntu.dockerfile
+      - libindy/ci/android.dockerfile
+  before_script:
+    - sed -i "s|^FROM.*|FROM ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}|g" libindy/ci/android.dockerfile
+    - grep '^FROM' libindy/ci/android.dockerfile
 
 
 ## - Jobs : Build - ##
