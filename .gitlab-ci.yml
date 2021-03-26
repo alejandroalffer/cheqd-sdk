@@ -286,6 +286,17 @@ test-libindy-java-wrapper-release:
     refs:
       - main@evernym/verity/vdr-tools
 
+test-libindy-android:
+  extends: .tags_compute_xlarge
+  stage: build  # TODO separate build step
+  image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
+  services:
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
+      alias: pool_network
+  script:
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - cd libindy && ./android.test.sh x86
+
 
 ## - Jobs : Package - ##
 .package-libindy:
