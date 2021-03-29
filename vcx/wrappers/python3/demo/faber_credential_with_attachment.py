@@ -2,7 +2,7 @@ import asyncio
 import json
 from time import sleep
 
-from demo.faber import connect, issue_credential, ask_for_proof, provisionConfig
+from faber import connect, issue_credential, ask_for_proof, provisionConfig
 from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
 

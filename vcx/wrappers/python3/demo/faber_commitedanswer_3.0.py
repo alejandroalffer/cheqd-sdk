@@ -2,7 +2,7 @@
 
 from ctypes import cdll
 
-from demo.demo_utils import download_message
+from demo_utils import download_message
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.api.utils import vcx_agent_provision
 from vcx.api.connection import Connection
