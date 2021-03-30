@@ -104,7 +104,6 @@ pub struct UpdateComMethod {
 }
 
 impl UpdateComMethod {
-    #[allow(dead_code)]
     fn build(com_method: ComMethod) -> UpdateComMethod {
         UpdateComMethod {
             msg_type: MessageTypes::build(A2AMessageKinds::UpdateComMethod),
@@ -169,6 +168,8 @@ pub fn set_config_values(my_config: &Config) {
     settings::set_opt_config_value(settings::CONFIG_DID_METHOD, &my_config.did_method);
     settings::set_opt_config_value(settings::COMMUNICATION_METHOD, &my_config.communication_method);
     settings::set_opt_config_value(settings::CONFIG_WEBHOOK_URL, &my_config.webhook_url);
+    settings::set_opt_config_value(settings::CONFIG_INSTITUTION_NAME, &my_config.name);
+    settings::set_opt_config_value(settings::CONFIG_INSTITUTION_LOGO_URL, &my_config.logo);
 }
 
 fn _create_issuer_keys(my_did: &str, my_vk: &str, my_config: &Config) -> VcxResult<(String, String)> {
@@ -214,6 +215,9 @@ pub fn get_final_config(my_did: &str,
                         wallet_name: &str,
                         my_config: &Config) -> VcxResult<String> {
     let (issuer_did, issuer_vk) = _create_issuer_keys(my_did, my_vk, my_config)?;
+
+    settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_DID, &agent_did);
+    settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
 
     /* Update Agent Info */
     update_agent_profile(&agent_did,
@@ -446,18 +450,15 @@ pub fn update_agent_info(com_method: ComMethod) -> VcxResult<()> {
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-    // for tis message Agency always return response in V1 format
-    update_agent_info_v1(&to_did, com_method)
-
-//    match settings::get_protocol_type() {
-//        settings::ProtocolTypes::V1 => {
-//            update_agent_info_v1(&to_did, com_method)
-//        }
-//        settings::ProtocolTypes::V2 |
-//        settings::ProtocolTypes::V3 => {
-//            update_agent_info_v2(&to_did, com_method)
-//        }
-//    }
+    match settings::get_protocol_type() {
+        settings::ProtocolTypes::V1 => {
+            update_agent_info_v1(&to_did, com_method)
+        }
+        settings::ProtocolTypes::V2 |
+        settings::ProtocolTypes::V3 => {
+            update_agent_info_v2(&to_did, com_method)
+        }
+    }
 }
 
 fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
@@ -483,7 +484,6 @@ fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
     Ok(())
 }
 
-#[allow(dead_code)]
 fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
     trace!("Updating agent information V2");
 

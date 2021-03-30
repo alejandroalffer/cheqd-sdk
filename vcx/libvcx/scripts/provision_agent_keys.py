@@ -12,6 +12,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("AGENCY_URL")
     parser.add_argument("WALLET_KEY")
+    parser.add_argument("--token", help="optional token to use for provisioning an agent. Note, that it will become mandatory once provisioning with a token will be enforced on the agent.")
     parser.add_argument("--wallet-name", help="optional name for libindy wallet")
     parser.add_argument("--wallet-type", help="optional type of libindy wallet")
     parser.add_argument("--storage-config", help="config for the storage", default="{}")
@@ -63,7 +64,9 @@ def register_agent(args):
             vcx.vcx_set_default_logger(c_debug)
 
     agency_info = get_agency_info(args.AGENCY_URL)
-    json_str = json.dumps({'agency_url':args.AGENCY_URL,
+
+    json_str = json.dumps({
+        'agency_url':args.AGENCY_URL,
         'name':args.institution_name,
         'logo':args.institution_logo_url,
         'agency_did':agency_info['DID'],
@@ -79,7 +82,15 @@ def register_agent(args):
 
     c_json = c_char_p(json_str.encode('utf-8'))
 
-    rc = vcx.vcx_provision_agent(c_json)
+    token = args.token
+
+    if token:
+        print("Provisioning agent with token")
+        c_token = c_char_p(token.encode('utf-8'))
+        rc = vcx.vcx_provision_agent_with_token(c_json, c_token)
+    else:
+        print("Provisioning agent")
+        rc = vcx.vcx_provision_agent(c_json)
 
     if rc == 0:
         sys.stderr.write("could not register agent.  Try again with '-v' for more details\n")

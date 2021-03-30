@@ -51,21 +51,21 @@ impl ProtocolRegistry {
                         self.protocols.push(ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_1]) })
                     }
                     (false, true) => {
-                        self.protocols.push( ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_2]) })
+                        self.protocols.push(ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_2]) })
                     }
                     (false, false) => {}
                 }
             }
             Some((Some(actor_1), None)) => {
                 if actors.contains(&actor_1) {
-                    self.protocols.push( ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_1]) })
+                    self.protocols.push(ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_1]) })
                 }
             }
             Some((None, Some(actor_2))) => {
                 if actors.contains(&actor_2) {
                     self.protocols.push(ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_2]) })
                 }
-            },
+            }
             _ => {}
         }
     }
