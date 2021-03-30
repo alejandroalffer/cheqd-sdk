@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.hyperledger.indy.sdk.JsonObjectSimilar;
 
@@ -40,6 +41,7 @@ public class GetTxnRequestTest extends IndyIntegrationTestWithPoolAndSingleWalle
 	}
 
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
+	@Ignore
 	public void testGetTxnRequestWorks() throws Exception {
 		String did = createStoreAndPublishDidFromTrustee();
 

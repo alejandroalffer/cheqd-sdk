@@ -15,7 +15,7 @@ function publish() {
   cp settings.xml $MODULE_DIR
 
   pushd $MODULE_DIR
-  mvn clean deploy -DskipTests $MAVEN_ADD_OPTIONS --settings settings.xml
+  mvn clean deploy -DskipTests -Dmaven.javadoc.skip=true $MAVEN_ADD_OPTIONS --settings settings.xml
   popd
 }
 
@@ -35,6 +35,8 @@ function update_version() {
   fi
   popd
 }
+
+set -eux
 
 update_version wrappers/java $1 $2
 publish wrappers/java
