@@ -15,7 +15,7 @@ function publish() {
   cp settings.xml $MODULE_DIR
 
   pushd $MODULE_DIR
-  mvn clean deploy -DskipTests -Dmaven.javadoc.skip=true $MAVEN_ADD_OPTIONS --settings settings.xml
+  mvn clean deploy -DskipTests -Dmaven.javadoc.skip=true --settings settings.xml
   popd
 }
 
