@@ -44,9 +44,8 @@
 
 	<distributionManagement>
 		<repository>
-			<id>${mavenRepo.id}</id>
-			<name>${mavenRepo.name}</name>
-			<url>${mavenRepo.url}</url>
+			<id>io.cloudrepo</id>
+			<url>https://evernym.mycloudrepo.io/repositories/libvcx-android</url>
 		</repository>
 	</distributionManagement>
 
