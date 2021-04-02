@@ -538,10 +538,35 @@ impl VerifierSM {
 
                         let thread = state.thread.clone()
                             .update_received_order(&connection.data.did_doc.id)
+                            .set_opt_pthid(connection.data.thread.pthid.clone())
                             .increment_sender_order();
 
                         let presentation_request: PresentationRequestData =
                             presentation_request_data
+                                .set_format_version_for_did(&connection.agent.pw_did, &connection.data.did_doc.id)?;
+
+                        let presentation_request =
+                            PresentationRequest::create()
+                                .set_comment(presentation_request.name.clone())
+                                .set_request_presentations_attach(&presentation_request)?
+                                .set_thread(thread.clone());
+
+                        connection.data.send_message(&presentation_request.to_a2a_message(), &connection.agent)?;
+                        VerifierState::PresentationRequestSent((state, presentation_request, connection, thread).into())
+                    }
+                    VerifierMessages::SendPresentationRequest(connection_handle) => {
+                        let connection = ::connection::get_completed_connection(connection_handle)?;
+
+                        let thread = state.thread.clone()
+                            .update_received_order(&connection.data.did_doc.id)
+                            .increment_sender_order();
+
+                        let presentation_request =
+                            PresentationRequestData::create()
+                                .set_name(state.presentation_proposal.comment.clone().unwrap_or_default())
+                                .set_requested_attributes_value(state.presentation_proposal.to_proof_request_requested_attributes())
+                                .set_requested_predicates_value(state.presentation_proposal.to_proof_request_requested_predicates())
+                                .set_nonce()?
                                 .set_format_version_for_did(&connection.agent.pw_did, &connection.data.did_doc.id)?;
 
                         let presentation_request =

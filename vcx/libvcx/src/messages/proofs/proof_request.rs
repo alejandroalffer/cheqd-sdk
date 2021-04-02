@@ -375,32 +375,44 @@ impl ProofRequestData {
         Ok(self)
     }
 
-    pub fn set_requested_attributes(mut self, requested_attrs: String) -> VcxResult<ProofRequestData> {
-        trace!("parse_proof_req_message >>> requested_attrs: {:?}", secret!(requested_attrs));
+    pub fn set_requested_attributes(self, requested_attrs: String) -> VcxResult<ProofRequestData> {
+        trace!("set_requested_attributes >>> requested_attrs: {:?}", secret!(requested_attrs));
 
         let requested_attributes: Vec<AttrInfo> = ::serde_json::from_str(&requested_attrs)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, format!("Invalid Requested Attributes: {:?}. Err: {:?}", requested_attrs, err)))?;
 
-        self.requested_attributes = requested_attributes
+        Ok(self.set_requested_attributes_value(requested_attributes))
+    }
+
+    pub fn set_requested_attributes_value(mut self, requested_attrs: Vec<AttrInfo>) -> ProofRequestData {
+        trace!("set_requested_attributes_value >>> requested_attrs: {:?}", secret!(requested_attrs));
+
+        self.requested_attributes = requested_attrs
             .into_iter()
             .enumerate()
             .map(|(index, attribute)| (format!("attribute_{}", index), attribute))
             .collect();
-        Ok(self)
+        self
     }
 
-    pub fn set_requested_predicates(mut self, requested_predicates: String) -> VcxResult<ProofRequestData> {
+    pub fn set_requested_predicates(self, requested_predicates: String) -> VcxResult<ProofRequestData> {
         trace!("set_requested_predicates >>> requested_predicates: {:?}", secret!(requested_predicates));
 
         let requested_predicates: Vec<PredicateInfo> = ::serde_json::from_str(&requested_predicates)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidPredicatesStructure, format!("Invalid Requested Predicates: {:?}, err: {:?}", requested_predicates, err)))?;
+
+        Ok(self.set_requested_predicates_value(requested_predicates))
+    }
+
+    pub fn set_requested_predicates_value(mut self, requested_predicates: Vec<PredicateInfo>) -> ProofRequestData {
+        trace!("set_requested_predicates_value >>> requested_predicates: {:?}", secret!(requested_predicates));
 
         self.requested_predicates = requested_predicates
             .into_iter()
             .enumerate()
             .map(|(index, attribute)| (format!("predicate_{}", index), attribute))
             .collect();
-        Ok(self)
+        self
     }
 
     pub fn set_not_revoked_interval(mut self, non_revoc_interval: String) -> VcxResult<ProofRequestData> {
