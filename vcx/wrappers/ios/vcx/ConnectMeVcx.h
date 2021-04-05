@@ -179,6 +179,13 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)connectionGetProblemReport:(NSInteger) connectionHandle
                         completion:(void (^)(NSError *error, NSString *message))completion;
 
+- (void)connectionCreateInvite:(NSString *)sourceId
+             completion:(void (^)(NSError *error, NSInteger connectionHandle)) completion;
+
+- (void) getConnectionInviteDetails:(NSInteger) connectionHandle
+                        abbreviated:(BOOL *) abbreviated
+         withCompletion:(void (^)(NSError *error, NSString *inviteDetails))completion;
+
 - (void)agentUpdateInfo:(NSString *)config
              completion:(void (^)(NSError *error))completion;
 
