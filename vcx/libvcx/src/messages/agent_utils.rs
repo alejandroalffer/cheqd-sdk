@@ -510,6 +510,7 @@ mod tests {
     use api::vcx::vcx_shutdown;
 
     #[test]
+    #[ignore]
     fn test_connect_register_provision_config_path() {
         let agency_did = "LTjTWsezEmV4wJYD5Ufxvk";
         let agency_vk = "BcCSmgdfChLqmtBkkA26YotWVFBNnyY45WCnQziF4cqN";
@@ -616,7 +617,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_update_agent_info_real() {
-        let _setup = SetupLibraryAgencyV1::init();
+        let _setup = SetupLibraryAgencyV2NewProvisioning::init();
 
         ::utils::devsetup::set_consumer();
 

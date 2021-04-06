@@ -14,7 +14,7 @@ crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
 #default = []
-default = ["pool_tests", "agency", "wallet_backup"]
+default = [] #FIXME: return "pool_tests", "agency", "wallet_backup" features
 too_long_request = [] # These tests are waiting for the agency fixes regarding the length of request
 #default = ["pool_tests","agency"]
 #default = ["pool_tests","agency_v2"]

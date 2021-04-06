@@ -40,6 +40,7 @@ pub struct SetupLibraryAgencyV2; // init indy wallet, init pool, provision 2 age
 pub struct SetupLibraryAgencyV2ZeroFees; // init indy wallet, init pool, provision 2 agents. use protocol type 2.0, set zero fees
 
 //TODO: This will be removed once libvcx only supports provisioning 0.7
+pub struct SetupLibraryAgencyV2NewProvisioning; // init indy wallet, init pool, provision 2 agents. use protocol type 2.0, set zero fees
 pub struct SetupLibraryAgencyV2ZeroFeesNewProvisioning; // init indy wallet, init pool, provision 2 agents. use protocol type 2.0, set zero fees
 
 pub struct SetupConsumer; // init indy wallet, init pool, provision 1 consumer agent, use protocol type 1.0
@@ -249,6 +250,21 @@ impl SetupLibraryAgencyV1ZeroFees {
 }
 
 impl Drop for SetupLibraryAgencyV1ZeroFees {
+    fn drop(&mut self) {
+        cleanup_agency_env();
+        tear_down()
+    }
+}
+
+impl SetupLibraryAgencyV2NewProvisioning {
+    pub fn init() -> SetupLibraryAgencyV2NewProvisioning {
+        setup();
+        setup_agency_env_new_protocol("2.0", false);
+        SetupLibraryAgencyV2NewProvisioning
+    }
+}
+
+impl Drop for SetupLibraryAgencyV2NewProvisioning {
     fn drop(&mut self) {
         cleanup_agency_env();
         tear_down()

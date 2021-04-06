@@ -95,7 +95,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_delete_connection() {
-        let _setup = SetupLibraryAgencyV1ZeroFees::init();
+        let _setup = SetupLibraryAgencyV2ZeroFeesNewProvisioning::init();
 
         let alice = connection::create_connection("alice").unwrap();
         connection::connect(alice, None).unwrap();
@@ -332,7 +332,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_real_proof() {
-        let _setup = SetupLibraryAgencyV1ZeroFees::init(); // FIXME use SetupLibraryAgencyV2ZeroFeesNewProvisioning
+        let _setup = SetupLibraryAgencyV2ZeroFeesNewProvisioning::init();
 
         _real_proof_demo();
     }
@@ -341,7 +341,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_real_proof_with_revocation() {
-        let _setup = SetupLibraryAgencyV1ZeroFees::init();
+        let _setup = SetupLibraryAgencyV2ZeroFeesNewProvisioning::init();
 
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();

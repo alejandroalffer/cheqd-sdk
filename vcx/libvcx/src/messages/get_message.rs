@@ -700,7 +700,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_download_messages() {
-        let _setup = SetupLibraryAgencyV1::init();
+        let _setup = SetupLibraryAgencyV2NewProvisioning::init();
 
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (_faber, alice) = ::connection::tests::create_connected_connections();
@@ -755,7 +755,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_download_message() {
-        let _setup = SetupLibraryAgencyV1::init();
+        let _setup = SetupLibraryAgencyV2NewProvisioning::init();
 
         let (_faber, alice) = ::connection::tests::create_connected_connections();
 

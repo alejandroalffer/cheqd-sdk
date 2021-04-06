@@ -1077,7 +1077,7 @@ mod tests {
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     fn test_health_check() {
-        let _setup = SetupLibraryAgencyV1ZeroFees::init();
+        let _setup = SetupLibraryAgencyV2ZeroFeesNewProvisioning::init();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(

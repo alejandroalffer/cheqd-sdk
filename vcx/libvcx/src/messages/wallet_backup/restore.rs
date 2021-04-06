@@ -101,7 +101,7 @@ mod tests {
     use std::fs::File;
     use utils::libindy::wallet;
     use std::io::Write;
-    use utils::devsetup::{SetupLibraryWalletPoolZeroFees, SetupLibraryAgencyV1, SetupDefaults};
+    use utils::devsetup::{SetupLibraryWalletPoolZeroFees, SetupLibraryAgencyV2NewProvisioning, SetupDefaults};
     use utils::libindy::wallet::delete_wallet;
 
     pub fn restore_wallet_utils(encrypted_wallet: &[u8], wb: &TestBackupData) -> serde_json::Value {
@@ -156,7 +156,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_backup_restore_no_backup_real() {
-        let _setup = SetupLibraryAgencyV1::init();
+        let _setup = SetupLibraryAgencyV2NewProvisioning::init();
 
         ::utils::devsetup::set_consumer();
 
@@ -178,7 +178,7 @@ mod tests {
         let wb;
         let encrypted_wallet;
         {
-            let _setup = SetupLibraryAgencyV1::init();
+            let _setup = SetupLibraryAgencyV2NewProvisioning::init();
 
             ::utils::devsetup::set_consumer();
             wb = backup_wallet_utils();
