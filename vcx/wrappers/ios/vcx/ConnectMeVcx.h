@@ -91,6 +91,26 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (const char *)agentProvisionWithToken:(NSString *)config
                           token:(NSString *)token;
 
+/// Get token which can be used for provisioning an agent
+/// NOTE: Can be used only for Evernym's applications
+///
+/// config:
+/// {
+///     vcx_config: VcxConfig // Same config passed to agent provision
+///                           // See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
+///     sponsee_id: String,
+///     sponsor_id: String,
+///     com_method: {
+///         type: u32 // 1 means push notifications, 4 means forward to sponsor app
+///         id: String,
+///         value: String,
+///     },
+///     algorithm: Optional<String>, // signature algorithm. Can be one of: SafetyNet | DeviceCheck
+///     signature: Optional<String>, // signature matching to specified algorithm
+/// }
+///
+/// #Returns
+/// token: provisioning token as JSON
 - (void)getProvisionToken:(NSString *)config
                  completion:(void (^)(NSError *error, NSString *token))completion;
 

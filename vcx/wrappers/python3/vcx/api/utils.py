@@ -9,6 +9,10 @@ from vcx.common import do_call, create_cb, do_call_sync
 async def vcx_agent_provision(config: str) -> None:
     """
     Provision an agent in the agency, populate configuration and wallet for this agent.
+
+   Params:
+     config - Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
+
     Example:
     import json
     enterprise_config = {
@@ -42,6 +46,10 @@ async def vcx_agent_provision(config: str) -> None:
 async def vcx_provision_agent_with_token(config: str, token: str) -> None:
     """
     Provision an agent in the agency, populate configuration and wallet for this agent.
+
+    Params:
+     config - Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
+
     Example:
     enterprise_config = {
         'agency_url': 'http://localhost:8080',
@@ -78,22 +86,24 @@ async def vcx_provision_agent_with_token(config: str, token: str) -> None:
 
 async def vcx_get_provision_token(config: str) -> str:
     """
-    Get token used in vcx_provision_agent_with_token
+    Get token which can be used for provisioning an agent
+    NOTE: Can be used only for Evernym's applications
+
     :param config:
-      {
-        'vcx_config': {
-          'agency_url': 'https://enym-eagency.pdev.evernym.com',
-          'agency_did': 'YRuVCckY6vfZfX9kcQZe3u',
-          'agency_verkey': "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
-          'wallet_name': 'LIBVCX_SDK_WALLET',
-          'agent_seed': '00000000000000000000000001234561',
-          'enterprise_seed': '000000000000000000000000Trustee1',
-          'wallet_key': '1234'
-        },
-        'source_id': "123",
-        'com_method': {'type': 1,'id':'123','value':'FCM:Value'}
-      }
-    :return: provisioning token
+     {
+         vcx_config: VcxConfig // Same config passed to agent provision
+                               // See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
+         sponsee_id: String,
+         sponsor_id: String,
+         com_method: {
+             type: u32 // 1 means push notifications, 4 means forward to sponsor app
+             id: String,
+             value: String,
+         },
+         algorithm: Optional[String], // signature algorithm. Can be one of: SafetyNet | DeviceCheck
+         signature: Optional[String], // signature matching to specified algorithm
+     }
+    :return: provisioning token as JSON
     """
     logger = logging.getLogger(__name__)
 

@@ -33,29 +33,7 @@ public class UtilsApi extends VcxJava.API {
     /**
      * Provision an agent in the agency, populate configuration and wallet for this agent.
      *
-     * @param  config         provisioning configuration.
-     *       {
-     *         protocol_type: String
-     *         agency_url: String,
-     *         pub agency_did: String,
-     *         agency_verkey: String,
-     *         wallet_name: Option(String),
-     *         wallet_key: String,
-     *         wallet_type: Option(String),
-     *         agent_seed: Option(String),
-     *         enterprise_seed: Option(String),
-     *         wallet_key_derivation: Option(String),
-     *         name: Option(String),
-     *         logo: Option(String),
-     *         path: Option(String),
-     *         storage_config: Option(String),
-     *         storage_credentials: Option(String),
-     *         pool_config: Option(String),
-     *         did_method: Option(String),
-     *         communication_method: Option(String),
-     *         webhook_url: Option(String),
-     *         use_latest_protocols: Option(String),
-     *      }
+     * @param  config         Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
      *
      * @return                populated config that can be used for library initialization.
      */
@@ -71,29 +49,7 @@ public class UtilsApi extends VcxJava.API {
     /**
      * Provision an agent in the agency, populate configuration and wallet for this agent.
      *
-     * @param  conf           provisioning configuration.
-     *       {
-     *         protocol_type: String
-     *         agency_url: String,
-     *         pub agency_did: String,
-     *         agency_verkey: String,
-     *         wallet_name: Option(String),
-     *         wallet_key: String,
-     *         wallet_type: Option(String),
-     *         agent_seed: Option(String),
-     *         enterprise_seed: Option(String),
-     *         wallet_key_derivation: Option(String),
-     *         name: Option(String),
-     *         logo: Option(String),
-     *         path: Option(String),
-     *         storage_config: Option(String),
-     *         storage_credentials: Option(String),
-     *         pool_config: Option(String),
-     *         did_method: Option(String),
-     *         communication_method: Option(String),
-     *         webhook_url: Option(String),
-     *         use_latest_protocols: Option(String),
-     *      }
+     * @param  conf           Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
      *
      * @return                populated config that can be used for library initialization.
      *
@@ -114,29 +70,7 @@ public class UtilsApi extends VcxJava.API {
     /**
      * Provision an agent in the agency, populate configuration and wallet for this agent.
      *
-     * @param  config           provisioning configuration.
-     *       {
-     *         protocol_type: String
-     *         agency_url: String,
-     *         pub agency_did: String,
-     *         agency_verkey: String,
-     *         wallet_name: Option(String),
-     *         wallet_key: String,
-     *         wallet_type: Option(String),
-     *         agent_seed: Option(String),
-     *         enterprise_seed: Option(String),
-     *         wallet_key_derivation: Option(String),
-     *         name: Option(String),
-     *         logo: Option(String),
-     *         path: Option(String),
-     *         storage_config: Option(String),
-     *         storage_credentials: Option(String),
-     *         pool_config: Option(String),
-     *         did_method: Option(String),
-     *         communication_method: Option(String),
-     *         webhook_url: Option(String),
-     *         use_latest_protocols: Option(String),
-     *      }
+     * @param  config         Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
      * @param  token          provisioning token.
      *      {
      *          This can be a push notification endpoint to contact the sponsee or
@@ -177,43 +111,25 @@ public class UtilsApi extends VcxJava.API {
     };
 
     /**
-     * Get Provisioning token
+     * Get token that can be used for provisioning an agent
+     * NOTE: Can be used only for Evernym's applications
      *
      * @param  config           provisioning configuration.
      * {
      *     vcx_config: VcxConfig // Same config passed to agent provision
-     *     {
-     *           protocol_type: String
-     *           agency_url: String,
-     *           pub agency_did: String,
-     *           agency_verkey: String,
-     *           wallet_name: Option(String),
-     *           wallet_key: String,
-     *           wallet_type: Option(String),
-     *           agent_seed: Option(String),
-     *           enterprise_seed: Option(String),
-     *           wallet_key_derivation: Option(String),
-     *           name: Option(String),
-     *           logo: Option(String),
-     *           path: Option(String),
-     *           storage_config: Option(String),
-     *           storage_credentials: Option(String),
-     *           pool_config: Option(String),
-     *           did_method: Option(String),
-     *           communication_method: Option(String),
-     *           webhook_url: Option(String),
-     *           use_latest_protocols: Option(String),
-     *     }
+     *                           // See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
      *     sponsee_id: String,
      *     sponsor_id: String,
      *     com_method: {
-     *         type: u32 // 1 means push notifcation, its the only one registered
+     *         type: u32 // 1 means push notifications, 4 means forward to sponsor app
      *         id: String,
      *         value: String,
-     *     }
+     *     },
+     *     algorithm: Optional[String], // signature algorithm. Can be one of: SafetyNet | DeviceCheck
+     *     signature: Optional[String], // signature matching to specified algorithm
      * }
      *
-     * @return                provisioning token
+     * @return                provisioning token as JSON
      *
      * @throws VcxException   If an exception occurred in Libvcx library.
      *
