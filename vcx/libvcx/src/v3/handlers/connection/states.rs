@@ -122,6 +122,16 @@ pub struct CompleteState {
     pub thread: Thread,
 }
 
+impl CompleteState {
+    pub fn without_handshake(&self) -> bool {
+        if let Some(Invitations::OutofbandInvitation(invitation)) = self.invitation.as_ref() {
+            invitation.handshake_protocols.is_empty()
+        } else {
+            false
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FailedState {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1167,7 +1177,15 @@ impl DidExchangeSM {
                         ActorDidExchangeState::Invitee(DidExchangeState::Failed(state))
                     }
                     DidExchangeState::Completed(state) => {
-                        ActorDidExchangeState::Invitee(state.handle_message(message, &agent_info)?)
+                        if let DidExchangeMessages::Connect(_) = message {
+                            if state.without_handshake() {
+                                agent_info = agent_info.create_agent()?;
+                            }
+                            ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
+                        } else {
+                            ActorDidExchangeState::Invitee(state.handle_message(message, &agent_info)?)
+                        }
+
                     }
                 }
             }

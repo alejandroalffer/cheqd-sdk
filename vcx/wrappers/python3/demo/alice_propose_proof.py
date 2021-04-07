@@ -9,9 +9,9 @@ from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State
 
 provisionConfig = {
-    'agency_url': 'https://agency.pstg.evernym.com',
-    'agency_did': 'LqnB96M6wBALqRZsrTTwda',
-    'agency_verkey': 'BpDPZHLbJFu67sWujecoreojiWZbi2dgf4xnYemUzFvB',
+    'agency_url': 'https://agency.pps.evernym.com',
+    'agency_did': '3mbwr7i85JNSL3LoNQecaW',
+    'agency_verkey': '2WXxo6y1FJvXWgZnoYUP5BJej2mceFrqBDNPE3p6HDPf',
     'wallet_name': 'alice_wallet',
     'wallet_key': '123',
     'payment_method': 'null',

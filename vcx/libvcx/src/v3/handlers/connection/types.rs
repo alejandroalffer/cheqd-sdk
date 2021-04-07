@@ -4,6 +4,8 @@ use v3::handlers::connection::states::CompleteState;
 use v3::messages::connection::invite::Invitation;
 use v3::messages::outofband::invitation::Invitation as OutofbandInvitation;
 use v3::messages::connection::did_doc::DidDoc;
+use error::VcxResult;
+use v3::messages::connection::service::Service;
 
 /*
     object returning by vcx_connection_info
@@ -36,6 +38,23 @@ pub struct SideConnectionInfo {
 pub struct CompletedConnection {
     pub agent: AgentInfo,
     pub data: CompleteState,
+}
+
+impl CompletedConnection {
+    pub fn without_handshake(&self) -> bool {
+        self.data.without_handshake()
+    }
+
+    pub fn service(&self) -> VcxResult<Option<Service>> {
+        if self.without_handshake() && !self.agent.pw_did.is_empty() {
+            Ok(Some(Service::create()
+                .set_service_endpoint(self.agent.agency_endpoint()?)
+                .set_recipient_keys(self.agent.recipient_keys())
+                .set_routing_keys(self.agent.routing_keys()?)))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 /*

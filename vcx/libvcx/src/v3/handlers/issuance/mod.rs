@@ -187,10 +187,12 @@ impl Holder {
         debug!("Credential {}: Building presentation proposal", self.get_source_id());
 
         let (cred_id, _) = self.get_credential()?;
+        let credential_offer = self.get_credential_offer()?;
 
         let credential = prover_get_credential(&cred_id)?;
 
         let presentation_proposal = PresentationProposal::default()
+            .set_comment(credential_offer.comment.unwrap_or(String::from("Credential")))
             .set_presentation_preview(PresentationPreview::for_credential(&credential));
 
         trace!("Credential::get_presentation_proposal <<< presentation_proposal: {:?}", presentation_proposal);
