@@ -10,6 +10,9 @@ export async function provisionAgent (configAgent: string, options: IInitVCXOpti
   /**
    * Provision an agent in the agency, populate configuration and wallet for this agent.
    *
+   * Params:
+   *  configAgent - Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
+   *
    * Example:
    * ```
    * enterpriseConfig = {
@@ -51,6 +54,9 @@ export async function provisionAgent (configAgent: string, options: IInitVCXOpti
 export async function provisionAgentWithToken (configAgent: string, token: string, options: IInitVCXOptions = {}): Promise<string> {
   /**
    * Provision an agent in the agency, populate configuration and wallet for this agent.
+   *
+   * Params:
+   *  configAgent - Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
    *
    * Example:
    * ```
@@ -103,20 +109,21 @@ export async function provisionAgentWithToken (configAgent: string, token: strin
 
 export async function getProvisionToken (config: string, options: IInitVCXOptions = {}): Promise<string> {
   /**
-   * Get Provisioning Token
-   * Config Example:
+   * Get token that can be used for provisioning an agent
+   * NOTE: Can be used only for Evernym's applications
+   * Config:
    * {
-   *   'vcx_config': {
-   *      'agency_url': 'https://enym-eagency.pdev.evernym.com',
-   *       'agency_did': 'YRuVCckY6vfZfX9kcQZe3u',
-   *       'agency_verkey': "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
-   *       'wallet_name': 'LIBVCX_SDK_WALLET',
-   *       'agent_seed': '00000000000000000000000001234561',
-   *       'enterprise_seed': '000000000000000000000000Trustee1',
-   *       'wallet_key': '1234'
+   *     vcx_config: VcxConfig // Same config passed to agent provision
+   *                           // See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
+   *     sponsee_id: String,
+   *     sponsor_id: String,
+   *     com_method: {
+   *         type: u32 // 1 means push notifications, 4 means forward to sponsor app
+   *         id: String,
+   *         value: String,
    *     },
-   *    'source_id': "123",
-   *    'com_method': {'type': 1,'id':'123','value':'FCM:Value'}
+   *     algorithm: Optional[String], // signature algorithm. Can be one of: SafetyNet | DeviceCheck
+   *     signature: Optional[String], // signature matching to specified algorithm
    * }
    */
   try {

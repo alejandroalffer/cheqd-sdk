@@ -12,33 +12,12 @@ use indy_sys::CommandHandle;
 use utils::httpclient::AgencyMock;
 use utils::constants::*;
 use messages::agent_utils::{ComMethod, Config};
+use messages::token_provisioning::token_provisioning::VALID_SIGNATURE_ALGORITHMS;
 
 /// Provision an agent in the agency, populate configuration and wallet for this agent.
 ///
 /// #Params
-/// config: configuration
-///  {
-///    protocol_type: String
-///    agency_url: String,
-///    pub agency_did: String,
-///    agency_verkey: String,
-///    wallet_name: Option<String>,
-///    wallet_key: String,
-///    wallet_type: Option<String>,
-///    agent_seed: Option<String>,
-///    enterprise_seed: Option<String>,
-///    wallet_key_derivation: Option<String>,
-///    name: Option<String>,
-///    logo: Option<String>,
-///    path: Option<String>,
-///    storage_config: Option<String>,
-///    storage_credentials: Option<String>,
-///    pool_config: Option<String>,
-///    did_method: Option<String>,
-///    communication_method: Option<String>,
-///    webhook_url: Option<String>,
-///    use_latest_protocols: Option<String>,
-/// }
+/// config: Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
 /// token: {
 ///          This can be a push notification endpoint to contact the sponsee or
 ///          an id that the sponsor uses to reference the sponsee in its backend system
@@ -94,7 +73,7 @@ pub extern fn vcx_provision_agent_with_token(config: *const c_char, token: *cons
 /// NOTE: for asynchronous call use vcx_agent_provision_async
 ///
 /// #Params
-/// config: configuration
+/// config: Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
 ///
 /// #Returns
 /// Configuration (wallet also populated), on error returns NULL
@@ -134,7 +113,7 @@ pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// config: configuration
+/// config: Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
 ///
 /// cb: Callback that provides configuration or error status
 ///
@@ -170,7 +149,8 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Update information on the agent (ie, comm method and type)
+/// Get token which can be used for provisioning an agent
+/// NOTE: Can be used only for Evernym's applications
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -178,37 +158,19 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 /// config:
 /// {
 ///     vcx_config: VcxConfig // Same config passed to agent provision
-///     {
-///           protocol_type: String
-///           agency_url: String,
-///           pub agency_did: String,
-///           agency_verkey: String,
-///           wallet_name: Option<String>,
-///           wallet_key: String,
-///           wallet_type: Option<String>,
-///           agent_seed: Option<String>,
-///           enterprise_seed: Option<String>,
-///           wallet_key_derivation: Option<String>,
-///           name: Option<String>,
-///           logo: Option<String>,
-///           path: Option<String>,
-///           storage_config: Option<String>,
-///           storage_credentials: Option<String>,
-///           pool_config: Option<String>,
-///           did_method: Option<String>,
-///           communication_method: Option<String>,
-///           webhook_url: Option<String>,
-///           use_latest_protocols: Option<String>,
-///     }
+///                           // See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
 ///     sponsee_id: String,
 ///     sponsor_id: String,
 ///     com_method: {
-///         type: u32 // 1 means push notifcation, its the only one registered
+///         type: u32 // 1 means push notifications, 4 means forward to sponsor app
 ///         id: String,
 ///         value: String,
-///     }
-///     # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
+///     },
+///     algorithm: Optional<String>, // signature algorithm. Can be one of: SafetyNet | DeviceCheck
+///     signature: Optional<String>, // signature matching to specified algorithm
 /// }
+///
+/// # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
 ///
 /// cb: Callback that provides provision token or error status
 ///
@@ -262,8 +224,22 @@ pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
         }
     };
 
+    let signature: Option<String> = configs["signature"].as_str().map(String::from);
+    let algorithm: Option<String> = configs["algorithm"].as_str().map(String::from);
+
+    match (signature.as_ref(), algorithm.as_ref()) {
+        (Some(_), None) | (None, Some(_)) => {
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "signature and algorithm must be either passed or skipped together").into();
+        },
+        (Some(_), Some(algorithm)) if !VALID_SIGNATURE_ALGORITHMS.contains(&algorithm.as_str()) => {
+            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration,
+                                      format!("unexpected signature algorithm was passed: {:?}. expected: {:?}", algorithm, VALID_SIGNATURE_ALGORITHMS)).into();
+        }
+        _ => {}
+    }
+
     spawn(move || {
-        match messages::token_provisioning::token_provisioning::provision(vcx_config, &sponsee_id, &sponsor_id, com_method) {
+        match messages::token_provisioning::token_provisioning::provision(vcx_config, &sponsee_id, &sponsor_id, com_method, signature, algorithm) {
             Ok(token) => {
                 trace!("vcx_get_provision_token_cb(command_handle: {}, rc: {}, token: {})",
                        command_handle, error::SUCCESS.message, secret!(token));
@@ -289,7 +265,7 @@ pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
 ///
 /// json: updated configuration
 ///     {
-///         "id": "string", 1 means push notifications, its the only one registered
+///         "id": "string", 1 means push notifications, 4 means forward
 ///         "type": Optional(int), notifications type (1 is used by default).
 ///         "value": "string",
 ///     }
