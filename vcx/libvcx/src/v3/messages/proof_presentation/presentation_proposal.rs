@@ -140,11 +140,11 @@ impl PresentationPreview {
     pub fn for_credential(credential: &CredentialInfo) -> PresentationPreview {
         let attributes = credential.attrs
             .iter()
-            .map(|(attribute, value)| Attribute {
+            .map(|(attribute, _)| Attribute {
                 name: attribute.to_string(),
                 cred_def_id: Some(credential.cred_def_id.to_string()),
                 mime_type: None,
-                value: Some(value.to_string()),
+                value: None,
                 referent: None,
             })
             .collect();

@@ -2,11 +2,9 @@ use messages::{A2AMessage, A2AMessageV2, A2AMessageKinds, prepare_message_for_ag
 use error::prelude::*;
 use messages::agent_utils::{set_config_values, configure_wallet, ComMethod, Config};
 use messages::message_type::MessageTypes;
-use utils::{httpclient, constants};
+use utils::httpclient;
 use settings::ProtocolTypes;
 use settings::ProtocolTypes::V2;
-use settings;
-use utils::httpclient::AgencyMock;
 
 pub static VALID_SIGNATURE_ALGORITHMS: [&'static str; 2] = ["SafetyNet", "DeviceCheck"];
 
