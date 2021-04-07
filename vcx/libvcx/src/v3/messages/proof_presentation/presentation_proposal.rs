@@ -177,7 +177,7 @@ pub mod tests {
                 name: "account".to_string(),
                 cred_def_id: Some("BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag".to_string()),
                 mime_type: None,
-                value: Some("12345678".to_string()),
+                value: None,
                 referent: None
             }],
             predicates: vec![],
@@ -203,7 +203,7 @@ pub mod tests {
 
         assert_eq!(_presentation_proposal(), presentation_proposal);
 
-        let expected = r#"{"@id":"testid","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/propose-presentation","comment":"comment","presentation_proposal":{"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview","attributes":[{"cred_def_id":"BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag","name":"account","value":"12345678"}],"predicates":[]},"~thread":{"received_orders":{},"sender_order":0,"thid":"testid"}}"#;
+        let expected = r#"{"@id":"testid","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/propose-presentation","comment":"comment","presentation_proposal":{"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview","attributes":[{"cred_def_id":"BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag","name":"account"}],"predicates":[]},"~thread":{"received_orders":{},"sender_order":0,"thid":"testid"}}"#;
         assert_eq!(expected.to_string(), presentation_proposal.to_string())
     }
 
@@ -231,7 +231,7 @@ pub mod tests {
             name: "account".to_string(),
             cred_def_id: Some("BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag".to_string()),
             mime_type: None,
-            value: Some("12345678".to_string()),
+            value: None,
             referent: None
         };
 
@@ -239,7 +239,7 @@ pub mod tests {
             name: "streetAddress".to_string(),
             cred_def_id: Some("BzCbsNYhMrjHiqZDTUASHg:3:CL:1234:tag".to_string()),
             mime_type: None,
-            value: Some("123 Main Street".to_string()),
+            value: None,
             referent: None
         };
 
