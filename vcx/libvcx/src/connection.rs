@@ -1983,7 +1983,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_connection_redirection_real() {
-        let _setup = SetupLibraryAgencyV1::init();
+        let _setup = SetupLibraryAgencyV2NewProvisioning::init();
 
         //0. Create initial connection
         let (faber, alice) = ::connection::tests::create_connected_connections();

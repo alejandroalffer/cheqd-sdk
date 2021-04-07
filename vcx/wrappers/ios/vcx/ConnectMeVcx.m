@@ -404,6 +404,25 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 }
 
+- (void)connectionCreateInvite:(NSString *)sourceId
+             completion:(void (^)(NSError *error, NSInteger connectionHandle)) completion
+{
+   vcx_error_t ret;
+
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+   const char *sourceId_char = [sourceId cStringUsingEncoding:NSUTF8StringEncoding];
+   ret = vcx_connection_create(handle, sourceId_char, VcxWrapperCommonHandleCallback);
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       NSError *error = [NSError errorFromVcxError:ret];
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion(error, 0);
+       });
+   }
+}
+
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                 inviteDetails:(NSString *)inviteDetails
              completion:(void (^)(NSError *error, NSInteger connectionHandle)) completion
@@ -562,6 +581,25 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
            completion(error, nil);
        });
    }
+}
+
+- (void) getConnectionInviteDetails:(NSInteger) connectionHandle
+                        abbreviated:(BOOL *) abbreviated
+         withCompletion:(void (^)(NSError *error, NSString *inviteDetails))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_connection_invite_details(handle, connectionHandle, abbreviated, VcxWrapperCommonStringCallback);
+
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error, nil);
+        });
+    }
 }
 
 - (void)connectionDeserialize:(NSString *)serializedConnection

@@ -325,7 +325,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_send_generic_message() {
-        let _setup = SetupLibraryAgencyV1::init();
+        let _setup = SetupLibraryAgencyV2NewProvisioning::init();
 
         let (_faber, alice) = ::connection::tests::create_connected_connections();
 
@@ -339,7 +339,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_send_message_and_download_response() {
-        let _setup = SetupLibraryAgencyV1::init();
+        let _setup = SetupLibraryAgencyV2NewProvisioning::init();
 
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
