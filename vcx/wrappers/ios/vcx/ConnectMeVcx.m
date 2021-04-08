@@ -2203,7 +2203,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
    const char *sourceId_char = [sourceId cStringUsingEncoding:NSUTF8StringEncoding];
    const char *presentationProposal_char = [presentationProposal cStringUsingEncoding:NSUTF8StringEncoding];
-   const char *proofName_char = [proofName cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *proofName_char = [name cStringUsingEncoding:NSUTF8StringEncoding];
    ret = vcx_proof_create_with_proposal(handle, sourceId_char, presentationProposal_char, proofName_char, VcxWrapperCommonHandleCallback);
    if( ret != 0 )
    {
@@ -2268,7 +2268,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 - (void) proofVerifierSerialize:(NSInteger) proofHandle
                      completion:(void (^)(NSError *error, NSString* serialized))completion{
     vcx_error_t ret;
-   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = vcx_proof_serialize(handle, proofHandle, VcxWrapperCommonStringCallback);
 
@@ -2305,6 +2305,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                  connectionHandle:(NSInteger) connectionHandle
                        completion:(void (^)(NSError *error))completion
 {
+    vcx_error_t ret;
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     ret = vcx_proof_send_request(handle, proofHandle, connectionHandle , VcxWrapperCommonCallback);
 
@@ -2327,6 +2328,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                                proofName:(NSString *)proofName
                               completion:(void (^)(NSError *error))completion
 {
+    vcx_error_t ret;
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     const char *requestedAttributes_char=[requestedAttributes cStringUsingEncoding:NSUTF8StringEncoding];
     const char *requestedPredicates_char=[requestedPredicates cStringUsingEncoding:NSUTF8StringEncoding];
@@ -2418,6 +2420,7 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
                             connectionHandle:(NSInteger) connectionHandle
                                  completion:(void (^)(NSError *error))completion
 {
+    vcx_error_t ret;
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     ret = vcx_proof_set_connection(handle, proofHandle, connectionHandle, VcxWrapperCommonCallback);
 
