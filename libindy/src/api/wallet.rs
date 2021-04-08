@@ -319,7 +319,7 @@ pub extern "C" fn indy_open_wallet(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, handle) = prepare_result_1!(res, INVALID_WALLET_HANDLE);
+        let (err, handle) = prepare_result!(res, INVALID_WALLET_HANDLE);
         debug!("indy_open_wallet ? err {:?} handle {:?}", err, handle);
 
         cb(command_handle, err, handle)
@@ -661,7 +661,7 @@ pub extern "C" fn indy_generate_wallet_key(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, key) = prepare_result_1!(res, String::new());
+        let (err, key) = prepare_result!(res, String::new());
         debug!("indy_generate_wallet_key ? err {:?} result {:?}", err, key);
 
         let res = ctypes::string_to_cstring(key);

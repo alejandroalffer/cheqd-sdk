@@ -30,7 +30,7 @@ pub extern fn indy_collect_metrics(command_handle: CommandHandle,
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, metrics) = prepare_result_1!(res, String::new());
+        let (err, metrics) = prepare_result!(res, String::new());
 
         trace!("indy_collect_metrics ? err {:?} metrics {:?}", err, metrics);
 

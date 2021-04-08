@@ -131,7 +131,7 @@ pub extern "C" fn indy_open_pool_ledger(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, pool_handle) = prepare_result_1!(res, INVALID_POOL_HANDLE);
+        let (err, pool_handle) = prepare_result!(res, INVALID_POOL_HANDLE);
 
         debug!(
             "indy_open_pool_ledger ? err {:?} pool_handle {:?}",
@@ -219,7 +219,7 @@ pub extern "C" fn indy_list_pools(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_list_pools ? err {:?} res {:?}", err, res);
 
         let list = ctypes::string_to_cstring(res);

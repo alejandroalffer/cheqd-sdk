@@ -53,7 +53,7 @@ pub extern "C" fn indy_is_pairwise_exists(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, exists) = prepare_result_1!(res, false);
+        let (err, exists) = prepare_result!(res, false);
         debug!(
             "indy_is_pairwise_exists ? err {:?} exists {:?}",
             err, exists
@@ -171,7 +171,7 @@ pub extern "C" fn indy_list_pairwise(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_list_pairwise ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
@@ -236,7 +236,7 @@ pub extern "C" fn indy_get_pairwise(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, res) = prepare_result_1!(res, String::new());
+        let (err, res) = prepare_result!(res, String::new());
         debug!("indy_get_pairwise ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);

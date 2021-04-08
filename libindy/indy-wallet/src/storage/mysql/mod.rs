@@ -5,24 +5,20 @@ use std::{
 
 use async_trait::async_trait;
 use futures::lock::Mutex;
-
 use indy_api_types::errors::prelude::*;
 use indy_utils::crypto::base64;
-
+use log::LevelFilter;
+use query::{wql_to_sql, wql_to_sql_count};
 use serde::Deserialize;
-
-use sqlx::{
-    mysql::{MySqlConnectOptions, MySqlPoolOptions, MySqlRow},
-    Done, MySqlPool, Row,
-};
+use sqlx::{ConnectOptions, Done, mysql::{MySqlConnectOptions, MySqlPoolOptions, MySqlRow}, MySqlPool, Row};
 
 use crate::{
     language,
+    RecordOptions,
+    SearchOptions,
     storage::{StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType},
     wallet::EncryptedValue,
-    RecordOptions, SearchOptions,
 };
-use query::{wql_to_sql, wql_to_sql_count};
 
 mod query;
 
@@ -69,6 +65,12 @@ struct Config {
     pub write_host: String,
     pub port: u16,
     pub db_name: String,
+    #[serde(default="default_connection_limit")]
+    pub connection_limit: u32,
+}
+
+fn default_connection_limit() -> u32 {
+    100
 }
 
 #[derive(Deserialize)]
@@ -139,15 +141,18 @@ impl MySqlStorageType {
             return Ok(connection.clone());
         }
 
+        let mut my_sql_connect_options = MySqlConnectOptions::new()
+            .host(host_addr)
+            .database(&config.db_name)
+            .username(&credentials.user)
+            .password(&credentials.pass);
+        my_sql_connect_options.log_statements(LevelFilter::Debug);
+
         let connection = MySqlPoolOptions::default()
-            .max_connections(4000)
+            .max_connections(config.connection_limit)
             .test_before_acquire(false)
             .connect_with(
-                MySqlConnectOptions::new()
-                    .host(host_addr)
-                    .database(&config.db_name)
-                    .username(&credentials.user)
-                    .password(&credentials.pass),
+                my_sql_connect_options,
             )
             .await?;
 
@@ -908,8 +913,8 @@ impl WalletStorageType for MySqlStorageType {
 mod tests {
     use indy_utils::{assert_kind, environment};
 
-    use super::super::Tag;
     use super::*;
+    use super::super::Tag;
 
     // docker run --name indy-mysql -e MYSQL_ROOT_PASSWORD=pass@word1 -p 3306:3306 -d mysql:latest
 

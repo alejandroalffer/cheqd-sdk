@@ -25,6 +25,8 @@ public class AnoncredsIntegrationTest {
 	static Wallet wallet;
 	static String gvtSchemaId;
 	static String gvtSchema;
+	static String gvt2SchemaId;
+	static String gvt2Schema;
 	static String xyzSchemaId;
 	static String xyzSchema;
 	static String issuer1gvtCredDefId;
@@ -43,6 +45,7 @@ public class AnoncredsIntegrationTest {
 	String gvtSchemaName = "gvt";
 	String schemaVersion = "1.0";
 	String gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
+	String gvt2SchemaAttributes = "[\"age\", \"sex\", \"height\"]";
 	String credentialId1 = "id1";
 	String credentialId2 = "id2";
     String credentialIdX = "idX";
@@ -96,6 +99,10 @@ public class AnoncredsIntegrationTest {
 		gvtSchemaId = createSchemaResult.getSchemaId();
 		gvtSchema = createSchemaResult.getSchemaJson();
 
+		createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvt2SchemaAttributes).get();
+		gvt2SchemaId = createSchemaResult.getSchemaId();
+		gvt2Schema = createSchemaResult.getSchemaJson();
+
 		String xyzSchemaAttributes = "[\"status\", \"period\"]";
 		String xyzSchemaName = "xyz";
 		createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, xyzSchemaName, schemaVersion, xyzSchemaAttributes).get();
@@ -120,6 +127,12 @@ public class AnoncredsIntegrationTest {
 				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid2, gvtSchema, tag, null, defaultCredentialDefinitionConfig).get();
 		String issuer2gvtCredDefId = issuer2CreateGvtCredDefResult.getCredDefId();
 		String issuer2gvtCredDef = issuer2CreateGvtCredDefResult.getCredDefJson();
+
+		//Issue GVT2 issuer1GvtCredential by Issuer2
+		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult issuer2CreateGvt2CredDefResult =
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid2, gvt2Schema, tag, null, defaultCredentialDefinitionConfig).get();
+		String issuer2gvt2CredDefId = issuer2CreateGvtCredDefResult.getCredDefId();
+		String issuer2gvt2CredDef = issuer2CreateGvtCredDefResult.getCredDefJson();
 
 		issuer1GvtCredOffer = Anoncreds.issuerCreateCredentialOffer(wallet, issuer1gvtCredDefId).get();
 		String issuer1XyzCredOffer = Anoncreds.issuerCreateCredentialOffer(wallet, issuer1xyzCredDefId).get();
@@ -164,7 +177,21 @@ public class AnoncredsIntegrationTest {
 		String credentialId3 = "id3";
 		Anoncreds.proverStoreCredential(wallet, credentialId3, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null).get();
 
-		Anoncreds.proverStoreCredential(wallet, credentialIdX, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null).get();
+		String issuer2Gvt2CredOffer = Anoncreds.issuerCreateCredentialOffer(wallet, issuer2gvt2CredDefId).get();
+		ProverCreateCredentialRequestResult createCredReqResult2 = Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer2Gvt2CredOffer, issuer2gvt2CredDef, masterSecretId).get();
+		String issuer2Gvt2CredReq = createCredReqResult2.getCredentialRequestJson();
+		String issuer2Gvt2CredReqMetadata = createCredReqResult2.getCredentialRequestMetadataJson();
+
+		String gvt2CredValues2 = "{" +
+				"           \"sex\":{\"raw\":\"male\",\"encoded\":\"2142657394558967239210949258394838228692050081607692519917028371144233115103\"},\n" +
+				"           \"height\":{\"raw\":\"170\",\"encoded\":\"170\"},\n" +
+				"           \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
+				"   }";
+
+		createCredResult = Anoncreds.issuerCreateCredential(wallet, issuer2Gvt2CredOffer, issuer2Gvt2CredReq, gvt2CredValues2, null, - 1).get();
+		String issuer2Gvt2Credential = createCredResult.getCredentialJson();
+
+		Anoncreds.proverStoreCredential(wallet, credentialIdX, issuer2Gvt2CredReqMetadata, issuer2Gvt2Credential, issuer2gvt2CredDef, null).get();
 
 		walletOpened = true;
 	}

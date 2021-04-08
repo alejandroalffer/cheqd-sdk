@@ -208,7 +208,7 @@ pub fn vec_to_pointer(v: &Vec<u8>) -> (*const u8, u32) {
 macro_rules! boxed_callback_string {
     ($method_name: expr, $cb: ident, $command_handle: ident) => {
         let $cb = move |result: IndyResult<_>| {
-            let (err, result_string) = prepare_result_1!(result, String::new());
+            let (err, result_string) = prepare_result!(result, String::new());
             debug!("{}: result: {:?}", $method_name, result_string);
             let result_string = ctypes::string_to_cstring(result_string);
             $cb($command_handle, err, result_string.as_ptr())
