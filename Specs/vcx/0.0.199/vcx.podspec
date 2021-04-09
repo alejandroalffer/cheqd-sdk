@@ -10,7 +10,6 @@
 # libindy 1.16.0~170 master
 # libnullpay 1.16.0~170 master
 # libsovtoken 1.0.3-201910091207-1c7ff32 stable
-# libvcx 0.11.2-3398fdbbe
 # libvcx 0.11.2-6d57dbe38
 
 Pod::Spec.new do |s|

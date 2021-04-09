@@ -472,6 +472,293 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 - (void)restoreWallet:(NSString *)config
            completion:(void (^)(NSError *error))completion;
 
+/*
+* Verifier API
+*/
+
+/// Create a new Proof object that requests a proof for an enterprise
+///
+/// #Params
+/// sourceId: Enterprise's personal identification for the proof, should be unique.
+///
+/// proofName: Proof name
+///
+/// requestedAttributes: Describes requested attribute
+///     [{
+///         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+///                                              // NOTE: should either be "name" or "names", not both and not none of them.
+///                                              // Use "names" to specify several attributes that have to match a single credential.
+///         "restrictions":  Optional<wql query> - set of restrictions applying to requested credentials. (see below)
+///         "non_revoked": {
+///             "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             "to": Optional<(u64)>
+///                 //Requested time represented as a total number of seconds from Unix Epoch, Optional
+///         }
+///     }]
+///
+/// # Example requested_attrs -> "[{"name":"attrName","restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
+///
+/// requestedPredicates: predicate specifications prover must provide claim for
+///          [{ // set of requested predicates
+///             "name": attribute name, (case insensitive and ignore spaces)
+///             "p_type": predicate type (Currently ">=" only)
+///             "p_value": int predicate value
+///             "restrictions":  Optional<wql query> -  set of restrictions applying to requested credentials. (see below)
+///             "non_revoked": Optional<{
+///                 "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///                 "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             }>
+///          }]
+///
+/// # Example requested_predicates -> "[{"name":"attrName","p_type":"GE","p_value":9,"restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
+///
+/// revocationInterval:  Optional<<revocation_interval>>, // see below,
+///                        // If specified, prover must proof non-revocation
+///                        // for date in this interval for each attribute
+///                        // (can be overridden on attribute level)
+///     from: Optional<u64> // timestamp of interval beginning
+///     to: Optional<u64> // timestamp of interval beginning
+///         // Requested time represented as a total number of seconds from Unix Epoch, Optional
+/// # Examples config ->  "{}" | "{"to": 123} | "{"from": 100, "to": 123}"
+///
+/// #Returns
+/// Handle pointing to Proof Verifier object
+- (void) createProofVerifier:(NSString *)sourceId
+         requestedAttributes:(NSString *)requestedAttributes
+         requestedPredicates:(NSString *)requestedPredicates
+          revocationInterval:(NSString *)revocationInterval
+                   proofName:(NSString *)proofName
+                  completion:(void (^)(NSError *error, NSInteger handle))completion;
+
+/// Create a new Proof object based on the given Presentation Proposal message
+///
+/// #Params
+/// sourceId: Enterprise's personal identification for the proof, should be unique..
+///
+/// name: Proof name
+///
+/// presentationProposal: Message sent by the Prover to the verifier to initiate a proof presentation process:
+///     {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/propose-presentation",
+///         "@id": "<uuid-propose-presentation>",
+///         "comment": "some comment",
+///         "presentation_proposal": {
+///             "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/presentation-preview",
+///             "attributes": [
+///                 {
+///                     "name": "<attribute_name>", - name of the attribute.
+///                     "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+///                     "mime-type": Optional"<type>", - optional type of value. if mime-type is missing (null), then value is a string.
+///                     "value": "<value>", - value of the attribute to reveal in presentation
+///                 },
+///                 // more attributes
+///               ],
+///              "predicates": [
+///                 {
+///                     "name": "<attribute_name>", - name of the attribute.
+///                     "cred_def_id": "<cred_def_id>", - maps to the credential definition identifier of the credential with the current attribute
+///                     "predicate": "<predicate>", - predicate operator: "<", "<=", ">=", ">"
+///                     "threshold": <threshold> - threshold value for the predicate.
+///                 },
+///                 // more predicates
+///             ]
+///         }
+///     }
+///
+/// #Returns
+/// Handle pointing to Proof Verifier object
+- (void) createProofVerifierWithProposal:(NSString *)sourceId
+                    presentationProposal:(NSString *)presentationProposal
+                                    name:(NSString *)name
+                              completion:(void (^)(NSError *error, NSInteger handle))completion;
+
+/// Query the agency for the received messages.
+/// Checks for any messages changing state in the object and updates the state attribute.
+///
+/// #Params
+/// proofHandle: Proof handle that was provided during creation. Used to access proof object
+///
+/// #Returns
+/// The most current state of the Proof Object
+- (void) proofVerifierUpdateState:(NSInteger) proofHandle
+                       completion:(void (^)(NSError *error, NSInteger state))completion;
+
+/// Update the state of the proof based on the given message.
+///
+/// #Params
+/// proofHandle: Proof handle that was provided during creation. Used to access proof object
+///
+/// message: message to process for state changes
+///
+/// #Returns
+/// The most current state of the Proof Object
+- (void) proofVerifierUpdateStateWithMessage:(NSInteger)proofHandle
+                                    message:(NSString *)message
+                                 completion:(void (^)(NSError *error, NSInteger state))completion;
+
+/// Get the current state of the proof object
+///
+/// #Params
+/// proofHandle: Proof handle that was provided during creation. Used to access proof object
+///
+/// #Returns
+/// The most current state of the Proof Object
+- (void) proofVerifierGetState:(NSInteger) proofHandle
+                    completion:(void (^)(NSError *error, NSInteger state))completion;
+
+/// Takes the proof object and returns a json string of all its attributes
+///
+/// #Params
+/// proofHandle: Proof handle that was provided during creation. Used to access proof object
+///
+/// #Returns
+/// json string of the state object
+- (void) proofVerifierSerialize:(NSInteger) proofHandle
+                     completion:(void (^)(NSError *error, NSString* serialized))completion;
+
+/// Takes a json string representing a proof object and recreates an object matching the json
+///
+/// #Params
+/// serialized: json string representing a proof object
+///
+/// #Returns
+/// Handle pointing to Proof Verifier object
+- (void) proofVerifierDeserialize:(NSString *) serialized
+                       completion:(void (^)(NSError *error, NSInteger proofHandle))completion;
+
+/// Sends a proof request to pairwise connection
+///
+/// #Params
+/// proofHandle: Proof handle that was provided during creation. Used to access proof object
+///
+/// #Returns
+/// Null
+- (void) proofVerifierSendRequest:(NSInteger) proofHandle
+                 connectionHandle:(NSInteger) connectionHandle
+                       completion:(void (^)(NSError *error))completion;
+
+/// Request a new proof after receiving a proof proposal (this enables negotiation)
+///
+/// #Params
+/// proofHandle: Proof handle that was provided during creation. Used to access proof object
+///
+/// connectionHandle: Connection handle that identifies pairwise connection
+///
+/// requestedAttributes: Describes requested attribute
+///     [{
+///         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+///                                              // NOTE: should either be "name" or "names", not both and not none of them.
+///                                              // Use "names" to specify several attributes that have to match a single credential.
+///         "restrictions":  Optional<wql query> - set of restrictions applying to requested credentials. (see below)
+///         "non_revoked": {
+///             "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             "to": Optional<(u64)>
+///                 //Requested time represented as a total number of seconds from Unix Epoch, Optional
+///         }
+///     }]
+///
+/// # Example requested_attrs -> "[{"name":"attrName","restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
+///
+/// requestedPredicates: predicate specifications prover must provide claim for
+///          [{ // set of requested predicates
+///             "name": attribute name, (case insensitive and ignore spaces)
+///             "p_type": predicate type (Currently ">=" only)
+///             "p_value": int predicate value
+///             "restrictions":  Optional<wql query> -  set of restrictions applying to requested credentials. (see below)
+///             "non_revoked": Optional<{
+///                 "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///                 "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             }>
+///          }]
+///
+/// # Example requested_predicates -> "[{"name":"attrName","p_type":"GE","p_value":9,"restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
+///
+/// revocationInterval:  Optional<<revocation_interval>>, // see below,
+///                        // If specified, prover must proof non-revocation
+///                        // for date in this interval for each attribute
+///                        // (can be overridden on attribute level)
+///     from: Optional<u64> // timestamp of interval beginning
+///     to: Optional<u64> // timestamp of interval beginning
+///         // Requested time represented as a total number of seconds from Unix Epoch, Optional
+/// # Examples config ->  "{}" | "{"to": 123} | "{"from": 100, "to": 123}"
+///
+/// #Returns
+/// Null
+- (void) proofVerifierRequestForProposal:(NSInteger) proofHandle
+                        connectionHandle:(NSInteger) connectionHandle
+                     requestedAttributes:(NSString *)requestedAttributes
+                     requestedPredicates:(NSString *)requestedPredicates
+                      revocationInterval:(NSString *)revocationInterval
+                               proofName:(NSString *)proofName
+                              completion:(void (^)(NSError *error))completion;
+
+/// Get the proof request message that can be sent to the specified connection
+///
+/// #Params
+/// proofHandle: Proof handle that was provided during creation. Used to access proof object
+///
+/// # Example proof_request -> "{'@topic': {'tid': 0, 'mid': 0}, '@type': {'version': '1.0', 'name': 'PROOF_REQUEST'}, 'proof_request_data': {'name': 'proof_req', 'nonce': '118065925949165739229152', 'version': '0.1', 'requested_predicates': {}, 'non_revoked': None, 'requested_attributes': {'attribute_0': {'name': 'name', 'restrictions': {'$or': [{'issuer_did': 'did'}]}}}, 'ver': '1.0'}, 'thread_id': '40bdb5b2'}"
+///
+/// #Returns
+/// Message as JSON
+- (void) proofVerifierGetProofRequestMessage:(NSInteger) proofHandle
+                                 completion:(void (^)(NSError *error, NSString* message))completion;
+
+/// Get the proof proposal received for deciding whether to accept it
+///
+/// #Params
+/// proofHandle: Proof handle that was provided during creation. Used to access proof object
+///
+/// #Returns
+/// Message as JSON
+- (void) proofVerifierGetProofProposalMessage:(NSInteger) proofHandle
+                                 completion:(void (^)(NSError *error, NSString* message))completion;
+
+/// Get the proof request attachment that you send along the out of band credential
+///
+/// #Params
+/// proofHandle: Proof handle that was provided during creation. Used to access proof object
+///
+/// # Example presentation_request_attachment -> "{"@id": "8b23c2b6-b432-45d8-a377-d003950c0fcc", "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation", "comment": "Person Proving", "request_presentations~attach": [{"@id": "libindy-request-presentation-0", "data": {"base64": "eyJuYW1lIjoiUGVyc29uIFByb3ZpbmciLCJub25fcmV2b2tlZCI6bnVsbCwibm9uY2UiOiI2MzQxNzYyOTk0NjI5NTQ5MzA4MjY1MzQiLCJyZXF1ZXN0ZWRfYXR0cmlidXRlcyI6eyJhdHRyaWJ1dGVfMCI6eyJuYW1lIjoibmFtZSJ9LCJhdHRyaWJ1dGVfMSI6eyJuYW1lIjoiZW1haWwifX0sInJlcXVlc3RlZF9wcmVkaWNhdGVzIjp7fSwidmVyIjpudWxsLCJ2ZXJzaW9uIjoiMS4wIn0="}, "mime-type": "application/json"}]}"
+///
+/// #Returns
+/// Message as JSON
+- (void) proofVerifierGetProofRequestAttach:(NSInteger) proofHandle
+                                 completion:(void (^)(NSError *error, NSString* message))completion;
+
+/// Get Proof Msg
+///
+/// #Params
+/// proofHandle: Proof handle that was provided during creation. Used to identify proof object
+///
+/// #Returns
+/// Status and Message as JSON
+- (void) proofVerifierGetProofMessage:(NSInteger) proofHandle
+                                 completion:(void (^)(NSError *error, NSInteger proofState, NSString* message))completion;
+
+/// Get Problem Report message for Proof object in Failed or Rejected state.
+///
+/// #Params
+/// proofHandle: handle pointing to Proof state object.
+///
+/// #Returns
+/// Status and Message as JSON
+- (void) proofVerifierGetProblemReportMessage:(NSInteger) proofHandle
+                                 completion:(void (^)(NSError *error, NSString* message))completion;
+
+/// Bind proof state object with connection
+///
+/// #Params
+/// proofHandle: handle pointing to Proof state object.
+///
+/// #Returns
+/// Null
+- (void) proofVerifierSetConnection:(NSInteger) proofHandle
+                            connectionHandle:(NSInteger) connectionHandle
+                                 completion:(void (^)(NSError *error))completion;
+
 @end
 
 #endif /* init_h */
