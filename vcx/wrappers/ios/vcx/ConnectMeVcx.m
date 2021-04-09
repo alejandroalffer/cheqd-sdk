@@ -2162,4 +2162,295 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
 }
 
+/*
+* Verifier API
+*/
+- (void) createProofVerifier:(NSString *) sourceId
+         requestedAttributes:(NSString *)requestedAttributes
+         requestedPredicates:(NSString *)requestedPredicates
+          revocationInterval:(NSString *)revocationInterval
+                   proofName:(NSString *)proofName
+                  completion:(void (^)(NSError *error, NSInteger handle))completion
+{
+   vcx_error_t ret;
+
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+   const char *sourceId_char = [sourceId cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *requestedAttributes_char = [requestedAttributes cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *requestedPredicates_char = [requestedPredicates cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *revocationInterval_char = [revocationInterval cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *proofName_char = [proofName cStringUsingEncoding:NSUTF8StringEncoding];
+   ret = vcx_proof_create(handle, sourceId_char, requestedAttributes_char, requestedPredicates_char,
+        revocationInterval_char, proofName_char, VcxWrapperCommonHandleCallback);
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       NSError *error = [NSError errorFromVcxError:ret];
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion(error, 0);
+       });
+   }
+}
+
+- (void) createProofVerifierWithProposal:(NSString *) sourceId
+                    presentationProposal:(NSString *)presentationProposal
+                                    name:(NSString *)name
+                              completion:(void (^)(NSError *error, NSInteger handle))completion
+{
+   vcx_error_t ret;
+
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+   const char *sourceId_char = [sourceId cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *presentationProposal_char = [presentationProposal cStringUsingEncoding:NSUTF8StringEncoding];
+   const char *proofName_char = [name cStringUsingEncoding:NSUTF8StringEncoding];
+   ret = vcx_proof_create_with_proposal(handle, sourceId_char, presentationProposal_char, proofName_char, VcxWrapperCommonHandleCallback);
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       NSError *error = [NSError errorFromVcxError:ret];
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion(error, 0);
+       });
+   }
+}
+
+- (void) proofVerifierUpdateState:(NSInteger) proofHandle
+                       completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_proof_update_state(handle, proofHandle, VcxWrapperCommonNumberCallback);
+    if( ret != 0 ) {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error, 0);
+        });
+    }
+}
+
+- (void) proofVerifierUpdateStateWithMessage:(NSInteger) proofHandle
+                                    message:(NSString *)message
+                                 completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * cMessage = [message cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_proof_update_state_with_message(handle, proofHandle, cMessage, VcxWrapperCommonNumberCallback);
+
+    if( ret != 0 )
+    {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion(error, 0);
+       });
+    }
+}
+
+- (void) proofVerifierGetState:(NSInteger) proofHandle
+                    completion:(void (^)(NSError *error, NSInteger state))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_proof_get_state(handle, proofHandle, VcxWrapperCommonNumberCallback);
+    if( ret != 0 ) {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error, 0);
+        });
+    }
+}
+
+- (void) proofVerifierSerialize:(NSInteger) proofHandle
+                     completion:(void (^)(NSError *error, NSString* serialized))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_proof_serialize(handle, proofHandle, VcxWrapperCommonStringCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       NSError *error = [NSError errorFromVcxError:ret];
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion(error, nil);
+       });
+   }
+}
+
+- (void) proofVerifierDeserialize:(NSString *) serialized
+                       completion:(void (^)(NSError *error, NSInteger proofHandle))completion{
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char *serialized_char=[serialized cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_proof_deserialize(handle, serialized_char, VcxWrapperCommonHandleCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+       NSError *error = [NSError errorFromVcxError:ret];
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion(error, 0);
+       });
+   }
+}
+
+- (void) proofVerifierSendRequest:(NSInteger) proofHandle
+                 connectionHandle:(NSInteger) connectionHandle
+                       completion:(void (^)(NSError *error))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_proof_send_request(handle, proofHandle, connectionHandle , VcxWrapperCommonCallback);
+
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error);
+        });
+    }
+}
+
+- (void) proofVerifierRequestForProposal:(NSInteger) proofHandle
+                        connectionHandle:(NSInteger) connectionHandle
+                     requestedAttributes:(NSString *)requestedAttributes
+                     requestedPredicates:(NSString *)requestedPredicates
+                      revocationInterval:(NSString *)revocationInterval
+                               proofName:(NSString *)proofName
+                              completion:(void (^)(NSError *error))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char *requestedAttributes_char=[requestedAttributes cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *requestedPredicates_char=[requestedPredicates cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *revocationInterval_char=[revocationInterval cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *proofName_char=[proofName cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_proof_request_proof(handle, proofHandle, connectionHandle, requestedAttributes_char,
+        requestedPredicates_char, revocationInterval_char, proofName_char, VcxWrapperCommonCallback);
+
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error);
+        });
+    }
+}
+
+- (void) proofVerifierGetProofRequestMessage:(NSInteger) proofHandle
+                                 completion:(void (^)(NSError *error, NSString* message))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_proof_get_request_msg(handle, proofHandle, VcxWrapperCommonStringCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error, nil);
+        });
+    }
+}
+
+- (void) proofVerifierGetProofProposalMessage:(NSInteger) proofHandle
+                                 completion:(void (^)(NSError *error, NSString* message))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_get_proof_proposal(handle, proofHandle, VcxWrapperCommonStringCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error, nil);
+        });
+    }
+}
+
+- (void) proofVerifierGetProofRequestAttach:(NSInteger) proofHandle
+                                 completion:(void (^)(NSError *error, NSString* message))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_proof_get_request_attach(handle, proofHandle, VcxWrapperCommonStringCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error, nil);
+        });
+    }
+}
+
+- (void) proofVerifierGetProblemReportMessage:(NSInteger) proofHandle
+                                   completion:(void (^)(NSError *error, NSString* message))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_proof_get_problem_report(handle, proofHandle, VcxWrapperCommonStringCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error, nil);
+        });
+    }
+}
+
+- (void) proofVerifierSetConnection:(NSInteger) proofHandle
+                            connectionHandle:(NSInteger) connectionHandle
+                                 completion:(void (^)(NSError *error))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_proof_set_connection(handle, proofHandle, connectionHandle, VcxWrapperCommonCallback);
+
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error);
+        });
+    }
+}
+
+- (void) proofVerifierGetProofMessage:(NSInteger) proofHandle
+                                 completion:(void (^)(NSError *error, NSInteger proofState, NSString* message))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_get_proof_msg(handle, proofHandle, VcxWrapperCommonNumberStringCallback);
+
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error, 0, nil);
+        });
+    }
+}
+
 @end

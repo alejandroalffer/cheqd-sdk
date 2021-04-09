@@ -290,8 +290,13 @@ vcx_error_t vcx_issuer_credential_get_problem_report(vcx_command_handle_t comman
 /** Creates a proof object.  Populates a handle to the new proof. */
 vcx_error_t vcx_proof_create(vcx_command_handle_t command_handle, const char *source_id, const char *requested_attrs, const char *requested_predicates, const char *revocation_interval, const char *name, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
 
+/** Create a new Proof object based on the given Presentation Proposal message. */
+vcx_error_t vcx_proof_create_with_proposal(vcx_command_handle_t command_handle, const char *source_id, const char *presentation_proposal, const char *name, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
+
 /** Asynchronously send a proof request to the connection. */
 vcx_error_t vcx_proof_send_request(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+
+vcx_error_t vcx_proof_set_connection(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
 /** Asynchronously send a new proof request to the connection. */
 vcx_error_t vcx_proof_request_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, const char *requested_attrs, const char *requested_predicates, const char *revocation_interval, const char *name, void (*cb)(vcx_command_handle_t, vcx_error_t));
@@ -299,8 +304,17 @@ vcx_error_t vcx_proof_request_proof(vcx_command_handle_t command_handle, vcx_pro
 /** Populate response_data with the latest proof offer received. */
 vcx_error_t vcx_get_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_proof_state_t state, const char *proof_string));
 
+/** Returns a proof request message */
+vcx_error_t vcx_proof_get_request_msg(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 /** Returns a proof proposal received */
 vcx_error_t vcx_get_proof_proposal(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+/** Returns a proof message */
+vcx_error_t vcx_get_proof_msg(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+/** Get the proof request attachment that you send along the out of band credential */
+vcx_error_t vcx_proof_get_request_attach(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 /** Set proof offer as accepted. */
 vcx_error_t vcx_proof_accepted(vcx_proof_handle_t proof_handle);
