@@ -75,12 +75,14 @@ public class UtilsApi extends VcxJava.API {
      *      {
      *          This can be a push notification endpoint to contact the sponsee or
      *          an id that the sponsor uses to reference the sponsee in its backend system
-     *          "sponsee_id": String,
-     *          "sponsor_id": String, //Persistent Id of the Enterprise sponsoring the provisioning
+     *          "sponseeId": String,
+     *          "sponsorId": String, //Persistent Id of the Enterprise sponsoring the provisioning
      *          "nonce": String,
      *          "timestamp": String,
      *          "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
-     *          "sponsor_vk": String,
+     *          "sponsorVerKey": String,
+     *          "attestationAlgorithm": Optional[String], // device attestation signature algorithm. Can be one of: SafetyNet | DeviceCheck
+     *          "attestationData": Optional[String], // device attestation signature matching to specified algorithm
      *        }
      *
      * @return                populated config that can be used for library initialization.
@@ -125,8 +127,6 @@ public class UtilsApi extends VcxJava.API {
      *         id: String,
      *         value: String,
      *     },
-     *     algorithm: Optional[String], // signature algorithm. Can be one of: SafetyNet | DeviceCheck
-     *     signature: Optional[String], // signature matching to specified algorithm
      * }
      *
      * @return                provisioning token as JSON
