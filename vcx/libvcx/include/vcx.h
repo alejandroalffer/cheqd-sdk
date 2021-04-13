@@ -2393,14 +2393,25 @@ vcx_error_t vcx_proof_get_problem_report(vcx_command_handle_t command_handle,
 // Configuration (wallet also populated), on error returns NULL
 char *vcx_provision_agent(const char *json);
 
-// Provision an agent in the agency, populate configuration and wallet for this agent.
-//
-// #Params
-// config: configuration
-// token: provided by app sponsor
-//
-// #Returns
-// Configuration (wallet also populated), on error returns NULL
+/// Provision an agent in the agency, populate configuration and wallet for this agent.
+///
+/// #Params
+/// config: Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
+/// token: {
+///          This can be a push notification endpoint to contact the sponsee or
+///          an id that the sponsor uses to reference the sponsee in its backend system
+///          "sponseeId": String,
+///          "sponsorId": String, //Persistent Id of the Enterprise sponsoring the provisioning
+///          "nonce": String,
+///          "timestamp": String,
+///          "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
+///          "sponsorVerKey": String,
+///          "attestationAlgorithm": Optional<String>, // device attestation signature algorithm. Can be one of: SafetyNet | DeviceCheck
+///          "attestationData": Optional<String>, // device attestation signature matching to specified algorithm
+///        }
+///
+/// #Returns
+/// Configuration (wallet also populated), on error returns NULL
 vcx_error_t vcx_provision_agent_with_token(vcx_command_handle_t command_handle,
                                    const char *json,
                                    const char *token,

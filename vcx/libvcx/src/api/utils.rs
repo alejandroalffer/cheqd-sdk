@@ -12,7 +12,6 @@ use indy_sys::CommandHandle;
 use utils::httpclient::AgencyMock;
 use utils::constants::*;
 use messages::agent_utils::{ComMethod, Config};
-use messages::token_provisioning::token_provisioning::VALID_SIGNATURE_ALGORITHMS;
 
 /// Provision an agent in the agency, populate configuration and wallet for this agent.
 ///
@@ -21,12 +20,14 @@ use messages::token_provisioning::token_provisioning::VALID_SIGNATURE_ALGORITHMS
 /// token: {
 ///          This can be a push notification endpoint to contact the sponsee or
 ///          an id that the sponsor uses to reference the sponsee in its backend system
-///          "sponsee_id": String,
-///          "sponsor_id": String, //Persistent Id of the Enterprise sponsoring the provisioning
+///          "sponseeId": String,
+///          "sponsorId": String, //Persistent Id of the Enterprise sponsoring the provisioning
 ///          "nonce": String,
 ///          "timestamp": String,
 ///          "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
-///          "sponsor_vk": String,
+///          "sponsorVerKey": String,
+///          "attestationAlgorithm": Optional<String>, // device attestation signature algorithm. Can be one of: SafetyNet | DeviceCheck
+///          "attestationData": Optional<String>, // device attestation signature matching to specified algorithm
 ///        }
 ///
 /// #Returns
@@ -166,8 +167,6 @@ pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
 ///         id: String,
 ///         value: String,
 ///     },
-///     algorithm: Optional<String>, // signature algorithm. Can be one of: SafetyNet | DeviceCheck
-///     signature: Optional<String>, // signature matching to specified algorithm
 /// }
 ///
 /// # Example com_method -> "{"type": 1,"id":"123","value":"FCM:Value"}"
@@ -224,22 +223,8 @@ pub extern fn vcx_get_provision_token(command_handle: CommandHandle,
         }
     };
 
-    let signature: Option<String> = configs["signature"].as_str().map(String::from);
-    let algorithm: Option<String> = configs["algorithm"].as_str().map(String::from);
-
-    match (signature.as_ref(), algorithm.as_ref()) {
-        (Some(_), None) | (None, Some(_)) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "signature and algorithm must be either passed or skipped together").into();
-        },
-        (Some(_), Some(algorithm)) if !VALID_SIGNATURE_ALGORITHMS.contains(&algorithm.as_str()) => {
-            return VcxError::from_msg(VcxErrorKind::InvalidConfiguration,
-                                      format!("unexpected signature algorithm was passed: {:?}. expected: {:?}", algorithm, VALID_SIGNATURE_ALGORITHMS)).into();
-        }
-        _ => {}
-    }
-
     spawn(move || {
-        match messages::token_provisioning::token_provisioning::provision(vcx_config, &sponsee_id, &sponsor_id, com_method, signature, algorithm) {
+        match messages::token_provisioning::token_provisioning::provision(vcx_config, &sponsee_id, &sponsor_id, com_method) {
             Ok(token) => {
                 trace!("vcx_get_provision_token_cb(command_handle: {}, rc: {}, token: {})",
                        command_handle, error::SUCCESS.message, secret!(token));

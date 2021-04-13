@@ -88,6 +88,24 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)agentProvisionAsync:(NSString *)config
                  completion:(void (^)(NSError *error, NSString *config))completion;
 
+/// Provision an agent in the agency, populate configuration and wallet for this agent.
+///
+/// config: Configuration JSON. See: https://github.com/evernym/mobile-sdk/blob/master/docs/Configuration.md#agent-provisioning-options
+/// token: {
+///          This can be a push notification endpoint to contact the sponsee or
+///          an id that the sponsor uses to reference the sponsee in its backend system
+///          "sponseeId": String,
+///          "sponsorId": String, //Persistent Id of the Enterprise sponsoring the provisioning
+///          "nonce": String,
+///          "timestamp": String,
+///          "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
+///          "sponsorVerKey": String,
+///          "attestationAlgorithm": Optional<String>, // device attestation signature algorithm. Can be one of: SafetyNet | DeviceCheck
+///          "attestationData": Optional<String>, // device attestation signature matching to specified algorithm
+///        }
+///
+/// #Returns
+/// Configuration
 - (const char *)agentProvisionWithToken:(NSString *)config
                           token:(NSString *)token;
 
@@ -105,8 +123,6 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 ///         id: String,
 ///         value: String,
 ///     },
-///     algorithm: Optional<String>, // signature algorithm. Can be one of: SafetyNet | DeviceCheck
-///     signature: Optional<String>, // signature matching to specified algorithm
 /// }
 ///
 /// #Returns

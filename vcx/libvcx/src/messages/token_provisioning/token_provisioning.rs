@@ -18,8 +18,6 @@ pub struct TokenRequest {
     sponsor_id: String,
     #[serde(rename = "pushId")]
     push_id: ComMethod,
-    signature: Option<String>,
-    algorithm: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -44,8 +42,6 @@ pub struct TokenRequestBuilder {
     push_id: Option<ComMethod>,
     version: Option<ProtocolTypes>,
     agency_did: Option<String>,
-    signature: Option<String>,
-    algorithm: Option<String>,
 }
 impl TokenRequestBuilder {
     pub fn build() -> TokenRequestBuilder {
@@ -55,16 +51,12 @@ impl TokenRequestBuilder {
             push_id: None,
             version: None,
             agency_did: None,
-            signature: None,
-            algorithm: None,
         }
     }
 
     pub fn sponsee_id(&mut self, id: &str) -> &mut Self { self.sponsee_id = Some(id.to_string()); self}
     pub fn sponsor_id(&mut self, id: &str) -> &mut Self { self.sponsor_id = Some(id.to_string()); self}
     pub fn push_id(&mut self, push_id: ComMethod) -> &mut Self { self.push_id = Some(push_id); self}
-    pub fn signature(&mut self, signature: Option<String>) -> &mut Self { self.signature = signature; self}
-    pub fn algorithm(&mut self, algorithm: Option<String>) -> &mut Self { self.algorithm = algorithm; self}
     pub fn version(&mut self, version: ProtocolTypes) -> &mut Self { self.version = Some(version); self}
     pub fn agency_did(&mut self, did: &str) -> &mut Self { self.agency_did = Some(did.to_string()); self}
 
@@ -94,8 +86,6 @@ impl TokenRequestBuilder {
                     sponsee_id: self.sponsee_id.clone().ok_or(init_err("sponsee_id"))?,
                     sponsor_id: self.sponsor_id.clone().ok_or(init_err("sponsor_id"))?,
                     push_id: self.push_id.clone().ok_or(init_err("push_id"))?,
-                    signature: self.signature.clone(),
-                    algorithm: self.algorithm.clone(),
                 }
             )
         );
@@ -120,7 +110,7 @@ impl TokenRequestBuilder {
     }
 }
 
-pub fn provision(my_config: Config, sponsee_id: &str, sponsor_id: &str, com_method: ComMethod, signature: Option<String>, algorithm: Option<String>) -> VcxResult<String> {
+pub fn provision(my_config: Config, sponsee_id: &str, sponsor_id: &str, com_method: ComMethod) -> VcxResult<String> {
     debug!("***Configuring Library");
     set_config_values(&my_config);
 
@@ -132,8 +122,6 @@ pub fn provision(my_config: Config, sponsee_id: &str, sponsor_id: &str, com_meth
         .sponsee_id(sponsee_id)
         .sponsor_id(sponsor_id)
         .push_id(com_method)
-        .signature(signature)
-        .algorithm(algorithm)
         .version(V2)
         .agency_did(&my_config.agency_did)
         .send_secure()?;
@@ -183,7 +171,7 @@ mod tests {
             e_type: 1
         };
 
-        provision(parse_config(&config).unwrap(), "123", "456", com_method, None, None).unwrap();
+        provision(parse_config(&config).unwrap(), "123", "456", com_method).unwrap();
 
         delete_wallet(&enterprise_wallet_name, None, None, None).unwrap();
     }

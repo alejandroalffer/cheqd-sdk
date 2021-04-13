@@ -74,12 +74,14 @@ export async function provisionAgentWithToken (configAgent: string, token: strin
 
     /**   Token Example:
     *    {
-    *       "id": string,
-    *       "sponsor": string, //name of enterprise sponsoring the provisioning
+    *       "sponseeId": string,
+    *       "sponsorId": string, //name of enterprise sponsoring the provisioning
     *       "nonce": string,
     *       "timestamp": string,
     *       "sig": string, // base64encoded(sig(nonce + timestamp + id))
-    *       "sponsor_vk": string,
+    *       "sponsorVerKey": string,
+    *       "attestationAlgorithm": Optional<string>, // device attestation signature algorithm. Can be one of: SafetyNet | DeviceCheck
+    *       "attestationData": Optional<string>, // device attestation signature matching to specified algorithm
     *     }
     **/
   try {
@@ -122,8 +124,6 @@ export async function getProvisionToken (config: string, options: IInitVCXOption
    *         id: String,
    *         value: String,
    *     },
-   *     algorithm: Optional[String], // signature algorithm. Can be one of: SafetyNet | DeviceCheck
-   *     signature: Optional[String], // signature matching to specified algorithm
    * }
    */
   try {
