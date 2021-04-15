@@ -61,14 +61,16 @@ async def vcx_provision_agent_with_token(config: str, token: str) -> None:
         'wallet_key': '1234'
     }
     token = {
-      "id": String,
-      "sponsor": String, //Name of Enterprise sponsoring the provisioning
+      "sponseeId": String,
+      "sponsorId": String, //Name of Enterprise sponsoring the provisioning
       "nonce": String,
       "timestamp": String,
       "sig": String, // Base64Encoded(sig(nonce + timestamp + id))
-      "sponsor_vk": String,
+      "sponsorVerKey": String,
+      "attestationAlgorithm": Optional<String>, // device attestation signature algorithm. Can be one of: SafetyNet | DeviceCheck
+      "attestationData": Optional<String>, // device attestation signature matching to specified algorithm
     }
-    vcx_config = await vcx_agent_provision(json.dumps(enterprise_config))
+    vcx_config = await vcx_provision_agent_with_token(json.dumps(enterprise_config), json.dumps(token)
     :param config: JSON configuration
     :return: Configuration for vcx_init call.
     """
@@ -100,8 +102,6 @@ async def vcx_get_provision_token(config: str) -> str:
              id: String,
              value: String,
          },
-         algorithm: Optional[String], // signature algorithm. Can be one of: SafetyNet | DeviceCheck
-         signature: Optional[String], // signature matching to specified algorithm
      }
     :return: provisioning token as JSON
     """

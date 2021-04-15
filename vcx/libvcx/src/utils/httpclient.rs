@@ -7,6 +7,7 @@ use error::prelude::*;
 use utils::timeout::TimeoutUtils;
 use reqwest::ClientBuilder;
 use error::agency_error::AgencyError;
+use utils::threadpool::spawn;
 
 lazy_static! {
     static ref AGENCY_MOCK: Mutex<AgencyMock> = Mutex::new(AgencyMock::default());
@@ -19,7 +20,7 @@ pub struct AgencyMock {
 
 enum RequestType {
     GET,
-    POST
+    POST,
 }
 
 impl AgencyMock {
@@ -47,6 +48,15 @@ pub fn get_status() -> VcxResult<Vec<u8>> {
 
 pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
     send_http_message(body_content, url, RequestType::POST)
+}
+
+pub fn post_message_async(body_content: &Vec<u8>, url: &str) {
+    let body_content = body_content.clone();
+    let url = url.to_string();
+    spawn(move || {
+        send_http_message(&body_content, &url, RequestType::POST).ok();
+        Ok(())
+    });
 }
 
 pub fn get_message(url: &str) -> VcxResult<Vec<u8>> {

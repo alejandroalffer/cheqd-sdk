@@ -262,7 +262,9 @@ export interface IConnectOptions {
   *                                             if agent info does not need to be updated, set `update_agent_info`=false
   *        "use_public_did": Option<bool> - whether to use public DID for an establishing connection
   *                                         default value for `use_public_did`=false
-  *    }
+ *         "wait_remote_agent_responses": Optional<bool> - whether you want to wait for HTTP responses of a remote agent
+ *                                                         when sends aries protocol messages through the connection.
+ *                                                         default value for `wait_remote_agent_responses`=true  *    }
   */
   data: string
 }

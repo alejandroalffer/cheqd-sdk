@@ -379,7 +379,7 @@ impl InvitedState {
         let prev_agent_info = agent_info.clone();
 
         // provision a new pairwise agent
-        let new_agent_info: AgentInfo = agent_info.create_agent()?;
+        let new_agent_info: AgentInfo = agent_info.create_agent(&agent_info.wait_remote_agent_responses)?;
 
         let thread = Thread::new()
             .set_thid(request.id.to_string())
@@ -969,7 +969,7 @@ impl DidExchangeSM {
                     DidExchangeState::Initialized(state) => {
                         match message {
                             DidExchangeMessages::Connect(options) => {
-                                agent_info = agent_info.create_agent()?;
+                                agent_info = agent_info.create_agent(&options.wait_remote_agent_responses)?;
                                 state.prepare_invitation(&source_id, &agent_info, &options)?
                             }
                             message_ => {
@@ -1108,8 +1108,8 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Invited(state) => {
                         match message {
-                            DidExchangeMessages::Connect(_options) => {
-                                agent_info = agent_info.create_agent()?;
+                            DidExchangeMessages::Connect(options) => {
+                                agent_info = agent_info.create_agent(&options.wait_remote_agent_responses)?;
 
                                 let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
 
@@ -1177,9 +1177,9 @@ impl DidExchangeSM {
                         ActorDidExchangeState::Invitee(DidExchangeState::Failed(state))
                     }
                     DidExchangeState::Completed(state) => {
-                        if let DidExchangeMessages::Connect(_) = message {
+                        if let DidExchangeMessages::Connect(options) = message {
                             if state.without_handshake() {
-                                agent_info = agent_info.create_agent()?;
+                                agent_info = agent_info.create_agent(&options.wait_remote_agent_responses)?;
                             }
                             ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
                         } else {

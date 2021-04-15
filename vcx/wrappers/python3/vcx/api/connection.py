@@ -274,7 +274,20 @@ class Connection(VcxStateful):
                     "serviceEndpoint": "https://example.com/endpoint",
                     "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
                  }
-        :param connection_options: Provides details indicating if the connection will be established by text or QR Code.
+        :param options: Provides details about establishing connection
+                        {
+                            "connection_type": Option<"string"> - one of "SMS", "QR",
+                            "phone": "string": Option<"string"> - phone number in case "connection_type" is set into "SMS",
+                            "update_agent_info": Option<bool> - whether agent information needs to be updated.
+                                                                default value for `update_agent_info`=true
+                                                                if agent info does not need to be updated, set `update_agent_info`=false
+                            "use_public_did": Option<bool> - whether to use public DID for an establishing connection
+                                                             default value for `use_public_did`=false
+                            "wait_remote_agent_responses": Optional<bool> - whether you want to wait for HTTP responses of a remote agent
+                                                           when sends aries protocol messages through the connection.
+                                                           default value for `wait_remote_agent_responses`=true
+                        }
+
             {"connection_type":"SMS","phone":"123","use_public_did":true}
             {"connection_type":"QR","phone":"","use_public_did":false}
 
@@ -401,6 +414,9 @@ class Connection(VcxStateful):
                                                                 if agent info does not need to be updated, set `update_agent_info`=false
                             "use_public_did": Option<bool> - whether to use public DID for an establishing connection
                                                              default value for `use_public_did`=false
+                            "wait_remote_agent_responses": Optional<bool> - whether you want to wait for HTTP responses of a remote agent
+                                                           when sends aries protocol messages through the connection.
+                                                           default value for `wait_remote_agent_responses`=true
                         }
         
         Example options:

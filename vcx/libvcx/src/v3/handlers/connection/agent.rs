@@ -22,6 +22,8 @@ pub struct AgentInfo {
     pub pw_vk: String,
     pub agent_did: String,
     pub agent_vk: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub wait_remote_agent_responses: Option<bool>,
 }
 
 impl Default for AgentInfo {
@@ -31,12 +33,13 @@ impl Default for AgentInfo {
             pw_vk: String::new(),
             agent_did: String::new(),
             agent_vk: String::new(),
+            wait_remote_agent_responses: None,
         }
     }
 }
 
 impl AgentInfo {
-    pub fn create_agent(&self) -> VcxResult<AgentInfo> {
+    pub fn create_agent(&self, wait_remote_agent_responses: &Option<bool>) -> VcxResult<AgentInfo> {
         trace!("Agent::create_agent >>>");
         debug!("Agent: creating pairwise agent for connection");
 
@@ -49,7 +52,13 @@ impl AgentInfo {
         */
         let (agent_did, agent_vk) = create_agent_keys("", &pw_did, &pw_vk)?;
 
-        let agent = AgentInfo { pw_did, pw_vk, agent_did, agent_vk };
+        let agent = AgentInfo {
+            pw_did,
+            pw_vk,
+            agent_did,
+            agent_vk,
+            wait_remote_agent_responses: wait_remote_agent_responses.clone(),
+        };
 
         trace!("Agent::create_agent <<< pairwise_agent: {:?}", secret!(agent));
         Ok(agent)
@@ -164,9 +173,9 @@ impl AgentInfo {
         trace!("Agent::send_message >>> message: {:?}, did_doc: {:?}", secret!(message), secret!(did_doc));
         debug!("Agent: Sending message on the remote endpoint");
 
-        let pw_key = if self.pw_vk.is_empty() { None} else {Some(self.pw_vk.clone())};
+        let pw_key = if self.pw_vk.is_empty() { None } else { Some(self.pw_vk.clone()) };
         let envelope = EncryptionEnvelope::create(&message, pw_key.as_ref().map(String::as_str), &did_doc)?;
-        httpclient::post_message(&envelope.0, &did_doc.get_endpoint())?;
+        Self::_send_message(&envelope, &did_doc, self.wait_remote_agent_responses.unwrap_or(true))?;
         trace!("Agent::send_message <<<");
         Ok(())
     }
@@ -176,9 +185,18 @@ impl AgentInfo {
         debug!("Agent: Sending message on the remote anonymous endpoint");
 
         let envelope = EncryptionEnvelope::create(&message, None, &did_dod)?;
-        httpclient::post_message(&envelope.0, &did_dod.get_endpoint())?;
+        Self::_send_message(&envelope, &did_dod, false)?;
         trace!("Agent::send_message_anonymously <<<");
         Ok(())
+    }
+
+    fn _send_message(envelope: &EncryptionEnvelope, did_doc: &DidDoc, wait_remote_agent_responses: bool) -> VcxResult<Vec<u8>> {
+        if wait_remote_agent_responses {
+            httpclient::post_message(&envelope.0, &did_doc.get_endpoint())
+        } else {
+            httpclient::post_message_async(&envelope.0, &did_doc.get_endpoint());
+            Ok(Vec::new())
+        }
     }
 
     pub fn delete(&self) -> VcxResult<()> {

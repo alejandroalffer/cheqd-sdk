@@ -96,7 +96,8 @@ async def connect():
 
     print("#10 Convert to valid json and string and create a connection to faber")
     jdetails = json.loads(details)
-    connection_to_faber = await Connection.accept_connection_invite('faber', json.dumps(jdetails))
+    options = '{"use_public_did": false, "wait_remote_agent_responses": false}'
+    connection_to_faber = await Connection.accept_connection_invite('faber', json.dumps(jdetails), options)
     connection_state = await connection_to_faber.update_state()
     while connection_state != State.Accepted:
         sleep(2)

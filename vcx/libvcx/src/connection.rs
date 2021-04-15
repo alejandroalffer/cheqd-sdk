@@ -52,6 +52,7 @@ pub struct ConnectionOptions {
     pub phone: Option<String>,
     pub use_public_did: Option<bool>,
     pub update_agent_info: Option<bool>,
+    pub wait_remote_agent_responses: Option<bool>,
 }
 
 impl Default for ConnectionOptions {
@@ -61,6 +62,7 @@ impl Default for ConnectionOptions {
             phone: None,
             use_public_did: None,
             update_agent_info: Some(true),
+            wait_remote_agent_responses: None
         }
     }
 }
@@ -99,6 +101,8 @@ struct Connection {
     // used by proofs/credentials when sending to edge device
     public_did: Option<String>,
     their_public_did: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    wait_remote_agent_responses: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<settings::ProtocolTypes>,
 }
@@ -304,6 +308,8 @@ impl Connection {
 
     fn get_agent_verkey(&self) -> &String { &self.agent_vk }
     fn set_agent_verkey(&mut self, verkey: &str) { self.agent_vk = verkey.to_string(); }
+
+    fn get_wait_remote_agent_responses(&self) -> &Option<bool> { &self.wait_remote_agent_responses }
 
     fn get_invite_detail(&self) -> &Option<InviteDetail> { &self.invite_detail }
     fn set_invite_detail(&mut self, id: InviteDetail) {
@@ -729,6 +735,7 @@ fn create_connection_v1(source_id: &str) -> VcxResult<Connection> {
         their_pw_verkey: String::new(),
         public_did: None,
         their_public_did: None,
+        wait_remote_agent_responses: None,
         version: Some(settings::get_connecting_protocol_version()),
     };
 
@@ -1353,6 +1360,7 @@ impl Into<(Connection, ActorDidExchangeState)> for ConnectionV3 {
             their_pw_verkey: self.remote_vk().unwrap_or_default(),
             public_did: settings::get_config_value(settings::CONFIG_INSTITUTION_DID).ok(),
             their_public_did: invitation.as_ref().and_then(|invitation_| invitation_.public_did()),
+            wait_remote_agent_responses: self.agent_info().wait_remote_agent_responses.clone(),
             version: Some(ProtocolTypes::V2), // TODO check correctness
         };
 
@@ -1367,6 +1375,7 @@ impl From<(Connection, ActorDidExchangeState)> for ConnectionV3 {
             pw_vk: connection.get_pw_verkey().to_string(),
             agent_did: connection.get_agent_did().to_string(),
             agent_vk: connection.get_agent_verkey().to_string(),
+            wait_remote_agent_responses: connection.get_wait_remote_agent_responses().clone()
         };
 
         ConnectionV3::from_parts(connection.get_source_id().to_string(), agent_info, state)
@@ -1750,6 +1759,7 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
+            wait_remote_agent_responses: None,
             version: None,
         };
 
@@ -1805,6 +1815,7 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
+            wait_remote_agent_responses: None,
             version: None,
         });
 
