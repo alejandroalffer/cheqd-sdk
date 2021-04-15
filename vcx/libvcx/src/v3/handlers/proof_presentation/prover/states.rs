@@ -477,7 +477,8 @@ impl ProverSM {
                             // ephemeral proof request
                             let thread = state.thread.clone();
                             let service = state.presentation_request.service.clone().unwrap().into();
-                            Connection::send_message_to_self_endpoint(&state.presentation.clone().to_a2a_message(), &service)?;
+                            let presentation = state.presentation.clone().reset_ack();
+                            Connection::send_message_to_self_endpoint(&presentation.to_a2a_message(), &service)?;
                             ProverState::Finished((state, thread).into())
                         } else {
                             // regular proof request
