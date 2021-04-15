@@ -53,6 +53,11 @@ macro_rules! please_ack (($type:ident) => (
             self.please_ack = Some(PleaseAck { on: None });
             self
         }
+
+        pub fn reset_ack(mut self) -> $type {
+            self.please_ack = None;
+            self
+        }
     }
 ));
 

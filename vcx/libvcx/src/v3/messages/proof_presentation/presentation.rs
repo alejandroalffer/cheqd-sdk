@@ -100,4 +100,13 @@ pub mod tests {
 
         assert_eq!(_presentation(), presentation);
     }
+
+    #[test]
+    fn test_presentation_build_works_for_reset_ack() {
+        let mut presentation: Presentation = Presentation::default().ask_for_ack();
+        assert!(presentation.please_ack.is_some());
+
+        presentation = presentation.reset_ack();
+        assert!(presentation.please_ack.is_none());
+    }
 }
