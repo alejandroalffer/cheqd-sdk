@@ -150,6 +150,32 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
                                      invite:(NSString *)invite
                                  completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
 
+/// Establishes connection between institution and its user
+///
+/// # Params
+/// connectionHandle: Connection handle that identifies connection object
+///
+/// connectionType: Provides details about establishing connection
+///     {
+///         "connection_type": Option<"string"> - one of "SMS", "QR",
+///         "phone": "string": Option<"string"> - phone number in case "connection_type" is set into "SMS",
+///         "update_agent_info": Option<bool> - whether agent information needs to be updated.
+///                                             default value for `update_agent_info`=true
+///                                             if agent info does not need to be updated, set `update_agent_info`=false
+///         "use_public_did": Option<bool> - whether to use public DID for an establishing connection
+///                                          default value for `use_public_did`=false
+///         "pairwise_agent_info": Optional<JSON object> - pairwise agent to use instead of creating a new one.
+///                                                        Can be received by calling `vcx_create_pairwise_agent` function.
+///                                                         {
+///                                                             "pw_did": string,
+///                                                             "pw_vk": string,
+///                                                             "agent_did": string,
+///                                                             "agent_vk": string,
+///                                                         }
+///     }
+///
+/// #Returns
+///  Connection invitation as JSON string
 - (void)connectionConnect:(VcxHandle)connectionHandle
            connectionType:(NSString *)connectionType
                completion:(void (^)(NSError *error, NSString *inviteDetails))completion;
@@ -774,6 +800,21 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 - (void) proofVerifierSetConnection:(NSInteger) proofHandle
                             connectionHandle:(NSInteger) connectionHandle
                                  completion:(void (^)(NSError *error))completion;
+
+/// Create pairwise agent which can be later used for connection establishing.
+///
+/// You can pass `agent_info` into `vcx_connection_connect` function as field of `connection_options` JSON parameter.
+/// The passed Pairwise Agent will be used for connection establishing instead of creation a new one.
+///
+/// #Returns
+/// agent info as JSON string:
+///     {
+///         "pw_did": string,
+///         "pw_vk": string,
+///         "agent_did": string,
+///         "agent_vk": string,
+///     }
+- (void) createPairwiseAgent:(void (^)(NSError *error, NSString *agentInfo))completion;
 
 @end
 

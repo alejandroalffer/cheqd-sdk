@@ -480,3 +480,34 @@ export async function healthCheck (): Promise<void> {
     throw new VCXInternalError(err)
   }
 }
+
+export async function createPairwiseAgent(): Promise<string> {
+  /**
+   *  Create pairwise agent which can be later used for connection establishing.
+   *
+   *  You can pass `agent_info` into `vcx_connection_connect` function as field of `connection_options` JSON parameter.
+   *  The passed Pairwise Agent will be used for connection establishing instead of creation a new one.
+   */
+  try {
+    return await createFFICallbackPromise<string>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_create_pairwise_agent(0, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32','string'],
+        (xhandle: number, err: number, agentInfo: string) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(agentInfo)
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}

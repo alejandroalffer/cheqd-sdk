@@ -379,7 +379,7 @@ impl InvitedState {
         let prev_agent_info = agent_info.clone();
 
         // provision a new pairwise agent
-        let new_agent_info: AgentInfo = agent_info.create_agent()?;
+        let new_agent_info: AgentInfo = AgentInfo::create_agent()?;
 
         let thread = Thread::new()
             .set_thid(request.id.to_string())
@@ -969,7 +969,10 @@ impl DidExchangeSM {
                     DidExchangeState::Initialized(state) => {
                         match message {
                             DidExchangeMessages::Connect(options) => {
-                                agent_info = agent_info.create_agent()?;
+                                agent_info = match options.pairwise_agent_info.as_ref() {
+                                    Some(pairwise_agent_info) => pairwise_agent_info.clone(),
+                                    None => AgentInfo::create_agent()?
+                                };
                                 state.prepare_invitation(&source_id, &agent_info, &options)?
                             }
                             message_ => {
@@ -1108,8 +1111,11 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Invited(state) => {
                         match message {
-                            DidExchangeMessages::Connect(_options) => {
-                                agent_info = agent_info.create_agent()?;
+                            DidExchangeMessages::Connect(options) => {
+                                agent_info = match options.pairwise_agent_info.as_ref() {
+                                    Some(pairwise_agent_info) => pairwise_agent_info.clone(),
+                                    None => AgentInfo::create_agent()?
+                                };
 
                                 let label = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap_or(source_id.to_string());
 
@@ -1177,9 +1183,12 @@ impl DidExchangeSM {
                         ActorDidExchangeState::Invitee(DidExchangeState::Failed(state))
                     }
                     DidExchangeState::Completed(state) => {
-                        if let DidExchangeMessages::Connect(_) = message {
+                        if let DidExchangeMessages::Connect(options) = message {
                             if state.without_handshake() {
-                                agent_info = agent_info.create_agent()?;
+                                agent_info = match options.pairwise_agent_info.as_ref() {
+                                    Some(pairwise_agent_info) => pairwise_agent_info.clone(),
+                                    None => AgentInfo::create_agent()?
+                                };
                             }
                             ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
                         } else {

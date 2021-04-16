@@ -2162,6 +2162,22 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
 }
 
+- (void) createPairwiseAgent:(void (^)(NSError *error, NSString *agentInfo))completion
+{
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    vcx_error_t ret = vcx_create_pairwise_agent(handle,
+                                                VcxWrapperCommonStringCallback);
+    if (ret != 0) {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        NSError *error = [NSError errorFromVcxError:ret];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error, nil);
+        });
+    }
+}
+
+
 /*
 * Verifier API
 */

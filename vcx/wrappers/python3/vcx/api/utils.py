@@ -445,3 +445,36 @@ async def vcx_health_check() -> None:
 
     logger.debug("vcx_health_check completed")
     return result
+    
+    
+async def vcx_create_pairwise_agent() -> str:
+    """
+    Create pairwise agent which can be later used for connection establishing.
+
+    You can pass `agent_info` into `vcx_connection_connect` function as field of `connection_options` JSON parameter.
+    The passed Pairwise Agent will be used for connection establishing instead of creation a new one.
+
+    :param status: optional, comma separated - query for messages with the specified status.
+                                     Possible statuses:
+                                     MS-101 - Created
+                                     MS-102 - Sent
+                                     MS-103 - Received
+                                     MS-104 - Accepted
+                                     MS-105 - Rejected
+                                     MS-106 - Reviewed
+    :param uids: optional, comma separated - query for messages with the specified uids
+    :param pw_dids: optional, comma separated - DID's pointing to specific connection
+    :return: message
+        [{"pairwiseDID":"did","msgs":[{"statusCode":"MS-106","payload":null,"senderDID":"","uid":"6BDkgc3z0E","type":"aries","refMsgId":null,"deliveryDetails":[],"decryptedPayload":"{"@msg":".....","@type":{"fmt":"json","name":"aries","ver":"1.0"}}"}]}]
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_create_pairwise_agent, "cb"):
+        logger.debug("vcx_create_pairwise_agent: Creating callback")
+        vcx_create_pairwise_agent.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+    result = await do_call('vcx_create_pairwise_agent',
+                           vcx_create_pairwise_agent.cb)
+
+    logger.debug("vcx_create_pairwise_agent completed")
+    return result.decode()

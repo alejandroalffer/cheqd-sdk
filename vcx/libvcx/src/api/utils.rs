@@ -12,6 +12,7 @@ use indy_sys::CommandHandle;
 use utils::httpclient::AgencyMock;
 use utils::constants::*;
 use messages::agent_utils::{ComMethod, Config};
+use v3::handlers::connection::agent::AgentInfo;
 
 /// Provision an agent in the agency, populate configuration and wallet for this agent.
 ///
@@ -849,6 +850,59 @@ pub extern fn vcx_health_check(command_handle: CommandHandle,
         };
         Ok(())
     });
+    error::SUCCESS.code_num
+}
+
+/// Create pairwise agent which can be later used for connection establishing.
+///
+/// You can pass `agent_info` into `vcx_connection_connect` function as field of `connection_options` JSON parameter.
+/// The passed Pairwise Agent will be used for connection establishing instead of creation a new one.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides agent info as JSON string:
+///     {
+///         "pw_did": string,
+///         "pw_vk": string,
+///         "agent_did": string,
+///         "agent_vk": string,
+///     }
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_create_pairwise_agent(command_handle: CommandHandle,
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle,
+                                                             err: u32,
+                                                             agent_info: *const c_char)>) -> u32 {
+    info!("vcx_create_pairwise_agent >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_create_pairwise_agent(command_handle: {})", command_handle);
+
+    spawn(move || {
+        match AgentInfo::create_agent() {
+            Ok(agent_info) => {
+                trace!("vcx_create_pairwise_agent_cb(command_handle: {}, rc: {}, message: {:?})",
+                       command_handle, error::SUCCESS.message, secret!(agent_info));
+
+                let agent_info_json = json!(agent_info).to_string();
+                let result = CStringUtils::string_to_cstring(agent_info_json);
+                cb(command_handle, error::SUCCESS.code_num, result.as_ptr());
+            }
+            Err(e) => {
+                warn!("vcx_create_pairwise_agent_cb(command_handle: {}, rc: {})",
+                      command_handle, e);
+                cb(command_handle, e.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
     error::SUCCESS.code_num
 }
 

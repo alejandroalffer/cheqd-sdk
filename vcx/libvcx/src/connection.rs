@@ -52,6 +52,7 @@ pub struct ConnectionOptions {
     pub phone: Option<String>,
     pub use_public_did: Option<bool>,
     pub update_agent_info: Option<bool>,
+    pub pairwise_agent_info: Option<AgentInfo>,
 }
 
 impl Default for ConnectionOptions {
@@ -61,6 +62,7 @@ impl Default for ConnectionOptions {
             phone: None,
             use_public_did: None,
             update_agent_info: Some(true),
+            pairwise_agent_info: None
         }
     }
 }
@@ -324,20 +326,31 @@ impl Connection {
 
     fn get_source_id(&self) -> &String { &self.source_id }
 
-    fn create_agent_pairwise(&mut self) -> VcxResult<u32> {
+    fn create_agent_pairwise(&mut self, pairwise_agent_info: Option<&AgentInfo>) -> VcxResult<u32> {
         trace!("Connection::create_agent_pairwise >>>");
         debug!("Connection {}: Creating pairwise agent", self.source_id);
 
-        let (for_did, for_verkey) = messages::create_keys()
-            .for_did(&self.pw_did)?
-            .for_verkey(&self.pw_verkey)?
-            .version(&self.version)?
-            .send_secure()
-            .map_err(|err| err.extend("Cannot create pairwise agent"))?;
+        match pairwise_agent_info {
+            Some(agent_info) => {
+                debug!("Connection {}: Created pairwise agent with did {:?}, vk: {:?}", self.source_id, secret!(agent_info.agent_did), secret!(agent_info.agent_vk));
+                self.set_pw_did(&agent_info.pw_did);
+                self.set_pw_verkey(&agent_info.pw_vk);
+                self.set_agent_did(&agent_info.agent_did);
+                self.set_agent_verkey(&agent_info.agent_vk);
+            },
+            None => {
+                let (for_did, for_verkey) = messages::create_keys()
+                    .for_did(&self.pw_did)?
+                    .for_verkey(&self.pw_verkey)?
+                    .version(&self.version)?
+                    .send_secure()
+                    .map_err(|err| err.extend("Cannot create pairwise agent"))?;
 
-        debug!("Connection {}: Created pairwise agent with did {:?}, vk: {:?}", self.source_id, secret!(for_did), secret!(for_verkey));
-        self.set_agent_did(&for_did);
-        self.set_agent_verkey(&for_verkey);
+                debug!("Connection {}: Created pairwise agent with did {:?}, vk: {:?}", self.source_id, secret!(for_did), secret!(for_verkey));
+                self.set_agent_did(&for_did);
+                self.set_agent_verkey(&for_verkey);
+            }
+        }
 
         trace!("Connection::create_agent_pairwise <<<");
 
@@ -1108,7 +1121,7 @@ pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
                     connection.update_agent_profile(&options_obj)?;
                 }
 
-                connection.create_agent_pairwise()?;
+                connection.create_agent_pairwise(options_obj.pairwise_agent_info.as_ref())?;
                 connection.connect(&options_obj)
             }
             Connections::V3(ref mut connection) => {
@@ -1137,7 +1150,7 @@ pub fn redirect(handle: u32, redirect_handle: u32) -> VcxResult<u32> {
             Connections::V1(ref mut connection) => {
                 debug!("redirecting connection {}", connection.get_source_id());
                 connection.update_agent_profile(&ConnectionOptions::default())?;
-                connection.create_agent_pairwise()?;
+                connection.create_agent_pairwise(None)?;
                 connection.redirect(&rc)
             }
             Connections::V3(_) => {

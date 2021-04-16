@@ -36,7 +36,7 @@ impl Default for AgentInfo {
 }
 
 impl AgentInfo {
-    pub fn create_agent(&self) -> VcxResult<AgentInfo> {
+    pub fn create_agent() -> VcxResult<AgentInfo> {
         trace!("Agent::create_agent >>>");
         debug!("Agent: creating pairwise agent for connection");
 
