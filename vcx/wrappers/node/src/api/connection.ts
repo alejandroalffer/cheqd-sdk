@@ -262,6 +262,14 @@ export interface IConnectOptions {
   *                                             if agent info does not need to be updated, set `update_agent_info`=false
   *        "use_public_did": Option<bool> - whether to use public DID for an establishing connection
   *                                         default value for `use_public_did`=false
+  *         "pairwise_agent_info": Optional<JSON object> - pairwise agent to use instead of creating a new one.
+  *                                                        Can be received by calling `vcx_create_pairwise_agent` function.
+  *                                                         {
+  *                                                             "pw_did": string,
+  *                                                             "pw_vk": string,
+  *                                                             "agent_did": string,
+  *                                                             "agent_vk": string,
+  *                                                         }
   *    }
   */
   data: string

@@ -573,4 +573,43 @@ public class UtilsApi extends VcxJava.API {
         checkResult(result);
         return future;
     }
+
+    private static Callback vcxCreatePairwiseAgentCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, String agentInfo) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], agentInfo = [****]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            String result = agentInfo;
+            future.complete(result);
+        }
+    };
+
+    /**
+     * Create pairwise agent which can be later used for connection establishing.
+     *
+     * You can pass `agent_info` into `vcx_connection_connect` function as field of `connection_options` JSON parameter.
+     * The passed Pairwise Agent will be used for connection establishing instead of creation a new one.
+     *
+     * @return   Agent info as JSON string:
+     *     {
+     *         "pw_did": string,
+     *         "pw_vk": string,
+     *         "agent_did": string,
+     *         "agent_vk": string,
+     *     }
+     * @throws VcxException   If an exception occurred in Libvcx library.
+     */
+    public static CompletableFuture<String> vcxCreatePairwiseAgent() throws VcxException {
+        logger.debug("vcxCreatePairwiseAgent() called");
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_create_pairwise_agent(
+                commandHandle,
+                vcxCreatePairwiseAgentCB
+        );
+        checkResult(result);
+        return future;
+    }
 }

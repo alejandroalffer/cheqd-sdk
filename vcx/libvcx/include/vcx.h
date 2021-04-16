@@ -109,6 +109,14 @@ vcx_error_t vcx_agent_update_info(vcx_command_handle_t command_handle,
 ///                                             if agent info does not need to be updated, set `update_agent_info`=false
 ///         "use_public_did": Option<bool> - whether to use public DID for an establishing connection
 ///                                          default value for `use_public_did`=false
+///         "pairwise_agent_info": Optional<JSON object> - pairwise agent to use instead of creating a new one.
+///                                                        Can be received by calling `vcx_create_pairwise_agent` function.
+///                                                         {
+///                                                             "pw_did": string,
+///                                                             "pw_vk": string,
+///                                                             "agent_did": string,
+///                                                             "agent_vk": string,
+///                                                         }
 ///     }
 /// # Examples connection_options ->
 /// "{"connection_type":"SMS","phone":"123","use_public_did":true, "update_agent_info": Option<true>}"
@@ -3252,6 +3260,28 @@ vcx_error_t vcx_endorse_transaction(vcx_u32_t command_handle,
 /// Error code as a u32
 vcx_error_t vcx_fetch_public_entities(vcx_u32_t command_handle,
                                       void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Create pairwise agent which can be later used for connection establishing.
+///
+/// You can pass `agent_info` into `vcx_connection_connect` function as field of `connection_options` JSON parameter.
+/// The passed Pairwise Agent will be used for connection establishing instead of creation a new one.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides agent info as JSON string:
+///     {
+///         "pw_did": string,
+///         "pw_vk": string,
+///         "agent_did": string,
+///         "agent_vk": string,
+///     }
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_create_pairwise_agent(vcx_command_handle_t command_handle,
+                                      void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 #ifdef __cplusplus
 } // extern "C"

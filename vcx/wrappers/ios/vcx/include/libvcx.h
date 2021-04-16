@@ -599,6 +599,9 @@ vcx_error_t vcx_wallet_backup_deserialize(vcx_command_handle_t command_handle, c
 /** Retrieve cloud backup and Import an encrypted file back into the wallet */
 vcx_error_t vcx_wallet_backup_restore(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 
+/// Create pairwise agent which can be later used for connection establishing.
+vcx_error_t vcx_create_pairwise_agent(vcx_command_handle_t command_handle,
+                                      void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 /** For testing purposes only */
 void vcx_set_next_agency_response(int);

@@ -689,6 +689,12 @@ public abstract class LibVcx {
         * */
         public int vcx_endorse_transaction(int command_handle, String transaction, Callback cb);
 
+
+        /*
+        * Create pairwise agent which can be later used for connection establishing.
+        * */
+        public int vcx_create_pairwise_agent(int command_handle, Callback cb);
+
         /**
          * The API represents a Holder side in credential issuance process.
          */
