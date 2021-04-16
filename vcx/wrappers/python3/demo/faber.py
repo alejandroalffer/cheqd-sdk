@@ -4,6 +4,7 @@ import os
 import random
 import time
 from time import sleep
+from typing import Optional
 
 from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
@@ -11,7 +12,7 @@ from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.proof import Proof
 from vcx.api.schema import Schema
 from vcx.api.utils import vcx_agent_provision, vcx_get_ledger_author_agreement, \
-    vcx_set_active_txn_author_agreement_meta
+    vcx_set_active_txn_author_agreement_meta, vcx_create_pairwise_agent
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State, ProofState
 
@@ -31,7 +32,7 @@ provisionConfig = {
     'agency_verkey': 'FvA7e4DuD2f9kYHq6B3n7hE7NQvmpgeFRrox3ELKv9vX',
     'wallet_name': 'faber_wallet',
     'wallet_key': '123',
-    'enterprise_seed': '000000000000000000000000Trustee1',
+    'enterprise_seed': '000000000000000000000000Trustee2',
     'protocol_type': '3.0',
     'name': 'Faber',
     'logo': 'https://s3.us-east-2.amazonaws.com/public-demo-artifacts/demo-icons/cbFaber.png',
@@ -69,14 +70,14 @@ async def main():
     print("Finished")
 
 
-async def connect():
+async def connect(use_public_did: bool = False):
     print("#5 Create a connection to alice and print out the invite details")
     connection_to_alice = await Connection.create('alice')
-    await connection_to_alice.connect('{"use_public_did": false}')
+    connection_options = {'use_public_did': use_public_did}
+    details = await connection_to_alice.connect(json.dumps(connection_options))
     await connection_to_alice.update_state()
-    details = await connection_to_alice.invite_details(False)
     print("**invite details**")
-    print(json.dumps(details))
+    print(details.decode())
     print("******************")
 
     print("#6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
