@@ -32,7 +32,7 @@ mod log_tests {
                          _file: *const c_char,
                          _line: u32) {
         let _message = CStringUtils::c_str_to_string(message).unwrap();
-        unsafe { COUNT = COUNT + 1 }
+        unsafe { COUNT += 1 }
     }
     #[test]
     fn test_logging_default_debug() {
@@ -71,8 +71,8 @@ mod log_tests {
     #[ignore]
     #[test]
     fn test_works_with_libindy() {
-        pub const DEFAULT_WALLET_CONFIG: &'static str = r#"{"id":"wallet_1","storage_type":"default"}"#;
-        pub const WALLET_CREDENTIALS: &'static str = r#"{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method":"RAW"}"#;
+        pub const DEFAULT_WALLET_CONFIG: &str = r#"{"id":"wallet_1","storage_type":"default"}"#;
+        pub const WALLET_CREDENTIALS: &str = r#"{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method":"RAW"}"#;
         wallet::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).wait().unwrap();
         let pattern = CStringUtils::string_to_cstring("debug".to_string());
         assert_eq!(vcx_set_default_logger(pattern.as_ptr()), 0);
@@ -102,7 +102,7 @@ mod log_tests {
                              _file: *const c_char,
                              _line: u32) {
             let _message = CStringUtils::c_str_to_string(message).unwrap();
-            unsafe { COUNT = COUNT + 1 }
+            unsafe { COUNT += 1 }
         }
 
         #[ignore]
