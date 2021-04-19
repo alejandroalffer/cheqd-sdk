@@ -382,7 +382,7 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
 pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
     info!("vcx_error_c_message >>>");
     trace!("vcx_error_message(error_code: {})", error_code);
-    error::error_c_message(&error_code).as_ptr()
+    error::error_c_message(error_code).as_ptr()
 }
 
 /// Update setting to set new local institution information
@@ -905,16 +905,16 @@ mod tests {
         let _setup = SetupMocks::init();
 
         let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(0)).unwrap().unwrap();
-        assert_eq!(c_message, error::SUCCESS.message);
+        assert_eq!(c_message, error::SUCCESS.as_str());
 
         let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(1001)).unwrap().unwrap();
-        assert_eq!(c_message, error::UNKNOWN_ERROR.message);
+        assert_eq!(c_message, error::UNKNOWN_ERROR.as_str());
 
         let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(100100)).unwrap().unwrap();
-        assert_eq!(c_message, error::UNKNOWN_ERROR.message);
+        assert_eq!(c_message, error::UNKNOWN_ERROR.as_str());
 
         let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(1021)).unwrap().unwrap();
-        assert_eq!(c_message, error::INVALID_ATTRIBUTES_STRUCTURE.message);
+        assert_eq!(c_message, error::INVALID_ATTRIBUTES_STRUCTURE.as_str());
     }
 
     #[test]

@@ -10,6 +10,9 @@ macro_rules! impl_error {
         $(pub static $name: Error = Error { code_num: $code, message: concat!($msg, "\0") });+;
         // resolve u32s to null-terminated strings
         fn $f(n: u32) -> &'static str {
+            // NOTE: this was originally a lazily-initialized HashMap, which has
+            // initialization and lookup overhead; a `match` statement like this will
+            // compile down into a highly efficient jump table and avoids allocation
             match n {
                 $($code => $name.message),+,
                 _ => UNKNOWN_ERROR.message,
@@ -19,7 +22,7 @@ macro_rules! impl_error {
 }
 
 // to add a new error, just add a line at the end with the following syntax:
-// STATIC_NAME: code_num => message
+// STATIC_NAME: code_num => message,
 impl_error! {
     internal_error_c_message,
     SUCCESS: 0 => "Success",
@@ -132,8 +135,8 @@ pub struct Error {
 }
 
 
-pub fn error_c_message(code_num: &u32) -> &'static CStr {
-    let msg = internal_error_c_message(*code_num);
+pub fn error_c_message(code_num: u32) -> &'static CStr {
+    let msg = internal_error_c_message(code_num);
     // SAFETY: the macro guarantees that the string literals have a null terminator;
     unsafe { CStr::from_bytes_with_nul_unchecked(msg.as_bytes()) }
 }
