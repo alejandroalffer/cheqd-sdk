@@ -303,7 +303,7 @@ pub fn err_msg<D>(kind: VcxErrorKind, msg: D) -> VcxError
 
 impl From<VcxErrorKind> for VcxError {
     fn from(kind: VcxErrorKind) -> VcxError {
-        VcxError::from_msg(kind, ::utils::error::error_message(&kind.clone().into()))
+        VcxError::from_msg(kind, ::utils::error::error_message(kind.into()))
     }
 }
 
