@@ -177,8 +177,8 @@ mod tests {
     use super::*;
     use settings;
     use utils::constants;
-    use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, cleanup_indy_env, sign_provision_token};
-    use utils::plugins::init_plugin;
+    use utils::devsetup::{C_AGENCY_DID, C_AGENCY_VERKEY, C_AGENCY_ENDPOINT, sign_provision_token};
+    
 
     fn get_provisioning_inputs(time: Option<String>, seed: Option<String>) -> (String, String, String) {
         let enterprise_wallet_name = format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);

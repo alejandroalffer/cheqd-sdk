@@ -806,14 +806,14 @@ pub struct Payload {
     pub msg: Vec<i8>,
 }
 
-#[serde(rename_all = "camelCase")]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct AcceptanceDetails {
     pub sender_detail: SenderDetail,
 }
 
-#[serde(rename_all = "camelCase")]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct RedirectionDetails {
     pub redirect_detail: RedirectDetail,
 }

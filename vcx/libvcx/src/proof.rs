@@ -882,7 +882,7 @@ pub mod tests {
     use utils::devsetup::*;
     use utils::httpclient::AgencyMock;
     use connection;
-    use messages::proofs::proof_request::{AttrInfo, PredicateInfo};
+    
     use v3::messages::proof_presentation::presentation_proposal::PresentationPreview;
 
     fn default_agent_info(connection_handle: Option<u32>) -> MyAgentInfo {

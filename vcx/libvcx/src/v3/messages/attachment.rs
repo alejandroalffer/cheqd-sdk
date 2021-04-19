@@ -40,8 +40,8 @@ impl Attachments {
     }
 }
 
-#[serde(tag = "mime-type")]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "mime-type")]
 pub enum Attachment {
     #[serde(rename = "application/json")]
     JSON(Json),
