@@ -1,0 +1,8 @@
+[package]
+name = "cosmos-test"
+version = "0.1.0"
+authors = ["Alexander Kolesov <alexander.kolesov@evernym.com>"]
+edition = "2018"
+
+[dependencies]
+cosmos_sdk = { version = "0.1.1", features = ["rpc"] }
