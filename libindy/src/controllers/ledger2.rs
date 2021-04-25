@@ -11,4 +11,20 @@ impl Ledger2Controller {
     pub(crate) fn new(ledger2_service: Arc<Ledger2Service>) -> Self {
         Self { ledger2_service }
     }
+
+    pub fn sign_request(&self) {
+        unimplemented!()
+    }
+
+    pub fn submit_request(&self) {
+        unimplemented!()
+    }
+
+    pub fn sign_and_submit_request(&self) {
+        unimplemented!()
+    }
+
+    pub fn build_x_request(&self) {
+        unimplemented!()
+    }
 }

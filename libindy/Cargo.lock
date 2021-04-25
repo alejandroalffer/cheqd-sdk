@@ -1584,6 +1584,7 @@ dependencies = [
  "eyre",
  "failure",
  "futures 0.3.8",
+ "k256",
  "libc",
  "log",
  "openssl",
@@ -1592,6 +1593,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sqlx",
+ "tendermint",
  "ursa",
  "zmq",
 ]
@@ -1776,6 +1778,7 @@ dependencies = [
  "indy-sys",
  "indy-utils",
  "indy-wallet",
+ "k256",
  "lazy_static",
  "libc",
  "log",

@@ -14,7 +14,7 @@ pub(crate) use anoncreds::{AnoncredsHelpers, IssuerService, ProverService, Verif
 
 pub(crate) use blob_storage::BlobStorageService;
 pub(crate) use crypto::CryptoService;
-pub(crate) use keys::{KeyInfo, KeysService};
+pub(crate) use keys::KeysService;
 pub(crate) use ledger::LedgerService;
 pub(crate) use ledger2::Ledger2Service;
 pub(crate) use metrics::{command_metrics::CommandMetric, MetricsService};
