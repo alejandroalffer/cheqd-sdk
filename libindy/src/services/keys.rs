@@ -11,6 +11,9 @@ use indy_api_types::{
 };
 use k256::ecdsa::signature::rand_core::OsRng;
 use k256::ecdsa::SigningKey;
+use rand::rngs::StdRng;
+use rand::{RngCore, SeedableRng};
+use rand_seeder::Seeder;
 use rust_base58::ToBase58;
 use std::collections::HashMap;
 
@@ -77,8 +80,12 @@ impl KeysService {
         Ok(self.key_info(alias).await?)
     }
 
-    pub fn add_from_mnemonic(&self, _alias: String, _mnemonic: &str) -> IndyResult<()> {
-        unimplemented!()
+    pub async fn add_from_mnemonic(&self, alias: &str, mnemonic: &str) -> IndyResult<KeyInfo> {
+        let mut rng: StdRng = Seeder::from(mnemonic).make_rng();
+        let key = k256::ecdsa::SigningKey::random(&mut rng);
+        self.set_signing_key(alias, &key).await?;
+
+        Ok(self.key_info(alias).await?)
     }
 
     pub async fn key_info(&self, alias: &str) -> IndyResult<KeyInfo> {
@@ -112,17 +119,33 @@ mod test {
     use k256::elliptic_curve::rand_core::OsRng;
 
     #[async_std::test]
-    async fn test_add_random_get_info() {
+    async fn test_add_random() {
         let keys_service = KeysService::new();
 
-        keys_service.add_random("alice").await.unwrap();
-        let key_info = keys_service.key_info("alice").await.unwrap();
+        let key_info = keys_service.add_random("alice").await.unwrap();
 
         assert_eq!(key_info.alias, "alice")
     }
 
+    #[async_std::test]
+    async fn test_add_from_mnemonic() {
+        let keys_service = KeysService::new();
+
+        let alice = keys_service
+            .add_from_mnemonic("alice", "secret phrase")
+            .await
+            .unwrap();
+
+        let bob = keys_service
+            .add_from_mnemonic("bob", "secret phrase")
+            .await
+            .unwrap();
+
+        assert_eq!(alice.pub_key, bob.pub_key)
+    }
+
     #[test]
-    fn test_signing_key_import_export() {
+    fn test_private_key_import_export() {
         let key = k256::ecdsa::SigningKey::random(&mut OsRng);
         let bytes = key.to_bytes().to_vec();
         let imported = k256::ecdsa::SigningKey::from_bytes(&bytes).unwrap();
@@ -136,7 +159,7 @@ mod test {
     }
 
     #[test]
-    fn test_k256_key_to_cosmos_key() {
+    fn test_private_key_compatibility() {
         let msg = vec![251u8, 252, 253, 254];
 
         let key = k256::ecdsa::SigningKey::random(&mut OsRng);
@@ -150,7 +173,7 @@ mod test {
     }
 
     #[test]
-    fn test_k256_pub_key_to_cosmos_pub_key() {
+    fn test_pub_key_compatibility() {
         let key = k256::ecdsa::SigningKey::random(&mut OsRng);
         let pub_key = key.verify_key().to_bytes().to_vec();
 

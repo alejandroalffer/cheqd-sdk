@@ -269,6 +269,12 @@ impl From<tendermint::Error> for IndyError {
     }
 }
 
+impl From<tendermint_rpc::Error> for IndyError {
+    fn from(err: tendermint_rpc::Error) -> Self {
+        err.into()
+    }
+}
+
 #[cfg(feature = "casting_errors")]
 impl From<UrsaCryptoError> for IndyError {
     fn from(err: UrsaCryptoError) -> Self {

@@ -40,13 +40,19 @@ mod test {
     use cosmos_sdk::Coin;
 
     #[async_std::test]
-    async fn test() {
+    async fn test_tx_commit_flow() {
         let ledger2_service = Ledger2Service::new();
         let pool2_service = Pool2Service::new();
         let keys_service = KeysService::new();
 
-        let alice = keys_service.add_random("alice").await.unwrap();
-        let bob = keys_service.add_random("bob").await.unwrap();
+        let alice = keys_service
+            .add_from_mnemonic("alice", "alice")
+            .await
+            .unwrap();
+        let bob = keys_service.add_from_mnemonic("bob", "bob").await.unwrap();
+
+        println!("Alice's account id: {}", alice.account_id);
+        println!("Bob's account id: {}", bob.account_id);
 
         let msg = ledger2_service
             .build_msg_bank_send(&alice.account_id, &bob.account_id, 1000, "stake")
@@ -60,18 +66,21 @@ mod test {
                 0,
                 0,
                 1000,
-                &Coin {
-                    amount: 1000u64.into(),
-                    denom: "stake".parse().unwrap(),
-                },
+                1000u64,
+                "stake",
                 10000,
                 "memo",
             )
             .unwrap();
 
-        let _signed = keys_service.sign("alice", tx).await.unwrap();
+        let signed = keys_service.sign("alice", tx).await.unwrap();
 
         // Broadcast
+
+        // pool2_service
+        //     .send_tx_commit("http://localhost:25565", signed)
+        //     .await
+        //     .unwrap();
 
         assert!(true)
     }
