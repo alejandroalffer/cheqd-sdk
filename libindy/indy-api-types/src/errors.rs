@@ -19,7 +19,6 @@ use libc::c_char;
 
 use crate::ErrorCode;
 
-
 pub mod prelude {
     pub use super::{
         err_msg, get_current_error_c_json, set_current_error, IndyError, IndyErrorExt,
@@ -248,6 +247,31 @@ impl From<futures::channel::oneshot::Canceled> for IndyError {
 impl From<log::SetLoggerError> for IndyError {
     fn from(err: log::SetLoggerError) -> IndyError {
         err.context(IndyErrorKind::InvalidState).into()
+    }
+}
+
+// Cosmos SDK error. They don't expose Error interface.
+impl From<eyre::Report> for IndyError {
+    fn from(err: eyre::Report) -> IndyError {
+        err.into()
+    }
+}
+
+impl From<k256::ecdsa::Error> for IndyError {
+    fn from(err: k256::ecdsa::Error) -> Self {
+        err.context(IndyErrorKind::InvalidState).into()
+    }
+}
+
+impl From<tendermint::Error> for IndyError {
+    fn from(err: tendermint::Error) -> Self {
+        err.into()
+    }
+}
+
+impl From<tendermint_rpc::Error> for IndyError {
+    fn from(err: tendermint_rpc::Error) -> Self {
+        err.into()
     }
 }
 

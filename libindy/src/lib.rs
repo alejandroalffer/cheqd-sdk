@@ -37,23 +37,27 @@ use lazy_static::lazy_static;
 
 use crate::{
     controllers::{
-        BlobStorageController, CacheController, ConfigController, CryptoController, DidController,
-        IssuerController, LedgerController, MetricsController, NonSecretsController,
-        PairwiseController, PoolController, ProverController, VerifierController, WalletController,
+        payments::PaymentsController, BlobStorageController, CacheController, ConfigController,
+        CryptoController, DidController, IssuerController, KeysController, Ledger2Controller,
+        LedgerController, MetricsController, NonSecretsController, PairwiseController,
+        Pool2Controller, PoolController, ProverController, VerifierController, WalletController,
     },
     services::{
-        BlobStorageService, CryptoService, IssuerService, LedgerService, MetricsService,
-        CommandMetric, PoolService, ProverService, VerifierService, WalletService,
+        BlobStorageService, CommandMetric, CryptoService, IssuerService, KeysService,
+        Ledger2Service, LedgerService, MetricsService, PaymentsService, Pool2Service, PoolService,
+        ProverService, VerifierService, WalletService,
     },
 };
 use indy_api_types::errors::IndyResult;
-use std::future::Future;
-use std::time::{SystemTime, UNIX_EPOCH};
-use crate::services::PaymentsService;
-use crate::controllers::payments::PaymentsController;
+use std::{
+    future::Future,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 fn get_cur_time() -> u128 {
-    let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time has gone backwards");
+    let since_epoch = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time has gone backwards");
     since_epoch.as_millis()
 }
 
@@ -64,11 +68,15 @@ pub(crate) struct InstrumentedThreadPool {
 }
 
 impl InstrumentedThreadPool {
-    pub fn spawn_ok_instrumented<T, FutIndyRes, FnCb>(&self, idx: CommandMetric, action: FutIndyRes, cb: FnCb)
-        where
-            FutIndyRes: Future<Output = IndyResult<T>> + Send + 'static,
-            FnCb: Fn(IndyResult<T>) + Sync + Send + 'static,
-            T: Send + 'static
+    pub fn spawn_ok_instrumented<T, FutIndyRes, FnCb>(
+        &self,
+        idx: CommandMetric,
+        action: FutIndyRes,
+        cb: FnCb,
+    ) where
+        FutIndyRes: Future<Output = IndyResult<T>> + Send + 'static,
+        FnCb: Fn(IndyResult<T>) + Sync + Send + 'static,
+        T: Send + 'static,
     {
         let requested_time = get_cur_time();
         let metrics_service = self.metrics_service.clone();
@@ -78,9 +86,15 @@ impl InstrumentedThreadPool {
             let executed_time = get_cur_time();
             cb(res);
             let cb_finished_time = get_cur_time();
-            metrics_service.cmd_left_queue(idx, start_time - requested_time).await;
-            metrics_service.cmd_executed(idx, executed_time - start_time).await;
-            metrics_service.cmd_callback(idx, cb_finished_time - executed_time).await;
+            metrics_service
+                .cmd_left_queue(idx, start_time - requested_time)
+                .await;
+            metrics_service
+                .cmd_executed(idx, executed_time - start_time)
+                .await;
+            metrics_service
+                .cmd_callback(idx, cb_finished_time - executed_time)
+                .await;
         })
     }
 }
@@ -97,7 +111,10 @@ pub(crate) struct Locator {
     pub(crate) crypto_controller: CryptoController,
     pub(crate) config_controller: ConfigController,
     pub(crate) ledger_controller: LedgerController,
+    pub(crate) ledger2_controller: Ledger2Controller,
     pub(crate) pool_controller: PoolController,
+    pub(crate) pool2_controller: Pool2Controller,
+    pub(crate) keys_controller: KeysController,
     pub(crate) did_controller: DidController,
     pub(crate) wallet_controller: WalletController,
     pub(crate) pairwise_controller: PairwiseController,
@@ -130,8 +147,11 @@ impl Locator {
         let blob_storage_service = Arc::new(BlobStorageService::new());
         let crypto_service = Arc::new(CryptoService::new());
         let ledger_service = Arc::new(LedgerService::new());
+        let ledger2_service = Arc::new(Ledger2Service::new());
+        let keys_service = Arc::new(KeysService::new());
         let metrics_service = Arc::new(MetricsService::new());
         let pool_service = Arc::new(PoolService::new());
+        let pool2_service = Arc::new(Pool2Service::new());
         let payment_service = Arc::new(PaymentsService::new());
         let wallet_service = Arc::new(WalletService::new());
 
@@ -169,6 +189,8 @@ impl Locator {
             ledger_service.clone(),
         );
 
+        let ledger2_controller = Ledger2Controller::new(ledger2_service.clone());
+
         let payment_controller = PaymentsController::new(
             payment_service.clone(),
             wallet_service.clone(),
@@ -177,6 +199,10 @@ impl Locator {
         );
 
         let pool_controller = PoolController::new(pool_service.clone());
+
+        let pool2_controller = Pool2Controller::new(pool2_service.clone());
+
+        let keys_controller = KeysController::new(keys_service.clone());
 
         let did_controller = DidController::new(
             wallet_service.clone(),
@@ -190,7 +216,8 @@ impl Locator {
 
         let pairwise_controller = PairwiseController::new(wallet_service.clone());
         let blob_storage_controller = BlobStorageController::new(blob_storage_service.clone());
-        let metrics_controller = MetricsController::new(wallet_service.clone(), metrics_service.clone());
+        let metrics_controller =
+            MetricsController::new(wallet_service.clone(), metrics_service.clone());
         let non_secret_controller = NonSecretsController::new(wallet_service.clone());
 
         let cache_controller = CacheController::new(
@@ -207,7 +234,10 @@ impl Locator {
             crypto_controller,
             config_controller,
             ledger_controller,
+            ledger2_controller,
             pool_controller,
+            pool2_controller,
+            keys_controller,
             did_controller,
             wallet_controller,
             pairwise_controller,

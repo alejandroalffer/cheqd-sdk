@@ -65,13 +65,31 @@ num-derive = "0.2"
 convert_case = "0.3.2"
 futures = "0.3.1"
 
+[dependencies.cosmos_sdk]
+version = "0.1.1"
+features = ["rpc", "tendermint-rpc", "dev"]
+
+[dependencies.tendermint]
+version = "0.19.0"
+
+[dependencies.tendermint-rpc]
+version = "0.19"
+features = ["http-client"]
+
+[dependencies.k256]
+version = "0.7"
+features = ["ecdsa-core", "ecdsa"]
+
+[dependencies.rand_seeder]
+version = "0.2.2"
+
 [dependencies.uuid]
 version = "0.7.4"
 default-features = false
 features = ["v4"]
 
 [dependencies.ursa]
-version =  "0.3.2"
+path = "../../ursa/libursa"
 optional = true
 
 [target.'cfg(target_os = "android")'.dependencies]
