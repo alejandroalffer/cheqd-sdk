@@ -16,7 +16,8 @@ fn main() {
         println!("cargo:rerun-if-env-changed=VCPKGRS_DYNAMIC");
     }
 
-    let use_static = cfg!(any(target_os="android", target_os="ios")) || env::var("LIBINDY_STATIC").is_ok();
+    let use_static =
+        cfg!(any(target_os = "android", target_os = "ios")) || env::var("LIBINDY_STATIC").is_ok();
     let use_dir = env::var("LIBINDY_DIR").is_ok();
     let use_pkg = env::var("LIBINDY_USE_PKG_CONFIG").is_ok();
 
@@ -46,16 +47,23 @@ fn find_dir(dir_name: Option<String>, use_static: bool) {
 
 #[cfg(not(target_env = "msvc"))]
 fn find_pkg(use_static: bool) {
-    match pkg_config::Config::new().statik(use_static).probe("libindy") {
+    match pkg_config::Config::new()
+        .statik(use_static)
+        .probe("libindy")
+    {
         Ok(_) => println!("cargo:warning=Libindy found in pkgcfg tree."),
-        Err(e) => panic!(format!("Error: {:?}", e)),
+        Err(e) => panic!("Error: {:?}", e),
     }
 }
 
 #[cfg(target_env = "msvc")]
 fn find_pkg(_use_static: bool) {
-    match vcpkg::Config::new().emit_includes(true).lib_name("libindy").probe("indy") {
+    match vcpkg::Config::new()
+        .emit_includes(true)
+        .lib_name("libindy")
+        .probe("indy")
+    {
         Ok(_) => println!("cargo:warning=Libindy found in vcpkg tree."),
-        Err(e) => panic!(format!("Error: {:?}", e)),
+        Err(e) => panic!("Error: {:?}", e),
     }
 }

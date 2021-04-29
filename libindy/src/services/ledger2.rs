@@ -37,7 +37,6 @@ impl Ledger2Service {
 #[cfg(test)]
 mod test {
     use crate::services::{KeysService, Ledger2Service, Pool2Service};
-    use cosmos_sdk::Coin;
 
     #[async_std::test]
     async fn test_tx_commit_flow() {
@@ -55,18 +54,18 @@ mod test {
         println!("Bob's account id: {}", bob.account_id);
 
         let msg = ledger2_service
-            .build_msg_bank_send(&alice.account_id, &bob.account_id, 1000, "stake")
+            .build_msg_bank_send(&alice.account_id, &bob.account_id, 2, "token")
             .unwrap();
 
         let tx = pool2_service
             .build_tx(
                 &alice.pub_key,
                 vec![msg],
-                "mainnet",
+                "verimcosmos",
+                9, // What is it?
                 0,
-                0,
-                1000,
-                1000u64,
+                300000,
+                0u64,
                 "stake",
                 10000,
                 "memo",
@@ -77,10 +76,10 @@ mod test {
 
         // Broadcast
 
-        // pool2_service
-        //     .send_tx_commit("http://localhost:25565", signed)
-        //     .await
-        //     .unwrap();
+        pool2_service
+            .send_tx_commit(signed, "http://localhost:26657")
+            .await
+            .unwrap();
 
         assert!(true)
     }
