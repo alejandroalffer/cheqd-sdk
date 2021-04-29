@@ -225,7 +225,7 @@ fn compile_proto_services(out_dir: impl AsRef<Path>) {
         sdk_dir.join("proto/cosmos/bank/v1beta1/tx.proto"),
         sdk_dir.join("proto/cosmos/tx/v1beta1/service.proto"),
         sdk_dir.join("proto/cosmos/tx/v1beta1/tx.proto"),
-        // sdk_dir.join("proto/cosmos/verimcosmos/nym.proto"),
+        sdk_dir.join("proto/cosmos/verimcosmos/nym.proto"),
         // sdk_dir.join("proto/cosmos/verimcosmos/tx.proto"),
     ];
 
