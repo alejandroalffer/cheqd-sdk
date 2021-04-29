@@ -135,3 +135,12 @@ assets = [
     ["include/*.h", "usr/include/indy/", "644"],
     ["target/release/libindy.a", "usr/lib/", "644"],
 ]
+
+[build-dependencies]
+regex = "1.2.1"
+prost = "0.7"
+prost-build = "0.7"
+tonic = "0.4"
+tonic-build = "0.4"
+tempdir = "0.3"
+walkdir = "2"
