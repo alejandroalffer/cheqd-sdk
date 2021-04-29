@@ -257,21 +257,33 @@ impl From<eyre::Report> for IndyError {
     }
 }
 
+impl From<cosmos_sdk::rpc::Error> for IndyError {
+    fn from(err: cosmos_sdk::rpc::Error) -> Self {
+        err.context(IndyErrorKind::InvalidState).into()
+    }
+}
+
+impl From<cosmos_sdk::tendermint::Error> for IndyError {
+    fn from(err: cosmos_sdk::tendermint::Error) -> Self {
+        err.into()
+    }
+}
+
 impl From<k256::ecdsa::Error> for IndyError {
     fn from(err: k256::ecdsa::Error) -> Self {
         err.context(IndyErrorKind::InvalidState).into()
     }
 }
 
-impl From<tendermint::Error> for IndyError {
-    fn from(err: tendermint::Error) -> Self {
-        err.into()
+impl From<serde_json::Error> for IndyError {
+    fn from(err: serde_json::Error) -> Self {
+        err.context(IndyErrorKind::InvalidState).into()
     }
 }
 
-impl From<tendermint_rpc::Error> for IndyError {
-    fn from(err: tendermint_rpc::Error) -> Self {
-        err.into()
+impl From<surf::Error> for IndyError {
+    fn from(err: surf::Error) -> Self {
+        Self::from_msg(IndyErrorKind::InvalidState, err.into_inner().to_string())
     }
 }
 

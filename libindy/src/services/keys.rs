@@ -12,7 +12,6 @@ use indy_api_types::{
 use k256::ecdsa::signature::rand_core::OsRng;
 use k256::ecdsa::SigningKey;
 use rand::rngs::StdRng;
-use rand::{RngCore, SeedableRng};
 use rand_seeder::Seeder;
 use rust_base58::ToBase58;
 use std::collections::HashMap;
