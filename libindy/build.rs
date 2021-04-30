@@ -85,6 +85,7 @@ const COSMOS_REV: &str = "v0.42.3";
 const COSMOS_SDK_PROTO_DIR: &str = "target/prost/";
 /// Directory where the submodule is located
 const COSMOS_SDK_DIR: &str = "cosmos-sdk-go";
+const VERIMCOSMOS_SDK_DIR: &str = "verim-cosmos";
 /// A temporary directory for proto building
 const TMP_BUILD_DIR: &str = "/tmp/tmp-protobuf/";
 
@@ -115,7 +116,7 @@ pub fn build_proto() {
 
     fs::create_dir(tmp_build_dir.clone()).unwrap();
 
-    update_submodule();
+    // update_submodule();
     output_sdk_version(&tmp_build_dir);
     compile_protos(&tmp_build_dir);
     compile_proto_services(&tmp_build_dir);
@@ -147,6 +148,7 @@ fn output_sdk_version(out_dir: &Path) {
 
 fn compile_protos(out_dir: &Path) {
     let sdk_dir = Path::new(COSMOS_SDK_DIR);
+    let verimcosmos_dir = Path::new(VERIMCOSMOS_SDK_DIR);
 
     println!(
         "[info] Compiling .proto files to Rust into '{}'...",
@@ -163,11 +165,13 @@ fn compile_protos(out_dir: &Path) {
         format!("{}/proto/cosmos/bank", sdk_dir.display()),
         format!("{}/proto/cosmos/base", sdk_dir.display()),
         format!("{}/proto/cosmos/staking", sdk_dir.display()),
+        format!("{}/proto/verimcosmos", verimcosmos_dir.display()),
     ];
 
     let proto_includes_paths = [
-        format!("{}/../proto", root),
+        // format!("{}/../proto", root),
         format!("{}/proto", sdk_dir.display()),
+        format!("{}/proto", verimcosmos_dir.display()),
         format!("{}/third_party/proto", sdk_dir.display()),
     ];
 
@@ -225,7 +229,7 @@ fn compile_proto_services(out_dir: impl AsRef<Path>) {
         sdk_dir.join("proto/cosmos/bank/v1beta1/tx.proto"),
         sdk_dir.join("proto/cosmos/tx/v1beta1/service.proto"),
         sdk_dir.join("proto/cosmos/tx/v1beta1/tx.proto"),
-        sdk_dir.join("proto/cosmos/verimcosmos/nym.proto"),
+        // sdk_dir.join("proto/cosmos/verimcosmos/nym.proto"),
         // sdk_dir.join("proto/cosmos/verimcosmos/tx.proto"),
     ];
 
