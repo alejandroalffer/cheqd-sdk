@@ -18,8 +18,8 @@ pub mod verimid {
     }
 }
 
-impl MsgProto for verimid::verimcosmos::verimcosmos::Nym {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.Nym";
+impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNym {
+    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgCreateNym";
 }
 
 pub mod cosmos {
@@ -72,9 +72,8 @@ impl Ledger2Service {
         role: &str,
         from: &str,
     ) -> IndyResult<Msg> {
-        let msg_send = verimid::verimcosmos::verimcosmos::Nym {
+        let msg_send = verimid::verimcosmos::verimcosmos::MsgCreateNym {
             creator: from.to_string(),
-            id: 0,
             alias: alias.to_string(),
             verkey: verkey.to_string(),
             did: did.to_string(),
@@ -111,6 +110,7 @@ impl Ledger2Service {
 mod test {
     use crate::services::{KeysService, Ledger2Service, Pool2Service};
     use cosmos_sdk::crypto::secp256k1::SigningKey;
+    use rust_base58::ToBase58;
 
     #[async_std::test]
     async fn test_tx_commit_flow() {
@@ -172,9 +172,8 @@ mod test {
 
         println!("Alice's account id: {}", alice.account_id);
         println!("Bob's account id: {}", bob.account_id);
-
         let msg = ledger2_service
-            .build_msg_create_nym("alias", "verkey", "did", "role", alice.alias.as_str())
+            .build_msg_create_nym("alias", "verkey", "did", "role", &*alice.account_id)
             .unwrap();
 
         let tx = pool2_service
