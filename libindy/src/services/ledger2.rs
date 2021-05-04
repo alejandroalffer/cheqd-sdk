@@ -1,6 +1,7 @@
 //! Ledger service for Cosmos back-end
 
 use cosmos_sdk::bank::MsgSend;
+use cosmos_sdk::rpc;
 use cosmos_sdk::tx::{Msg, MsgType};
 use cosmos_sdk::Coin;
 use indy_api_types::errors::IndyResult;
@@ -18,7 +19,7 @@ impl Ledger2Service {
         recipient_account_id: &str,
         amount: u64,
         denom: &str,
-    ) -> IndyResult<Msg> {
+    ) -> IndyResult<Vec<u8>> {
         let amount = Coin {
             amount: amount.into(),
             denom: denom.parse()?,
@@ -30,9 +31,32 @@ impl Ledger2Service {
             amount: vec![amount.clone()],
         };
 
-        Ok(msg_send.to_msg()?)
+        // TODO: Change result to bytes vec
+        Ok(msg_send.to_msg().into_by?)
+    }
+
+    pub fn build_query_account(&self, account_id: &str) -> IndyResult<(String, Vec<u8>)> {
+        let path = "".to_owned();
+
+        let query = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest {
+            address: account_id.to_string(),
+        };
+
+
+
+        prost::Message::encode()
+
+        fn to_bytes(&self) -> Result<Vec<u8>> {
+            let mut bytes = Vec::new();
+            prost::Message::encode(self, &mut bytes)?;
+            Ok(bytes)
+        }
+
+            (path, query)
     }
 }
+
+pub trait
 
 #[cfg(test)]
 mod test {
@@ -77,7 +101,7 @@ mod test {
         // Broadcast
 
         pool2_service
-            .send_tx_commit(signed, "http://localhost:26657")
+            .broadcast_tx_commit(signed, "http://localhost:26657")
             .await
             .unwrap();
 
