@@ -1,11 +1,38 @@
 //! Ledger service for Cosmos back-end
 
 use cosmos_sdk::bank::MsgSend;
-use cosmos_sdk::tx::{Msg, MsgType};
+use cosmos_sdk::tx::{Msg, MsgProto, MsgType};
 use cosmos_sdk::Coin;
-use indy_api_types::errors::{IndyResult, IndyErrorKind};
+use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
-include!(concat!(env!("OUT_DIR"), "/prost"));
+
+pub mod verimid {
+    pub mod verimcosmos {
+        pub mod verimcosmos {
+            include!(concat!(
+                env!("OUT_DIR"),
+                "/prost/verimid.verimcosmos.verimcosmos.rs"
+            ));
+        }
+    }
+}
+
+impl MsgProto for verimid::verimcosmos::verimcosmos::Nym {
+    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.Nym";
+}
+
+pub mod cosmos {
+    pub mod base {
+        pub mod query {
+            pub mod v1beta1 {
+                include!(concat!(
+                    env!("OUT_DIR"),
+                    "/prost/cosmos.base.query.v1beta1.rs"
+                ));
+            }
+        }
+    }
+}
 
 pub struct Ledger2Service {}
 
@@ -43,8 +70,7 @@ impl Ledger2Service {
         role: &str,
         from: &str,
     ) -> IndyResult<Msg> {
-
-        let msg_send = Nym {
+        let msg_send = verimid::verimcosmos::verimcosmos::Nym {
             creator: from.to_string(),
             id: 0,
             alias: alias.to_string(),
@@ -56,8 +82,6 @@ impl Ledger2Service {
         Ok(msg_send.to_msg()?)
     }
 }
-
-
 
 #[cfg(test)]
 mod test {
@@ -109,7 +133,7 @@ mod test {
 
         assert!(true)
     }
-    
+
     #[async_std::test]
     async fn test_create_nym_flow() {
         let ledger2_service = Ledger2Service::new();
@@ -139,7 +163,7 @@ mod test {
                 300000,
                 0u64,
                 "stake",
-                3909860,
+                39090,
                 "memo",
             )
             .unwrap();
