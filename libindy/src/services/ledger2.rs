@@ -5,6 +5,7 @@ use cosmos_sdk::tx::{Msg, MsgType};
 use cosmos_sdk::Coin;
 use indy_api_types::errors::{IndyResult, IndyErrorKind};
 use indy_api_types::IndyError;
+include!(concat!(env!("OUT_DIR"), "/prost"));
 
 pub struct Ledger2Service {}
 
@@ -108,50 +109,50 @@ mod test {
 
         assert!(true)
     }
-    //
-    // #[async_std::test]
-    // async fn test_create_nym_flow() {
-    //     let ledger2_service = Ledger2Service::new();
-    //     let pool2_service = Pool2Service::new();
-    //     let keys_service = KeysService::new();
-    //
-    //     let alice = keys_service
-    //         .add_from_mnemonic("alice", "alice")
-    //         .await
-    //         .unwrap();
-    //     let bob = keys_service.add_from_mnemonic("bob", "bob").await.unwrap();
-    //
-    //     println!("Alice's account id: {}", alice.account_id);
-    //     println!("Bob's account id: {}", bob.account_id);
-    //
-    //     let msg = ledger2_service
-    //         .build_msg_create_nym("alias", "verkey", "did", "role", alice.alias.as_str())
-    //         .unwrap();
-    //
-    //     let tx = pool2_service
-    //         .build_tx(
-    //             &alice.pub_key,
-    //             vec![msg],
-    //             "verimcosmos",
-    //             9, // What is it?
-    //             0,
-    //             300000,
-    //             0u64,
-    //             "stake",
-    //             3909860,
-    //             "memo",
-    //         )
-    //         .unwrap();
-    //
-    //     let signed = keys_service.sign("alice", tx).await.unwrap();
-    //
-    //     // Broadcast
-    //
-    //     pool2_service
-    //         .send_tx_commit(signed, "http://localhost:26657")
-    //         .await
-    //         .unwrap();
-    //
-    //     assert!(true)
-    // }
+    
+    #[async_std::test]
+    async fn test_create_nym_flow() {
+        let ledger2_service = Ledger2Service::new();
+        let pool2_service = Pool2Service::new();
+        let keys_service = KeysService::new();
+
+        let alice = keys_service
+            .add_from_mnemonic("alice", "alice")
+            .await
+            .unwrap();
+        let bob = keys_service.add_from_mnemonic("bob", "bob").await.unwrap();
+
+        println!("Alice's account id: {}", alice.account_id);
+        println!("Bob's account id: {}", bob.account_id);
+
+        let msg = ledger2_service
+            .build_msg_create_nym("alias", "verkey", "did", "role", alice.alias.as_str())
+            .unwrap();
+
+        let tx = pool2_service
+            .build_tx(
+                &alice.pub_key,
+                vec![msg],
+                "verimcosmos",
+                9, // What is it?
+                0,
+                300000,
+                0u64,
+                "stake",
+                3909860,
+                "memo",
+            )
+            .unwrap();
+
+        let signed = keys_service.sign("alice", tx).await.unwrap();
+
+        // Broadcast
+
+        pool2_service
+            .send_tx_commit(signed, "http://localhost:26657")
+            .await
+            .unwrap();
+
+        assert!(true)
+    }
 }

@@ -81,8 +81,7 @@ const COSMOS_REV: &str = "v0.42.3";
 // All paths must end with a / and either be absolute or include a ./ to reference the current
 // working directory.
 
-/// The directory generated proto files go into in this repo
-const COSMOS_SDK_PROTO_DIR: &str = "target/prost/";
+
 /// Directory where the submodule is located
 const COSMOS_SDK_DIR: &str = "cosmos-sdk-go";
 const VERIMCOSMOS_SDK_DIR: &str = "verim-cosmos";
@@ -108,6 +107,8 @@ const GRPC_CLIENT_ATTRIBUTES: &[&str] = &[
 
 pub fn build_proto() {
     let tmp_build_dir: PathBuf = TMP_BUILD_DIR.parse().unwrap();
+    /// The directory generated proto files go into in this repo
+    let COSMOS_SDK_PROTO_DIR: String = format!( "{}/prost", std::env::var("OUT_DIR").unwrap());
     let proto_dir: PathBuf = COSMOS_SDK_PROTO_DIR.parse().unwrap();
 
     if tmp_build_dir.exists() {
@@ -229,7 +230,7 @@ fn compile_proto_services(out_dir: impl AsRef<Path>) {
         sdk_dir.join("proto/cosmos/bank/v1beta1/tx.proto"),
         sdk_dir.join("proto/cosmos/tx/v1beta1/service.proto"),
         sdk_dir.join("proto/cosmos/tx/v1beta1/tx.proto"),
-        // sdk_dir.join("proto/cosmos/verimcosmos/nym.proto"),
+        // sdk_dir.join("proto/verimcosmos/nym.proto"),
         // sdk_dir.join("proto/cosmos/verimcosmos/tx.proto"),
     ];
 
