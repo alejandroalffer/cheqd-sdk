@@ -2,6 +2,7 @@
 
 use cosmos_sdk::bank::MsgSend;
 use cosmos_sdk::rpc;
+use cosmos_sdk::rpc::endpoint::abci_query;
 use cosmos_sdk::tx::{Msg, MsgProto, MsgType};
 use cosmos_sdk::Coin;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
@@ -14,6 +15,8 @@ use serde::de::DeserializeOwned;
 use serde_json::{self, Value};
 use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 use crate::domain::crypto::did::DidValue;
+use prost::Message;
+use std::str::FromStr;
 
 pub mod verimid {
     pub mod verimcosmos {
@@ -92,25 +95,34 @@ impl Ledger2Service {
         Ok(msg_send.to_msg()?)
     }
 
-    // pub fn build_query_account(&self, account_id: &str) -> IndyResult<(String, Vec<u8>)> {
-    //     let path = "".to_owned();
-    //
-    //     let query = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest {
-    //         address: account_id.to_string(),
-    //     };
-    //
-    //
-    //
-    //     prost::Message::encode()
-    //
-    //     fn to_bytes(&self) -> Result<Vec<u8>> {
-    //         let mut bytes = Vec::new();
-    //         prost::Message::encode(self, &mut bytes)?;
-    //         Ok(bytes)
-    //     }
-    //
-    //         (path, query)
-    // }
+    pub fn build_query_cosmos_account(&self, address: &str) -> IndyResult<abci_query::Request> {
+        let path = "/cosmos.auth.v1beta1.Query/Account";
+        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+
+        let data = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest {
+            address: address.to_string(),
+        };
+
+        let mut data_bytes = Vec::new();
+        data.encode(&mut data_bytes).unwrap(); // TODO
+
+        let req = abci_query::Request::new(Some(path), data_bytes, None, false);
+        Ok(req)
+    }
+
+    pub fn build_query_verimcosmos_list_nym(&self) -> IndyResult<abci_query::Request> {
+        let path = format!("custom/verimcosmos/list-nym");
+        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let req = abci_query::Request::new(Some(path), Vec::new(), None, false);
+        Ok(req)
+    }
+
+    pub fn build_query_verimcosmos_get_nym(&self, id: &str) -> IndyResult<abci_query::Request> {
+        let path = format!("custom/verimcosmos/get-nym/{}", id);
+        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let req = abci_query::Request::new(Some(path), Vec::new(), None, false);
+        Ok(req)
+    }
 }
 
 // pub trait
@@ -119,10 +131,11 @@ impl Ledger2Service {
 mod test {
     use crate::services::{KeysService, Ledger2Service, Pool2Service};
     use cosmos_sdk::crypto::secp256k1::SigningKey;
+    use prost::Message;
     use rust_base58::ToBase58;
 
     #[async_std::test]
-    async fn test_tx_commit_flow() {
+    async fn test_msg_bank_send() {
         let ledger2_service = Ledger2Service::new();
         let pool2_service = Pool2Service::new();
         let keys_service = KeysService::new();
@@ -168,7 +181,7 @@ mod test {
     }
 
     #[async_std::test]
-    async fn test_create_nym_flow() {
+    async fn test_msg_create_nym() {
         let ledger2_service = Ledger2Service::new();
         let pool2_service = Pool2Service::new();
         let keys_service = KeysService::new();
@@ -182,7 +195,7 @@ mod test {
         println!("Alice's account id: {}", alice.account_id);
         println!("Bob's account id: {}", bob.account_id);
         let msg = ledger2_service
-            .build_msg_create_nym("alias", "verkey", "did", "role", &*alice.account_id)
+            .build_msg_create_nym("alias2", "verkey", "did", "role", &*alice.account_id)
             .unwrap();
 
         let tx = pool2_service
@@ -191,7 +204,7 @@ mod test {
                 vec![msg],
                 "verimcosmos",
                 9, // What is it?
-                0,
+                2,
                 300000,
                 0u64,
                 "stake",
@@ -210,5 +223,61 @@ mod test {
             .unwrap();
 
         assert!(true)
+    }
+
+    #[async_std::test]
+    async fn test_query_list_nym() {
+        let ledger2_service = Ledger2Service::new();
+        let pool2_service = Pool2Service::new();
+        let keys_service = KeysService::new();
+
+        let req = ledger2_service.build_query_verimcosmos_list_nym().unwrap();
+
+        let result = pool2_service
+            .abci_query("http://localhost:26657", req)
+            .await
+            .unwrap();
+
+        let inner = result.response.value;
+
+        let decoded =
+            super::verimid::verimcosmos::verimcosmos::QueryAllNymResponse::decode(inner.as_slice())
+                .unwrap();
+
+        // QueryAllNymResponse
+
+        println!("{:?}", decoded);
+    }
+
+    #[async_std::test]
+    async fn test_query_account() {
+        let ledger2_service = Ledger2Service::new();
+        let pool2_service = Pool2Service::new();
+        let keys_service = KeysService::new();
+
+        let req = ledger2_service
+            .build_query_cosmos_account("cosmos17gt4any4r9jgg06r47f83vfxrycdk67utjs36m")
+            .unwrap();
+
+        let result = pool2_service
+            .abci_query("http://localhost:26657", req)
+            .await
+            .unwrap();
+
+        let inner = result.response.value;
+
+        let decoded = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountResponse::decode(
+            inner.as_slice(),
+        )
+        .unwrap();
+
+        let decoded = cosmos_sdk::proto::cosmos::auth::v1beta1::BaseAccount::decode(
+            decoded.account.unwrap().value.as_slice(),
+        )
+        .unwrap();
+
+        // QueryAllNymResponse
+
+        println!("{:?}", decoded);
     }
 }
