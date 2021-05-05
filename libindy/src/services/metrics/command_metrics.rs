@@ -118,6 +118,9 @@ pub enum CommandMetric {
     LedgerCommandBuildGetAcceptanceMechanismsRequest,
     LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest,
     LedgerCommandAppendRequestEndorser,
+    // Ledger2
+    Ledger2CommandBuildMsgBankSend,
+    Ledger2CommandBuildMsgCreateNym,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,

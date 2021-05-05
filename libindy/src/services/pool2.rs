@@ -61,7 +61,7 @@ impl Pool2Service {
     }
 
     // Send and wait for commit
-    pub async fn send_tx_commit(
+    pub async fn broadcast_tx_commit(
         &self,
         tx: Raw,
         rpc_address: &str,
@@ -94,6 +94,21 @@ impl Pool2Service {
 
         Ok(resp)
         // TODO: Commit proof
+        // TODO: Error handling
+        // TODO: Return?
+    }
+
+    pub async fn abci_query(
+        &self,
+        rpc_address: &str,
+        path: &str,
+        query: Vec<u8>,
+    ) -> IndyResult<rpc::endpoint::abci_query::Response> {
+        let req = rpc::endpoint::abci_query::Request::new(Some(path.parse()?), query, None, true); // TODO: Height, optional path
+        let resp = self.send_req(req, rpc_address).await?;
+
+        Ok(resp)
+        // TODO: State proof
         // TODO: Error handling
         // TODO: Return?
     }
