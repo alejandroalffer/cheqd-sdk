@@ -2,6 +2,8 @@
 
 use crate::services::{Ledger2Service, Pool2Service, KeysService};
 use async_std::sync::Arc;
+use crate::domain::crypto::did::DidValue;
+use indy_api_types::errors::IndyResult;
 
 pub(crate) struct Ledger2Controller {
     ledger2_service: Arc<Ledger2Service>,
@@ -74,7 +76,45 @@ impl Ledger2Controller {
         unimplemented!()
     }
     pub fn build_msg_create_nym(&self) {
-        unimplemented!()
+        ledger2_service
+            .build_msg_create_nym("alias", "verkey", "did", "role", &*alice.account_id)
+            .unwrap();
     }
+
+
+    pub(crate) async fn build_nym_request(
+        &self,
+        submitter_did: DidValue,
+        target_did: DidValue,
+        verkey: Option<String>,
+        alias: Option<String>,
+        role: Option<String>,
+    ) -> IndyResult<String> {
+        debug!(
+            "build_nym_request > submitter_did {:?} \
+                target_did {:?} verkey {:?} alias {:?} role {:?}",
+            submitter_did, target_did, verkey, alias, role
+        );
+
+        self.crypto_service.validate_did(&submitter_did)?;
+        self.crypto_service.validate_did(&target_did)?;
+
+        if let Some(ref vk) = verkey {
+            self.crypto_service.validate_key(vk).await?;
+        }
+
+        let res = self.ledger_service2.build_msg_create_nym(
+            &submitter_did,
+            &target_did,
+            verkey.as_deref(),
+            alias.as_deref(),
+            role.as_deref(),
+        )?;
+
+        let res = Ok(res);
+        debug!("build_nym_request < {:?}", res);
+        res
+    }
+
 
 }

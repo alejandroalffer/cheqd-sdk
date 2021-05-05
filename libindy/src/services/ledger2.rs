@@ -6,6 +6,14 @@ use cosmos_sdk::tx::{Msg, MsgProto, MsgType};
 use cosmos_sdk::Coin;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
+use hex::FromHex;
+use indy_api_types::errors::prelude::*;
+use indy_utils::crypto::hash::hash as openssl_hash;
+use log_derive::logfn;
+use serde::de::DeserializeOwned;
+use serde_json::{self, Value};
+use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
+use crate::domain::crypto::did::DidValue;
 
 pub mod verimid {
     pub mod verimcosmos {
@@ -35,14 +43,15 @@ pub mod cosmos {
     }
 }
 
-pub struct Ledger2Service {}
+pub(crate) struct Ledger2Service {}
 
 impl Ledger2Service {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {}
     }
 
-    pub fn build_msg_bank_send(
+    #[logfn(Info)]
+    pub(crate) fn build_msg_bank_send(
         &self,
         sender_account_id: &str,
         recipient_account_id: &str,
@@ -64,20 +73,20 @@ impl Ledger2Service {
         Ok(msg_send.to_msg()?)
     }
 
-    pub fn build_msg_create_nym(
+    #[logfn(Info)]
+    pub(crate) fn build_msg_create_nym(
         &self,
-        alias: &str,
+        did: &DidValue,
+        creator: &str,
         verkey: &str,
-        did: &str,
-        role: &str,
-        from: &str,
+        alias: &str
     ) -> IndyResult<Msg> {
         let msg_send = verimid::verimcosmos::verimcosmos::MsgCreateNym {
-            creator: from.to_string(),
+            creator: creator.to_string(),
             alias: alias.to_string(),
             verkey: verkey.to_string(),
             did: did.to_string(),
-            role: role.to_string(),
+            role: None,
         };
 
         Ok(msg_send.to_msg()?)

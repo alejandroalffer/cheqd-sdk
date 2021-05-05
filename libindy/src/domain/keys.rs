@@ -1,3 +1,4 @@
+#[derive(Serialize, Deserialize, Debug)]
 pub struct KeyInfo {
     pub alias: String,
     pub account_id: String,
