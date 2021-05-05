@@ -27,4 +27,12 @@ impl Ledger2Controller {
     pub fn build_x_request(&self) {
         unimplemented!()
     }
+
+    pub fn build_msg_bank_send(&self) {
+        unimplemented!()
+    }
+    pub fn build_msg_create_nym(&self) {
+        unimplemented!()
+    }
+
 }
