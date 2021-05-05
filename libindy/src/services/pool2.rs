@@ -101,12 +101,9 @@ impl Pool2Service {
     pub async fn abci_query(
         &self,
         rpc_address: &str,
-        path: &str,
-        query: Vec<u8>,
+        req: rpc::endpoint::abci_query::Request,
     ) -> IndyResult<rpc::endpoint::abci_query::Response> {
-        let req = rpc::endpoint::abci_query::Request::new(Some(path.parse()?), query, None, true); // TODO: Height, optional path
         let resp = self.send_req(req, rpc_address).await?;
-
         Ok(resp)
         // TODO: State proof
         // TODO: Error handling
