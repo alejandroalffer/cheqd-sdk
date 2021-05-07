@@ -5,6 +5,7 @@ use async_std::sync::Arc;
 use indy_api_types::errors::IndyResult;
 use crate::domain::keys::KeyInfo;
 use indy_api_types::IndyError;
+use cosmos_sdk::tx::{Raw, SignDoc};
 
 pub(crate) struct KeysController {
     keys_service: Arc<KeysService>,

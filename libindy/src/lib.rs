@@ -189,7 +189,10 @@ impl Locator {
             ledger_service.clone(),
         );
 
-        let ledger2_controller = Ledger2Controller::new(ledger2_service.clone());
+        let ledger2_controller = Ledger2Controller::new(
+            ledger2_service.clone(),
+            pool2_service.clone(),
+            keys_service.clone());
 
         let payment_controller = PaymentsController::new(
             payment_service.clone(),
@@ -200,7 +203,9 @@ impl Locator {
 
         let pool_controller = PoolController::new(pool_service.clone());
 
-        let pool2_controller = Pool2Controller::new(pool2_service.clone());
+        let pool2_controller = Pool2Controller::new(
+            pool2_service.clone(),
+            keys_service.clone());
 
         let keys_controller = KeysController::new(keys_service.clone());
 

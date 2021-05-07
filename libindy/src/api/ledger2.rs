@@ -1,4 +1,4 @@
-use indy_api_types::{CommandHandle, ErrorCode, WalletHandle};
+/*use indy_api_types::{CommandHandle, ErrorCode, WalletHandle};
 use indy_api_types::errors::prelude::*;
 use crate::services::{Ledger2Service, CommandMetric};
 use std::os::raw::c_char;
@@ -22,12 +22,11 @@ pub extern "C" fn indy_build_msg_bank_send(
     debug!("indy_build_msg_bank_send: >>> sender_account_id: {:?}, recipient_account_id: {:?}, amount: {:?}, denom: {:?}",
            sender_account_id, recipient_account_id, amount, denom);
 
-    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
-    check_useful_c_str!(sender_account_id, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(recipient_account_id, ErrorCode::CommonInvalidParam4);
-    check_useful_opt_u64!(amount, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(denom, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(sender_account_id, ErrorCode::CommonInvalidParam1);
+    check_useful_c_str!(recipient_account_id, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_u64!(amount, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(denom, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     debug!("indy_build_msg_bank_send: >>> sender_account_id: {:?}, recipient_account_id: {:?}, amount: {:?}, denom: {:?}",
            sender_account_id, recipient_account_id, amount, denom);
@@ -123,3 +122,4 @@ pub extern "C" fn indy_build_nym_request(
     res
 }
 
+*/

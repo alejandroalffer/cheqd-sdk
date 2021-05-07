@@ -79,7 +79,7 @@ impl Ledger2Service {
     #[logfn(Info)]
     pub(crate) fn build_msg_create_nym(
         &self,
-        did: &DidValue,
+        did: &str,
         creator: &str,
         verkey: &str,
         alias: &str
@@ -89,7 +89,7 @@ impl Ledger2Service {
             alias: alias.to_string(),
             verkey: verkey.to_string(),
             did: did.to_string(),
-            role: None,
+            role: "role".to_string(),
         };
 
         Ok(msg_send.to_msg()?)
@@ -133,6 +133,7 @@ mod test {
     use cosmos_sdk::crypto::secp256k1::SigningKey;
     use prost::Message;
     use rust_base58::ToBase58;
+    use crate::domain::crypto::did::DidValue;
 
     #[async_std::test]
     async fn test_msg_bank_send() {
@@ -195,19 +196,19 @@ mod test {
         println!("Alice's account id: {}", alice.account_id);
         println!("Bob's account id: {}", bob.account_id);
         let msg = ledger2_service
-            .build_msg_create_nym("alias2", "verkey", "did", "role", &*alice.account_id)
+            .build_msg_create_nym("did", &*alice.account_id, "verkey", "bob")
             .unwrap();
 
         let tx = pool2_service
             .build_tx(
                 &alice.pub_key,
                 vec![msg],
-                "verimcosmos",
-                9, // What is it?
-                2,
+                "verim-cosmos-chain",
+                11,
+                0,
                 300000,
-                0u64,
-                "stake",
+                300000u64,
+                "token",
                 39090,
                 "memo",
             )
