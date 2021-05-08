@@ -1,21 +1,27 @@
 //! Ledger service for Cosmos back-end
 
-use crate::services::{Ledger2Service, Pool2Service, KeysService};
-use async_std::sync::Arc;
 use crate::domain::crypto::did::DidValue;
+use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
+use async_std::sync::Arc;
 use indy_api_types::errors::IndyResult;
 
-pub(crate) struct Ledger2Controller {
-    ledger2_service: Arc<Ledger2Service>,
-    pool2_service: Arc<Pool2Service>,
-    keys_service: Arc<KeysService>
+pub(crate) struct VerimLedgerController {
+    ledger2_service: Arc<VerimLedgerService>,
+    pool2_service: Arc<CosmosPoolService>,
+    keys_service: Arc<CosmosKeysService>,
 }
 
-impl Ledger2Controller {
-    pub(crate) fn new(ledger2_service: Arc<Ledger2Service>,
-                      pool2_service: Arc<Pool2Service>,
-                      keys_service: Arc<KeysService>) -> Self {
-        Self { ledger2_service, pool2_service, keys_service }
+impl VerimLedgerController {
+    pub(crate) fn new(
+        ledger2_service: Arc<VerimLedgerService>,
+        pool2_service: Arc<CosmosPoolService>,
+        keys_service: Arc<CosmosKeysService>,
+    ) -> Self {
+        Self {
+            ledger2_service,
+            pool2_service,
+            keys_service,
+        }
     }
 
     // pub fn sign_request(&self) {
@@ -113,6 +119,4 @@ impl Ledger2Controller {
     //     debug!("build_nym_request < {:?}", res);
     //     res
     // }
-
-
 }

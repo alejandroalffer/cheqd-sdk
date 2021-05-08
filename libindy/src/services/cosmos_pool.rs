@@ -9,9 +9,9 @@ use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
 use std::convert::TryInto;
 
-pub struct Pool2Service {}
+pub struct CosmosPoolService {}
 
-impl Pool2Service {
+impl CosmosPoolService {
     pub fn new() -> Self {
         Self {}
     }

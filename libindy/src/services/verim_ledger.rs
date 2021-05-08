@@ -1,22 +1,22 @@
 //! Ledger service for Cosmos back-end
 
+use crate::domain::crypto::did::DidValue;
 use cosmos_sdk::bank::MsgSend;
 use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::endpoint::abci_query;
 use cosmos_sdk::tx::{Msg, MsgProto, MsgType};
 use cosmos_sdk::Coin;
-use indy_api_types::errors::{IndyErrorKind, IndyResult};
-use indy_api_types::IndyError;
 use hex::FromHex;
 use indy_api_types::errors::prelude::*;
+use indy_api_types::errors::{IndyErrorKind, IndyResult};
+use indy_api_types::IndyError;
 use indy_utils::crypto::hash::hash as openssl_hash;
 use log_derive::logfn;
+use prost::Message;
 use serde::de::DeserializeOwned;
 use serde_json::{self, Value};
-use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
-use crate::domain::crypto::did::DidValue;
-use prost::Message;
 use std::str::FromStr;
+use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 
 pub mod verimid {
     pub mod verimcosmos {
@@ -46,9 +46,9 @@ pub mod cosmos {
     }
 }
 
-pub(crate) struct Ledger2Service {}
+pub(crate) struct VerimLedgerService {}
 
-impl Ledger2Service {
+impl VerimLedgerService {
     pub(crate) fn new() -> Self {
         Self {}
     }
@@ -82,7 +82,7 @@ impl Ledger2Service {
         did: &str,
         creator: &str,
         verkey: &str,
-        alias: &str
+        alias: &str,
     ) -> IndyResult<Msg> {
         let msg_send = verimid::verimcosmos::verimcosmos::MsgCreateNym {
             creator: creator.to_string(),
@@ -129,17 +129,17 @@ impl Ledger2Service {
 
 #[cfg(test)]
 mod test {
-    use crate::services::{KeysService, Ledger2Service, Pool2Service};
+    use crate::domain::crypto::did::DidValue;
+    use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
     use cosmos_sdk::crypto::secp256k1::SigningKey;
     use prost::Message;
     use rust_base58::ToBase58;
-    use crate::domain::crypto::did::DidValue;
 
     #[async_std::test]
     async fn test_msg_bank_send() {
-        let ledger2_service = Ledger2Service::new();
-        let pool2_service = Pool2Service::new();
-        let keys_service = KeysService::new();
+        let ledger2_service = VerimLedgerService::new();
+        let pool2_service = CosmosPoolService::new();
+        let keys_service = CosmosKeysService::new();
 
         let alice = keys_service
             .add_from_mnemonic("alice", "alice")
@@ -183,9 +183,9 @@ mod test {
 
     #[async_std::test]
     async fn test_msg_create_nym() {
-        let ledger2_service = Ledger2Service::new();
-        let pool2_service = Pool2Service::new();
-        let keys_service = KeysService::new();
+        let ledger2_service = VerimLedgerService::new();
+        let pool2_service = CosmosPoolService::new();
+        let keys_service = CosmosKeysService::new();
 
         let alice = keys_service
             .add_from_mnemonic("alice", "alice")
@@ -228,9 +228,9 @@ mod test {
 
     #[async_std::test]
     async fn test_query_list_nym() {
-        let ledger2_service = Ledger2Service::new();
-        let pool2_service = Pool2Service::new();
-        let keys_service = KeysService::new();
+        let ledger2_service = VerimLedgerService::new();
+        let pool2_service = CosmosPoolService::new();
+        let keys_service = CosmosKeysService::new();
 
         let req = ledger2_service.build_query_verimcosmos_list_nym().unwrap();
 
@@ -252,9 +252,9 @@ mod test {
 
     #[async_std::test]
     async fn test_query_account() {
-        let ledger2_service = Ledger2Service::new();
-        let pool2_service = Pool2Service::new();
-        let keys_service = KeysService::new();
+        let ledger2_service = VerimLedgerService::new();
+        let pool2_service = CosmosPoolService::new();
+        let keys_service = CosmosKeysService::new();
 
         let req = ledger2_service
             .build_query_cosmos_account("cosmos17gt4any4r9jgg06r47f83vfxrycdk67utjs36m")

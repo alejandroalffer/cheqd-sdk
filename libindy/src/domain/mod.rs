@@ -1,11 +1,11 @@
 pub mod anoncreds;
 pub mod cache;
+pub mod cosmos_keys;
+pub mod cosmos_pool;
 pub mod crypto;
-pub mod keys;
 pub mod ledger;
 pub mod pairwise;
 pub mod pool;
-pub mod pool2;
 
 use indy_api_types::validation::Validatable;
 

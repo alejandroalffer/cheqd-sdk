@@ -1,30 +1,30 @@
 //! Cosmos pool management service
 
-use crate::services::{Pool2Service, KeysService};
+use crate::services::{CosmosKeysService, CosmosPoolService};
 use async_std::sync::Arc;
-use indy_api_types::errors::IndyResult;
-use cosmos_sdk::tx::Msg;
 use cosmos_sdk::rpc;
+use cosmos_sdk::tx::Msg;
+use indy_api_types::errors::IndyResult;
 
-pub(crate) struct Pool2Controller {
-    pool2_service: Arc<Pool2Service>,
-    keys_service: Arc<KeysService>,
-    pool_url: String
+pub(crate) struct CosmosPoolController {
+    pool2_service: Arc<CosmosPoolService>,
+    keys_service: Arc<CosmosKeysService>,
+    pool_url: String,
 }
 
-impl Pool2Controller {
-    pub(crate) fn new(pool2_service: Arc<Pool2Service>, keys_service: Arc<KeysService>) -> Self {
+impl CosmosPoolController {
+    pub(crate) fn new(
+        pool2_service: Arc<CosmosPoolService>,
+        keys_service: Arc<CosmosKeysService>,
+    ) -> Self {
         Self {
             pool2_service,
             keys_service,
-            pool_url: String::new()
+            pool_url: String::new(),
         }
     }
 
-    pub(crate) async fn set_pool(
-        &mut self,
-        pool_url: &str
-    ) -> IndyResult<()> {
+    pub(crate) async fn set_pool(&mut self, pool_url: &str) -> IndyResult<()> {
         self.pool_url = String::from(pool_url);
         Ok(())
     }
@@ -35,12 +35,10 @@ impl Pool2Controller {
     //     pub_key: &str,
     //     msg: &Msg,
     //     pool_url: &str,
-    // ) -> IndyResult<IndyResult<rpc::endpoint::broadcast::tx_commit::Response> > {
-    //     trace!(
-    //         "build_sign_broadcast_tx_commit > alias {:?}",
-    //         alias
-    //     );
-    //     let tx = self.pool2_service
+    // ) -> IndyResult<IndyResult<rpc::endpoint::broadcast::tx_commit::Response>> {
+    //     trace!("build_sign_broadcast_tx_commit > alias {:?}", alias);
+    //     let tx = self
+    //         .pool2_service
     //         .build_tx(
     //             pub_key,
     //             vec![msg],
@@ -58,12 +56,12 @@ impl Pool2Controller {
     //     let signed = self.keys_service.sign(alias, tx).await.unwrap();
     //
     //     // Broadcast
-    //     let res = self.pool2_service
+    //     let res = self
+    //         .pool2_service
     //         // .broadcast_tx_commit(signed, "http://localhost:26657")
     //         .broadcast_tx_commit(signed, pool_url)
     //         .await;
     //     trace!("build_sign_broadcast_tx_commit < {:?}", res);
     //     res
     // }
-
 }

@@ -1,6 +1,6 @@
 //! Service to manage Cosmos keys
 
-use crate::domain::keys::KeyInfo;
+use crate::domain::cosmos_keys::KeyInfo;
 use cosmos_sdk::crypto::secp256k1::signing_key::Secp256k1Signer;
 use cosmos_sdk::crypto::secp256k1::SigningKey as CosmosSigningKey;
 use cosmos_sdk::tx::{Raw, SignDoc};
@@ -16,12 +16,12 @@ use rand_seeder::Seeder;
 use rust_base58::ToBase58;
 use std::collections::HashMap;
 
-pub struct KeysService {
-    // key alias -> ECDSA/secp256k1 signing key bytes
+pub struct CosmosKeysService {
+    // key alias -> SEC1-encoded secp256k1 ECDSA private key
     keys: MutexF<HashMap<String, Vec<u8>>>,
 }
 
-impl KeysService {
+impl CosmosKeysService {
     pub fn new() -> Self {
         Self {
             keys: MutexF::new(HashMap::new()),
@@ -119,7 +119,7 @@ mod test {
 
     #[async_std::test]
     async fn test_add_random() {
-        let keys_service = KeysService::new();
+        let keys_service = CosmosKeysService::new();
 
         let key_info = keys_service.add_random("alice").await.unwrap();
 
@@ -128,7 +128,7 @@ mod test {
 
     #[async_std::test]
     async fn test_add_from_mnemonic() {
-        let keys_service = KeysService::new();
+        let keys_service = CosmosKeysService::new();
 
         let alice = keys_service
             .add_from_mnemonic("alice", "secret phrase")

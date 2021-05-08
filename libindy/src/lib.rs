@@ -38,14 +38,15 @@ use lazy_static::lazy_static;
 use crate::{
     controllers::{
         payments::PaymentsController, BlobStorageController, CacheController, ConfigController,
-        CryptoController, DidController, IssuerController, KeysController, Ledger2Controller,
-        LedgerController, MetricsController, NonSecretsController, PairwiseController,
-        Pool2Controller, PoolController, ProverController, VerifierController, WalletController,
+        CosmosKeysController, CosmosPoolController, CryptoController, DidController,
+        IssuerController, LedgerController, MetricsController, NonSecretsController,
+        PairwiseController, PoolController, ProverController, VerifierController,
+        VerimLedgerController, WalletController,
     },
     services::{
-        BlobStorageService, CommandMetric, CryptoService, IssuerService, KeysService,
-        Ledger2Service, LedgerService, MetricsService, PaymentsService, Pool2Service, PoolService,
-        ProverService, VerifierService, WalletService,
+        BlobStorageService, CommandMetric, CosmosKeysService, CosmosPoolService, CryptoService,
+        IssuerService, LedgerService, MetricsService, PaymentsService, PoolService, ProverService,
+        VerifierService, VerimLedgerService, WalletService,
     },
 };
 use indy_api_types::errors::IndyResult;
@@ -111,10 +112,10 @@ pub(crate) struct Locator {
     pub(crate) crypto_controller: CryptoController,
     pub(crate) config_controller: ConfigController,
     pub(crate) ledger_controller: LedgerController,
-    pub(crate) ledger2_controller: Ledger2Controller,
+    pub(crate) verim_ledger_controller: VerimLedgerController,
     pub(crate) pool_controller: PoolController,
-    pub(crate) pool2_controller: Pool2Controller,
-    pub(crate) keys_controller: KeysController,
+    pub(crate) cosmos_pool_controller: CosmosPoolController,
+    pub(crate) cosmos_keys_controller: CosmosKeysController,
     pub(crate) did_controller: DidController,
     pub(crate) wallet_controller: WalletController,
     pub(crate) pairwise_controller: PairwiseController,
@@ -147,11 +148,11 @@ impl Locator {
         let blob_storage_service = Arc::new(BlobStorageService::new());
         let crypto_service = Arc::new(CryptoService::new());
         let ledger_service = Arc::new(LedgerService::new());
-        let ledger2_service = Arc::new(Ledger2Service::new());
-        let keys_service = Arc::new(KeysService::new());
+        let verim_ledger_service = Arc::new(VerimLedgerService::new());
+        let cosmos_keys_service = Arc::new(CosmosKeysService::new());
         let metrics_service = Arc::new(MetricsService::new());
         let pool_service = Arc::new(PoolService::new());
-        let pool2_service = Arc::new(Pool2Service::new());
+        let cosmos_pool_service = Arc::new(CosmosPoolService::new());
         let payment_service = Arc::new(PaymentsService::new());
         let wallet_service = Arc::new(WalletService::new());
 
@@ -189,10 +190,11 @@ impl Locator {
             ledger_service.clone(),
         );
 
-        let ledger2_controller = Ledger2Controller::new(
-            ledger2_service.clone(),
-            pool2_service.clone(),
-            keys_service.clone());
+        let verim_ledger_controller = VerimLedgerController::new(
+            verim_ledger_service.clone(),
+            cosmos_pool_service.clone(),
+            cosmos_keys_service.clone(),
+        );
 
         let payment_controller = PaymentsController::new(
             payment_service.clone(),
@@ -203,11 +205,10 @@ impl Locator {
 
         let pool_controller = PoolController::new(pool_service.clone());
 
-        let pool2_controller = Pool2Controller::new(
-            pool2_service.clone(),
-            keys_service.clone());
+        let cosmos_pool_controller =
+            CosmosPoolController::new(cosmos_pool_service.clone(), cosmos_keys_service.clone());
 
-        let keys_controller = KeysController::new(keys_service.clone());
+        let cosmos_keys_controller = CosmosKeysController::new(cosmos_keys_service.clone());
 
         let did_controller = DidController::new(
             wallet_service.clone(),
@@ -239,10 +240,10 @@ impl Locator {
             crypto_controller,
             config_controller,
             ledger_controller,
-            ledger2_controller,
+            verim_ledger_controller,
             pool_controller,
-            pool2_controller,
-            keys_controller,
+            cosmos_pool_controller,
+            cosmos_keys_controller,
             did_controller,
             wallet_controller,
             pairwise_controller,
