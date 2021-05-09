@@ -29,6 +29,7 @@ eyre = { version = "0.6.5" } # Cosmos SDK error interface. SDK doesn't expose it
 k256 = { version = "0.7", features = ["ecdsa-core", "ecdsa"] }
 surf = "2.2.0"
 anyhow = "1.0.40"
+prost = "0.7.0"
 
 #[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 #rusqlite = { version = "0.20", features=["bundled"], optional = true }

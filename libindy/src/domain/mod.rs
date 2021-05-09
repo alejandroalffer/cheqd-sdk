@@ -6,6 +6,7 @@ pub mod crypto;
 pub mod ledger;
 pub mod pairwise;
 pub mod pool;
+pub mod verim_ledger;
 
 use indy_api_types::validation::Validatable;
 

@@ -1,6 +1,8 @@
-//! Ledger service for Cosmos back-end
+//! Ledger service for Verim back-end
 
 use crate::domain::crypto::did::DidValue;
+use crate::domain::verim_ledger::verimcosmos::messages::MsgCreateNym;
+use crate::domain::verim_ledger::VerimMessage;
 use cosmos_sdk::bank::MsgSend;
 use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::endpoint::abci_query;
@@ -16,35 +18,6 @@ use prost::Message;
 use serde::de::DeserializeOwned;
 use serde_json::{self, Value};
 use std::str::FromStr;
-use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
-
-pub mod verimid {
-    pub mod verimcosmos {
-        pub mod verimcosmos {
-            include!(concat!(
-                env!("OUT_DIR"),
-                "/prost/verimid.verimcosmos.verimcosmos.rs"
-            ));
-        }
-    }
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNym {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgCreateNym";
-}
-
-pub mod cosmos {
-    pub mod base {
-        pub mod query {
-            pub mod v1beta1 {
-                include!(concat!(
-                    env!("OUT_DIR"),
-                    "/prost/cosmos.base.query.v1beta1.rs"
-                ));
-            }
-        }
-    }
-}
 
 pub(crate) struct VerimLedgerService {}
 
@@ -72,7 +45,6 @@ impl VerimLedgerService {
             amount: vec![amount.clone()],
         };
 
-        // TODO: Change result to bytes vec
         Ok(msg_send.to_msg()?)
     }
 
@@ -83,18 +55,22 @@ impl VerimLedgerService {
         creator: &str,
         verkey: &str,
         alias: &str,
+        role: &str,
     ) -> IndyResult<Msg> {
-        let msg_send = verimid::verimcosmos::verimcosmos::MsgCreateNym {
+        let msg_send = MsgCreateNym {
             creator: creator.to_string(),
             alias: alias.to_string(),
             verkey: verkey.to_string(),
             did: did.to_string(),
-            role: "role".to_string(),
+            role: role.to_string(),
         };
 
-        Ok(msg_send.to_msg()?)
+        let msg = msg_send.to_msg()?;
+        // let json = serde_json::to_string(&msg)?;
+        Ok(msg)
     }
 
+    // TODO: Queries
     pub fn build_query_cosmos_account(&self, address: &str) -> IndyResult<abci_query::Request> {
         let path = "/cosmos.auth.v1beta1.Query/Account";
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
@@ -110,6 +86,7 @@ impl VerimLedgerService {
         Ok(req)
     }
 
+    // TODO: Queries
     pub fn build_query_verimcosmos_list_nym(&self) -> IndyResult<abci_query::Request> {
         let path = format!("custom/verimcosmos/list-nym");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
@@ -117,6 +94,7 @@ impl VerimLedgerService {
         Ok(req)
     }
 
+    // TODO: Queries
     pub fn build_query_verimcosmos_get_nym(&self, id: &str) -> IndyResult<abci_query::Request> {
         let path = format!("custom/verimcosmos/get-nym/{}", id);
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
@@ -124,8 +102,6 @@ impl VerimLedgerService {
         Ok(req)
     }
 }
-
-// pub trait
 
 #[cfg(test)]
 mod test {
@@ -196,7 +172,7 @@ mod test {
         println!("Alice's account id: {}", alice.account_id);
         println!("Bob's account id: {}", bob.account_id);
         let msg = ledger2_service
-            .build_msg_create_nym("did", &*alice.account_id, "verkey", "bob")
+            .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
             .unwrap();
 
         let tx = pool2_service
@@ -242,7 +218,7 @@ mod test {
         let inner = result.response.value;
 
         let decoded =
-            super::verimid::verimcosmos::verimcosmos::QueryAllNymResponse::decode(inner.as_slice())
+            crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryAllNymResponse::decode(inner.as_slice())
                 .unwrap();
 
         // QueryAllNymResponse
