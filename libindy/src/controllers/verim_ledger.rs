@@ -1,122 +1,152 @@
 //! Ledger service for Cosmos back-end
 
 use crate::domain::crypto::did::DidValue;
+use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
 use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
 use async_std::sync::Arc;
 use indy_api_types::errors::IndyResult;
 
 pub(crate) struct VerimLedgerController {
-    ledger2_service: Arc<VerimLedgerService>,
-    pool2_service: Arc<CosmosPoolService>,
-    keys_service: Arc<CosmosKeysService>,
+    verim_ledger_service: Arc<VerimLedgerService>,
+    cosmos_pool_service: Arc<CosmosPoolService>,
+    cosmos_keys_service: Arc<CosmosKeysService>,
 }
 
 impl VerimLedgerController {
     pub(crate) fn new(
-        ledger2_service: Arc<VerimLedgerService>,
-        pool2_service: Arc<CosmosPoolService>,
-        keys_service: Arc<CosmosKeysService>,
+        verim_ledger_service: Arc<VerimLedgerService>,
+        cosmos_pool_service: Arc<CosmosPoolService>,
+        cosmos_keys_service: Arc<CosmosKeysService>,
     ) -> Self {
         Self {
-            ledger2_service,
-            pool2_service,
-            keys_service,
+            verim_ledger_service,
+            cosmos_pool_service,
+            cosmos_keys_service,
         }
     }
 
-    // pub fn sign_request(&self) {
-    //
-    //
-    //     let alice = self.eys_service
-    //         .add_from_mnemonic("alice", "alice")
-    //         .await
-    //         .unwrap();
-    //     let bob = keys_service.add_from_mnemonic("bob", "bob").await.unwrap();
-    //
-    //     println!("Alice's account id: {}", alice.account_id);
-    //     println!("Bob's account id: {}", bob.account_id);
-    //     let msg = ledger2_service
-    //         .build_msg_create_nym("alias", "verkey", "did", "role", &*alice.account_id)
-    //         .unwrap();
-    //
-    //     let tx = pool2_service
-    //         .build_tx(
-    //             &alice.pub_key,
-    //             vec![msg],
-    //             "verimcosmos",
-    //             9, // What is it?
-    //             0,
-    //             300000,
-    //             0u64,
-    //             "stake",
-    //             39090,
-    //             "memo",
-    //         )
-    //         .unwrap();
-    //
-    //     let signed = keys_service.sign("alice", tx).await.unwrap();
-    //
-    //     // Broadcast
-    //
-    //     pool2_service
-    //         .send_tx_commit(signed, "http://localhost:26657")
-    //         .await
-    //         .unwrap();
-    //
-    //     assert!(true)
-    // }
-    //
-    // pub fn submit_request(&self) {
-    //     unimplemented!()
-    // }
-    //
-    // pub fn sign_and_submit_request(&self) {
-    //     unimplemented!()
-    // }
-    //
-    // pub fn build_x_request(&self) {
-    //     unimplemented!()
-    // }
-    //
-    // pub fn build_msg_bank_send(&self) {
-    //     unimplemented!()
-    // }
-    // pub fn build_msg_create_nym(&self) {
-    //     ledger2_service
-    //         .build_msg_create_nym("alias", "verkey", "did", "role", &*alice.account_id)
-    //         .unwrap();
-    // }
-    //
+    pub fn build_msg_create_nym(
+        &self,
+        did: &str,
+        creator: &str,
+        verkey: &str,
+        alias: &str,
+        role: &str,
+    ) -> IndyResult<Vec<u8>> {
+        trace!(
+            "add_random > did {:?} creator {:?} verkey {:?} alias {:?} role {:?}",
+            did,
+            creator,
+            verkey,
+            alias,
+            role
+        );
+        let msg = self
+            .verim_ledger_service
+            .build_msg_create_nym(did, creator, verkey, alias, role)?;
+        trace!("add_random < {:?}", msg);
 
-    // pub(crate) async fn build_nym_request(
-    //     &self,
-    //     submitter_did: &str,,
-    //     creator: &str,,
-    //     verkey: &str,
-    //     alias: &str,
-    // ) -> IndyResult<String> {
-    //     debug!(
-    //         "build_nym_request > submitter_did {:?} \
-    //             target_did {:?} verkey {:?} alias {:?}",
-    //         submitter_did, target_did, verkey, alias
-    //     );
-    //     //
-    //     // self.crypto_service.validate_did(&submitter_did)?;
-    //     // self.crypto_service.validate_did(&target_did)?;
-    //
-    //     // if let Some(ref vk) = verkey {
-    //     //     self.crypto_service.validate_key(vk).await?;
-    //     // }
-    //
-    //     let res = self.ledger2_service.build_msg_create_nym(
-    //         &submitter_did,
-    //         &creator,
-    //         verkey.as_deref(),
-    //         alias.as_deref(),
-    //     )?;
-    //
-    //     let res = Ok(res);
-    //     debug!("build_nym_request < {:?}", res);
-    //     res
-    // }
+        Ok(msg.to_bytes()?)
+    }
+
+    pub fn parse_msg_create_nym_resp() {
+        unimplemented!()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::controllers::{CosmosKeysController, CosmosPoolController, VerimLedgerController};
+    use crate::domain::cosmos_pool::CosmosPoolConfig;
+    use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
+    use async_std::sync::Arc;
+
+    struct TestHarness {
+        ledger_controller: VerimLedgerController,
+        pool_controller: CosmosPoolController,
+        keys_controller: CosmosKeysController,
+    }
+
+    impl TestHarness {
+        fn new() -> Self {
+            let ledger_service = Arc::new(VerimLedgerService::new());
+            let pool_service = Arc::new(CosmosPoolService::new());
+            let keys_service = Arc::new(CosmosKeysService::new());
+
+            let ledger_controller = VerimLedgerController::new(
+                ledger_service.clone(),
+                pool_service.clone(),
+                keys_service.clone(),
+            );
+
+            let pool_controller =
+                CosmosPoolController::new(pool_service.clone(), keys_service.clone());
+
+            let keys_controller = CosmosKeysController::new(keys_service.clone());
+
+            Self {
+                ledger_controller,
+                pool_controller,
+                keys_controller,
+            }
+        }
+    }
+
+    #[async_std::test]
+    async fn test_msg_bank_send() {
+        unimplemented!()
+    }
+
+    #[async_std::test]
+    async fn test_msg_create_nym() {
+        let harness = TestHarness::new();
+
+        // Keys
+        let alice = harness
+            .keys_controller
+            .add_from_mnemonic("alice", "alice")
+            .await
+            .unwrap();
+
+        println!("Alice's account id: {}", alice.account_id);
+
+        // Pool
+        let pool_alias = harness
+            .pool_controller
+            .add("test_pool", "http://localhost:26657", "verimcosmos")
+            .await
+            .unwrap();
+
+        let msg = harness
+            .ledger_controller
+            .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
+            .unwrap();
+
+        let tx = harness
+            .pool_controller
+            .build_tx(
+                "test_pool",
+                "alice",
+                &msg,
+                9,
+                2,
+                300000,
+                3u64,
+                "token",
+                39090,
+                "memo",
+            )
+            .await
+            .unwrap();
+
+        let signed = harness.keys_controller.sign("alice", &tx).await.unwrap();
+
+        harness
+            .pool_controller
+            .broadcast_tx_commit("test_pool", &signed)
+            .await
+            .unwrap();
+
+        assert!(true)
+    }
 }

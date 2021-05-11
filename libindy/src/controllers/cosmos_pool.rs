@@ -1,67 +1,129 @@
 //! Cosmos pool management service
 
-use crate::services::{CosmosKeysService, CosmosPoolService};
 use async_std::sync::Arc;
 use cosmos_sdk::rpc;
-use cosmos_sdk::tx::Msg;
+use cosmos_sdk::tx::{Msg, Raw};
 use indy_api_types::errors::IndyResult;
 
+use crate::domain::cosmos_pool::CosmosPoolConfig;
+use crate::domain::verim_ledger::cosmos_ext::{CosmosMsgExt, CosmosSignDocExt, ProstMessageExt};
+use crate::services::{CosmosKeysService, CosmosPoolService};
+
 pub(crate) struct CosmosPoolController {
-    pool2_service: Arc<CosmosPoolService>,
-    keys_service: Arc<CosmosKeysService>,
-    pool_url: String,
+    cosmos_pool_service: Arc<CosmosPoolService>,
+    cosmos_keys_service: Arc<CosmosKeysService>,
 }
 
 impl CosmosPoolController {
     pub(crate) fn new(
-        pool2_service: Arc<CosmosPoolService>,
-        keys_service: Arc<CosmosKeysService>,
+        cosmos_pool_service: Arc<CosmosPoolService>,
+        cosmos_keys_service: Arc<CosmosKeysService>,
     ) -> Self {
         Self {
-            pool2_service,
-            keys_service,
-            pool_url: String::new(),
+            cosmos_pool_service,
+            cosmos_keys_service,
         }
     }
 
-    pub(crate) async fn set_pool(&mut self, pool_url: &str) -> IndyResult<()> {
-        self.pool_url = String::from(pool_url);
+    pub async fn add(&self, alias: &str, rpc_address: &str, chain_id: &str) -> IndyResult<()> {
+        trace!(
+            "add > alias {:?} rpc_address {:?} chain_id {:?}",
+            alias,
+            rpc_address,
+            chain_id
+        );
+        self.cosmos_pool_service
+            .add(alias, rpc_address, chain_id)
+            .await?;
+        trace!("add <");
         Ok(())
     }
 
-    // pub(crate) async fn build_sign_broadcast_tx_commit(
+    pub async fn pool_config(&self, alias: &str) -> IndyResult<CosmosPoolConfig> {
+        trace!("pool_config > alias {:?}", alias);
+        let config = self.cosmos_pool_service.pool_config(alias).await?;
+        trace!("pool_config <");
+        Ok(config)
+    }
+
+    // Returns tx bytes.
+    pub async fn build_tx(
+        &self,
+        pool_alias: &str,
+        sender_alias: &str,
+        msg: &[u8],
+        account_number: u64,
+        sequence_number: u64,
+        max_gas: u64,
+        max_coin_amount: u64,
+        max_coin_denom: &str,
+        timeout_height: u16,
+        memo: &str,
+    ) -> IndyResult<Vec<u8>> {
+        trace!("build_tx > pool_alias {:?}, sender_alias {:?}, msg {:?}, account_number {:?}, sequence_number {:?}, max_gas {:?}, max_coin_amount {:?}, max_coin_denom {:?}, timeout_height {:?}, memo {:?}", pool_alias, sender_alias, msg, account_number, sequence_number, max_gas, max_coin_amount, max_coin_denom, timeout_height, memo);
+
+        let pool = self.cosmos_pool_service.pool_config(pool_alias).await?;
+        let sender = self.cosmos_keys_service.key_info(sender_alias).await?;
+        let msg = Msg::from_bytes(&msg)?;
+
+        let sign_doc = self
+            .cosmos_pool_service
+            .build_tx(
+                &pool.chain_id,
+                &sender.pub_key,
+                msg,
+                account_number,
+                sequence_number,
+                max_gas,
+                max_coin_amount,
+                max_coin_denom,
+                timeout_height,
+                memo,
+            )
+            .await?;
+
+        trace!("build_tx <");
+
+        Ok(sign_doc.to_bytes()?)
+    }
+
+    // Send and wait for commit
+    pub async fn broadcast_tx_commit(
+        &self,
+        pool_alias: &str,
+        signed_tx: &[u8],
+    ) -> IndyResult<rpc::endpoint::broadcast::tx_commit::Response> {
+        trace!(
+            "broadcast_tx_commit > pool_alias {:?}, signed_tx {:?}",
+            pool_alias,
+            signed_tx
+        );
+
+        let tx_raw = Raw::from_bytes(signed_tx)?;
+        let resp = self
+            .cosmos_pool_service
+            .broadcast_tx_commit(pool_alias, tx_raw)
+            .await?;
+
+        trace!("broadcast_tx_commit < resp_bytes {:?}", resp);
+
+        Ok(resp)
+    }
+
+    pub fn parse_tx_commit_info() {
+        unimplemented!()
+    }
+
+    // TODO: Queries
+    // pub async fn abci_query(
     //     &self,
-    //     alias: &str,
-    //     pub_key: &str,
-    //     msg: &Msg,
-    //     pool_url: &str,
-    // ) -> IndyResult<IndyResult<rpc::endpoint::broadcast::tx_commit::Response>> {
-    //     trace!("build_sign_broadcast_tx_commit > alias {:?}", alias);
-    //     let tx = self
-    //         .pool2_service
-    //         .build_tx(
-    //             pub_key,
-    //             vec![msg],
-    //             "verimcosmos",
-    //             9, // What is it?
-    //             0,
-    //             300000,
-    //             0u64,
-    //             "stake",
-    //             39090,
-    //             "memo",
-    //         )
-    //         .unwrap();
-    //
-    //     let signed = self.keys_service.sign(alias, tx).await.unwrap();
-    //
-    //     // Broadcast
-    //     let res = self
-    //         .pool2_service
-    //         // .broadcast_tx_commit(signed, "http://localhost:26657")
-    //         .broadcast_tx_commit(signed, pool_url)
-    //         .await;
-    //     trace!("build_sign_broadcast_tx_commit < {:?}", res);
-    //     res
+    //     rpc_address: &str,
+    //     req: rpc::endpoint::abci_query::Request,
+    // ) -> IndyResult<rpc::endpoint::abci_query::Response> {
+    //     let resp = self.send_req(req, rpc_address).await?;
+    //     Ok(resp)
+    //     // TODO: State proof
+    //     // TODO: Error handling
+    //     // TODO: Return?
     // }
 }

@@ -1,13 +1,13 @@
 //! Ledger service for Verim back-end
 
-use crate::domain::crypto::did::DidValue;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgCreateNym;
-use crate::domain::verim_ledger::VerimMessage;
+use std::convert::TryInto;
+use std::str::FromStr;
+
 use cosmos_sdk::bank::MsgSend;
-use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::endpoint::abci_query;
-use cosmos_sdk::tx::{Msg, MsgProto, MsgType};
+use cosmos_sdk::tx::{Fee, Msg, MsgProto, MsgType, SignDoc, SignerInfo};
 use cosmos_sdk::Coin;
+use cosmos_sdk::{rpc, tx};
 use hex::FromHex;
 use indy_api_types::errors::prelude::*;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
@@ -17,7 +17,11 @@ use log_derive::logfn;
 use prost::Message;
 use serde::de::DeserializeOwned;
 use serde_json::{self, Value};
-use std::str::FromStr;
+
+use crate::domain::crypto::did::DidValue;
+use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
+use crate::domain::verim_ledger::verimcosmos::messages::MsgCreateNym;
+use crate::domain::verim_ledger::VerimMessage;
 
 pub(crate) struct VerimLedgerService {}
 
@@ -65,13 +69,14 @@ impl VerimLedgerService {
             role: role.to_string(),
         };
 
-        let msg = msg_send.to_msg()?;
-        // let json = serde_json::to_string(&msg)?;
-        Ok(msg)
+        Ok(msg_send.to_msg()?)
     }
 
     // TODO: Queries
-    pub fn build_query_cosmos_account(&self, address: &str) -> IndyResult<abci_query::Request> {
+    pub(crate) fn build_query_cosmos_account(
+        &self,
+        address: &str,
+    ) -> IndyResult<abci_query::Request> {
         let path = "/cosmos.auth.v1beta1.Query/Account";
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
 
@@ -87,7 +92,7 @@ impl VerimLedgerService {
     }
 
     // TODO: Queries
-    pub fn build_query_verimcosmos_list_nym(&self) -> IndyResult<abci_query::Request> {
+    pub(crate) fn build_query_verimcosmos_list_nym(&self) -> IndyResult<abci_query::Request> {
         let path = format!("custom/verimcosmos/list-nym");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
         let req = abci_query::Request::new(Some(path), Vec::new(), None, false);
@@ -95,7 +100,10 @@ impl VerimLedgerService {
     }
 
     // TODO: Queries
-    pub fn build_query_verimcosmos_get_nym(&self, id: &str) -> IndyResult<abci_query::Request> {
+    pub(crate) fn build_query_verimcosmos_get_nym(
+        &self,
+        id: &str,
+    ) -> IndyResult<abci_query::Request> {
         let path = format!("custom/verimcosmos/get-nym/{}", id);
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
         let req = abci_query::Request::new(Some(path), Vec::new(), None, false);
@@ -105,112 +113,25 @@ impl VerimLedgerService {
 
 #[cfg(test)]
 mod test {
-    use crate::domain::crypto::did::DidValue;
-    use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
     use cosmos_sdk::crypto::secp256k1::SigningKey;
     use prost::Message;
     use rust_base58::ToBase58;
 
-    #[async_std::test]
-    async fn test_msg_bank_send() {
-        let ledger2_service = VerimLedgerService::new();
-        let pool2_service = CosmosPoolService::new();
-        let keys_service = CosmosKeysService::new();
-
-        let alice = keys_service
-            .add_from_mnemonic("alice", "alice")
-            .await
-            .unwrap();
-        let bob = keys_service.add_from_mnemonic("bob", "bob").await.unwrap();
-
-        println!("Alice's account id: {}", alice.account_id);
-        println!("Bob's account id: {}", bob.account_id);
-
-        let msg = ledger2_service
-            .build_msg_bank_send(&alice.account_id, &bob.account_id, 2, "token")
-            .unwrap();
-
-        let tx = pool2_service
-            .build_tx(
-                &alice.pub_key,
-                vec![msg],
-                "verimcosmos",
-                9, // What is it?
-                0,
-                300000,
-                0u64,
-                "stake",
-                10000,
-                "memo",
-            )
-            .unwrap();
-
-        let signed = keys_service.sign("alice", tx).await.unwrap();
-
-        // Broadcast
-
-        pool2_service
-            .broadcast_tx_commit(signed, "http://localhost:26657")
-            .await
-            .unwrap();
-
-        assert!(true)
-    }
-
-    #[async_std::test]
-    async fn test_msg_create_nym() {
-        let ledger2_service = VerimLedgerService::new();
-        let pool2_service = CosmosPoolService::new();
-        let keys_service = CosmosKeysService::new();
-
-        let alice = keys_service
-            .add_from_mnemonic("alice", "alice")
-            .await
-            .unwrap();
-        let bob = keys_service.add_from_mnemonic("bob", "bob").await.unwrap();
-
-        println!("Alice's account id: {}", alice.account_id);
-        println!("Bob's account id: {}", bob.account_id);
-        let msg = ledger2_service
-            .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
-            .unwrap();
-
-        let tx = pool2_service
-            .build_tx(
-                &alice.pub_key,
-                vec![msg],
-                "verim-cosmos-chain",
-                11,
-                0,
-                300000,
-                300000u64,
-                "token",
-                39090,
-                "memo",
-            )
-            .unwrap();
-
-        let signed = keys_service.sign("alice", tx).await.unwrap();
-
-        // Broadcast
-
-        pool2_service
-            .broadcast_tx_commit(signed, "http://localhost:26657")
-            .await
-            .unwrap();
-
-        assert!(true)
-    }
+    use crate::domain::cosmos_pool::CosmosPoolConfig;
+    use crate::domain::crypto::did::DidValue;
+    use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
 
     #[async_std::test]
     async fn test_query_list_nym() {
-        let ledger2_service = VerimLedgerService::new();
-        let pool2_service = CosmosPoolService::new();
-        let keys_service = CosmosKeysService::new();
+        let verim_ledger_service = VerimLedgerService::new();
+        let cosmos_pool_service = CosmosPoolService::new();
+        let cosmos_keys_service = CosmosKeysService::new();
 
-        let req = ledger2_service.build_query_verimcosmos_list_nym().unwrap();
+        let req = verim_ledger_service
+            .build_query_verimcosmos_list_nym()
+            .unwrap();
 
-        let result = pool2_service
+        let result = cosmos_pool_service
             .abci_query("http://localhost:26657", req)
             .await
             .unwrap();
@@ -228,15 +149,15 @@ mod test {
 
     #[async_std::test]
     async fn test_query_account() {
-        let ledger2_service = VerimLedgerService::new();
-        let pool2_service = CosmosPoolService::new();
-        let keys_service = CosmosKeysService::new();
+        let verim_ledger_service = VerimLedgerService::new();
+        let cosmos_pool_service = CosmosPoolService::new();
+        let cosmos_keys_service = CosmosKeysService::new();
 
-        let req = ledger2_service
+        let req = verim_ledger_service
             .build_query_cosmos_account("cosmos17gt4any4r9jgg06r47f83vfxrycdk67utjs36m")
             .unwrap();
 
-        let result = pool2_service
+        let result = cosmos_pool_service
             .abci_query("http://localhost:26657", req)
             .await
             .unwrap();
