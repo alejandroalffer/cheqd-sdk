@@ -49,6 +49,50 @@ impl VerimLedgerController {
         Ok(msg.to_bytes()?)
     }
 
+    pub fn build_msg_update_nym(
+        &self,
+        creator: &str,
+        id: u64,
+        verkey: &str,
+        alias: &str,
+        did: &str,
+        role: &str,
+    ) -> IndyResult<Vec<u8>> {
+        trace!(
+            "add_random > creator {:?} id {:?} verkey {:?} alias {:?} did {:?} role {:?}",
+            creator,
+            id,
+            verkey,
+            alias,
+            did,
+            role
+        );
+        let msg = self
+            .verim_ledger_service
+            .build_msg_update_nym(creator, id, verkey, alias, did, role)?;
+        trace!("add_random < {:?}", msg);
+
+        Ok(msg.to_bytes()?)
+    }
+
+    pub fn build_msg_delete_nym(
+        &self,
+        creator: &str,
+        id: u64,
+    ) -> IndyResult<Vec<u8>> {
+        trace!(
+            "add_random > creator {:?} id {:?}",
+            creator,
+            id,
+        );
+        let msg = self
+            .verim_ledger_service
+            .build_msg_delete_nym(creator, id)?;
+        trace!("add_random < {:?}", msg);
+
+        Ok(msg.to_bytes()?)
+    }
+
     pub fn parse_msg_create_nym_resp() {
         unimplemented!()
     }
@@ -149,4 +193,131 @@ mod test {
 
         assert!(true)
     }
+
+    #[async_std::test]
+    async fn test_msg_update_nym() {
+        let harness = TestHarness::new();
+
+        // Keys
+        let alice = harness
+            .keys_controller
+            .add_from_mnemonic("alice", "alice")
+            .await
+            .unwrap();
+
+        println!("Alice's account id: {}", alice.account_id);
+
+        // Pool
+        let pool_alias = harness
+            .pool_controller
+            .add("test_pool", "http://localhost:26657", "verimcosmos")
+            .await
+            .unwrap();
+
+        // let msg_create = harness
+        //     .ledger_controller
+        //     .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
+        //     .unwrap();
+
+        let msg = harness
+            .ledger_controller
+            .build_msg_update_nym(&alice.account_id, 0u64, "verkey", "bob", "newdid", "role")
+            .unwrap();
+
+        let tx = harness
+            .pool_controller
+            .build_tx(
+                "test_pool",
+                "alice",
+                &msg,
+                9,
+                1,
+                300000,
+                0,
+                "token",
+                39090,
+                "memo",
+            )
+            .await
+            .unwrap();
+
+        let signed = harness.keys_controller.sign("alice", &tx).await.unwrap();
+
+        let response = harness
+            .pool_controller
+            .broadcast_tx_commit("test_pool", &signed)
+            .await
+            .unwrap();
+
+        // let msg = harness
+        //     .ledger_controller
+        //     .build_msg_update_nym(&alice.account_id, 0u64, "verkey", "bob", "newdid", "role")
+        //     .unwrap();
+
+        assert!(true)
+    }
+
+    #[async_std::test]
+    async fn test_msg_delete_nym() {
+        let harness = TestHarness::new();
+
+        // Keys
+        let alice = harness
+            .keys_controller
+            .add_from_mnemonic("alice", "alice")
+            .await
+            .unwrap();
+
+        println!("Alice's account id: {}", alice.account_id);
+
+        // Pool
+        let pool_alias = harness
+            .pool_controller
+            .add("test_pool", "http://localhost:26657", "verimcosmos")
+            .await
+            .unwrap();
+
+        // let msg_create = harness
+        //     .ledger_controller
+        //     .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
+        //     .unwrap();
+
+        let msg = harness
+            .ledger_controller
+            .build_msg_delete_nym(&alice.account_id, 0u64)
+            .unwrap();
+
+        let tx = harness
+            .pool_controller
+            .build_tx(
+                "test_pool",
+                "alice",
+                &msg,
+                9,
+                2,
+                300000,
+                3u64,
+                "token",
+                39090,
+                "memo",
+            )
+            .await
+            .unwrap();
+
+        let signed = harness.keys_controller.sign("alice", &tx).await.unwrap();
+
+        let response = harness
+            .pool_controller
+            .broadcast_tx_commit("test_pool", &signed)
+            .await
+            .unwrap();
+
+        // let msg = harness
+        //     .ledger_controller
+        //     .build_msg_delete_nym(&alice.account_id, 0u64)
+        //     .unwrap();
+
+        assert!(true)
+    }
+
 }
