@@ -19,3 +19,8 @@
 //     pub pagination:
 //         ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
 // }
+mod query_get_nym_request;
+mod query_get_nym_response;
+
+pub use query_get_nym_request::QueryGetNymRequest;
+pub use query_get_nym_response::QueryGetNymResponse;

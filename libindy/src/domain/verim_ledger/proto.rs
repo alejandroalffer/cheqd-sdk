@@ -18,3 +18,15 @@ impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNym {
 impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNymResponse {
     const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgCreateNymResponse";
 }
+
+impl MsgProto for verimid::verimcosmos::verimcosmos::QueryGetNymRequest {
+    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryGetNymRequest";
+}
+
+impl MsgProto for verimid::verimcosmos::verimcosmos::QueryGetNymResponse {
+    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryGetNymResponse";
+}
+
+impl MsgProto for verimid::verimcosmos::verimcosmos::Nym {
+    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.Nym";
+}

@@ -1,3 +1,7 @@
+pub mod nym;
+
+pub use nym::Nym;
+
 // TODO: Models
 // pub struct Nym {
 //     pub creator: ::prost::alloc::string::String,

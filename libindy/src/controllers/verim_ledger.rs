@@ -111,7 +111,7 @@ mod test {
         println!("Alice's account id: {}", alice.account_id);
 
         // Pool
-        let pool_alias = harness
+        harness
             .pool_controller
             .add("test_pool", "http://localhost:26657", "verimcosmos")
             .await
