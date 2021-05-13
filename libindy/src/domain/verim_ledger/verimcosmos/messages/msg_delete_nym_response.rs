@@ -3,12 +3,12 @@ use crate::domain::verim_ledger::VerimMessage;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MsgDeleteNymResponse {
-    pub id: u64,
+
 }
 
 impl MsgDeleteNymResponse {
-    pub fn new(id: u64) -> Self {
-        MsgDeleteNymResponse { id }
+    pub fn new() -> Self {
+        MsgDeleteNymResponse {  }
     }
 }
 
@@ -16,15 +16,11 @@ impl VerimMessage for MsgDeleteNymResponse {
     type Proto = ProtoMsgDeleteNymResponse;
 
     fn to_proto(&self) -> Self::Proto {
-        Self::Proto {
-            id: self.id.clone(),
-        }
+        Self::Proto { }
     }
 
     fn from_proto(proto: &Self::Proto) -> Self {
-        Self {
-            id: proto.id.clone(),
-        }
+        Self { }
     }
 }
 
@@ -36,7 +32,7 @@ mod test {
 
     #[test]
     fn test_msg_delete_nym_response() {
-        let msg = MsgDeleteNymResponse::new(456);
+        let msg = MsgDeleteNymResponse::new();
 
         let proto = msg.to_proto();
         let decoded = MsgDeleteNymResponse::from_proto(&proto);
