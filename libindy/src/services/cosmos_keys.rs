@@ -1,6 +1,6 @@
 //! Service to manage Cosmos keys
 
-use crate::domain::keys::KeyInfo;
+use crate::domain::cosmos_keys::KeyInfo;
 use cosmos_sdk::crypto::secp256k1::signing_key::Secp256k1Signer;
 use cosmos_sdk::crypto::secp256k1::SigningKey as CosmosSigningKey;
 use cosmos_sdk::tx::{Raw, SignDoc};
@@ -16,13 +16,14 @@ use rand_seeder::Seeder;
 use rust_base58::ToBase58;
 use std::collections::HashMap;
 
-pub struct KeysService {
-    // key alias -> ECDSA/secp256k1 signing key bytes
+pub(crate) struct CosmosKeysService {
+    // TODO: Persistence
+    // key alias -> SEC1-encoded secp256k1 ECDSA private key
     keys: MutexF<HashMap<String, Vec<u8>>>,
 }
 
-impl KeysService {
-    pub fn new() -> Self {
+impl CosmosKeysService {
+    pub(crate) fn new() -> Self {
         Self {
             keys: MutexF::new(HashMap::new()),
         }
@@ -72,14 +73,18 @@ impl KeysService {
         ))
     }
 
-    pub async fn add_random(&self, alias: &str) -> IndyResult<KeyInfo> {
+    pub(crate) async fn add_random(&self, alias: &str) -> IndyResult<KeyInfo> {
         let key = k256::ecdsa::SigningKey::random(&mut OsRng);
         self.set_signing_key(alias, &key).await?;
 
         Ok(self.key_info(alias).await?)
     }
 
-    pub async fn add_from_mnemonic(&self, alias: &str, mnemonic: &str) -> IndyResult<KeyInfo> {
+    pub(crate) async fn add_from_mnemonic(
+        &self,
+        alias: &str,
+        mnemonic: &str,
+    ) -> IndyResult<KeyInfo> {
         let mut rng: StdRng = Seeder::from(mnemonic).make_rng();
         let key = k256::ecdsa::SigningKey::random(&mut rng);
         self.set_signing_key(alias, &key).await?;
@@ -87,7 +92,7 @@ impl KeysService {
         Ok(self.key_info(alias).await?)
     }
 
-    pub async fn key_info(&self, alias: &str) -> IndyResult<KeyInfo> {
+    pub(crate) async fn key_info(&self, alias: &str) -> IndyResult<KeyInfo> {
         let key = self.get_cosmos_signing_key(alias).await?;
         let pub_key = key.public_key();
         let account_id = pub_key.account_id("cosmos")?;
@@ -101,7 +106,7 @@ impl KeysService {
         Ok(key_info)
     }
 
-    pub async fn sign(&self, alias: &str, tx: SignDoc) -> IndyResult<Raw> {
+    pub(crate) async fn sign(&self, alias: &str, tx: SignDoc) -> IndyResult<Raw> {
         let key = self.get_cosmos_signing_key(alias).await?;
         Ok(tx.sign(&key)?)
     }
@@ -119,23 +124,23 @@ mod test {
 
     #[async_std::test]
     async fn test_add_random() {
-        let keys_service = KeysService::new();
+        let cosmos_keys_service = CosmosKeysService::new();
 
-        let key_info = keys_service.add_random("alice").await.unwrap();
+        let key_info = cosmos_keys_service.add_random("alice").await.unwrap();
 
         assert_eq!(key_info.alias, "alice")
     }
 
     #[async_std::test]
     async fn test_add_from_mnemonic() {
-        let keys_service = KeysService::new();
+        let cosmos_keys_service = CosmosKeysService::new();
 
-        let alice = keys_service
+        let alice = cosmos_keys_service
             .add_from_mnemonic("alice", "secret phrase")
             .await
             .unwrap();
 
-        let bob = keys_service
+        let bob = cosmos_keys_service
             .add_from_mnemonic("bob", "secret phrase")
             .await
             .unwrap();

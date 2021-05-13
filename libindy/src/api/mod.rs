@@ -1,16 +1,19 @@
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod cache;
+pub mod cosmos_keys;
+pub mod cosmos_pool;
 pub mod crypto;
 pub mod did;
 pub mod ledger;
 pub mod logger;
 pub mod metrics;
 pub mod non_secrets;
+pub mod pairwise;
 pub mod payments;
 pub mod payments_v2;
-pub mod pairwise;
 pub mod pool;
+pub mod verim_ledger;
 pub mod wallet;
 
 use indy_api_types::{errors::prelude::*, validation::Validatable, ErrorCode};

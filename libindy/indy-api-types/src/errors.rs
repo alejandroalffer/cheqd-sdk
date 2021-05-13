@@ -287,6 +287,18 @@ impl From<surf::Error> for IndyError {
     }
 }
 
+impl From<prost::EncodeError> for IndyError {
+    fn from(err: prost::EncodeError) -> Self {
+        err.context(IndyErrorKind::InvalidState).into()
+    }
+}
+
+impl From<prost::DecodeError> for IndyError {
+    fn from(err: prost::DecodeError) -> Self {
+        err.context(IndyErrorKind::InvalidState).into()
+    }
+}
+
 #[cfg(feature = "casting_errors")]
 impl From<UrsaCryptoError> for IndyError {
     fn from(err: UrsaCryptoError) -> Self {

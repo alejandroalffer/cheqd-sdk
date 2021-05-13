@@ -1629,6 +1629,7 @@ dependencies = [
  "libc",
  "log",
  "openssl",
+ "prost",
  "rust-base58",
  "serde",
  "serde_derive",
