@@ -21,6 +21,8 @@ use serde_json::{self, Value};
 use crate::domain::crypto::did::DidValue;
 use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
 use crate::domain::verim_ledger::verimcosmos::messages::MsgCreateNym;
+use crate::domain::verim_ledger::verimcosmos::messages::MsgUpdateNym;
+use crate::domain::verim_ledger::verimcosmos::messages::MsgDeleteNym;
 use crate::domain::verim_ledger::VerimMessage;
 
 pub(crate) struct VerimLedgerService {}
@@ -67,6 +69,42 @@ impl VerimLedgerService {
             verkey: verkey.to_string(),
             did: did.to_string(),
             role: role.to_string(),
+        };
+
+        Ok(msg_send.to_msg()?)
+    }
+
+    #[logfn(Info)]
+    pub(crate) fn build_msg_update_nym(
+        &self,
+        creator: &str,
+        id: u64,
+        verkey: &str,
+        alias: &str,
+        did: &str,
+        role: &str,
+    ) -> IndyResult<Msg> {
+        let msg_send = MsgUpdateNym {
+            creator: creator.to_string(),
+            id,
+            alias: alias.to_string(),
+            verkey: verkey.to_string(),
+            did: did.to_string(),
+            role: role.to_string(),
+        };
+
+        Ok(msg_send.to_msg()?)
+    }
+
+    #[logfn(Info)]
+    pub(crate) fn build_msg_delete_nym(
+        &self,
+        creator: &str,
+        id: u64,
+    ) -> IndyResult<Msg> {
+        let msg_send = MsgDeleteNym {
+            creator: creator.to_string(),
+            id,
         };
 
         Ok(msg_send.to_msg()?)
