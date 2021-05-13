@@ -2,9 +2,12 @@
 
 use crate::domain::crypto::did::DidValue;
 use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
+use crate::domain::verim_ledger::verimcosmos::messages::MsgCreateNymResponse;
 use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
 use async_std::sync::Arc;
-use indy_api_types::errors::IndyResult;
+use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
+use indy_api_types::errors::{IndyErrorKind, IndyResult};
+use indy_api_types::IndyError;
 
 pub(crate) struct VerimLedgerController {
     verim_ledger_service: Arc<VerimLedgerService>,
@@ -49,6 +52,16 @@ impl VerimLedgerController {
         Ok(msg.to_bytes()?)
     }
 
+    pub(crate) fn parse_msg_crate_nym_resp(
+        &self,
+        resp: &Response,
+    ) -> IndyResult<MsgCreateNymResponse> {
+        trace!("parse_msg_crate_nym_resp > resp {:?}", resp);
+        let res = self.verim_ledger_service.parse_msg_crate_nym_resp(resp)?;
+        trace!("parse_msg_crate_nym_resp < {:?}", res);
+        Ok(res)
+    }
+
     pub fn build_msg_update_nym(
         &self,
         creator: &str,
@@ -75,16 +88,8 @@ impl VerimLedgerController {
         Ok(msg.to_bytes()?)
     }
 
-    pub fn build_msg_delete_nym(
-        &self,
-        creator: &str,
-        id: u64,
-    ) -> IndyResult<Vec<u8>> {
-        trace!(
-            "add_random > creator {:?} id {:?}",
-            creator,
-            id,
-        );
+    pub fn build_msg_delete_nym(&self, creator: &str, id: u64) -> IndyResult<Vec<u8>> {
+        trace!("add_random > creator {:?} id {:?}", creator, id,);
         let msg = self
             .verim_ledger_service
             .build_msg_delete_nym(creator, id)?;
@@ -173,7 +178,7 @@ mod test {
                 "alice",
                 &msg,
                 9,
-                2,
+                8,
                 300000,
                 3u64,
                 "token",
@@ -185,11 +190,18 @@ mod test {
 
         let signed = harness.keys_controller.sign("alice", &tx).await.unwrap();
 
-        harness
+        let resp = harness
             .pool_controller
             .broadcast_tx_commit("test_pool", &signed)
             .await
             .unwrap();
+
+        let result = harness
+            .ledger_controller
+            .parse_msg_crate_nym_resp(&resp)
+            .unwrap();
+
+        println!("result: {:?}", result);
 
         assert!(true)
     }
@@ -319,5 +331,4 @@ mod test {
 
         assert!(true)
     }
-
 }
