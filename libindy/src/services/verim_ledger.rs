@@ -21,6 +21,8 @@ use serde_json::{self, Value};
 use crate::domain::crypto::did::DidValue;
 use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
 use crate::domain::verim_ledger::verimcosmos::messages::MsgCreateNym;
+use crate::domain::verim_ledger::verimcosmos::messages::MsgUpdateNym;
+use crate::domain::verim_ledger::verimcosmos::messages::MsgDeleteNym;
 use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse};
 use crate::domain::verim_ledger::VerimMessage;
 
@@ -68,6 +70,42 @@ impl VerimLedgerService {
             verkey: verkey.to_string(),
             did: did.to_string(),
             role: role.to_string(),
+        };
+
+        Ok(msg_send.to_msg()?)
+    }
+
+    #[logfn(Info)]
+    pub(crate) fn build_msg_update_nym(
+        &self,
+        creator: &str,
+        id: u64,
+        verkey: &str,
+        alias: &str,
+        did: &str,
+        role: &str,
+    ) -> IndyResult<Msg> {
+        let msg_send = MsgUpdateNym {
+            creator: creator.to_string(),
+            id,
+            alias: alias.to_string(),
+            verkey: verkey.to_string(),
+            did: did.to_string(),
+            role: role.to_string(),
+        };
+
+        Ok(msg_send.to_msg()?)
+    }
+
+    #[logfn(Info)]
+    pub(crate) fn build_msg_delete_nym(
+        &self,
+        creator: &str,
+        id: u64,
+    ) -> IndyResult<Msg> {
+        let msg_send = MsgDeleteNym {
+            creator: creator.to_string(),
+            id,
         };
 
         Ok(msg_send.to_msg()?)
@@ -183,7 +221,7 @@ mod test {
         let cosmos_keys_service = CosmosKeysService::new();
 
         let req = verim_ledger_service
-            .build_query_cosmos_account("cosmos1cfxqpyfy69nejd48wgm4dlqrwmtw062x4w59m3")
+            .build_query_cosmos_account("cosmos17gt4any4r9jgg06r47f83vfxrycdk67utjs36m")
             .unwrap();
 
         let result = cosmos_pool_service
