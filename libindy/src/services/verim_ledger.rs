@@ -25,6 +25,7 @@ use crate::domain::verim_ledger::verimcosmos::messages::MsgUpdateNym;
 use crate::domain::verim_ledger::verimcosmos::messages::MsgDeleteNym;
 use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse};
 use crate::domain::verim_ledger::VerimMessage;
+use crate::domain::verim_ledger::cosmos_ext::ProstMessageExt;
 
 pub(crate) struct VerimLedgerService {}
 
@@ -126,7 +127,7 @@ impl VerimLedgerService {
         let mut data_bytes = Vec::new();
         data.encode(&mut data_bytes).unwrap(); // TODO
 
-        let req = abci_query::Request::new(Some(path), data_bytes, None, false);
+        let req = abci_query::Request::new(Some(path), data_bytes, None, true);
         Ok(req)
     }
 
@@ -144,9 +145,9 @@ impl VerimLedgerService {
         id: u64,
     ) -> IndyResult<abci_query::Request> {
         let query_data = QueryGetNymRequest { id };
-        let path = format!("custom/verimcosmos/get-nym/{:?}", id);
+        let path = format!("/verimid.verimcosmos.verimcosmos.Query/Nym");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
-        let req = abci_query::Request::new(Some(path), query_data.to_msg()?.to_bytes()?, None, false);
+        let req = abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
         Ok(req)
     }
 }
@@ -206,7 +207,7 @@ mod test {
         let inner = result.response.value;
 
         let decoded =
-            crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::decode(inner.as_slice());
+            crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::from_bytes(inner.as_slice());
         // let res = QueryGetNymResponse::from_proto(decoded);
 
         // QueryAllNymResponse
