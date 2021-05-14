@@ -29,13 +29,6 @@ pub type CString = *const c_char;
 pub struct WalletHandle(pub i32);
 pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
 
-pub struct KeyInfo {
-    pub alias: String,
-    pub account_id: String,
-    // Base58-encoded SEC1-encoded secp256k1 ECDSA key
-    pub pub_key: String,
-}
-
 pub type PoolHandle = i32;
 pub const INVALID_POOL_HANDLE : PoolHandle = 0;
 
@@ -60,7 +53,6 @@ pub type ResponseEmptyCB = extern fn(xcommand_handle: CommandHandle, err: Error)
 pub type ResponseBoolCB = extern fn(xcommand_handle: CommandHandle, err: Error, bool1: bool);
 pub type ResponseI32CB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle);
 pub type ResponseWalletHandleCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: WalletHandle);
-pub type ResponseKeyInfoCB = extern fn(xcommand_handle: CommandHandle, err: Error, arg: KeyInfo);
 pub type ResponseI32UsizeCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle, total_count: usize);
 pub type ResponseStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString);
 pub type ResponseStringStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString, str2: CString);
