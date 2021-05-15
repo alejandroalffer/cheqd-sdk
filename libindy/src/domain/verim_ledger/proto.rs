@@ -16,7 +16,7 @@ impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNym {
 }
 
 impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNymResponse {
-    const TYPE_URL: &'static str = "CreateNym";
+    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgCreateNymResponse";
 }
 
 impl MsgProto for verimid::verimcosmos::verimcosmos::MsgUpdateNym {

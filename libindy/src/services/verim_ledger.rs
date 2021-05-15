@@ -6,10 +6,11 @@ use std::str::FromStr;
 use crate::domain::crypto::did::DidValue;
 use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
 use crate::domain::verim_ledger::cosmos_ext::ProstMessageExt;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgDeleteNym;
+use crate::domain::verim_ledger::verimcosmos::messages::{MsgDeleteNym, MsgUpdateNymResponse, MsgDeleteNymResponse};
 use crate::domain::verim_ledger::verimcosmos::messages::MsgUpdateNym;
 use crate::domain::verim_ledger::verimcosmos::messages::{MsgCreateNym, MsgCreateNymResponse};
 use crate::domain::verim_ledger::VerimMessage;
+use cosmos_sdk::proto::cosmos::base::abci::v1beta1::{TxMsgData, MsgData};
 use cosmos_sdk::bank::MsgSend;
 use cosmos_sdk::rpc::endpoint::abci_query;
 use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
@@ -56,7 +57,7 @@ impl VerimLedgerService {
         Ok(msg_send.to_msg()?)
     }
 
-    pub(crate) fn parse_msg_crate_nym_resp(
+    pub(crate) fn parse_msg_create_nym_resp(
         &self,
         resp: &Response,
     ) -> IndyResult<MsgCreateNymResponse> {
@@ -65,13 +66,11 @@ impl VerimLedgerService {
             "Expected response data but got None",
         ))?;
         let data = data.value();
+        let tx_msg = TxMsgData::from_bytes(&data)?;
+        let msg = crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNymResponse::from_bytes(&tx_msg.data[0].data)?;
+        let result = MsgCreateNymResponse::from_proto(&msg);
 
-        // let any = Any::from_bytes(data);
-        let res2 = crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNymResponse::from_bytes(data);
-        // let msg = Msg::from_bytes(&data)?; // Any
-        // let parsed = MsgCreateNymResponse::from_msg(&msg)?;
-        //
-        Err(IndyError::from_msg(IndyErrorKind::InvalidState, ""))
+        return Ok(result);
     }
 
     #[logfn(Info)]
@@ -94,6 +93,22 @@ impl VerimLedgerService {
         Ok(msg_send.to_msg()?)
     }
 
+    pub(crate) fn parse_msg_update_nym_resp(
+        &self,
+        resp: &Response,
+    ) -> IndyResult<MsgUpdateNymResponse> {
+        let data = resp.deliver_tx.data.as_ref().ok_or(IndyError::from_msg(
+            IndyErrorKind::InvalidState,
+            "Expected response data but got None",
+        ))?;
+        let data = data.value();
+        let tx_msg = TxMsgData::from_bytes(&data)?;
+        let msg = crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgUpdateNymResponse::from_bytes(&tx_msg.data[0].data)?;
+        let result = MsgUpdateNymResponse::from_proto(&msg);
+
+        return Ok(result);
+    }
+
     #[logfn(Info)]
     pub(crate) fn build_msg_update_nym(
         &self,
@@ -114,6 +129,22 @@ impl VerimLedgerService {
         };
 
         Ok(msg_send.to_msg()?)
+    }
+
+    pub(crate) fn parse_msg_delete_nym_resp(
+        &self,
+        resp: &Response,
+    ) -> IndyResult<MsgDeleteNymResponse> {
+        let data = resp.deliver_tx.data.as_ref().ok_or(IndyError::from_msg(
+            IndyErrorKind::InvalidState,
+            "Expected response data but got None",
+        ))?;
+        let data = data.value();
+        let tx_msg = TxMsgData::from_bytes(&data)?;
+        let msg = crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse::from_bytes(&tx_msg.data[0].data)?;
+        let result = MsgDeleteNymResponse::from_proto(&msg);
+
+        return Ok(result);
     }
 
     #[logfn(Info)]
