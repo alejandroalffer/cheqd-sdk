@@ -12,6 +12,7 @@ pub mod non_secrets;
 pub mod pairwise;
 pub mod payments;
 pub mod pool;
+pub mod verim_ledger;
 pub mod wallet;
 pub mod logger;
 pub mod cache;
