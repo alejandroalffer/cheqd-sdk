@@ -4,13 +4,13 @@ use std::ffi::CString;
 
 use futures::Future;
 
-use ffi::cosmos_keys;
-use ffi::{ResponseKeyInfoCB};
+use ffi::verim_ledger;
+use ffi::{ResponseStringCB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
 use {CommandHandle};
 
-pub fn build_msg_create_nym(did: &str, creator: &str, verkey: &str, alias: &str, role: &str, ) -> Box<dyn Future<Item=(String), Error=IndyError>> {
+pub fn build_msg_create_nym(did: &str, creator: &str, verkey: &str, alias: &str, role: &str, ) -> Box<dyn Future<Item=(Vec<u8>), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _build_msg_create_nym(command_handle, did, creator, verkey, alias, role, cb);
@@ -25,10 +25,10 @@ fn _build_msg_create_nym(command_handle: CommandHandle, did: &str, creator: &str
     let alias = c_str!(alias);
     let role = c_str!(role);
 
-    ErrorCode::from(unsafe { cosmos_keys::indy_build_msg_create_nym(command_handle, did.as_ptr(), creator.as_ptr(), verkey.as_ptr(), alias.as_ptr(), role.as_ptr(), cb) })
+    ErrorCode::from(unsafe { verim_ledger::indy_build_msg_create_nym(command_handle, did.as_ptr(), creator.as_ptr(), verkey.as_ptr(), alias.as_ptr(), role.as_ptr(), cb.as_ptr()) })
 }
 
-pub fn build_msg_update_nym(did: &str, creator: &str, verkey: &str, alias: &str, role: &str) -> Box<dyn Future<Item=(String), Error=IndyError>> {
+pub fn build_msg_update_nym(did: &str, creator: &str, verkey: &str, alias: &str, role: &str) -> Box<dyn Future<Item=(Vec<u8>), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _build_msg_update_nym(command_handle, did, creator, verkey, alias, role, cb);
@@ -43,20 +43,20 @@ fn _build_msg_update_nym(command_handle: CommandHandle, did: &str, creator: &str
     let alias = c_str!(alias);
     let role = c_str!(role);
 
-    ErrorCode::from(unsafe { cosmos_keys::indy_build_msg_create_nym(command_handle, did.as_ptr(), creator.as_ptr(), verkey.as_ptr(), alias.as_ptr(), role.as_ptr(), cb) })
+    ErrorCode::from(unsafe { verim_ledger::indy_build_msg_create_nym(command_handle, did.as_ptr(), creator.as_ptr(), verkey.as_ptr(), alias.as_ptr(), role.as_ptr(), cb.as_ptr()) })
 }
 
-pub fn build_msg_delete_nym(id: &str, creator: &str) -> Box<dyn Future<Item=(String), Error=IndyError>> {
-    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+pub fn build_msg_delete_nym(id: &str, creator: &str) -> Box<dyn Future<Item=(Vec<u8>), Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-    let err = _build_msg_delete_nym(command_handle, id, creator);
+    let err = _build_msg_delete_nym(command_handle, id, creator, cb);
 
-    ResultHandler::str(command_handle, err, receiver)
+    ResultHandler::slice(command_handle, err, receiver)
 }
 
-fn _build_msg_delete_nym(command_handle: CommandHandle, id: &str, creator: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_msg_delete_nym(command_handle: CommandHandle, id: &str, creator: &str, cb: Option<ResponseSliceCB>) -> ErrorCode {
     let creator = c_str!(creator);
-    let id = c_str!(did);
+    let id = c_str!(id);
 
-    ErrorCode::from(unsafe { cosmos_keys::indy_build_msg_delete_nym(command_handle, id.as_ptr(), creator.as_ptr(), cb) })
+    ErrorCode::from(unsafe { verim_ledger::indy_build_msg_delete_nym(command_handle, creator.as_ptr(), id.as_ptr(), cb) })
 }

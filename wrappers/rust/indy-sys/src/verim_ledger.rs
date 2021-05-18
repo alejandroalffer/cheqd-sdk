@@ -10,7 +10,7 @@ extern "C" {
         verkey: CString,
         alias: CString,
         role: CString,
-        cb: Option<ResponseStringCB>,
+        cb: Option<ResponseSliceCB>,
     ) -> Error;
 
     pub fn indy_build_msg_update_nym(
@@ -20,13 +20,13 @@ extern "C" {
         verkey: CString,
         alias: CString,
         role: CString,
-        cb: Option<ResponseStringCB>,
+        cb: Option<ResponseSliceCB>,
     ) -> Error;
 
     pub fn indy_build_msg_delete_nym(
         command_handle: CommandHandle,
         creator: CString,
         id: CString,
-        cb: Option<ResponseStringCB>,
+        cb: Option<ResponseSliceCB>,
     ) -> Error;
 }

@@ -33,6 +33,7 @@ pub mod wallet;
 pub mod cache;
 pub mod metrics;
 mod utils;
+pub mod verim_ledger;
 
 use std::ffi::CString;
 use std::fmt;
