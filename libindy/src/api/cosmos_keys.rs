@@ -40,51 +40,49 @@ use crate::{
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern "C" fn indy_keys_add_random(
+pub extern "C" fn indy_cosmos_keys_add_random(
     command_handle: CommandHandle,
     alias: *const c_char,
     cb: Option<
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key_info: *const c_char),
     >,
 ) -> ErrorCode {
-    // debug!("indy_add_random > alias {:?}", alias);
-    //
-    // check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
-    // check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
-    //
-    // debug!("indy_add_random ? alias {:?}", alias);
-    //
-    // let locator = Locator::instance();
-    //
-    // let action = async move {
-    //     let res = locator.keys_controller.add_random(alias).await;
-    //     res
-    // };
-    //
-    // let cb = move |res: IndyResult<_>| {
-    //     let (err, (key_info)) = prepare_result!(res, KeyInfo::new());
-    //
-    //     debug!("indy_add_random ? err {:?} key_info {:?}", err, key_info);
-    //
-    //     let alias = ctypes::string_to_cstring(key_info.alias);
-    //     let account_id = ctypes::string_to_cstring(key_info.account_id);
-    //     let pub_key = ctypes::string_to_cstring(key_info.pub_key);
-    //     cb(
-    //         command_handle,
-    //         err,
-    //         alias.as_ptr(),
-    //         account_id.as_ptr(),
-    //         pub_key.as_ptr(),
-    //     )
-    // };
-    //
-    // // TODO: add metrics
-    // // locator.executor.spawn_ok_instrumented(CommandMetric::DidCommandCreateAndStoreMyDid, action, cb);
-    //
-    // let res = ErrorCode::Success;
-    // debug!("indy_add_random < {:?}", res);
-    // res
-    unimplemented!()
+    debug!(
+        "indy_cosmos_keys_add_random > alias {:?} ",
+        alias
+    );
+
+    check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
+
+    debug!(
+        "indy_cosmos_keys_add_random > alias {:?} ",
+        alias
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .cosmos_keys_controller
+            .add_random(&alias)
+            .await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, res) = prepare_result!(res, String::new());
+        debug!("indy_replace_keys_start ? err {:?} res {:?}", err, res);
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::CosmosKeysAddRandom, action, cb);
+
+    let res = ErrorCode::Success;
+    debug!("indy_replace_keys_start < {:?}", res);
+    res
 }
 
 /// Creates keys (signing and encryption keys) for a new account.
@@ -109,62 +107,53 @@ pub extern "C" fn indy_keys_add_random(
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern "C" fn indy_keys_add_from_mnemonic(
+pub extern "C" fn indy_cosmos_keys_add_from_mnemonic(
+    command_handle: CommandHandle,
     alias: *const c_char,
     mnemonic: *const c_char,
     cb: Option<
-        extern "C" fn(
-            command_handle_: CommandHandle,
-            err: ErrorCode,
-            alias: *const c_char,
-            account_id: *const c_char,
-            pub_key: *const c_char,
-        ),
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key_info: *const c_char),
     >,
 ) -> ErrorCode {
-    // debug!(
-    //     "add_from_mnemonic > alias {:?} mnemonic {:?}",
-    //     alias, mnemonic
-    // );
-    // check_useful_validatable_string!(alias, ErrorCode::CommonInvalidParam1, String);
-    // check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
-    //
-    // debug!(
-    //     "add_from_mnemonic ? alias {:?} mnemonic {:?}",
-    //     alias, mnemonic
-    // );
-    //
-    // let locator = Locator::instance();
-    //
-    // let action = async move {
-    //     let res = locator.keys_controller.add_random(alias, mnemonic).await;
-    //     res
-    // };
-    //
-    // let cb = move |res: IndyResult<_>| {
-    //     let (err, (key_info)) = prepare_result!(res, KeyInfo::new());
-    //
-    //     debug!("add_from_mnemonic ? err {:?} key_info {:?}", err, key_info);
-    //
-    //     let alias = ctypes::string_to_cstring(key_info.alias);
-    //     let account_id = ctypes::string_to_cstring(key_info.account_id);
-    //     let pub_key = ctypes::string_to_cstring(key_info.pub_key);
-    //     cb(
-    //         command_handle,
-    //         err,
-    //         alias.as_ptr(),
-    //         account_id.as_ptr(),
-    //         pub_key.as_ptr(),
-    //     )
-    // };
-    //
-    // // TODO: add metrics
-    // // locator.executor.spawn_ok_instrumented(CommandMetric::DidCommandCreateAndStoreMyDid, action, cb);
-    //
-    // let res = ErrorCode::Success;
-    // debug!("add_from_mnemonic < {:?}", res);
-    // res
-    unimplemented!()
+    debug!(
+        "indy_cosmos_keys_add_from_mnemonic > alias {:?}, mnemonic {:?} ",
+        alias,
+        mnemonic
+    );
+
+    check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
+    check_useful_c_str!(mnemonic, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    debug!(
+        "indy_cosmos_keys_add_from_mnemonic > alias {:?}, mnemonic {:?} ",
+        alias,
+        mnemonic
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .cosmos_keys_controller
+            .add_from_mnemonic(&alias, &mnemonic)
+            .await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, res) = prepare_result!(res, String::new());
+        debug!("indy_cosmos_keys_add_from_mnemonic ? err {:?} res {:?}", err, res);
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::CosmosKeysAddRandom, action, cb);
+
+    let res = ErrorCode::Success;
+    debug!("indy_cosmos_keys_add_from_mnemonic < {:?}", res);
+    res
 }
 
 /// Get Key info by alias
@@ -187,53 +176,47 @@ pub extern "C" fn indy_keys_add_from_mnemonic(
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern "C" fn indy_keys_key_info(
+pub extern "C" fn indy_cosmos_keys_key_info(
+    command_handle: CommandHandle,
     alias: *const c_char,
     cb: Option<
-        extern "C" fn(
-            command_handle_: CommandHandle,
-            err: ErrorCode,
-            alias: *const c_char,
-            account_id: *const c_char,
-            pub_key: *const c_char,
-        ),
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key_info: *const c_char),
     >,
 ) -> ErrorCode {
-    // debug!("key_info > alias {:?}", alias);
-    // check_useful_validatable_string!(alias, ErrorCode::CommonInvalidParam1, String);
-    // check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
-    //
-    // debug!("key_info ? alias {:?}", alias);
-    //
-    // let locator = Locator::instance();
-    //
-    // let action = async move {
-    //     let res = locator.keys_controller.key_info(alias).await;
-    //     res
-    // };
-    //
-    // let cb = move |res: IndyResult<_>| {
-    //     let (err, (key_info)) = prepare_result!(res, KeyInfo::new());
-    //
-    //     debug!("key_info ? err {:?} key_info {:?}", err, key_info);
-    //
-    //     let alias = ctypes::string_to_cstring(key_info.alias);
-    //     let account_id = ctypes::string_to_cstring(key_info.account_id);
-    //     let pub_key = ctypes::string_to_cstring(key_info.pub_key);
-    //     cb(
-    //         command_handle,
-    //         err,
-    //         alias.as_ptr(),
-    //         account_id.as_ptr(),
-    //         pub_key.as_ptr(),
-    //     )
-    // };
-    //
-    // // TODO: add metrics
-    // // locator.executor.spawn_ok_instrumented(CommandMetric::DidCommandCreateAndStoreMyDid, action, cb);
-    //
-    // let res = ErrorCode::Success;
-    // debug!("key_info < {:?}", res);
-    // res
-    unimplemented!()
+    debug!(
+        "indy_cosmos_keys_key_info > alias {:?} ",
+        alias
+    );
+
+    check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
+
+    debug!(
+        "indy_cosmos_keys_key_info > alias {:?} ",
+        alias
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .cosmos_keys_controller
+            .key_info(&alias)
+            .await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, res) = prepare_result!(res, String::new());
+        debug!("indy_cosmos_keys_key_info ? err {:?} res {:?}", err, res);
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::CosmosKeysAddRandom, action, cb);
+
+    let res = ErrorCode::Success;
+    debug!("indy_cosmos_keys_key_info < {:?}", res);
+    res
 }

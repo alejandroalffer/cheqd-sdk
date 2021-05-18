@@ -10,6 +10,7 @@ pub mod environment;
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod constants;
+pub mod cosmos_keys;
 pub mod crypto;
 pub mod did;
 pub mod ledger;

@@ -23,7 +23,7 @@ impl CosmosKeysController {
         trace!("add_random > alias {:?}", alias);
         let res = self.cosmos_keys_service.add_random(&alias).await?;
         let key_info = serde_json::to_string(&res)
-            .to_indy(IndyErrorKind::InvalidState, "Can't serialize DID")?;
+            .to_indy(IndyErrorKind::InvalidState, "Can't add key")?;
         trace!("add_random < {:?}", key_info);
         Ok(key_info)
     }
@@ -32,21 +32,25 @@ impl CosmosKeysController {
         &self,
         alias: &str,
         mnemonic: &str,
-    ) -> IndyResult<KeyInfo> {
+    ) -> IndyResult<String> {
         trace!("add_from_mnemonic > alias {:?}", alias);
         let res = self
             .cosmos_keys_service
             .add_from_mnemonic(&alias, mnemonic)
             .await?;
-        trace!("add_from_mnemonic < {:?}", res);
-        Ok(res)
+        let key_info = serde_json::to_string(&res)
+            .to_indy(IndyErrorKind::InvalidState, "Can't add key")?;
+        trace!("add_from_mnemonic < {:?}", key_info);
+        Ok(key_info)
     }
 
-    pub(crate) async fn key_info(&self, alias: &str) -> IndyResult<KeyInfo> {
+    pub(crate) async fn key_info(&self, alias: &str) -> IndyResult<String> {
         trace!("key_info > alias {:?}", alias);
         let res = self.cosmos_keys_service.key_info(&alias).await?;
-        trace!("key_info < {:?}", res);
-        Ok(res)
+        let key_info = serde_json::to_string(&res)
+            .to_indy(IndyErrorKind::InvalidState, "Can't add key")?;
+        trace!("key_info < {:?}", key_info);
+        Ok(key_info)
     }
 
     pub(crate) async fn sign(&self, alias: &str, tx: &[u8]) -> IndyResult<Vec<u8>> {
