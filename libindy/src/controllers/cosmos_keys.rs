@@ -53,15 +53,16 @@ impl CosmosKeysController {
         Ok(key_info)
     }
 
-    pub(crate) async fn sign(&self, alias: &str, tx: &[u8]) -> IndyResult<Vec<u8>> {
+    pub(crate) async fn sign(&self, alias: &str, tx: &[u8]) -> IndyResult<String> {
         trace!("key_info > alias {:?}, tx {:?}", alias, tx);
 
         let sign_doc = SignDoc::from_bytes(tx)?;
         let signed = self.cosmos_keys_service.sign(alias, sign_doc).await?;
         let signed = signed.to_bytes()?;
+        let res = String::from_utf8(signed).expect("Found invalid UTF-8");
 
-        trace!("key_info < signed {:?}", signed);
+        trace!("key_info < signed {:?}", res);
 
-        Ok(signed)
+        Ok(res)
     }
 }
