@@ -1,5 +1,5 @@
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
-use crate::domain::verim_ledger::VerimMessage;
+use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
+use super::super::super::VerimMessage;
 use cosmos_sdk::tx::Msg;
 
 #[derive(Eq, PartialEq, Debug)]
@@ -49,8 +49,8 @@ impl VerimMessage for MsgCreateNym {
 
 #[cfg(test)]
 mod test {
-    use crate::domain::verim_ledger::verimcosmos::messages::msg_create_nym::MsgCreateNym;
-    use crate::domain::verim_ledger::VerimMessage;
+    use super::super::super::super::VerimMessage;
+    use super::super::super::messages::msg_create_nym::MsgCreateNym;
 
     #[test]
     fn test_msg_create_nym() {
