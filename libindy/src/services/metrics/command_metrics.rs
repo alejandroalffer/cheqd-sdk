@@ -121,6 +121,9 @@ pub enum CommandMetric {
     // Ledger2
     Ledger2CommandBuildMsgBankSend,
     Ledger2CommandBuildMsgCreateNym,
+    VerimLedgerCommandBuildMsgCreateNym,
+    VerimLedgerCommandBuildMsgUpdateNym,
+    VerimLedgerCommandBuildMsgDeleteNym,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,

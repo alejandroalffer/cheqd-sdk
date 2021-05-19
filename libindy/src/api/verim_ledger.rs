@@ -185,7 +185,7 @@ pub extern "C" fn indy_build_msg_create_nym(
         cb(command_handle, err, signature_raw, signature_len)
     };
 
-    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandAppendRequestEndorser, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::VerimLedgerCommandBuildMsgCreateNym, action, cb);
 
     let res = ErrorCode::Success;
     debug!("indy_build_msg_create_nym < {:?}", res);
@@ -243,7 +243,7 @@ pub extern "C" fn indy_build_msg_update_nym(
         cb(command_handle, err, signature_raw, signature_len)
     };
 
-    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandAppendRequestEndorser, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::VerimLedgerCommandBuildMsgUpdateNym, action, cb);
 
     let res = ErrorCode::Success;
     debug!("indy_build_msg_update_nym < {:?}", res);
@@ -294,7 +294,7 @@ pub extern "C" fn indy_build_msg_delete_nym(
         cb(command_handle, err, signature_raw, signature_len)
     };
 
-    locator.executor.spawn_ok_instrumented(CommandMetric::LedgerCommandAppendRequestEndorser, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::VerimLedgerCommandBuildMsgDeleteNym, action, cb);
 
     let res = ErrorCode::Success;
     debug!("indy_build_msg_delete_nym < {:?}", res);
