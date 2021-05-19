@@ -60,6 +60,7 @@ mod test {
     use crate::domain::cosmos_pool::CosmosPoolConfig;
     use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
     use async_std::sync::Arc;
+    use std::str::FromStr;
 
     struct TestHarness {
         ledger_controller: VerimLedgerController,
@@ -108,7 +109,12 @@ mod test {
             .await
             .unwrap();
 
-        println!("Alice's account id: {}", alice.account_id);
+        let alice = serde_json::Value::from_str(&alice).unwrap();
+
+        println!(
+            "Alice's account id: {}",
+            alice["account_id"].as_str().unwrap()
+        );
 
         // Pool
         let pool_alias = harness
@@ -119,7 +125,13 @@ mod test {
 
         let msg = harness
             .ledger_controller
-            .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
+            .build_msg_create_nym(
+                "did",
+                &alice["account_id"].as_str().unwrap(),
+                "verkey",
+                "bob",
+                "role",
+            )
             .unwrap();
 
         let tx = harness
