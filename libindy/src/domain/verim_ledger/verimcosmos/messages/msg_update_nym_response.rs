@@ -1,5 +1,5 @@
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgUpdateNymResponse as ProtoMsgUpdateNymResponse;
-use crate::domain::verim_ledger::VerimMessage;
+use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgUpdateNymResponse as ProtoMsgUpdateNymResponse;
+use super::super::super::VerimMessage;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MsgUpdateNymResponse { }
@@ -24,9 +24,9 @@ impl VerimMessage for MsgUpdateNymResponse {
 
 #[cfg(test)]
 mod test {
-    use crate::domain::verim_ledger::verimcosmos::messages::msg_update_nym::MsgUpdateNym;
-    use crate::domain::verim_ledger::verimcosmos::messages::msg_update_nym_response::MsgUpdateNymResponse;
-    use crate::domain::verim_ledger::VerimMessage;
+    use super::super::MsgUpdateNym;
+    use super::MsgUpdateNymResponse;
+    use super::super::super::super::VerimMessage;
 
     #[test]
     fn test_msg_update_nym_response() {

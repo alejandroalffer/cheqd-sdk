@@ -1,40 +1,52 @@
-extern crate indyrs as indy;
-#[macro_use] extern crate serde_json;
-#[macro_use] extern crate serde_derive;
-extern crate rmp_serde;
-extern crate byteorder;
+#[macro_use]
+extern crate derivative;
+
+#[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
+extern crate serde_json;
 
 #[macro_use]
 mod utils;
-use utils::wallet::Wallet;
-use async_std::sync::Arc;
 
 
-// use crate::domain::crypto::did::DidValue;
-// use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
-// use crate::domain::verim_ledger::verimcosmos::messages::{MsgCreateNymResponse, MsgUpdateNymResponse, MsgDeleteNymResponse};
-// use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
-// use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
-// use indy_api_types::errors::{IndyErrorKind, IndyResult};
-// use indy_api_types::IndyError;
-
-// mod low_tests {
-//     use super::*;
-//
-//     #[test]
-//     fn create_payment_address_works () {
-//         let _handle = Wallet::new();
-//     }
-// }
+use utils::{constants::*, verim_ledger};
 
 
-#[cfg(test)]
-mod test_transactions {
+mod high_cases {
     use super::*;
 
-    #[test]
-    fn test_msg_create_nym() {
-        
-    }
+    #[cfg(test)]
+    mod verim_ledger_transactions {
+        use super::*;
 
+        #[test]
+        fn build_msg_create_nym() {
+            let did = "0";
+            let creator = "1";
+            let role = "some_role";
+            let alias = "some_alias";
+            let verkey = "some_verkey";
+            verim_ledger::build_msg_create_nym(did, creator, verkey, alias, role);
+        }
+
+        #[test]
+        fn build_msg_update_nym() {
+            let did = "0";
+            let creator = "1";
+            let role = "some_role";
+            let alias = "some_alias";
+            let verkey = "some_verkey";
+            let id = 2;
+            verim_ledger::build_msg_update_nym(did, creator, verkey, alias, role, id);
+        }
+
+        #[test]
+        fn build_msg_delete_nym() {
+            let creator = "1";
+            let id = 2;
+            verim_ledger::build_msg_delete_nym(creator, id);
+        }
+    }
 }

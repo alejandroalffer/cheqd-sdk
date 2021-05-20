@@ -20,13 +20,14 @@ extern "C" {
         verkey: CString,
         alias: CString,
         role: CString,
+        id: u64,
         cb: Option<ResponseSliceCB>,
     ) -> Error;
 
     pub fn indy_build_msg_delete_nym(
         command_handle: CommandHandle,
         creator: CString,
-        id: CString,
+        id: u64,
         cb: Option<ResponseSliceCB>,
     ) -> Error;
 }

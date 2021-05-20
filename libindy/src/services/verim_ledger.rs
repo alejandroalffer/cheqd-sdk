@@ -112,12 +112,12 @@ impl VerimLedgerService {
     #[logfn(Info)]
     pub(crate) fn build_msg_update_nym(
         &self,
+        did: &str,
         creator: &str,
-        id: u64,
         verkey: &str,
         alias: &str,
-        did: &str,
         role: &str,
+        id: u64
     ) -> IndyResult<Msg> {
         let msg_send = MsgUpdateNym {
             creator: creator.to_string(),

@@ -195,12 +195,12 @@ pub extern "C" fn indy_build_msg_create_nym(
 #[no_mangle]
 pub extern "C" fn indy_build_msg_update_nym(
     command_handle: CommandHandle,
+    did: *const c_char,
     creator: *const c_char,
-    id: *const c_char,
     verkey: *const c_char,
     alias: *const c_char,
-    did: *const c_char,
     role: *const c_char,
+    id: u64,
     cb: Option<
         extern "C" fn(
             command_handle_: CommandHandle,
@@ -211,20 +211,20 @@ pub extern "C" fn indy_build_msg_update_nym(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_build_msg_update_nym > id {:?} creator {:?} verkey {:?} alias {:?} did {:?} role {:?}",
-        creator, id, verkey, alias, did, role
+        "indy_build_msg_update_nym > did {:?} creator {:?} verkey {:?} alias {:?} role {:?} id {:?}",
+        did, creator, verkey, alias, role, id,
     );
-    check_useful_c_str!(creator, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(creator, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(verkey, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(alias, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam6);
-    check_useful_c_str!(role, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(role, ErrorCode::CommonInvalidParam6);
+    // check_useful_c_str!(id, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     debug!(
-        "indy_build_msg_update_nym > id {:?} creator {:?} verkey {:?} alias {:?} did {:?} role {:?}",
-        id, creator, verkey, alias, did, role
+        "indy_build_msg_update_nym > did {:?} creator {:?} verkey {:?} alias {:?} role {:?} id {:?}",
+        did, creator, verkey, alias, role, id,
     );
 
     let locator = Locator::instance();
@@ -232,7 +232,7 @@ pub extern "C" fn indy_build_msg_update_nym(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .build_msg_update_nym(&creator, id.parse().unwrap(), &verkey, &alias, &did, &role);
+            .build_msg_update_nym(&did, &creator, &verkey, &alias, &role, id);
         res
     };
 
@@ -254,7 +254,7 @@ pub extern "C" fn indy_build_msg_update_nym(
 pub extern "C" fn indy_build_msg_delete_nym(
     command_handle: CommandHandle,
     creator: *const c_char,
-    id: *const c_char,
+    id: u64,
     cb: Option<
         extern "C" fn(
             command_handle_: CommandHandle,
@@ -270,7 +270,7 @@ pub extern "C" fn indy_build_msg_delete_nym(
     );
 
     check_useful_c_str!(creator, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
+    // check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     debug!(
@@ -283,7 +283,7 @@ pub extern "C" fn indy_build_msg_delete_nym(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .build_msg_delete_nym(&creator, id.parse().unwrap());
+            .build_msg_delete_nym(&creator, id);
         res
     };
 

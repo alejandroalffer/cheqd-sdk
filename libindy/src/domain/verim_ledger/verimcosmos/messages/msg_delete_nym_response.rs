@@ -1,5 +1,5 @@
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse as ProtoMsgDeleteNymResponse;
-use crate::domain::verim_ledger::VerimMessage;
+use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse as ProtoMsgDeleteNymResponse;
+use super::super::super::VerimMessage;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MsgDeleteNymResponse {
@@ -26,9 +26,9 @@ impl VerimMessage for MsgDeleteNymResponse {
 
 #[cfg(test)]
 mod test {
-    use crate::domain::verim_ledger::verimcosmos::messages::msg_delete_nym::MsgDeleteNym;
-    use crate::domain::verim_ledger::verimcosmos::messages::msg_delete_nym_response::MsgDeleteNymResponse;
-    use crate::domain::verim_ledger::VerimMessage;
+    use super::super::super::super::VerimMessage;
+    use super::super::MsgDeleteNym;
+    use super::MsgDeleteNymResponse;
 
     #[test]
     fn test_msg_delete_nym_response() {

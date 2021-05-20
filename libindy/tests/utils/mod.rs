@@ -24,6 +24,7 @@ pub mod cache;
 pub mod logger;
 pub mod rand_utils;
 pub mod metrics;
+pub mod verim_ledger;
 
 #[macro_use]
 #[allow(unused_macros)]
