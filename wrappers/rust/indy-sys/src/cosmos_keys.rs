@@ -21,4 +21,12 @@ extern "C" {
         alias: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
+
+    pub fn indy_cosmos_keys_sign(
+        command_handle: CommandHandle,
+        alias: CString,
+        tx_raw: BString,
+        tx_len: u32,
+        cb: Option<ResponseSliceCB>,
+    ) -> Error;
 }

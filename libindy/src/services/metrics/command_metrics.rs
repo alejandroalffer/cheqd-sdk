@@ -151,6 +151,9 @@ pub enum CommandMetric {
     DidCommandQualifyDid,
     //CosmosKeys
     CosmosKeysAddRandom,
+    CosmosKeysAddFromMnemonic,
+    CosmosKeysKeyInfo,
+    CosmosKeysSign,
     // WalletCommand
     WalletCommandRegisterWalletType,
     WalletCommandCreate,

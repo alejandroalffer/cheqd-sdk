@@ -79,3 +79,27 @@ fn _key_info(
         cosmos_keys::indy_cosmos_keys_key_info(command_handle, alias.as_ptr(), cb)
     })
 }
+
+pub fn sign(alias: &str, tx: &[u8]) -> Box<dyn Future<Item=Vec<u8>, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+
+    let err = _sign(command_handle, alias, tx, cb);
+
+    ResultHandler::slice(command_handle, err, receiver)
+}
+
+fn _sign(
+    command_handle: CommandHandle,
+    alias: &str,
+    tx: &[u8],
+    cb: Option<ResponseSliceCB>,
+) -> ErrorCode {
+    let alias = c_str!(alias);
+
+    ErrorCode::from(unsafe {
+        cosmos_keys::indy_cosmos_keys_sign(command_handle, alias.as_ptr(),
+                                           tx.as_ptr() as *const u8,
+                                           tx.len() as u32,
+                                           cb)
+    })
+}

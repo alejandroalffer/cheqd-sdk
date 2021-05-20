@@ -72,7 +72,7 @@ pub extern "C" fn indy_cosmos_keys_add_random(
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result!(res, String::new());
-        debug!("indy_replace_keys_start ? err {:?} res {:?}", err, res);
+        debug!("indy_cosmos_keys_add_random ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
@@ -149,7 +149,7 @@ pub extern "C" fn indy_cosmos_keys_add_from_mnemonic(
         cb(command_handle, err, res.as_ptr())
     };
 
-    locator.executor.spawn_ok_instrumented(CommandMetric::CosmosKeysAddRandom, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CosmosKeysAddFromMnemonic, action, cb);
 
     let res = ErrorCode::Success;
     debug!("indy_cosmos_keys_add_from_mnemonic < {:?}", res);
@@ -214,9 +214,76 @@ pub extern "C" fn indy_cosmos_keys_key_info(
         cb(command_handle, err, res.as_ptr())
     };
 
-    locator.executor.spawn_ok_instrumented(CommandMetric::CosmosKeysAddRandom, action, cb);
+    locator.executor.spawn_ok_instrumented(CommandMetric::CosmosKeysKeyInfo, action, cb);
 
     let res = ErrorCode::Success;
     debug!("indy_cosmos_keys_key_info < {:?}", res);
     res
 }
+/// Sign
+/// #Params
+/// alias: account alias for getting its keys
+/// tx: SignDoc
+/// Example:
+/// {
+///     "alias": string
+///     "tx": &[u8]
+/// }
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Tx string
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern "C" fn indy_cosmos_keys_sign(
+    command_handle: CommandHandle,
+    alias: *const c_char,
+    tx_raw: *const u8,
+    tx_len: u32,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, signed_raw: *const u8, signed_len: u32),
+    >,
+) -> ErrorCode {
+    debug!(
+        "indy_cosmos_keys_sign > alias {:?} tx {:?} ",
+        alias,
+        tx
+    );
+
+
+    check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
+    check_useful_c_byte_array!(tx_raw, tx_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    debug!(
+        "indy_cosmos_keys_sign > alias {:?} ",
+        alias
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .cosmos_keys_controller
+            .sign(&alias,&tx_raw)
+            .await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, res) = prepare_result!(res, Vec::new());
+        debug!("indy_cosmos_keys_sign ? err {:?} res {:?}", err, res);
+
+        let (signed_raw, signed_len) = ctypes::vec_to_pointer(&res);
+        cb(command_handle, err, signed_raw, signed_len)
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::CosmosKeysSign, action, cb);
+
+    let res = ErrorCode::Success;
+    debug!("indy_cosmos_keys_sign < {:?}", res);
+    res
+}
+
