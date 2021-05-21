@@ -253,7 +253,7 @@ impl From<log::SetLoggerError> for IndyError {
 // Cosmos SDK error. They don't expose Error interface.
 impl From<eyre::Report> for IndyError {
     fn from(err: eyre::Report) -> IndyError {
-        err.into()
+        Self::from_msg(IndyErrorKind::InvalidState, err.to_string())
     }
 }
 
