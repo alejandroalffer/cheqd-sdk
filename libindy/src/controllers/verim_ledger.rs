@@ -64,25 +64,26 @@ impl VerimLedgerController {
 
     pub fn build_msg_update_nym(
         &self,
+        did: &str,
         creator: &str,
-        id: u64,
         verkey: &str,
         alias: &str,
-        did: &str,
         role: &str,
+        id: u64,
+
     ) -> IndyResult<Vec<u8>> {
         trace!(
-            "add_random > creator {:?} id {:?} verkey {:?} alias {:?} did {:?} role {:?}",
+            "add_random > creator {:?} verkey {:?} alias {:?} did {:?} role {:?} id {:?}",
+            did,
             creator,
-            id,
             verkey,
             alias,
-            did,
-            role
+            role,
+            id
         );
         let msg = self
             .verim_ledger_service
-            .build_msg_update_nym(creator, id, verkey, alias, did, role)?;
+            .build_msg_update_nym(did, creator, verkey, alias, role, id)?;
         trace!("add_random < {:?}", msg);
 
         Ok(msg.to_bytes()?)
@@ -294,7 +295,7 @@ mod test {
         // Msg for update transaction
         let msg = harness
             .ledger_controller
-            .build_msg_update_nym(&alice.account_id, result_create.id, "verkey", "bob", "newdid", "role")
+            .build_msg_update_nym("newdid", &alice.account_id, "verkey", "bob", "role", result_create.id)
             .unwrap();
 
         // Transaction of update

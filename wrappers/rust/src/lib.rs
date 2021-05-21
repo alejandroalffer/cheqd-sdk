@@ -34,6 +34,7 @@ pub mod payments;
 pub mod pool;
 mod utils;
 pub mod wallet;
+pub mod verim_ledger;
 
 use std::ffi::CStr;
 use std::ffi::CString;
