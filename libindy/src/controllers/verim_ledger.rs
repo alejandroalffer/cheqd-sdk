@@ -2,7 +2,9 @@
 
 use crate::domain::crypto::did::DidValue;
 use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
-use crate::domain::verim_ledger::verimcosmos::messages::{MsgCreateNymResponse, MsgUpdateNymResponse, MsgDeleteNymResponse};
+use crate::domain::verim_ledger::verimcosmos::messages::{
+    MsgCreateNymResponse, MsgDeleteNymResponse, MsgUpdateNymResponse,
+};
 use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
 use async_std::sync::Arc;
 use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
@@ -28,7 +30,7 @@ impl VerimLedgerController {
         }
     }
 
-    pub fn build_msg_create_nym(
+    pub(crate) fn build_msg_create_nym(
         &self,
         did: &str,
         creator: &str,
@@ -62,7 +64,7 @@ impl VerimLedgerController {
         Ok(res)
     }
 
-    pub fn build_msg_update_nym(
+    pub(crate) fn build_msg_update_nym(
         &self,
         did: &str,
         creator: &str,
@@ -70,7 +72,6 @@ impl VerimLedgerController {
         alias: &str,
         role: &str,
         id: u64,
-
     ) -> IndyResult<Vec<u8>> {
         trace!(
             "add_random > creator {:?} verkey {:?} alias {:?} did {:?} role {:?} id {:?}",
@@ -99,7 +100,7 @@ impl VerimLedgerController {
         Ok(res)
     }
 
-    pub fn build_msg_delete_nym(&self, creator: &str, id: u64) -> IndyResult<Vec<u8>> {
+    pub(crate) fn build_msg_delete_nym(&self, creator: &str, id: u64) -> IndyResult<Vec<u8>> {
         trace!("add_random > creator {:?} id {:?}", creator, id,);
         let msg = self
             .verim_ledger_service
@@ -277,7 +278,11 @@ mod test {
             .await
             .unwrap();
 
-        let signed_create = harness.keys_controller.sign("alice", &tx_create).await.unwrap();
+        let signed_create = harness
+            .keys_controller
+            .sign("alice", &tx_create)
+            .await
+            .unwrap();
 
         // Broadcast transaction of create
         let response_create = harness
@@ -295,7 +300,14 @@ mod test {
         // Msg for update transaction
         let msg = harness
             .ledger_controller
-            .build_msg_update_nym("newdid", &alice.account_id, "verkey", "bob", "role", result_create.id)
+            .build_msg_update_nym(
+                "newdid",
+                &alice.account_id,
+                "verkey",
+                "bob",
+                "role",
+                result_create.id,
+            )
             .unwrap();
 
         // Transaction of update
@@ -380,7 +392,11 @@ mod test {
             .await
             .unwrap();
 
-        let signed_create = harness.keys_controller.sign("alice", &tx_create).await.unwrap();
+        let signed_create = harness
+            .keys_controller
+            .sign("alice", &tx_create)
+            .await
+            .unwrap();
 
         // Broadcast transaction of create
         let response_create = harness

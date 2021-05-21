@@ -118,12 +118,12 @@ pub enum CommandMetric {
     LedgerCommandBuildGetAcceptanceMechanismsRequest,
     LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest,
     LedgerCommandAppendRequestEndorser,
-    // Ledger2
-    Ledger2CommandBuildMsgBankSend,
-    Ledger2CommandBuildMsgCreateNym,
+    // VerimLedger
     VerimLedgerCommandBuildMsgCreateNym,
     VerimLedgerCommandBuildMsgUpdateNym,
     VerimLedgerCommandBuildMsgDeleteNym,
+    // CosmosPool
+    CosmosPoolAdd,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,
@@ -152,7 +152,7 @@ pub enum CommandMetric {
     DidCommandGetNymAck,
     DidCommandGetAttribAck,
     DidCommandQualifyDid,
-    //CosmosKeys
+    // CosmosKeys
     CosmosKeysAddRandom,
     CosmosKeysAddFromMnemonic,
     CosmosKeysKeyInfo,

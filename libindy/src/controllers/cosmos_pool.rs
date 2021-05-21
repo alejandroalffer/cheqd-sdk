@@ -25,29 +25,35 @@ impl CosmosPoolController {
         }
     }
 
-    pub async fn add(&self, alias: &str, rpc_address: &str, chain_id: &str) -> IndyResult<()> {
+    pub(crate) async fn add(
+        &self,
+        alias: &str,
+        rpc_address: &str,
+        chain_id: &str,
+    ) -> IndyResult<String> {
         trace!(
             "add > alias {:?} rpc_address {:?} chain_id {:?}",
             alias,
             rpc_address,
             chain_id
         );
-        self.cosmos_pool_service
+        let config = self
+            .cosmos_pool_service
             .add(alias, rpc_address, chain_id)
             .await?;
-        trace!("add <");
-        Ok(())
+        let json = serde_json::to_string(&config)?;
+        trace!("add < {:?}", json);
+        Ok(json)
     }
 
-    pub async fn pool_config(&self, alias: &str) -> IndyResult<CosmosPoolConfig> {
+    pub(crate) async fn pool_config(&self, alias: &str) -> IndyResult<CosmosPoolConfig> {
         trace!("pool_config > alias {:?}", alias);
         let config = self.cosmos_pool_service.pool_config(alias).await?;
         trace!("pool_config <");
         Ok(config)
     }
 
-    // Returns tx bytes.
-    pub async fn build_tx(
+    pub(crate) async fn build_tx(
         &self,
         pool_alias: &str,
         sender_alias: &str,
@@ -87,8 +93,7 @@ impl CosmosPoolController {
         Ok(sign_doc.to_bytes()?)
     }
 
-    // Send and wait for commit
-    pub async fn broadcast_tx_commit(
+    pub(crate) async fn broadcast_tx_commit(
         &self,
         pool_alias: &str,
         signed_tx: &[u8],
@@ -108,10 +113,6 @@ impl CosmosPoolController {
         trace!("broadcast_tx_commit < resp_bytes {:?}", resp);
 
         Ok(resp)
-    }
-
-    pub fn parse_tx_commit_info() {
-        unimplemented!()
     }
 
     // TODO: Queries
