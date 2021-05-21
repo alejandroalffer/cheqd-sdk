@@ -1,11 +1,7 @@
 use std::fmt::Debug;
 
-use cosmos_ext::ProstMessageExt;
-use cosmos_sdk::proto::cosmos::tx::v1beta1::{SignDoc as ProtoSignDoc, TxRaw};
-use cosmos_sdk::tx::{Msg, MsgProto, MsgType, Raw, SignDoc};
+use cosmos_sdk::tx::{Msg, MsgType};
 use indy_api_types::errors::IndyResult;
-use prost::Message;
-use prost_types::Any;
 
 pub mod cosmos_ext;
 pub mod proto;
@@ -28,17 +24,4 @@ pub trait VerimMessage: Eq + Debug {
         let proto = Self::Proto::from_msg(msg)?;
         Ok(Self::from_proto(&proto))
     }
-
-    // fn to_bytes(&self) -> IndyResult<Vec<u8>> {
-    //     let proto = self.to_proto();
-    //     Ok(proto.to_bytes()?)
-    // }
-    //
-    // fn from_bytes(bytes: &[u8]) -> IndyResult<Self>
-    // where
-    //     Self: Sized,
-    // {
-    //     let proto = Self::Proto::from_bytes(bytes)?;
-    //     Ok(Self::from_proto(&proto)?)
-    // }
 }

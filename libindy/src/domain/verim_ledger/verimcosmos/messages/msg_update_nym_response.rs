@@ -2,11 +2,11 @@ use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgUp
 use crate::domain::verim_ledger::VerimMessage;
 
 #[derive(Eq, PartialEq, Debug)]
-pub struct MsgUpdateNymResponse { }
+pub struct MsgUpdateNymResponse {}
 
 impl MsgUpdateNymResponse {
     pub fn new() -> Self {
-        MsgUpdateNymResponse { }
+        MsgUpdateNymResponse {}
     }
 }
 
@@ -14,11 +14,11 @@ impl VerimMessage for MsgUpdateNymResponse {
     type Proto = ProtoMsgUpdateNymResponse;
 
     fn to_proto(&self) -> Self::Proto {
-        Self::Proto { }
+        Self::Proto {}
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self { }
+    fn from_proto(_proto: &Self::Proto) -> Self {
+        Self {}
     }
 }
 

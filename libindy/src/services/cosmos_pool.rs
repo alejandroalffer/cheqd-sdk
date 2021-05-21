@@ -1,7 +1,6 @@
 //! Pool service for Cosmos back-end
 
 use crate::domain::cosmos_pool::CosmosPoolConfig;
-use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
 use cosmos_sdk::crypto::PublicKey;
 use cosmos_sdk::rpc::endpoint::broadcast;
 use cosmos_sdk::rpc::{Request, Response};
@@ -149,9 +148,6 @@ impl CosmosPoolService {
         }
 
         Ok(resp)
-        // TODO: Commit proof
-        // TODO: Error handling
-        // TODO: Return?
     }
 
     pub(crate) async fn abci_query(
@@ -161,9 +157,6 @@ impl CosmosPoolService {
     ) -> IndyResult<rpc::endpoint::abci_query::Response> {
         let resp = self.send_req(req, rpc_address).await?;
         Ok(resp)
-        // TODO: State proof
-        // TODO: Error handling
-        // TODO: Return?
     }
 
     async fn send_req<R>(&self, req: R, rpc_address: &str) -> IndyResult<R::Response>

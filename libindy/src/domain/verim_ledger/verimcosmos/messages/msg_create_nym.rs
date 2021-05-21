@@ -1,6 +1,5 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
 use super::super::super::VerimMessage;
-use cosmos_sdk::tx::Msg;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MsgCreateNym {

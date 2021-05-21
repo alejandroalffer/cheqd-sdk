@@ -6,7 +6,7 @@ use cosmos_sdk::tx::{Msg, Raw};
 use indy_api_types::errors::IndyResult;
 
 use crate::domain::cosmos_pool::CosmosPoolConfig;
-use crate::domain::verim_ledger::cosmos_ext::{CosmosMsgExt, CosmosSignDocExt, ProstMessageExt};
+use crate::domain::verim_ledger::cosmos_ext::{CosmosMsgExt, CosmosSignDocExt};
 use crate::services::{CosmosKeysService, CosmosPoolService};
 
 pub(crate) struct CosmosPoolController {
@@ -109,21 +109,4 @@ impl CosmosPoolController {
 
         Ok(resp)
     }
-
-    pub fn parse_tx_commit_info() {
-        unimplemented!()
-    }
-
-    // TODO: Queries
-    // pub async fn abci_query(
-    //     &self,
-    //     rpc_address: &str,
-    //     req: rpc::endpoint::abci_query::Request,
-    // ) -> IndyResult<rpc::endpoint::abci_query::Response> {
-    //     let resp = self.send_req(req, rpc_address).await?;
-    //     Ok(resp)
-    //     // TODO: State proof
-    //     // TODO: Error handling
-    //     // TODO: Return?
-    // }
 }

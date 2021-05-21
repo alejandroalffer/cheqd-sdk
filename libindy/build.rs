@@ -1,13 +1,6 @@
-use regex::Regex;
 use std::env;
 use std::fs;
-use std::fs::{create_dir_all, remove_dir_all};
-use std::{
-    ffi::OsStr,
-    io,
-    path::{Path, PathBuf},
-    process,
-};
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 fn main() {
@@ -109,7 +102,6 @@ fn build_proto() {
     fs::create_dir(proto_dir.clone()).unwrap();
 
     compile_protos(&proto_dir);
-    // compile_proto_services(&proto_dir);
 }
 
 fn compile_protos(out_dir: &Path) {
@@ -121,18 +113,8 @@ fn compile_protos(out_dir: &Path) {
         out_dir.display()
     );
 
-    let root = env!("CARGO_MANIFEST_DIR");
-
     // Paths
-    let proto_paths = [
-        // format!("{}/../proto/definitions/mock", root),
-        // format!("{}/proto/ibc", sdk_dir.display()),
-        // format!("{}/proto/cosmos/tx", sdk_dir.display()),
-        // format!("{}/proto/cosmos/bank", sdk_dir.display()),
-        // format!("{}/proto/cosmos/base", sdk_dir.display()),
-        // format!("{}/proto/cosmos/staking", sdk_dir.display()),
-        format!("{}/proto/verimcosmos", verimcosmos_dir.display()),
-    ];
+    let proto_paths = [format!("{}/proto/verimcosmos", verimcosmos_dir.display())];
 
     let proto_includes_paths = [
         format!("{}/proto", sdk_dir.display()),
@@ -170,51 +152,4 @@ fn compile_protos(out_dir: &Path) {
         eprintln!("[error] couldn't compile protos: {}", e);
         panic!("protoc failed!");
     }
-}
-
-fn compile_proto_services(out_dir: impl AsRef<Path>) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let sdk_dir = PathBuf::from(COSMOS_SDK_DIR);
-    let verimcosmos_dir = PathBuf::from(VERIMCOSMOS_DIR);
-
-    let proto_includes_paths = [
-        sdk_dir.join("proto"),
-        sdk_dir.join("third_party/proto"),
-        verimcosmos_dir.join("proto"),
-    ];
-
-    // List available paths for dependencies
-    let includes = proto_includes_paths
-        .iter()
-        .map(|p| p.as_os_str().to_os_string())
-        .collect::<Vec<_>>();
-
-    let proto_services_path = [
-        // sdk_dir.join("proto/cosmos/auth/v1beta1/query.proto"),
-        // sdk_dir.join("proto/cosmos/staking/v1beta1/query.proto"),
-        // sdk_dir.join("proto/cosmos/bank/v1beta1/query.proto"),
-        // sdk_dir.join("proto/cosmos/bank/v1beta1/tx.proto"),
-        // sdk_dir.join("proto/cosmos/tx/v1beta1/service.proto"),
-        // sdk_dir.join("proto/cosmos/tx/v1beta1/tx.proto"),
-        verimcosmos_dir.join("proto/verimcosmos/tx.proto"),
-        verimcosmos_dir.join("proto/verimcosmos/query.proto"),
-    ];
-
-    // List available paths for dependencies
-    let services = proto_services_path
-        .iter()
-        .map(|p| p.as_os_str().to_os_string())
-        .collect::<Vec<_>>();
-
-    // Compile all proto client for GRPC services
-    println!("[info] Compiling proto clients for GRPC services!");
-    tonic_build::configure()
-        .build_client(true)
-        .build_server(false)
-        .format(true)
-        .out_dir(out_dir)
-        .compile(&services, &includes)
-        .unwrap();
-
-    println!("[info ] => Done!");
 }

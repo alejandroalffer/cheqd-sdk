@@ -1,6 +1,5 @@
 use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgUpdateNym as ProtoMsgUpdateNym;
 use crate::domain::verim_ledger::VerimMessage;
-use cosmos_sdk::tx::Msg;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MsgUpdateNym {
@@ -13,7 +12,14 @@ pub struct MsgUpdateNym {
 }
 
 impl MsgUpdateNym {
-    pub fn new(creator: String, id: u64, alias: String, verkey: String, did: String, role: String) -> Self {
+    pub fn new(
+        creator: String,
+        id: u64,
+        alias: String,
+        verkey: String,
+        did: String,
+        role: String,
+    ) -> Self {
         MsgUpdateNym {
             creator,
             id,

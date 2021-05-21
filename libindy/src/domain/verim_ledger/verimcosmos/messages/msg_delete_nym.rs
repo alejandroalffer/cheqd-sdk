@@ -1,6 +1,5 @@
 use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNym as ProtoMsgDeleteNym;
 use crate::domain::verim_ledger::VerimMessage;
-use cosmos_sdk::tx::Msg;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MsgDeleteNym {
@@ -10,10 +9,7 @@ pub struct MsgDeleteNym {
 
 impl MsgDeleteNym {
     pub fn new(creator: String, id: u64) -> Self {
-        MsgDeleteNym {
-            creator,
-            id,
-        }
+        MsgDeleteNym { creator, id }
     }
 }
 

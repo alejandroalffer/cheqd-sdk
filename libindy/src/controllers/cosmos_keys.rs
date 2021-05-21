@@ -4,9 +4,8 @@ use crate::domain::cosmos_keys::KeyInfo;
 use crate::domain::verim_ledger::cosmos_ext::CosmosSignDocExt;
 use crate::services::CosmosKeysService;
 use async_std::sync::Arc;
-use cosmos_sdk::tx::{Raw, SignDoc};
+use cosmos_sdk::tx::SignDoc;
 use indy_api_types::errors::IndyResult;
-use indy_api_types::IndyError;
 
 pub(crate) struct CosmosKeysController {
     cosmos_keys_service: Arc<CosmosKeysService>,
