@@ -5,7 +5,7 @@ use std::ffi::CString;
 use futures::Future;
 
 use ffi::cosmos_keys;
-use ffi::ResponseStringCB;
+use ffi::{ResponseSliceCB, ResponseStringCB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
 use CommandHandle;
@@ -80,7 +80,7 @@ fn _key_info(
     })
 }
 
-pub fn sign(alias: &str, tx: &[u8]) -> Box<dyn Future<Item=Vec<u8>, Error=IndyError>> {
+pub fn sign(alias: &str, tx: &[u8]) -> Box<dyn Future<Item = Vec<u8>, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
     let err = _sign(command_handle, alias, tx, cb);
@@ -97,9 +97,12 @@ fn _sign(
     let alias = c_str!(alias);
 
     ErrorCode::from(unsafe {
-        cosmos_keys::indy_cosmos_keys_sign(command_handle, alias.as_ptr(),
-                                           tx.as_ptr() as *const u8,
-                                           tx.len() as u32,
-                                           cb)
+        cosmos_keys::indy_cosmos_keys_sign(
+            command_handle,
+            alias.as_ptr(),
+            tx.as_ptr() as *const u8,
+            tx.len() as u32,
+            cb,
+        )
     })
 }

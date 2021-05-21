@@ -9,7 +9,7 @@ extern crate serde_json;
 
 mod utils;
 
-use indyrs::{ErrorCode};
+use indyrs::ErrorCode;
 
 use utils::{constants::*, cosmos_keys, types::ResponseType};
 
@@ -25,7 +25,7 @@ mod add_keys {
 
     #[test]
     fn indy_add_from_mnemonic() {
-        let alias = "some_alias";
+        let alias = "some_alias_2";
         let mnemonic = "some_mnemonic";
         let result = cosmos_keys::add_from_mnemonic(alias, mnemonic).unwrap();
         println!("Mnemonic: {:?}, Data: {:?}", mnemonic, result);
