@@ -81,7 +81,7 @@ mod high_cases {
                 "alice",
                 &msg,
                 9,
-                1,
+                2,
                 300000,
                 0u64,
                 "token",
@@ -96,15 +96,12 @@ mod high_cases {
             // Broadcast
             let resp = cosmos_pool::broadcast_tx_commit("test_pool", &signed).unwrap();
 
-            // // Parse response of create transaction
-            // let result = harness
-            //     .ledger_controller
-            //     .parse_msg_create_nym_resp(&resp)
-            //     .unwrap();
-            //
-            // println!("result: {:?}", result);
-            //
-            // assert!(true)
+            // Parse the response
+            let result = verim_ledger::parse_msg_create_nym_resp(&resp).unwrap();
+
+            println!("result: {:?}", result);
+
+            assert!(true)
         }
     }
 }

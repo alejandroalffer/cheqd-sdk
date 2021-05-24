@@ -5,7 +5,7 @@ use std::ffi::CString;
 use futures::Future;
 
 use ffi::verim_ledger;
-use ffi::ResponseSliceCB;
+use ffi::{ResponseSliceCB, ResponseStringCB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
 use CommandHandle;
@@ -47,6 +47,32 @@ fn _build_msg_create_nym(
             verkey.as_ptr(),
             alias.as_ptr(),
             role.as_ptr(),
+            cb,
+        )
+    })
+}
+
+pub fn parse_msg_create_nym_resp(
+    commit_resp: &str,
+) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _parse_msg_create_nym_resp(command_handle, commit_resp, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _parse_msg_create_nym_resp(
+    command_handle: CommandHandle,
+    commit_resp: &str,
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+    let commit_resp = c_str!(commit_resp);
+
+    ErrorCode::from(unsafe {
+        verim_ledger::indy_verim_ledger_parse_msg_create_nym_resp(
+            command_handle,
+            commit_resp.as_ptr(),
             cb,
         )
     })
@@ -97,6 +123,32 @@ fn _build_msg_update_nym(
     })
 }
 
+pub fn parse_msg_update_nym_resp(
+    commit_resp: &str,
+) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _parse_msg_update_nym_resp(command_handle, commit_resp, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _parse_msg_update_nym_resp(
+    command_handle: CommandHandle,
+    commit_resp: &str,
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+    let commit_resp = c_str!(commit_resp);
+
+    ErrorCode::from(unsafe {
+        verim_ledger::indy_verim_ledger_parse_msg_update_nym_resp(
+            command_handle,
+            commit_resp.as_ptr(),
+            cb,
+        )
+    })
+}
+
 pub fn build_msg_delete_nym(
     creator: &str,
     id: u64,
@@ -121,6 +173,32 @@ fn _build_msg_delete_nym(
             command_handle,
             creator.as_ptr(),
             id,
+            cb,
+        )
+    })
+}
+
+pub fn parse_msg_delete_nym_resp(
+    commit_resp: &str,
+) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _parse_msg_delete_nym_resp(command_handle, commit_resp, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _parse_msg_delete_nym_resp(
+    command_handle: CommandHandle,
+    commit_resp: &str,
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+    let commit_resp = c_str!(commit_resp);
+
+    ErrorCode::from(unsafe {
+        verim_ledger::indy_verim_ledger_parse_msg_delete_nym_resp(
+            command_handle,
+            commit_resp.as_ptr(),
             cb,
         )
     })
