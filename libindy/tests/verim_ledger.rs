@@ -10,9 +10,7 @@ extern crate serde_json;
 #[macro_use]
 mod utils;
 
-
 use utils::{constants::*, verim_ledger};
-
 
 mod high_cases {
     use super::*;
@@ -47,6 +45,25 @@ mod high_cases {
             let creator = "1";
             let id = 2;
             verim_ledger::build_msg_delete_nym(creator, id);
+        }
+    }
+
+    #[cfg(test)]
+    mod e2e {
+        use super::*;
+
+        #[test]
+        fn test_create_nym() {
+            let msg = verim_ledger::build_msg_create_nym(
+                "test-did",
+                "test-creator",
+                "test-verkey",
+                "test-alias",
+                "test-role",
+            )
+            .unwrap();
+
+            // let tx = verim_ledger::
         }
     }
 }

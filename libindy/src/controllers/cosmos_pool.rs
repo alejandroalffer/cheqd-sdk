@@ -46,11 +46,12 @@ impl CosmosPoolController {
         Ok(json)
     }
 
-    pub(crate) async fn pool_config(&self, alias: &str) -> IndyResult<CosmosPoolConfig> {
+    pub(crate) async fn pool_config(&self, alias: &str) -> IndyResult<String> {
         trace!("pool_config > alias {:?}", alias);
         let config = self.cosmos_pool_service.pool_config(alias).await?;
-        trace!("pool_config <");
-        Ok(config)
+        let json = serde_json::to_string(&config)?;
+        trace!("pool_config < {:?}", json);
+        Ok(json)
     }
 
     pub(crate) async fn build_tx(
