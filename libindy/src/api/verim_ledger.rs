@@ -343,3 +343,107 @@ pub extern "C" fn indy_verim_ledger_parse_msg_delete_nym_resp(
     debug!("indy_verim_ledger_parse_msg_delete_nym_resp < {:?}", res);
     res
 }
+
+#[no_mangle]
+pub extern "C" fn indy_verim_ledger_build_query_get_nym(
+    command_handle: CommandHandle,
+    id: u64,
+    cb: Option<
+        extern "C" fn(
+            command_handle_: CommandHandle,
+            err: ErrorCode,
+            signature_raw: *const u8,
+            signature_len: u32,
+        ),
+    >,
+) -> ErrorCode {
+    debug!(
+        "indy_verim_ledger_build_query_verimcosmos_get_nym > id {:?}", id
+    );
+
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
+
+    debug!(
+        "indy_verim_ledger_build_query_verimcosmos_get_nym > id {:?}", id
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .verim_ledger_controller
+            .build_query_verimcosmos_get_nym(id);
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, msg) = prepare_result!(res, Vec::new());
+        debug!(
+            "indy_verim_ledger_build_query_verimcosmos_get_nym: signature: {:?}",
+            msg
+        );
+        let (signature_raw, signature_len) = ctypes::vec_to_pointer(&msg);
+        cb(command_handle, err, signature_raw, signature_len)
+    };
+
+    locator.executor.spawn_ok_instrumented(
+        CommandMetric::VerimLedgerCommandBuildQueryGetNym,
+        action,
+        cb,
+    );
+
+    let res = ErrorCode::Success;
+    debug!("indy_verim_ledger_build_msg_update_nym < {:?}", res);
+    res
+}
+
+#[no_mangle]
+pub extern "C" fn indy_verim_ledger_parse_query_get_nym_resp(
+    command_handle: CommandHandle,
+    commit_resp: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, msg_resp: *const c_char),
+    >,
+) -> ErrorCode {
+    debug!(
+        "indy_verim_ledger_parse_query_get_nym_resp > commit_resp {:?}",
+        commit_resp
+    );
+
+    check_useful_c_str!(commit_resp, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    debug!(
+        "indy_verim_ledger_parse_query_get_nym_resp > commit_resp {:?}",
+        commit_resp
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .verim_ledger_controller
+            .parse_query_get_nym_resp(&commit_resp);
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, msg_resp) = prepare_result!(res, String::new());
+        debug!(
+            "indy_verim_ledger_parse_query_get_nym_resp: msg_resp: {:?}",
+            msg_resp
+        );
+        let msg_resp = ctypes::string_to_cstring(msg_resp);
+        cb(command_handle, err, msg_resp.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(
+        CommandMetric::VerimLedgerCommandParseQueryGetNymResp,
+        action,
+        cb,
+    );
+
+    let res = ErrorCode::Success;
+    debug!("indy_verim_ledger_parse_query_get_nym_resp < {:?}", res);
+    res
+}

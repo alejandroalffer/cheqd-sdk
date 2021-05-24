@@ -122,9 +122,11 @@ pub enum CommandMetric {
     VerimLedgerCommandBuildMsgCreateNym,
     VerimLedgerCommandBuildMsgUpdateNym,
     VerimLedgerCommandBuildMsgDeleteNym,
+    VerimLedgerCommandBuildQueryGetNym,
     VerimLedgerCommandParseMsgCreateNymResp,
     VerimLedgerCommandParseMsgUpdateNymResp,
     VerimLedgerCommandParseMsgDeleteNymResp,
+    VerimLedgerCommandParseQueryGetNymResp,
     // CosmosPool
     CosmosPoolAdd,
     CosmosPoolGetConfig,

@@ -1,8 +1,8 @@
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse as ProtoQueryGetNymResponse;
-use crate::domain::verim_ledger::VerimMessage;
-use crate::domain::verim_ledger::verimcosmos::models::nym::Nym;
+use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse as ProtoQueryGetNymResponse;
+use super::super::super::VerimMessage;
+use super::super::models::nym::Nym;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryGetNymResponse {
     pub nym: Option<Nym>,
 }

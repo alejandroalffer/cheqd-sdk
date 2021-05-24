@@ -125,3 +125,30 @@ fn _build_msg_delete_nym(
         )
     })
 }
+
+pub fn build_query_verimcosmos_get_nym(
+    id: u64,
+) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+
+    let err = _build_msg_delete_nym(command_handle, creator, id, cb);
+
+    ResultHandler::slice(command_handle, err, receiver)
+}
+
+fn _build_query_verimcosmos_get_nym(
+    command_handle: CommandHandle,
+    id: u64,
+    cb: Option<ResponseSliceCB>,
+) -> ErrorCode {
+    let creator = c_str!(creator);
+
+    ErrorCode::from(unsafe {
+        verim_ledger::indy_verim_ledger_build_msg_delete_nym(
+            command_handle,
+            creator.as_ptr(),
+            id,
+            cb,
+        )
+    })
+}

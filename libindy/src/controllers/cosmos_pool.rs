@@ -127,7 +127,7 @@ impl CosmosPoolController {
             .cosmos_pool_service
             .abci_query(pool_alias, req)
             .await?;
-        json_resp = serde_json::to_string(&resp)?;
+        let json_resp = serde_json::to_string(&resp)?;
         Ok(json_resp)
     }
 }

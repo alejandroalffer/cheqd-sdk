@@ -1,7 +1,7 @@
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::Nym as ProtoNym;
-use crate::domain::verim_ledger::VerimMessage;
+use super::super::super::proto::verimid::verimcosmos::verimcosmos::Nym as ProtoNym;
+use super::super::super::VerimMessage;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Nym {
     pub creator: String,
     pub id: u64,

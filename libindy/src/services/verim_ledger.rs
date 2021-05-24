@@ -30,14 +30,7 @@ use prost_types::Any;
 use serde::de::DeserializeOwned;
 use serde_json::{self, Value};
 
-use crate::domain::crypto::did::DidValue;
-use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgCreateNym;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgUpdateNym;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgDeleteNym;
 use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse};
-use crate::domain::verim_ledger::VerimMessage;
-use crate::domain::verim_ledger::cosmos_ext::ProstMessageExt;
 
 pub(crate) struct VerimLedgerService {}
 
@@ -195,13 +188,14 @@ impl VerimLedgerService {
         Ok(req)
     }
 
-    pub(crate) fn build_query_verimcosmos_get_nym(
+    pub(crate) fn build_query_get_nym(
         &self,
         id: u64,
     ) -> IndyResult<abci_query::Request> {
         let query_data = QueryGetNymRequest { id };
         let path = format!("/verimid.verimcosmos.verimcosmos.Query/Nym");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        println!("{:?}", query_data.to_proto().to_bytes());
         let req = abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
         Ok(req)
     }
@@ -210,11 +204,7 @@ impl VerimLedgerService {
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryGetNymResponse> {
-        let data = resp.deliver_tx.data.as_ref().ok_or(IndyError::from_msg(
-            IndyErrorKind::InvalidState,
-            "Expected response data but got None",
-        ))?;
-        let data = data.value();
+        let data = resp.response.value.as_ref();
         let tx_msg = TxMsgData::from_bytes(&data)?;
         let msg = crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::from_bytes(&tx_msg.data[0].data)?;
         let result = QueryGetNymResponse::from_proto(&msg);

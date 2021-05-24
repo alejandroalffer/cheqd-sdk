@@ -163,7 +163,7 @@ impl CosmosPoolService {
         pool_alias: &str,
         req: rpc::endpoint::abci_query::Request,
     ) -> IndyResult<rpc::endpoint::abci_query::Response> {
-        let pool = self.pool_config(pool_alias).await?;
+        let pool = self.get_config(pool_alias).await?;
         let resp = self.send_req(req, pool.rpc_address.as_str()).await?;
         Ok(resp)
         // TODO: State proof
