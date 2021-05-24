@@ -64,7 +64,7 @@ impl CosmosPoolController {
         max_gas: u64,
         max_coin_amount: u64,
         max_coin_denom: &str,
-        timeout_height: u16,
+        timeout_height: u64,
         memo: &str,
     ) -> IndyResult<Vec<u8>> {
         trace!("build_tx > pool_alias {:?}, sender_alias {:?}, msg {:?}, account_number {:?}, sequence_number {:?}, max_gas {:?}, max_coin_amount {:?}, max_coin_denom {:?}, timeout_height {:?}, memo {:?}", pool_alias, sender_alias, msg, account_number, sequence_number, max_gas, max_coin_amount, max_coin_denom, timeout_height, memo);
@@ -98,7 +98,7 @@ impl CosmosPoolController {
         &self,
         pool_alias: &str,
         signed_tx: &[u8],
-    ) -> IndyResult<rpc::endpoint::broadcast::tx_commit::Response> {
+    ) -> IndyResult<String> {
         trace!(
             "broadcast_tx_commit > pool_alias {:?}, signed_tx {:?}",
             pool_alias,
@@ -110,10 +110,11 @@ impl CosmosPoolController {
             .cosmos_pool_service
             .broadcast_tx_commit(pool_alias, tx_raw)
             .await?;
+        let json = serde_json::to_string(&resp)?;
 
-        trace!("broadcast_tx_commit < resp_bytes {:?}", resp);
+        trace!("broadcast_tx_commit < resp {:?}", json);
 
-        Ok(resp)
+        Ok(json)
     }
 
     // TODO: Queries

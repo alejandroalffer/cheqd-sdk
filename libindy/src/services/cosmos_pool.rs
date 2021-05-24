@@ -7,6 +7,7 @@ use cosmos_sdk::crypto::PublicKey;
 use cosmos_sdk::rpc::endpoint::broadcast;
 use cosmos_sdk::rpc::{Request, Response};
 use cosmos_sdk::tendermint::abci;
+use cosmos_sdk::tendermint::block::Height;
 use cosmos_sdk::tx::{AuthInfo, Fee, Msg, Raw, SignDoc, SignerInfo};
 use cosmos_sdk::{rpc, tx, Coin};
 use futures::lock::Mutex as MutexF;
@@ -73,9 +74,11 @@ impl CosmosPoolService {
         max_gas: u64,
         max_coin_amount: u64,
         max_coin_denom: &str,
-        timeout_height: u16,
+        timeout_height: u64,
         memo: &str,
     ) -> IndyResult<SignDoc> {
+        let timeout_height: Height = timeout_height.try_into()?;
+
         let tx_body = tx::Body::new(vec![msg], memo, timeout_height);
 
         let signer_info = Self::build_signer_info(sender_public_key, sequence_number)?;

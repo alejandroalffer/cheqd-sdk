@@ -121,8 +121,8 @@ pub extern "C" fn indy_cosmos_pool_build_tx(
         extern "C" fn(
             command_handle_: CommandHandle,
             err: ErrorCode,
-            signed_tx_raw: *const u8,
-            signed_tx_len: u32,
+            tx_raw: *const u8,
+            tx_len: u32,
         ),
     >,
 ) -> ErrorCode {
@@ -184,23 +184,20 @@ pub extern "C" fn indy_cosmos_pool_build_tx(
                 sequence_number,
                 max_gas,
                 max_coin_amount,
-                max_coin_denom,
+                &max_coin_denom,
                 timeout_height,
-                memo,
+                &memo,
             )
             .await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, pool_info) = prepare_result!(res, String::new());
-        debug!(
-            "indy_cosmos_pool_build_tx ? err {:?} pool_info {:?}",
-            err, pool_info
-        );
+        let (err, tx) = prepare_result!(res, Vec::new());
+        debug!("indy_cosmos_pool_build_tx ? err {:?} tx {:?}", err, tx);
 
-        let pool_info = ctypes::string_to_cstring(pool_info);
-        cb(command_handle, err, pool_info.as_ptr())
+        let (tx_raw, tx_len) = ctypes::vec_to_pointer(&tx);
+        cb(command_handle, err, tx_raw, tx_len)
     };
 
     locator
@@ -215,9 +212,9 @@ pub extern "C" fn indy_cosmos_pool_build_tx(
 #[no_mangle]
 pub extern "C" fn broadcast_tx_commit(
     command_handle: CommandHandle,
-    alias: *const c_char,
-    //     pool_alias: &str,
-    //     signed_tx: &[u8],
+    pool_alias: *const c_char,
+    signed_tx_raw: *const u8,
+    signed_tx_len: u32,
     cb: Option<
         extern "C" fn(
             command_handle_: CommandHandle,
@@ -227,18 +224,22 @@ pub extern "C" fn broadcast_tx_commit(
     >,
 ) -> ErrorCode {
     debug!(
-        "broadcast_tx_commit > alias {:?} rpc_address {:?} chain_id {:?}",
-        alias, rpc_address, chain_id
+        "broadcast_tx_commit > pool_alias {:?} signed_tx_raw {:?} signed_tx_len {:?}",
+        pool_alias, signed_tx_raw, signed_tx_len
     );
 
-    check_useful_c_str!(alias, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(rpc_address, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(chain_id, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(pool_alias, ErrorCode::CommonInvalidParam2);
+    check_useful_c_byte_array!(
+        signed_tx_raw,
+        signed_tx_len,
+        ErrorCode::CommonInvalidParam3,
+        ErrorCode::CommonInvalidParam4
+    );
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     debug!(
-        "broadcast_tx_commit > alias {:?} rpc_address {:?} chain_id {:?}",
-        alias, rpc_address, chain_id
+        "broadcast_tx_commit > pool_alias {:?} signed_tx_raw {:?} signed_tx_len {:?}",
+        pool_alias, signed_tx_raw, signed_tx_len
     );
 
     let locator = Locator::instance();
@@ -246,7 +247,7 @@ pub extern "C" fn broadcast_tx_commit(
     let action = async move {
         let res = locator
             .cosmos_pool_controller
-            .add(&alias, &rpc_address, &chain_id)
+            .broadcast_tx_commit(&pool_alias, &signed_tx_raw)
             .await;
         res
     };
@@ -254,7 +255,7 @@ pub extern "C" fn broadcast_tx_commit(
     let cb = move |res: IndyResult<_>| {
         let (err, pool_info) = prepare_result!(res, String::new());
         debug!(
-            "broadcast_tx_commit ? err {:?} pool_info {:?}",
+            "broadcast_tx_commit ? err {:?} tx_commit_response {:?}",
             err, pool_info
         );
 
