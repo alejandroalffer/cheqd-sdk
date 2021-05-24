@@ -372,7 +372,7 @@ pub extern "C" fn indy_verim_ledger_build_query_get_nym(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .build_query_verimcosmos_get_nym(id);
+            .build_query_get_nym(id);
         res
     };
 
