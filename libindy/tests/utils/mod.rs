@@ -22,9 +22,10 @@ pub mod types;
 pub mod wallet;
 //pub mod payments;
 pub mod cache;
+pub mod cosmos_pool;
 pub mod logger;
-pub mod rand_utils;
 pub mod metrics;
+pub mod rand_utils;
 pub mod verim_ledger;
 
 #[macro_use]

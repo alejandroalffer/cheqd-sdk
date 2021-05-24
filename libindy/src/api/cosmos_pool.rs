@@ -210,7 +210,7 @@ pub extern "C" fn indy_cosmos_pool_build_tx(
 }
 
 #[no_mangle]
-pub extern "C" fn broadcast_tx_commit(
+pub extern "C" fn indy_cosmos_pool_broadcast_tx_commit(
     command_handle: CommandHandle,
     pool_alias: *const c_char,
     signed_tx_raw: *const u8,
