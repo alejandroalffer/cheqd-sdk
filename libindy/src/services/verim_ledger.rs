@@ -145,9 +145,10 @@ impl VerimLedgerService {
         id: u64,
     ) -> IndyResult<abci_query::Request> {
         let query_data = QueryGetNymRequest { id };
-        let path = format!("/verimid.verimcosmos.verimcosmos.Query/Nym");
+        let query_data = format!("Nym-value-{:?}", id);
+        let path = format!("/store/verimcosmos/key");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
-        let req = abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
+        let req = abci_query::Request::new(Some(path), query_data.as_bytes(), None, true);
         Ok(req)
     }
 }
@@ -205,14 +206,16 @@ mod test {
             .unwrap();
 
         let inner = result.response.value;
+        let proof = result.response.proof;
 
         let decoded =
-            crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::from_bytes(inner.as_slice());
+            crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::decode(inner.as_slice());
         // let res = QueryGetNymResponse::from_proto(decoded);
 
         // QueryAllNymResponse
 
         println!("{:?}", decoded);
+        println!("{:?}", proof);
     }
 
     #[async_std::test]
