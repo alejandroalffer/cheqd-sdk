@@ -62,31 +62,31 @@ pub extern "C" fn indy_cosmos_pool_add(
 }
 
 #[no_mangle]
-pub extern "C" fn indy_cosmos_pool_pool_config(
+pub extern "C" fn indy_cosmos_pool_get_config(
     command_handle: CommandHandle,
     alias: *const c_char,
     cb: Option<
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, pool_info: *const c_char),
     >,
 ) -> ErrorCode {
-    debug!("indy_cosmos_pool_pool_config > alias {:?}", alias);
+    debug!("indy_cosmos_pool_get_config > alias {:?}", alias);
 
     check_useful_c_str!(alias, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    debug!("indy_cosmos_pool_pool_config > alias {:?}", alias);
+    debug!("indy_cosmos_pool_get_config > alias {:?}", alias);
 
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.cosmos_pool_controller.pool_config(&alias).await;
+        let res = locator.cosmos_pool_controller.get_config(&alias).await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, pool_info) = prepare_result!(res, String::new());
         debug!(
-            "indy_cosmos_pool_pool_config ? err {:?} pool_info {:?}",
+            "indy_cosmos_pool_get_config ? err {:?} pool_info {:?}",
             err, pool_info
         );
 
@@ -96,10 +96,10 @@ pub extern "C" fn indy_cosmos_pool_pool_config(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::CosmosPoolAdd, action, cb);
+        .spawn_ok_instrumented(CommandMetric::CosmosPoolGetConfig, action, cb);
 
     let res = ErrorCode::Success;
-    debug!("indy_cosmos_pool_pool_config < {:?}", res);
+    debug!("indy_cosmos_pool_get_config < {:?}", res);
     res
 }
 
@@ -202,7 +202,7 @@ pub extern "C" fn indy_cosmos_pool_build_tx(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::CosmosPoolAdd, action, cb);
+        .spawn_ok_instrumented(CommandMetric::CosmosPoolBuildTx, action, cb);
 
     let res = ErrorCode::Success;
     debug!("indy_cosmos_pool_build_tx < {:?}", res);
@@ -265,7 +265,7 @@ pub extern "C" fn broadcast_tx_commit(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::CosmosPoolAdd, action, cb);
+        .spawn_ok_instrumented(CommandMetric::CosmosPoolBroadcastTxCommit, action, cb);
 
     let res = ErrorCode::Success;
     debug!("broadcast_tx_commit < {:?}", res);

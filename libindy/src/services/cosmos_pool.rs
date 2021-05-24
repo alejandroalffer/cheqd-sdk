@@ -53,7 +53,7 @@ impl CosmosPoolService {
         Ok(config)
     }
 
-    pub(crate) async fn pool_config(&self, alias: &str) -> IndyResult<CosmosPoolConfig> {
+    pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<CosmosPoolConfig> {
         let pools = self.pools.lock().await;
 
         let config = pools.get(alias).ok_or(IndyError::from_msg(
@@ -124,7 +124,7 @@ impl CosmosPoolService {
         pool_alias: &str,
         tx: Raw,
     ) -> IndyResult<rpc::endpoint::broadcast::tx_commit::Response> {
-        let pool = self.pool_config(pool_alias).await?;
+        let pool = self.get_config(pool_alias).await?;
 
         let tx_bytes = tx.to_bytes()?;
         let req = broadcast::tx_commit::Request::new(tx_bytes.into());

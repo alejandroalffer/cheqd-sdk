@@ -6,12 +6,14 @@ use std::str::FromStr;
 use crate::domain::crypto::did::DidValue;
 use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
 use crate::domain::verim_ledger::cosmos_ext::ProstMessageExt;
-use crate::domain::verim_ledger::verimcosmos::messages::{MsgDeleteNym, MsgUpdateNymResponse, MsgDeleteNymResponse};
 use crate::domain::verim_ledger::verimcosmos::messages::MsgUpdateNym;
 use crate::domain::verim_ledger::verimcosmos::messages::{MsgCreateNym, MsgCreateNymResponse};
+use crate::domain::verim_ledger::verimcosmos::messages::{
+    MsgDeleteNym, MsgDeleteNymResponse, MsgUpdateNymResponse,
+};
 use crate::domain::verim_ledger::VerimMessage;
-use cosmos_sdk::proto::cosmos::base::abci::v1beta1::{TxMsgData, MsgData};
 use cosmos_sdk::bank::MsgSend;
+use cosmos_sdk::proto::cosmos::base::abci::v1beta1::{MsgData, TxMsgData};
 use cosmos_sdk::rpc::endpoint::abci_query;
 use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
 use cosmos_sdk::tx::{Fee, Msg, MsgProto, MsgType, SignDoc, SignerInfo};
@@ -82,13 +84,13 @@ impl VerimLedgerService {
         alias: &str,
         role: &str,
     ) -> IndyResult<Msg> {
-        let msg_send = MsgCreateNym {
-            creator: creator.to_string(),
-            alias: alias.to_string(),
-            verkey: verkey.to_string(),
-            did: did.to_string(),
-            role: role.to_string(),
-        };
+        let msg_send = MsgCreateNym::new(
+            creator.to_string(),
+            alias.to_string(),
+            verkey.to_string(),
+            did.to_string(),
+            role.to_string(),
+        );
 
         Ok(msg_send.to_msg()?)
     }
@@ -117,16 +119,16 @@ impl VerimLedgerService {
         verkey: &str,
         alias: &str,
         role: &str,
-        id: u64
+        id: u64,
     ) -> IndyResult<Msg> {
-        let msg_send = MsgUpdateNym {
-            creator: creator.to_string(),
+        let msg_send = MsgUpdateNym::new(
+            creator.to_string(),
             id,
-            alias: alias.to_string(),
-            verkey: verkey.to_string(),
-            did: did.to_string(),
-            role: role.to_string(),
-        };
+            alias.to_string(),
+            verkey.to_string(),
+            did.to_string(),
+            role.to_string(),
+        );
 
         Ok(msg_send.to_msg()?)
     }

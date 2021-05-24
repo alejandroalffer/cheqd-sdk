@@ -172,7 +172,7 @@ pub extern "C" fn indy_cosmos_keys_add_from_mnemonic(
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern "C" fn indy_cosmos_keys_key_info(
+pub extern "C" fn indy_cosmos_keys_get_info(
     command_handle: CommandHandle,
     alias: *const c_char,
     cb: Option<
@@ -189,7 +189,7 @@ pub extern "C" fn indy_cosmos_keys_key_info(
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.cosmos_keys_controller.key_info(&alias).await;
+        let res = locator.cosmos_keys_controller.get_info(&alias).await;
         res
     };
 
@@ -209,6 +209,7 @@ pub extern "C" fn indy_cosmos_keys_key_info(
     debug!("indy_cosmos_keys_key_info < {:?}", res);
     res
 }
+
 /// Sign
 /// #Params
 /// alias: account alias for getting its keys

@@ -1,7 +1,7 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgUpdateNymResponse as ProtoMsgUpdateNymResponse;
 use super::super::super::VerimMessage;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct MsgUpdateNymResponse {}
 
 impl MsgUpdateNymResponse {
@@ -17,8 +17,8 @@ impl VerimMessage for MsgUpdateNymResponse {
         Self::Proto {}
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self {}
+    fn from_proto(_proto: &Self::Proto) -> Self {
+        Self::new()
     }
 }
 

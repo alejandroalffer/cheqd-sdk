@@ -25,9 +25,6 @@ impl VerimMessage for MsgDeleteNym {
     }
 
     fn from_proto(proto: &Self::Proto) -> Self {
-        Self {
-            creator: proto.creator.clone(),
-            id: proto.id.clone(),
-        }
+        Self::new(proto.creator.clone(), proto.id.clone())
     }
 }
