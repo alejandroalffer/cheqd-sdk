@@ -116,16 +116,17 @@ impl CosmosPoolController {
         Ok(resp)
     }
 
-    // TODO: Queries
-    // pub async fn abci_query(
-    //     &self,
-    //     rpc_address: &str,
-    //     req: rpc::endpoint::abci_query::Request,
-    // ) -> IndyResult<rpc::endpoint::abci_query::Response> {
-    //     let resp = self.send_req(req, rpc_address).await?;
-    //     Ok(resp)
-    //     // TODO: State proof
-    //     // TODO: Error handling
-    //     // TODO: Return?
-    // }
+    pub async fn abci_query(
+        &self,
+        pool_alias: &str,
+        req_json: &str,
+    ) -> IndyResult<String> {
+        let req: rpc::endpoint::abci_query::Request = serde_json::from_str(req_json)?;
+        let resp = self
+            .cosmos_pool_service
+            .abci_query(pool_alias, req)
+            .await?;
+        json_resp = serde_json::to_string(&resp)?;
+        Ok(json_resp)
+    }
 }

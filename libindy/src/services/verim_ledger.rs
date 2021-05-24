@@ -193,7 +193,6 @@ impl VerimLedgerService {
         Ok(req)
     }
 
-    // TODO: Queries
     pub(crate) fn build_query_verimcosmos_get_nym(
         &self,
         id: u64,
@@ -204,6 +203,23 @@ impl VerimLedgerService {
         let req = abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
         Ok(req)
     }
+
+    pub(crate) fn parse_query_get_nym_resp(
+        &self,
+        resp: &abci_query::Response,
+    ) -> IndyResult<QueryGetNymResponse> {
+        let data = resp.deliver_tx.data.as_ref().ok_or(IndyError::from_msg(
+            IndyErrorKind::InvalidState,
+            "Expected response data but got None",
+        ))?;
+        let data = data.value();
+        let tx_msg = TxMsgData::from_bytes(&data)?;
+        let msg = crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::from_bytes(&tx_msg.data[0].data)?;
+        let result = QueryGetNymResponse::from_proto(&msg);
+
+        return Ok(result);
+    }
+
 }
 
 #[cfg(test)]
@@ -216,58 +232,58 @@ mod test {
     use crate::domain::crypto::did::DidValue;
     use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
     use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
-
-    #[async_std::test]
-    async fn test_query_list_nym() {
-        let verim_ledger_service = VerimLedgerService::new();
-        let cosmos_pool_service = CosmosPoolService::new();
-        let cosmos_keys_service = CosmosKeysService::new();
-
-        let req = verim_ledger_service
-            .build_query_verimcosmos_list_nym()
-            .unwrap();
-
-        let result = cosmos_pool_service
-            .abci_query("http://localhost:26657", req)
-            .await
-            .unwrap();
-
-        let inner = result.response.value;
-
-        let decoded =
-            crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryAllNymResponse::decode(inner.as_slice())
-                .unwrap();
-
-        // QueryAllNymResponse
-
-        println!("{:?}", decoded);
-    }
-
-    #[async_std::test]
-    async fn test_query_get_nym() {
-        let verim_ledger_service = VerimLedgerService::new();
-        let cosmos_pool_service = CosmosPoolService::new();
-        let cosmos_keys_service = CosmosKeysService::new();
-
-        let req = verim_ledger_service
-            .build_query_verimcosmos_get_nym(0)
-            .unwrap();
-
-        let result = cosmos_pool_service
-            .abci_query("http://localhost:26657", req)
-            .await
-            .unwrap();
-
-        let inner = result.response.value;
-
-        let decoded =
-            crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::from_bytes(inner.as_slice());
-        // let res = QueryGetNymResponse::from_proto(decoded);
-
-        // QueryAllNymResponse
-
-        println!("{:?}", decoded);
-    }
+    //
+    // #[async_std::test]
+    // async fn test_query_list_nym() {
+    //     let verim_ledger_service = VerimLedgerService::new();
+    //     let cosmos_pool_service = CosmosPoolService::new();
+    //     let cosmos_keys_service = CosmosKeysService::new();
+    //
+    //     let req = verim_ledger_service
+    //         .build_query_verimcosmos_list_nym()
+    //         .unwrap();
+    //
+    //     let result = cosmos_pool_service
+    //         .abci_query("http://localhost:26657", req)
+    //         .await
+    //         .unwrap();
+    //
+    //     let inner = result.response.value;
+    //
+    //     let decoded =
+    //         crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryAllNymResponse::decode(inner.as_slice())
+    //             .unwrap();
+    //
+    //     // QueryAllNymResponse
+    //
+    //     println!("{:?}", decoded);
+    // }
+    //
+    // #[async_std::test]
+    // async fn test_query_get_nym() {
+    //     let verim_ledger_service = VerimLedgerService::new();
+    //     let cosmos_pool_service = CosmosPoolService::new();
+    //     let cosmos_keys_service = CosmosKeysService::new();
+    //
+    //     let req = verim_ledger_service
+    //         .build_query_verimcosmos_get_nym(0)
+    //         .unwrap();
+    //
+    //     let result = cosmos_pool_service
+    //         .abci_query("http://localhost:26657", req)
+    //         .await
+    //         .unwrap();
+    //
+    //     let inner = result.response.value;
+    //
+    //     let decoded =
+    //         crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::from_bytes(inner.as_slice());
+    //     // let res = QueryGetNymResponse::from_proto(decoded);
+    //
+    //     // QueryAllNymResponse
+    //
+    //     println!("{:?}", decoded);
+    // }
 
     #[async_std::test]
     async fn test_query_account() {

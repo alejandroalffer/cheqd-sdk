@@ -8,8 +8,12 @@ use crate::domain::verim_ledger::verimcosmos::messages::{
 use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
 use async_std::sync::Arc;
 use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
+use cosmos_sdk::rpc::endpoint::abci_query::Response as QueryResponse;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
+use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
+use cosmos_sdk::rpc::Request;
+use crate::domain::verim_ledger::VerimMessage;
 
 pub(crate) struct VerimLedgerController {
     verim_ledger_service: Arc<VerimLedgerService>,
@@ -118,6 +122,28 @@ impl VerimLedgerController {
         let res = self.verim_ledger_service.parse_msg_delete_nym_resp(resp)?;
         trace!("parse_msg_delete_nym_resp < {:?}", res);
         Ok(res)
+    }
+
+    pub(crate) fn build_query_verimcosmos_get_nym(&self, id: u64) -> IndyResult<String> {
+        trace!("build_query_verimcosmos_get_nym > id {:?}", id,);
+        let msg = self
+            .verim_ledger_service
+            .build_query_verimcosmos_get_nym(id)?;
+        trace!("build_query_verimcosmos_get_nym < {:?}", msg);
+
+        Ok(msg.into_json()?)
+    }
+
+    pub(crate) fn parse_query_get_nym_resp(
+        &self,
+        resp: &str,
+    ) -> IndyResult<String> {
+        trace!("parse_msg_delete_nym_resp > resp {:?}", resp);
+        let resp: QueryResponse = serde_json::from_str(resp_json)?;
+        let result = self.verim_ledger_service.parse_query_get_nym_resp(&resp)?;
+        json_result = serde_json::to_string(&result)?;
+        trace!("parse_msg_delete_nym_resp < {:?}", json_result);
+        Ok(json_result)
     }
 }
 
@@ -454,4 +480,96 @@ mod test {
 
         assert!(true)
     }
+
+
+
+    #[async_std::test]
+    async fn test_query_get_nym() {
+
+        let harness = TestHarness::new();
+        let pool_alias = "test_pool";
+
+        // Keys
+        let alice = harness
+            .keys_controller
+            .add_from_mnemonic("alice", "alice")
+            .await
+            .unwrap();
+
+        println!("Alice's account id: {}", alice.account_id);
+
+        // Pool
+        let pool = harness
+            .pool_controller
+            .add(pool_alias, "http://localhost:26657", "verim-cosmos-chain")
+            .await
+            .unwrap();
+
+        // Msg for create transaction
+        let msg_create = harness
+            .ledger_controller
+            .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
+            .unwrap();
+
+        // Transaction of create
+        let tx_create = harness
+            .pool_controller
+            .build_tx(
+                pool_alias,
+                "alice",
+                &msg_create,
+                11,
+                10,
+                300000,
+                300000,
+                "token",
+                39090,
+                "memo",
+            )
+            .await
+            .unwrap();
+
+        let signed_create = harness
+            .keys_controller
+            .sign("alice", &tx_create)
+            .await
+            .unwrap();
+
+        // Broadcast transaction of create
+        let response_create = harness
+            .pool_controller
+            .broadcast_tx_commit(pool_alias, &signed_create)
+            .await
+            .unwrap();
+
+        // Parse response of create transaction
+        let result_create = harness
+            .ledger_controller
+            .parse_msg_create_nym_resp(&response_create)
+            .unwrap();
+
+        // Request created NYM
+        // Build query request
+        let req = harness
+            .ledger_controller
+            .build_query_verimcosmos_get_nym(result_create.id)
+            .unwrap();
+
+        // Send request
+        let response_create = harness
+            .pool_controller
+            .abci_query(pool_alias, req.as_str())
+            .await
+            .unwrap();
+
+        // Parse response of getting transaction
+        let result = harness
+            .ledger_controller
+            .parse_query_get_nym_resp(&response_create)
+            .unwrap();
+
+        println!("result: {:?}", result);
+        assert!(true)
+    }
+
 }
