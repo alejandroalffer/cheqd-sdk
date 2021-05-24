@@ -34,14 +34,3 @@ impl MsgProto for verimid::verimcosmos::verimcosmos::MsgDeleteNym {
 impl MsgProto for verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse {
     const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgDeleteNymResponse";
 }
-impl MsgProto for verimid::verimcosmos::verimcosmos::QueryGetNymRequest {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryGetNymRequest";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::QueryGetNymResponse {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryGetNymResponse";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::Nym {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.Nym";
-}

@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct CosmosPoolConfig {
     pub alias: String,
     pub rpc_address: String,

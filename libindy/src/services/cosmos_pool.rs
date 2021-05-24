@@ -1,6 +1,7 @@
 //! Pool service for Cosmos back-end
 
 use crate::domain::cosmos_pool::CosmosPoolConfig;
+use crate::domain::pool::PoolConfig;
 use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
 use cosmos_sdk::crypto::PublicKey;
 use cosmos_sdk::rpc::endpoint::broadcast;
@@ -31,7 +32,7 @@ impl CosmosPoolService {
         alias: &str,
         rpc_address: &str,
         chain_id: &str,
-    ) -> IndyResult<()> {
+    ) -> IndyResult<CosmosPoolConfig> {
         let mut pools = self.pools.lock().await;
 
         if pools.contains_key(alias) {
@@ -47,8 +48,8 @@ impl CosmosPoolService {
             chain_id.to_string(),
         );
 
-        pools.insert(alias.to_string(), config);
-        Ok(())
+        pools.insert(alias.to_string(), config.clone());
+        Ok(config)
     }
 
     pub(crate) async fn pool_config(&self, alias: &str) -> IndyResult<CosmosPoolConfig> {
