@@ -132,6 +132,7 @@ pub enum CommandMetric {
     CosmosPoolGetConfig,
     CosmosPoolBuildTx,
     CosmosPoolBroadcastTxCommit,
+    CosmosPoolAbciQuery,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,

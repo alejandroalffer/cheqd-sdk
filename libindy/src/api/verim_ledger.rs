@@ -18,8 +18,8 @@ pub extern "C" fn indy_verim_ledger_build_msg_create_nym(
         extern "C" fn(
             command_handle_: CommandHandle,
             err: ErrorCode,
-            signature_raw: *const u8,
-            signature_len: u32,
+            msg_raw: *const u8,
+            msg_len: u32,
         ),
     >,
 ) -> ErrorCode {
@@ -55,8 +55,8 @@ pub extern "C" fn indy_verim_ledger_build_msg_create_nym(
             "indy_verim_ledger_build_msg_create_nym: signature: {:?}",
             msg
         );
-        let (signature_raw, signature_len) = ctypes::vec_to_pointer(&msg);
-        cb(command_handle, err, signature_raw, signature_len)
+        let (msg_raw, msg_len) = ctypes::vec_to_pointer(&msg);
+        cb(command_handle, err, msg_raw, msg_len)
     };
 
     locator.executor.spawn_ok_instrumented(
@@ -134,8 +134,8 @@ pub extern "C" fn indy_verim_ledger_build_msg_update_nym(
         extern "C" fn(
             command_handle_: CommandHandle,
             err: ErrorCode,
-            signature_raw: *const u8,
-            signature_len: u32,
+            msg_raw: *const u8,
+            msg_len: u32,
         ),
     >,
 ) -> ErrorCode {
@@ -170,8 +170,8 @@ pub extern "C" fn indy_verim_ledger_build_msg_update_nym(
             "indy_verim_ledger_build_msg_update_nym: signature: {:?}",
             msg
         );
-        let (signature_raw, signature_len) = ctypes::vec_to_pointer(&msg);
-        cb(command_handle, err, signature_raw, signature_len)
+        let (msg_raw, msg_len) = ctypes::vec_to_pointer(&msg);
+        cb(command_handle, err, msg_raw, msg_len)
     };
 
     locator.executor.spawn_ok_instrumented(
@@ -245,8 +245,8 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
         extern "C" fn(
             command_handle_: CommandHandle,
             err: ErrorCode,
-            signature_raw: *const u8,
-            signature_len: u32,
+            msg_raw: *const u8,
+            msg_len: u32,
         ),
     >,
 ) -> ErrorCode {
@@ -274,12 +274,9 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
 
     let cb = move |res: IndyResult<_>| {
         let (err, msg) = prepare_result!(res, Vec::new());
-        debug!(
-            "indy_verim_ledger_build_msg_update_nym: signature: {:?}",
-            msg
-        );
-        let (signature_raw, signature_len) = ctypes::vec_to_pointer(&msg);
-        cb(command_handle, err, signature_raw, signature_len)
+        debug!("indy_verim_ledger_build_msg_update_nym: msg: {:?}", msg);
+        let (msg_raw, msg_len) = ctypes::vec_to_pointer(&msg);
+        cb(command_handle, err, msg_raw, msg_len)
     };
 
     locator.executor.spawn_ok_instrumented(
@@ -348,42 +345,27 @@ pub extern "C" fn indy_verim_ledger_parse_msg_delete_nym_resp(
 pub extern "C" fn indy_verim_ledger_build_query_get_nym(
     command_handle: CommandHandle,
     id: u64,
-    cb: Option<
-        extern "C" fn(
-            command_handle_: CommandHandle,
-            err: ErrorCode,
-            signature_raw: *const u8,
-            signature_len: u32,
-        ),
-    >,
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, query: *const c_char)>,
 ) -> ErrorCode {
-    debug!(
-        "indy_verim_ledger_build_query_verimcosmos_get_nym > id {:?}", id
-    );
+    debug!("indy_verim_ledger_build_query_get_nym > id {:?}", id);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
 
-    debug!(
-        "indy_verim_ledger_build_query_verimcosmos_get_nym > id {:?}", id
-    );
+    debug!("indy_verim_ledger_build_query_get_nym > id {:?}", id);
 
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator
-            .verim_ledger_controller
-            .build_query_get_nym(id);
+        let res = locator.verim_ledger_controller.build_query_get_nym(id);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, msg) = prepare_result!(res, Vec::new());
-        debug!(
-            "indy_verim_ledger_build_query_verimcosmos_get_nym: signature: {:?}",
-            msg
-        );
-        let (signature_raw, signature_len) = ctypes::vec_to_pointer(&msg);
-        cb(command_handle, err, signature_raw, signature_len)
+        let (err, query) = prepare_result!(res, String::new());
+        debug!("indy_verim_ledger_build_query_get_nym: query: {:?}", query);
+
+        let query = ctypes::string_to_cstring(query);
+        cb(command_handle, err, query.as_ptr())
     };
 
     locator.executor.spawn_ok_instrumented(
@@ -393,29 +375,27 @@ pub extern "C" fn indy_verim_ledger_build_query_get_nym(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_build_msg_update_nym < {:?}", res);
+    debug!("indy_verim_ledger_build_query_get_nym < {:?}", res);
     res
 }
 
 #[no_mangle]
 pub extern "C" fn indy_verim_ledger_parse_query_get_nym_resp(
     command_handle: CommandHandle,
-    commit_resp: *const c_char,
-    cb: Option<
-        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, msg_resp: *const c_char),
-    >,
+    query_resp: *const c_char,
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, resp: *const c_char)>,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_parse_query_get_nym_resp > commit_resp {:?}",
-        commit_resp
+        "indy_verim_ledger_parse_query_get_nym_resp > query_resp {:?}",
+        query_resp
     );
 
-    check_useful_c_str!(commit_resp, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(query_resp, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     debug!(
-        "indy_verim_ledger_parse_query_get_nym_resp > commit_resp {:?}",
-        commit_resp
+        "indy_verim_ledger_parse_query_get_nym_resp > query_resp {:?}",
+        query_resp
     );
 
     let locator = Locator::instance();
@@ -423,18 +403,18 @@ pub extern "C" fn indy_verim_ledger_parse_query_get_nym_resp(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .parse_query_get_nym_resp(&commit_resp);
+            .parse_query_get_nym_resp(&query_resp);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, msg_resp) = prepare_result!(res, String::new());
+        let (err, resp) = prepare_result!(res, String::new());
         debug!(
-            "indy_verim_ledger_parse_query_get_nym_resp: msg_resp: {:?}",
-            msg_resp
+            "indy_verim_ledger_parse_query_get_nym_resp: resp: {:?}",
+            resp
         );
-        let msg_resp = ctypes::string_to_cstring(msg_resp);
-        cb(command_handle, err, msg_resp.as_ptr())
+        let resp = ctypes::string_to_cstring(resp);
+        cb(command_handle, err, resp.as_ptr())
     };
 
     locator.executor.spawn_ok_instrumented(

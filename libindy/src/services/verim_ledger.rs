@@ -23,13 +23,13 @@ use hex::FromHex;
 use indy_api_types::errors::prelude::*;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
-use indy_utils::crypto::hash::hash as openssl_hash;
 use log_derive::logfn;
 use prost::Message;
 use prost_types::Any;
 use serde::de::DeserializeOwned;
 use serde_json::{self, Value};
 
+use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos;
 use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse};
 
 pub(crate) struct VerimLedgerService {}
@@ -71,7 +71,7 @@ impl VerimLedgerService {
         ))?;
         let data = data.value();
         let tx_msg = TxMsgData::from_bytes(&data)?;
-        let msg = crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNymResponse::from_bytes(&tx_msg.data[0].data)?;
+        let msg = verimcosmos::MsgCreateNymResponse::from_bytes(&tx_msg.data[0].data)?;
         let result = MsgCreateNymResponse::from_proto(&msg);
 
         return Ok(result);
@@ -107,7 +107,7 @@ impl VerimLedgerService {
         ))?;
         let data = data.value();
         let tx_msg = TxMsgData::from_bytes(&data)?;
-        let msg = crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgUpdateNymResponse::from_bytes(&tx_msg.data[0].data)?;
+        let msg = verimcosmos::MsgUpdateNymResponse::from_bytes(&tx_msg.data[0].data)?;
         let result = MsgUpdateNymResponse::from_proto(&msg);
 
         return Ok(result);
@@ -145,7 +145,7 @@ impl VerimLedgerService {
         ))?;
         let data = data.value();
         let tx_msg = TxMsgData::from_bytes(&data)?;
-        let msg = crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse::from_bytes(&tx_msg.data[0].data)?;
+        let msg = verimcosmos::MsgDeleteNymResponse::from_bytes(&tx_msg.data[0].data)?;
         let result = MsgDeleteNymResponse::from_proto(&msg);
 
         return Ok(result);
@@ -188,15 +188,12 @@ impl VerimLedgerService {
         Ok(req)
     }
 
-    pub(crate) fn build_query_get_nym(
-        &self,
-        id: u64,
-    ) -> IndyResult<abci_query::Request> {
-        let query_data = QueryGetNymRequest { id };
+    pub(crate) fn build_query_get_nym(&self, id: u64) -> IndyResult<abci_query::Request> {
+        let query_data = QueryGetNymRequest::new(id);
         let path = format!("/verimid.verimcosmos.verimcosmos.Query/Nym");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
-        println!("{:?}", query_data.to_proto().to_bytes());
-        let req = abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
+        let req =
+            abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
         Ok(req)
     }
 
@@ -204,14 +201,10 @@ impl VerimLedgerService {
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryGetNymResponse> {
-        let data = resp.response.value.as_ref();
-        let tx_msg = TxMsgData::from_bytes(&data)?;
-        let msg = crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::from_bytes(&tx_msg.data[0].data)?;
+        let msg = verimcosmos::QueryGetNymResponse::from_bytes(&resp.response.value)?;
         let result = QueryGetNymResponse::from_proto(&msg);
-
         return Ok(result);
     }
-
 }
 
 #[cfg(test)]
@@ -222,8 +215,8 @@ mod test {
 
     use crate::domain::cosmos_pool::CosmosPoolConfig;
     use crate::domain::crypto::did::DidValue;
-    use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
     use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
+    use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
     //
     // #[async_std::test]
     // async fn test_query_list_nym() {

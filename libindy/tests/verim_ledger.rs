@@ -55,14 +55,17 @@ mod high_cases {
 
         #[test]
         fn test_create_nym() {
+            ///// Transaction sending
+
             // Create key
             let alice = cosmos_keys::add_from_mnemonic("alice", "alice").unwrap();
             println!("Alice's account: {}", alice);
             let alice: Value = serde_json::from_str(&alice).unwrap();
 
             // Pool
+            let pool_alias = "test_pool";
             let pool =
-                cosmos_pool::add("test_pool", "http://localhost:26657", "verimcosmos").unwrap();
+                cosmos_pool::add(pool_alias, "http://localhost:26657", "verimcosmos").unwrap();
             println!("Pool config: {}", pool);
 
             // Message
@@ -77,16 +80,7 @@ mod high_cases {
 
             // Transaction
             let tx = cosmos_pool::build_tx(
-                "test_pool",
-                "alice",
-                &msg,
-                9,
-                2,
-                300000,
-                0u64,
-                "token",
-                39090,
-                "memo",
+                pool_alias, "alice", &msg, 9, 4, 300000, 0u64, "token", 39090, "memo",
             )
             .unwrap();
 
@@ -94,12 +88,21 @@ mod high_cases {
             let signed = cosmos_keys::sign("alice", &tx).unwrap();
 
             // Broadcast
-            let resp = cosmos_pool::broadcast_tx_commit("test_pool", &signed).unwrap();
+            let resp = cosmos_pool::broadcast_tx_commit(pool_alias, &signed).unwrap();
 
             // Parse the response
-            let result = verim_ledger::parse_msg_create_nym_resp(&resp).unwrap();
+            let tx_resp_parsed = verim_ledger::parse_msg_create_nym_resp(&resp).unwrap();
+            println!("Tx response: {:?}", tx_resp_parsed);
+            let tx_resp: Value = serde_json::from_str(&tx_resp_parsed).unwrap();
 
-            println!("result: {:?}", result);
+            ///// Querying
+
+            let query = verim_ledger::build_query_get_nym(tx_resp["id"].as_u64().unwrap()).unwrap();
+
+            let query_resp = cosmos_pool::abci_query(pool_alias, &query).unwrap();
+            let query_resp_parsed = verim_ledger::parse_query_get_nym_resp(&query_resp).unwrap();
+
+            println!("Query response: {:?}", query_resp_parsed);
 
             assert!(true)
         }

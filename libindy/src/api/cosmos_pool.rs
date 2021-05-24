@@ -271,3 +271,51 @@ pub extern "C" fn indy_cosmos_pool_broadcast_tx_commit(
     debug!("broadcast_tx_commit < {:?}", res);
     res
 }
+
+#[no_mangle]
+pub extern "C" fn indy_cosmos_pool_abci_query(
+    command_handle: CommandHandle,
+    pool_alias: *const c_char,
+    req_json: *const c_char,
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, resp: *const c_char)>,
+) -> ErrorCode {
+    debug!(
+        "indy_cosmos_pool_abci_query > pool_alias {:?}, req_json {:?} ",
+        pool_alias, req_json
+    );
+
+    check_useful_c_str!(pool_alias, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(req_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    debug!(
+        "indy_cosmos_pool_abci_query > pool_alias {:?}, req_json {:?} ",
+        pool_alias, req_json
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .cosmos_pool_controller
+            .abci_query(&pool_alias, &req_json)
+            .await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, res) = prepare_result!(res, String::new());
+        debug!("indy_cosmos_pool_abci_query ? err {:?} res {:?}", err, res);
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    };
+
+    locator
+        .executor
+        .spawn_ok_instrumented(CommandMetric::CosmosPoolAbciQuery, action, cb);
+
+    let res = ErrorCode::Success;
+    debug!("indy_cosmos_pool_abci_query < {:?}", res);
+    res
+}

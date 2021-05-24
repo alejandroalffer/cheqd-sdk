@@ -40,4 +40,11 @@ extern "C" {
         signed_tx_len: u32,
         cb: Option<ResponseStringCB>,
     ) -> Error;
+
+    pub fn indy_cosmos_pool_abci_query(
+        command_handle: CommandHandle,
+        pool_alias: CString,
+        req_json: CString,
+        cb: Option<ResponseStringCB>,
+    ) -> Error;
 }

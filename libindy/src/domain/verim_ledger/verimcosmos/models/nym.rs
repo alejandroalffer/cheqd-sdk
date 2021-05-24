@@ -12,7 +12,14 @@ pub struct Nym {
 }
 
 impl Nym {
-    pub fn new(creator: String, id: u64, alias: String, verkey: String, did: String, role: String) -> Self {
+    pub fn new(
+        creator: String,
+        id: u64,
+        alias: String,
+        verkey: String,
+        did: String,
+        role: String,
+    ) -> Self {
         Nym {
             creator,
             id,
@@ -39,30 +46,30 @@ impl VerimMessage for Nym {
     }
 
     fn from_proto(proto: &Self::Proto) -> Self {
-        Self {
-            creator: proto.creator.clone(),
-            id: proto.id.clone(),
-            alias: proto.alias.clone(),
-            verkey: proto.verkey.clone(),
-            did: proto.did.clone(),
-            role: proto.role.clone(),
-        }
+        Self::new(
+            proto.creator.clone(),
+            proto.id.clone(),
+            proto.alias.clone(),
+            proto.verkey.clone(),
+            proto.did.clone(),
+            proto.role.clone(),
+        )
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::domain::verim_ledger::VerimMessage;
-    use crate::domain::verim_ledger::verimcosmos::models::nym::Nym;
+    use super::*;
 
     #[test]
     fn test_msg_create_nym_response() {
-        let msg = Nym::new("creator".to_string(),
-                           456,
-                           "alias".to_string(),
-                           "verkey".to_string(),
-                           "did".to_string(),
-                           "role".to_string(),
+        let msg = Nym::new(
+            "creator".to_string(),
+            456,
+            "alias".to_string(),
+            "verkey".to_string(),
+            "did".to_string(),
+            "role".to_string(),
         );
 
         let proto = msg.to_proto();

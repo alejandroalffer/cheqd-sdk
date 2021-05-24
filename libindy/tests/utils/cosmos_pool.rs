@@ -40,3 +40,7 @@ pub fn build_tx(
 pub fn broadcast_tx_commit(pool_alias: &str, signed_tx: &[u8]) -> Result<String, IndyError> {
     cosmos_pool::broadcast_tx_commit(pool_alias, signed_tx).wait()
 }
+
+pub fn abci_query(pool_alias: &str, req_json: &str) -> Result<String, IndyError> {
+    cosmos_pool::abci_query(pool_alias, req_json).wait()
+}

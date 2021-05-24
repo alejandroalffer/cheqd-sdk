@@ -48,4 +48,16 @@ extern "C" {
         commit_resp: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
+
+    pub fn indy_verim_ledger_build_query_get_nym(
+        command_handle: CommandHandle,
+        id: u64,
+        cb: Option<ResponseStringCB>,
+    ) -> Error;
+
+    pub fn indy_verim_ledger_parse_query_get_nym_resp(
+        command_handle: CommandHandle,
+        query_resp: CString,
+        cb: Option<ResponseStringCB>,
+    ) -> Error;
 }

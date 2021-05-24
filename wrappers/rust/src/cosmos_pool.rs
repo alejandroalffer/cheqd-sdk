@@ -163,3 +163,33 @@ fn _broadcast_tx_commit(
         )
     })
 }
+
+pub fn abci_query(
+    pool_alias: &str,
+    req_json: &str,
+) -> Box<dyn Future<Item = String, Error = IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _abci_query(command_handle, pool_alias, req_json, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _abci_query(
+    command_handle: CommandHandle,
+    pool_alias: &str,
+    req_json: &str,
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+    let pool_alias = c_str!(pool_alias);
+    let req_json = c_str!(req_json);
+
+    ErrorCode::from(unsafe {
+        cosmos_pool::indy_cosmos_pool_abci_query(
+            command_handle,
+            pool_alias.as_ptr(),
+            req_json.as_ptr(),
+            cb,
+        )
+    })
+}

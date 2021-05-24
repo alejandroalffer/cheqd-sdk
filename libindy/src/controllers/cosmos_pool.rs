@@ -117,16 +117,9 @@ impl CosmosPoolController {
         Ok(json)
     }
 
-    pub async fn abci_query(
-        &self,
-        pool_alias: &str,
-        req_json: &str,
-    ) -> IndyResult<String> {
+    pub(crate) async fn abci_query(&self, pool_alias: &str, req_json: &str) -> IndyResult<String> {
         let req: rpc::endpoint::abci_query::Request = serde_json::from_str(req_json)?;
-        let resp = self
-            .cosmos_pool_service
-            .abci_query(pool_alias, req)
-            .await?;
+        let resp = self.cosmos_pool_service.abci_query(pool_alias, req).await?;
         let json_resp = serde_json::to_string(&resp)?;
         Ok(json_resp)
     }

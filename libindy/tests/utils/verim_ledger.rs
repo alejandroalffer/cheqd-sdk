@@ -42,3 +42,11 @@ pub fn build_msg_delete_nym(creator: &str, id: u64) -> Result<Vec<u8>, IndyError
 pub fn parse_msg_delete_nym_resp(commit_resp: &str) -> Result<String, IndyError> {
     verim_ledger::parse_msg_delete_nym_resp(commit_resp).wait()
 }
+
+pub fn build_query_get_nym(id: u64) -> Result<String, IndyError> {
+    verim_ledger::build_query_get_nym(id).wait()
+}
+
+pub fn parse_query_get_nym_resp(query_resp: &str) -> Result<String, IndyError> {
+    verim_ledger::parse_query_get_nym_resp(query_resp).wait()
+}

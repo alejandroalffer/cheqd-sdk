@@ -5,15 +5,15 @@ use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
 use crate::domain::verim_ledger::verimcosmos::messages::{
     MsgCreateNymResponse, MsgDeleteNymResponse, MsgUpdateNymResponse,
 };
+use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
+use crate::domain::verim_ledger::VerimMessage;
 use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
 use async_std::sync::Arc;
-use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
 use cosmos_sdk::rpc::endpoint::abci_query::Response as QueryResponse;
+use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
+use cosmos_sdk::rpc::Request;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
-use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
-use cosmos_sdk::rpc::Request;
-use crate::domain::verim_ledger::VerimMessage;
 
 pub(crate) struct VerimLedgerController {
     verim_ledger_service: Arc<VerimLedgerService>,
@@ -114,19 +114,14 @@ impl VerimLedgerController {
     }
 
     pub(crate) fn build_query_get_nym(&self, id: u64) -> IndyResult<String> {
-        trace!("build_query_get_nym > id {:?}", id,);
-        let msg = self
-            .verim_ledger_service
-            .build_query_get_nym(id)?;
-        trace!("build_query_get_nym < {:?}", msg);
-
-        Ok(msg.into_json())
+        trace!("build_query_get_nym > id {:?}", id);
+        let query = self.verim_ledger_service.build_query_get_nym(id)?;
+        let json = serde_json::to_string(&query)?;
+        trace!("build_query_get_nym < {:?}", query);
+        Ok(json)
     }
 
-    pub(crate) fn parse_query_get_nym_resp(
-        &self,
-        resp_json: &str,
-    ) -> IndyResult<String> {
+    pub(crate) fn parse_query_get_nym_resp(&self, resp_json: &str) -> IndyResult<String> {
         trace!("parse_msg_delete_nym_resp > resp {:?}", resp_json);
         let resp: QueryResponse = serde_json::from_str(resp_json)?;
         let result = self.verim_ledger_service.parse_query_get_nym_resp(&resp)?;
@@ -156,8 +151,7 @@ mod test {
             let pool_service = Arc::new(CosmosPoolService::new());
             let keys_service = Arc::new(CosmosKeysService::new());
 
-            let ledger_controller =
-                VerimLedgerController::new(ledger_service.clone());
+            let ledger_controller = VerimLedgerController::new(ledger_service.clone());
 
             let pool_controller =
                 CosmosPoolController::new(pool_service.clone(), keys_service.clone());
@@ -471,7 +465,6 @@ mod test {
 
     #[async_std::test]
     async fn test_query_get_nym() {
-
         let harness = TestHarness::new();
         let pool_alias = "test_pool";
 
@@ -539,13 +532,14 @@ mod test {
         let req = harness
             .ledger_controller
             // .build_query_get_nym(result_create.id)
-            .build_query_get_nym(0)
+            .build_query_get_nym(1)
             .unwrap();
         println!("{:?}", req);
+
         // Send request
         let response_create = harness
             .pool_controller
-            .abci_query(pool_alias, req.as_str())
+            .abci_query(pool_alias, &req)
             .await
             .unwrap();
 
@@ -558,5 +552,4 @@ mod test {
         println!("result: {:?}", result);
         assert!(true)
     }
-
 }

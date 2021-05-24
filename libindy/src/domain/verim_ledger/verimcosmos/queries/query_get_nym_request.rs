@@ -30,8 +30,7 @@ impl VerimMessage for QueryGetNymRequest {
 
 #[cfg(test)]
 mod test {
-    use crate::domain::verim_ledger::VerimMessage;
-    use crate::domain::verim_ledger::verimcosmos::queries::query_get_nym_request::QueryGetNymRequest;
+    use super::*;
 
     #[test]
     fn test_query_get_nym_request() {
