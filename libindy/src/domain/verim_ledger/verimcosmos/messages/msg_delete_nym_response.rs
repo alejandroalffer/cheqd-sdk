@@ -1,7 +1,7 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse as ProtoMsgDeleteNymResponse;
 use super::super::super::VerimMessage;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct MsgDeleteNymResponse {}
 
 impl MsgDeleteNymResponse {
@@ -17,8 +17,8 @@ impl VerimMessage for MsgDeleteNymResponse {
         Self::Proto {}
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self {}
+    fn from_proto(_proto: &Self::Proto) -> Self {
+        Self::new()
     }
 }
 

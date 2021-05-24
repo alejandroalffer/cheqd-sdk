@@ -17,20 +17,12 @@ use crate::domain::verim_ledger::VerimMessage;
 
 pub(crate) struct VerimLedgerController {
     verim_ledger_service: Arc<VerimLedgerService>,
-    cosmos_pool_service: Arc<CosmosPoolService>,
-    cosmos_keys_service: Arc<CosmosKeysService>,
 }
 
 impl VerimLedgerController {
-    pub(crate) fn new(
-        verim_ledger_service: Arc<VerimLedgerService>,
-        cosmos_pool_service: Arc<CosmosPoolService>,
-        cosmos_keys_service: Arc<CosmosKeysService>,
-    ) -> Self {
+    pub(crate) fn new(verim_ledger_service: Arc<VerimLedgerService>) -> Self {
         Self {
             verim_ledger_service,
-            cosmos_pool_service,
-            cosmos_keys_service,
         }
     }
 
@@ -58,12 +50,11 @@ impl VerimLedgerController {
         Ok(msg.to_bytes()?)
     }
 
-    pub(crate) fn parse_msg_create_nym_resp(
-        &self,
-        resp: &Response,
-    ) -> IndyResult<MsgCreateNymResponse> {
+    pub(crate) fn parse_msg_create_nym_resp(&self, resp: &str) -> IndyResult<String> {
         trace!("parse_msg_create_nym_resp > resp {:?}", resp);
-        let res = self.verim_ledger_service.parse_msg_create_nym_resp(resp)?;
+        let resp: Response = serde_json::from_str(&resp)?;
+        let res = self.verim_ledger_service.parse_msg_create_nym_resp(&resp)?;
+        let res = serde_json::to_string(&res)?;
         trace!("parse_msg_create_nym_resp < {:?}", res);
         Ok(res)
     }
@@ -94,12 +85,11 @@ impl VerimLedgerController {
         Ok(msg.to_bytes()?)
     }
 
-    pub(crate) fn parse_msg_update_nym_resp(
-        &self,
-        resp: &Response,
-    ) -> IndyResult<MsgUpdateNymResponse> {
+    pub(crate) fn parse_msg_update_nym_resp(&self, resp: &str) -> IndyResult<String> {
         trace!("parse_msg_update_nym_resp > resp {:?}", resp);
-        let res = self.verim_ledger_service.parse_msg_update_nym_resp(resp)?;
+        let resp: Response = serde_json::from_str(resp)?;
+        let res = self.verim_ledger_service.parse_msg_update_nym_resp(&resp)?;
+        let res = serde_json::to_string(&res)?;
         trace!("parse_msg_update_nym_resp < {:?}", res);
         Ok(res)
     }
@@ -114,12 +104,11 @@ impl VerimLedgerController {
         Ok(msg.to_bytes()?)
     }
 
-    pub(crate) fn parse_msg_delete_nym_resp(
-        &self,
-        resp: &Response,
-    ) -> IndyResult<MsgDeleteNymResponse> {
+    pub(crate) fn parse_msg_delete_nym_resp(&self, resp: &str) -> IndyResult<String> {
         trace!("parse_msg_delete_nym_resp > resp {:?}", resp);
-        let res = self.verim_ledger_service.parse_msg_delete_nym_resp(resp)?;
+        let resp: Response = serde_json::from_str(resp)?;
+        let res = self.verim_ledger_service.parse_msg_delete_nym_resp(&resp)?;
+        let res = serde_json::to_string(&res)?;
         trace!("parse_msg_delete_nym_resp < {:?}", res);
         Ok(res)
     }
@@ -167,11 +156,8 @@ mod test {
             let pool_service = Arc::new(CosmosPoolService::new());
             let keys_service = Arc::new(CosmosKeysService::new());
 
-            let ledger_controller = VerimLedgerController::new(
-                ledger_service.clone(),
-                pool_service.clone(),
-                keys_service.clone(),
-            );
+            let ledger_controller =
+                VerimLedgerController::new(ledger_service.clone(), pool_service.clone());
 
             let pool_controller =
                 CosmosPoolController::new(pool_service.clone(), keys_service.clone());

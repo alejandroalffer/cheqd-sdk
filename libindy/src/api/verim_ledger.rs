@@ -71,6 +71,57 @@ pub extern "C" fn indy_verim_ledger_build_msg_create_nym(
 }
 
 #[no_mangle]
+pub extern "C" fn indy_verim_ledger_parse_msg_create_nym_resp(
+    command_handle: CommandHandle,
+    commit_resp: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, msg_resp: *const c_char),
+    >,
+) -> ErrorCode {
+    debug!(
+        "indy_verim_ledger_parse_msg_create_nym_resp > commit_resp {:?}",
+        commit_resp
+    );
+
+    check_useful_c_str!(commit_resp, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    debug!(
+        "indy_verim_ledger_parse_msg_create_nym_resp > commit_resp {:?}",
+        commit_resp
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .verim_ledger_controller
+            .parse_msg_create_nym_resp(&commit_resp);
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, msg_resp) = prepare_result!(res, String::new());
+        debug!(
+            "indy_verim_ledger_parse_msg_create_nym_resp: msg_resp: {:?}",
+            msg_resp
+        );
+        let msg_resp = ctypes::string_to_cstring(msg_resp);
+        cb(command_handle, err, msg_resp.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(
+        CommandMetric::VerimLedgerCommandParseMsgCreateNymResp,
+        action,
+        cb,
+    );
+
+    let res = ErrorCode::Success;
+    debug!("indy_verim_ledger_parse_msg_create_nym_resp < {:?}", res);
+    res
+}
+
+#[no_mangle]
 pub extern "C" fn indy_verim_ledger_build_msg_update_nym(
     command_handle: CommandHandle,
     did: *const c_char,
@@ -135,6 +186,57 @@ pub extern "C" fn indy_verim_ledger_build_msg_update_nym(
 }
 
 #[no_mangle]
+pub extern "C" fn indy_verim_ledger_parse_msg_update_nym_resp(
+    command_handle: CommandHandle,
+    commit_resp: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, msg_resp: *const c_char),
+    >,
+) -> ErrorCode {
+    debug!(
+        "indy_verim_ledger_parse_msg_update_nym_resp > commit_resp {:?}",
+        commit_resp
+    );
+
+    check_useful_c_str!(commit_resp, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    debug!(
+        "indy_verim_ledger_parse_msg_update_nym_resp > commit_resp {:?}",
+        commit_resp
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .verim_ledger_controller
+            .parse_msg_update_nym_resp(&commit_resp);
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, msg_resp) = prepare_result!(res, String::new());
+        debug!(
+            "indy_verim_ledger_parse_msg_update_nym_resp: msg_resp: {:?}",
+            msg_resp
+        );
+        let msg_resp = ctypes::string_to_cstring(msg_resp);
+        cb(command_handle, err, msg_resp.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(
+        CommandMetric::VerimLedgerCommandParseMsgUpdateNymResp,
+        action,
+        cb,
+    );
+
+    let res = ErrorCode::Success;
+    debug!("indy_verim_ledger_parse_msg_update_nym_resp < {:?}", res);
+    res
+}
+
+#[no_mangle]
 pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
     command_handle: CommandHandle,
     creator: *const c_char,
@@ -188,5 +290,56 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
 
     let res = ErrorCode::Success;
     debug!("indy_verim_ledger_build_msg_update_nym < {:?}", res);
+    res
+}
+
+#[no_mangle]
+pub extern "C" fn indy_verim_ledger_parse_msg_delete_nym_resp(
+    command_handle: CommandHandle,
+    commit_resp: *const c_char,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, msg_resp: *const c_char),
+    >,
+) -> ErrorCode {
+    debug!(
+        "indy_verim_ledger_parse_msg_delete_nym_resp > commit_resp {:?}",
+        commit_resp
+    );
+
+    check_useful_c_str!(commit_resp, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    debug!(
+        "indy_verim_ledger_parse_msg_delete_nym_resp > commit_resp {:?}",
+        commit_resp
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .verim_ledger_controller
+            .parse_msg_delete_nym_resp(&commit_resp);
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, msg_resp) = prepare_result!(res, String::new());
+        debug!(
+            "indy_verim_ledger_parse_msg_delete_nym_resp: msg_resp: {:?}",
+            msg_resp
+        );
+        let msg_resp = ctypes::string_to_cstring(msg_resp);
+        cb(command_handle, err, msg_resp.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(
+        CommandMetric::VerimLedgerCommandParseMsgDeleteNymResp,
+        action,
+        cb,
+    );
+
+    let res = ErrorCode::Success;
+    debug!("indy_verim_ledger_parse_msg_delete_nym_resp < {:?}", res);
     res
 }

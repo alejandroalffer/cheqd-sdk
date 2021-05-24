@@ -46,11 +46,11 @@ impl CosmosPoolController {
         Ok(json)
     }
 
-    pub(crate) async fn pool_config(&self, alias: &str) -> IndyResult<String> {
-        trace!("pool_config > alias {:?}", alias);
-        let config = self.cosmos_pool_service.pool_config(alias).await?;
+    pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<String> {
+        trace!("get_config > alias {:?}", alias);
+        let config = self.cosmos_pool_service.get_config(alias).await?;
         let json = serde_json::to_string(&config)?;
-        trace!("pool_config < {:?}", json);
+        trace!("get_config < {:?}", json);
         Ok(json)
     }
 
@@ -64,13 +64,13 @@ impl CosmosPoolController {
         max_gas: u64,
         max_coin_amount: u64,
         max_coin_denom: &str,
-        timeout_height: u16,
+        timeout_height: u64,
         memo: &str,
     ) -> IndyResult<Vec<u8>> {
         trace!("build_tx > pool_alias {:?}, sender_alias {:?}, msg {:?}, account_number {:?}, sequence_number {:?}, max_gas {:?}, max_coin_amount {:?}, max_coin_denom {:?}, timeout_height {:?}, memo {:?}", pool_alias, sender_alias, msg, account_number, sequence_number, max_gas, max_coin_amount, max_coin_denom, timeout_height, memo);
 
-        let pool = self.cosmos_pool_service.pool_config(pool_alias).await?;
-        let sender = self.cosmos_keys_service.key_info(sender_alias).await?;
+        let pool = self.cosmos_pool_service.get_config(pool_alias).await?;
+        let sender = self.cosmos_keys_service.get_info(sender_alias).await?;
         let msg = Msg::from_bytes(&msg)?;
 
         let sign_doc = self
@@ -98,7 +98,7 @@ impl CosmosPoolController {
         &self,
         pool_alias: &str,
         signed_tx: &[u8],
-    ) -> IndyResult<rpc::endpoint::broadcast::tx_commit::Response> {
+    ) -> IndyResult<String> {
         trace!(
             "broadcast_tx_commit > pool_alias {:?}, signed_tx {:?}",
             pool_alias,
@@ -110,10 +110,11 @@ impl CosmosPoolController {
             .cosmos_pool_service
             .broadcast_tx_commit(pool_alias, tx_raw)
             .await?;
+        let json = serde_json::to_string(&resp)?;
 
-        trace!("broadcast_tx_commit < resp_bytes {:?}", resp);
+        trace!("broadcast_tx_commit < resp {:?}", json);
 
-        Ok(resp)
+        Ok(json)
     }
 
     pub async fn abci_query(

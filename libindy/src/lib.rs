@@ -190,11 +190,7 @@ impl Locator {
             ledger_service.clone(),
         );
 
-        let verim_ledger_controller = VerimLedgerController::new(
-            verim_ledger_service.clone(),
-            cosmos_pool_service.clone(),
-            cosmos_keys_service.clone(),
-        );
+        let verim_ledger_controller = VerimLedgerController::new(verim_ledger_service.clone());
 
         let payment_controller = PaymentsController::new(
             payment_service.clone(),
