@@ -208,7 +208,6 @@ impl VerimLedgerService {
         let req = abci_query::Request::new(Some(path), query_data.as_bytes(), None, true);
         Ok(req)
     }
-}
 
     pub(crate) fn parse_query_get_nym_resp(
         &self,
