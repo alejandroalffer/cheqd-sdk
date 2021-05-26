@@ -1,7 +1,7 @@
 use super::super::super::super::verim_ledger::VerimMessage;
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgCreateNymResponse as ProtoMsgCreateNymResponse;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct MsgCreateNymResponse {
     pub id: u64,
 }
@@ -22,9 +22,7 @@ impl VerimMessage for MsgCreateNymResponse {
     }
 
     fn from_proto(proto: &Self::Proto) -> Self {
-        Self {
-            id: proto.id.clone(),
-        }
+        Self::new(proto.id.clone())
     }
 }
 
