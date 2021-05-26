@@ -99,11 +99,11 @@ impl CosmosRawExt for Raw {
 mod test {
     use cosmos_sdk::tx::Msg;
 
-    use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
-    use crate::domain::verim_ledger::cosmos_ext::ProstMessageExt;
-    use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
-    use crate::domain::verim_ledger::verimcosmos::messages::MsgCreateNym;
-    use crate::domain::verim_ledger::VerimMessage;
+    use super::super::super::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
+    use super::super::super::verim_ledger::verimcosmos::messages::MsgCreateNym;
+    use super::super::super::verim_ledger::VerimMessage;
+    use super::super::cosmos_ext::CosmosMsgExt;
+    use super::super::cosmos_ext::ProstMessageExt;
 
     #[test]
     fn test_prost_message_ext() {

@@ -1,5 +1,5 @@
-use variant_count::VariantCount;
 use std::fmt;
+use variant_count::VariantCount;
 
 impl fmt::Display for CommandMetric {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -118,9 +118,21 @@ pub enum CommandMetric {
     LedgerCommandBuildGetAcceptanceMechanismsRequest,
     LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest,
     LedgerCommandAppendRequestEndorser,
-    // Ledger2
-    Ledger2CommandBuildMsgBankSend,
-    Ledger2CommandBuildMsgCreateNym,
+    // VerimLedger
+    VerimLedgerCommandBuildMsgCreateNym,
+    VerimLedgerCommandBuildMsgUpdateNym,
+    VerimLedgerCommandBuildMsgDeleteNym,
+    VerimLedgerCommandBuildQueryGetNym,
+    VerimLedgerCommandParseMsgCreateNymResp,
+    VerimLedgerCommandParseMsgUpdateNymResp,
+    VerimLedgerCommandParseMsgDeleteNymResp,
+    VerimLedgerCommandParseQueryGetNymResp,
+    // CosmosPool
+    CosmosPoolAdd,
+    CosmosPoolGetConfig,
+    CosmosPoolBuildTx,
+    CosmosPoolBroadcastTxCommit,
+    CosmosPoolAbciQuery,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,
@@ -149,6 +161,11 @@ pub enum CommandMetric {
     DidCommandGetNymAck,
     DidCommandGetAttribAck,
     DidCommandQualifyDid,
+    // CosmosKeys
+    CosmosKeysAddRandom,
+    CosmosKeysAddFromMnemonic,
+    CosmosKeysKeyInfo,
+    CosmosKeysSign,
     // WalletCommand
     WalletCommandRegisterWalletType,
     WalletCommandCreate,

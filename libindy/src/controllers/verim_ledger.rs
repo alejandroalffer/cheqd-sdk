@@ -2,30 +2,31 @@
 
 use crate::domain::crypto::did::DidValue;
 use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
+use crate::domain::verim_ledger::verimcosmos::messages::{
+    MsgCreateNymResponse, MsgDeleteNymResponse, MsgUpdateNymResponse,
+};
+use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
+use crate::domain::verim_ledger::VerimMessage;
 use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
 use async_std::sync::Arc;
-use indy_api_types::errors::IndyResult;
+use cosmos_sdk::rpc::endpoint::abci_query::Response as QueryResponse;
+use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
+use cosmos_sdk::rpc::Request;
+use indy_api_types::errors::{IndyErrorKind, IndyResult};
+use indy_api_types::IndyError;
 
 pub(crate) struct VerimLedgerController {
     verim_ledger_service: Arc<VerimLedgerService>,
-    cosmos_pool_service: Arc<CosmosPoolService>,
-    cosmos_keys_service: Arc<CosmosKeysService>,
 }
 
 impl VerimLedgerController {
-    pub(crate) fn new(
-        verim_ledger_service: Arc<VerimLedgerService>,
-        cosmos_pool_service: Arc<CosmosPoolService>,
-        cosmos_keys_service: Arc<CosmosKeysService>,
-    ) -> Self {
+    pub(crate) fn new(verim_ledger_service: Arc<VerimLedgerService>) -> Self {
         Self {
             verim_ledger_service,
-            cosmos_pool_service,
-            cosmos_keys_service,
         }
     }
 
-    pub fn build_msg_create_nym(
+    pub(crate) fn build_msg_create_nym(
         &self,
         did: &str,
         creator: &str,
@@ -49,42 +50,52 @@ impl VerimLedgerController {
         Ok(msg.to_bytes()?)
     }
 
-    pub fn build_msg_update_nym(
+    pub(crate) fn parse_msg_create_nym_resp(&self, resp: &str) -> IndyResult<String> {
+        trace!("parse_msg_create_nym_resp > resp {:?}", resp);
+        let resp: Response = serde_json::from_str(&resp)?;
+        let res = self.verim_ledger_service.parse_msg_create_nym_resp(&resp)?;
+        let res = serde_json::to_string(&res)?;
+        trace!("parse_msg_create_nym_resp < {:?}", res);
+        Ok(res)
+    }
+
+    pub(crate) fn build_msg_update_nym(
         &self,
+        did: &str,
         creator: &str,
-        id: u64,
         verkey: &str,
         alias: &str,
-        did: &str,
         role: &str,
+        id: u64,
     ) -> IndyResult<Vec<u8>> {
         trace!(
-            "add_random > creator {:?} id {:?} verkey {:?} alias {:?} did {:?} role {:?}",
+            "add_random > creator {:?} verkey {:?} alias {:?} did {:?} role {:?} id {:?}",
+            did,
             creator,
-            id,
             verkey,
             alias,
-            did,
-            role
+            role,
+            id
         );
         let msg = self
             .verim_ledger_service
-            .build_msg_update_nym(creator, id, verkey, alias, did, role)?;
+            .build_msg_update_nym(did, creator, verkey, alias, role, id)?;
         trace!("add_random < {:?}", msg);
 
         Ok(msg.to_bytes()?)
     }
 
-    pub fn build_msg_delete_nym(
-        &self,
-        creator: &str,
-        id: u64,
-    ) -> IndyResult<Vec<u8>> {
-        trace!(
-            "add_random > creator {:?} id {:?}",
-            creator,
-            id,
-        );
+    pub(crate) fn parse_msg_update_nym_resp(&self, resp: &str) -> IndyResult<String> {
+        trace!("parse_msg_update_nym_resp > resp {:?}", resp);
+        let resp: Response = serde_json::from_str(resp)?;
+        let res = self.verim_ledger_service.parse_msg_update_nym_resp(&resp)?;
+        let res = serde_json::to_string(&res)?;
+        trace!("parse_msg_update_nym_resp < {:?}", res);
+        Ok(res)
+    }
+
+    pub(crate) fn build_msg_delete_nym(&self, creator: &str, id: u64) -> IndyResult<Vec<u8>> {
+        trace!("add_random > creator {:?} id {:?}", creator, id,);
         let msg = self
             .verim_ledger_service
             .build_msg_delete_nym(creator, id)?;
@@ -93,8 +104,30 @@ impl VerimLedgerController {
         Ok(msg.to_bytes()?)
     }
 
-    pub fn parse_msg_create_nym_resp() {
-        unimplemented!()
+    pub(crate) fn parse_msg_delete_nym_resp(&self, resp: &str) -> IndyResult<String> {
+        trace!("parse_msg_delete_nym_resp > resp {:?}", resp);
+        let resp: Response = serde_json::from_str(resp)?;
+        let res = self.verim_ledger_service.parse_msg_delete_nym_resp(&resp)?;
+        let res = serde_json::to_string(&res)?;
+        trace!("parse_msg_delete_nym_resp < {:?}", res);
+        Ok(res)
+    }
+
+    pub(crate) fn build_query_get_nym(&self, id: u64) -> IndyResult<String> {
+        trace!("build_query_get_nym > id {:?}", id);
+        let query = self.verim_ledger_service.build_query_get_nym(id)?;
+        let json = serde_json::to_string(&query)?;
+        trace!("build_query_get_nym < {:?}", query);
+        Ok(json)
+    }
+
+    pub(crate) fn parse_query_get_nym_resp(&self, resp_json: &str) -> IndyResult<String> {
+        trace!("parse_msg_delete_nym_resp > resp {:?}", resp_json);
+        let resp: QueryResponse = serde_json::from_str(resp_json)?;
+        let result = self.verim_ledger_service.parse_query_get_nym_resp(&resp)?;
+        let json_result = serde_json::to_string(&result)?;
+        trace!("parse_msg_delete_nym_resp < {:?}", json_result);
+        Ok(json_result)
     }
 }
 
@@ -104,6 +137,7 @@ mod test {
     use crate::domain::cosmos_pool::CosmosPoolConfig;
     use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
     use async_std::sync::Arc;
+    use std::str::FromStr;
 
     struct TestHarness {
         ledger_controller: VerimLedgerController,
@@ -117,11 +151,7 @@ mod test {
             let pool_service = Arc::new(CosmosPoolService::new());
             let keys_service = Arc::new(CosmosKeysService::new());
 
-            let ledger_controller = VerimLedgerController::new(
-                ledger_service.clone(),
-                pool_service.clone(),
-                keys_service.clone(),
-            );
+            let ledger_controller = VerimLedgerController::new(ledger_service.clone());
 
             let pool_controller =
                 CosmosPoolController::new(pool_service.clone(), keys_service.clone());
@@ -140,10 +170,303 @@ mod test {
     async fn test_msg_bank_send() {
         unimplemented!()
     }
+    //
+    // #[async_std::test]
+    // async fn test_msg_create_nym() {
+    //     let harness = TestHarness::new();
+    //
+    //     // Keys
+    //     let alice = harness
+    //         .keys_controller
+    //         .add_from_mnemonic("alice", "alice")
+    //         .await
+    //         .unwrap();
+    //
+    //     let alice = serde_json::Value::from_str(&alice).unwrap();
+    //
+    //     println!(
+    //         "Alice's account id: {}",
+    //         alice["account_id"].as_str().unwrap()
+    //     );
+    //
+    //     // Pool
+    //     harness
+    //         .pool_controller
+    //         .add("test_pool", "http://localhost:26657", "verim-cosmos-chain")
+    //         .await
+    //         .unwrap();
+    //
+    //     // Msg for create transaction
+    //     let msg = harness
+    //         .ledger_controller
+    //         .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
+    //         .unwrap();
+    //
+    //     // Transaction of create
+    //     let tx = harness
+    //         .pool_controller
+    //         .build_tx(
+    //             "test_pool",
+    //             "alice",
+    //             &msg,
+    //             11,
+    //             1,
+    //             300000,
+    //             300000u64,
+    //             "token",
+    //             39090,
+    //             "memo",
+    //         )
+    //         .await
+    //         .unwrap();
+    //
+    //     let signed = harness.keys_controller.sign("alice", &tx).await.unwrap();
+    //
+    //     // Broadcast transaction of create
+    //     let resp = harness
+    //         .pool_controller
+    //         .broadcast_tx_commit("test_pool", &signed)
+    //         .await
+    //         .unwrap();
+    //
+    //     // Parse response of create transaction
+    //     let result = harness
+    //         .ledger_controller
+    //         .parse_msg_create_nym_resp(&resp)
+    //         .unwrap();
+    //
+    //     println!("result: {:?}", result);
+    //
+    //     assert!(true)
+    // }
+    //
+    // #[async_std::test]
+    // async fn test_msg_update_nym() {
+    //     let harness = TestHarness::new();
+    //
+    //     // Keys
+    //     let alice = harness
+    //         .keys_controller
+    //         .add_from_mnemonic("alice", "alice")
+    //         .await
+    //         .unwrap();
+    //
+    //     println!("Alice's account id: {}", alice.account_id);
+    //
+    //     // Pool
+    //     let pool_alias = harness
+    //         .pool_controller
+    //         .add("test_pool", "http://localhost:26657", "verim-cosmos-chain")
+    //         .await
+    //         .unwrap();
+    //
+    //     // Msg for create transaction
+    //     let msg_create = harness
+    //         .ledger_controller
+    //         .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
+    //         .unwrap();
+    //
+    //     // Transaction of create
+    //     let tx_create = harness
+    //         .pool_controller
+    //         .build_tx(
+    //             "test_pool",
+    //             "alice",
+    //             &msg_create,
+    //             11,
+    //             10,
+    //             300000,
+    //             300000,
+    //             "token",
+    //             39090,
+    //             "memo",
+    //         )
+    //         .await
+    //         .unwrap();
+    //
+    //     let signed_create = harness
+    //         .keys_controller
+    //         .sign("alice", &tx_create)
+    //         .await
+    //         .unwrap();
+    //
+    //     // Broadcast transaction of create
+    //     let response_create = harness
+    //         .pool_controller
+    //         .broadcast_tx_commit("test_pool", &signed_create)
+    //         .await
+    //         .unwrap();
+    //
+    //     // Parse response of create transaction
+    //     let result_create = harness
+    //         .ledger_controller
+    //         .parse_msg_create_nym_resp(&response_create)
+    //         .unwrap();
+    //
+    //     // Msg for update transaction
+    //     let msg = harness
+    //         .ledger_controller
+    //         .build_msg_update_nym(
+    //             "newdid",
+    //             &alice.account_id,
+    //             "verkey",
+    //             "bob",
+    //             "role",
+    //             result_create.id,
+    //         )
+    //         .unwrap();
+    //
+    //     // Transaction of update
+    //     let tx = harness
+    //         .pool_controller
+    //         .build_tx(
+    //             "test_pool",
+    //             "alice",
+    //             &msg,
+    //             11,
+    //             11,
+    //             300000,
+    //             300000,
+    //             "token",
+    //             39090,
+    //             "memo",
+    //         )
+    //         .await
+    //         .unwrap();
+    //
+    //     let signed = harness.keys_controller.sign("alice", &tx).await.unwrap();
+    //
+    //     // Broadcast transaction of update
+    //     let response = harness
+    //         .pool_controller
+    //         .broadcast_tx_commit("test_pool", &signed)
+    //         .await
+    //         .unwrap();
+    //
+    //     // Parse response of update transaction
+    //     let result = harness
+    //         .ledger_controller
+    //         .parse_msg_update_nym_resp(&response)
+    //         .unwrap();
+    //
+    //     println!("result: {:?}", result);
+    //
+    //     assert!(true)
+    // }
+    //
+    // #[async_std::test]
+    // async fn test_msg_delete_nym() {
+    //     let harness = TestHarness::new();
+    //
+    //     // Keys
+    //     let alice = harness
+    //         .keys_controller
+    //         .add_from_mnemonic("alice", "alice")
+    //         .await
+    //         .unwrap();
+    //
+    //     println!("Alice's account id: {}", alice.account_id);
+    //
+    //     // Pool
+    //     let pool_alias = harness
+    //         .pool_controller
+    //         .add("test_pool", "http://localhost:26657", "verim-cosmos-chain")
+    //         .await
+    //         .unwrap();
+    //
+    //     // Msg for create transaction
+    //     let msg_create = harness
+    //         .ledger_controller
+    //         .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
+    //         .unwrap();
+    //
+    //     // Transaction of create
+    //     let tx_create = harness
+    //         .pool_controller
+    //         .build_tx(
+    //             "test_pool",
+    //             "alice",
+    //             &msg_create,
+    //             11,
+    //             8,
+    //             300000,
+    //             300000u64,
+    //             "token",
+    //             39090,
+    //             "memo",
+    //         )
+    //         .await
+    //         .unwrap();
+    //
+    //     let signed_create = harness
+    //         .keys_controller
+    //         .sign("alice", &tx_create)
+    //         .await
+    //         .unwrap();
+    //
+    //     // Broadcast transaction of create
+    //     let response_create = harness
+    //         .pool_controller
+    //         .broadcast_tx_commit("test_pool", &signed_create)
+    //         .await
+    //         .unwrap();
+    //
+    //     // Parse response of create transaction
+    //     let result_create = harness
+    //         .ledger_controller
+    //         .parse_msg_create_nym_resp(&response_create)
+    //         .unwrap();
+    //
+    //     // Msg for delete transaction
+    //     let msg = harness
+    //         .ledger_controller
+    //         .build_msg_delete_nym(&alice.account_id, result_create.id)
+    //         .unwrap();
+    //
+    //     // Transaction of delete
+    //     let tx = harness
+    //         .pool_controller
+    //         .build_tx(
+    //             "test_pool",
+    //             "alice",
+    //             &msg,
+    //             11,
+    //             9,
+    //             300000,
+    //             300000u64,
+    //             "token",
+    //             39090,
+    //             "memo",
+    //         )
+    //         .await
+    //         .unwrap();
+    //
+    //     let signed = harness.keys_controller.sign("alice", &tx).await.unwrap();
+    //
+    //     // Broadcast transaction of delete
+    //     let response = harness
+    //         .pool_controller
+    //         .broadcast_tx_commit("test_pool", &signed)
+    //         .await
+    //         .unwrap();
+    //
+    //     // Parse response of delete transaction
+    //     let result = harness
+    //         .ledger_controller
+    //         .parse_msg_delete_nym_resp(&response)
+    //         .unwrap();
+    //
+    //     println!("result: {:?}", result);
+    //
+    //     assert!(true)
+    // }
+    //
+    //
 
     #[async_std::test]
-    async fn test_msg_create_nym() {
+    async fn test_query_get_nym() {
         let harness = TestHarness::new();
+        let pool_alias = "test_pool";
 
         // Keys
         let alice = harness
@@ -152,172 +475,81 @@ mod test {
             .await
             .unwrap();
 
-        println!("Alice's account id: {}", alice.account_id);
+        // println!("Alice's account id: {}", alice.account_id);
 
         // Pool
-        harness
+        let pool = harness
             .pool_controller
-            .add("test_pool", "http://localhost:26657", "verimcosmos")
+            .add(pool_alias, "http://localhost:26657", "verim-cosmos-chain")
             .await
             .unwrap();
-
-        let msg = harness
-            .ledger_controller
-            .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
-            .unwrap();
-
-        let tx = harness
-            .pool_controller
-            .build_tx(
-                "test_pool",
-                "alice",
-                &msg,
-                9,
-                2,
-                300000,
-                3u64,
-                "token",
-                39090,
-                "memo",
-            )
-            .await
-            .unwrap();
-
-        let signed = harness.keys_controller.sign("alice", &tx).await.unwrap();
-
-        harness
-            .pool_controller
-            .broadcast_tx_commit("test_pool", &signed)
-            .await
-            .unwrap();
-
-        assert!(true)
-    }
-
-    #[async_std::test]
-    async fn test_msg_update_nym() {
-        let harness = TestHarness::new();
-
-        // Keys
-        let alice = harness
-            .keys_controller
-            .add_from_mnemonic("alice", "alice")
-            .await
-            .unwrap();
-
-        println!("Alice's account id: {}", alice.account_id);
-
-        // Pool
-        let pool_alias = harness
-            .pool_controller
-            .add("test_pool", "http://localhost:26657", "verimcosmos")
-            .await
-            .unwrap();
-
+        //
+        // // Msg for create transaction
         // let msg_create = harness
         //     .ledger_controller
         //     .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
         //     .unwrap();
-
-        let msg = harness
-            .ledger_controller
-            .build_msg_update_nym(&alice.account_id, 0u64, "verkey", "bob", "newdid", "role")
-            .unwrap();
-
-        let tx = harness
-            .pool_controller
-            .build_tx(
-                "test_pool",
-                "alice",
-                &msg,
-                9,
-                1,
-                300000,
-                0,
-                "token",
-                39090,
-                "memo",
-            )
-            .await
-            .unwrap();
-
-        let signed = harness.keys_controller.sign("alice", &tx).await.unwrap();
-
-        let response = harness
-            .pool_controller
-            .broadcast_tx_commit("test_pool", &signed)
-            .await
-            .unwrap();
-
-        // let msg = harness
+        //
+        // // Transaction of create
+        // let tx_create = harness
+        //     .pool_controller
+        //     .build_tx(
+        //         pool_alias,
+        //         "alice",
+        //         &msg_create,
+        //         11,
+        //         8,
+        //         300000,
+        //         300000u64,
+        //         "token",
+        //         39090,
+        //         "memo",
+        //     )
+        //     .await
+        //     .unwrap();
+        //
+        // let signed_create = harness
+        //     .keys_controller
+        //     .sign("alice", &tx_create)
+        //     .await
+        //     .unwrap();
+        //
+        // // Broadcast transaction of create
+        // let response_create = harness
+        //     .pool_controller
+        //     .broadcast_tx_commit(pool_alias, &signed_create)
+        //     .await
+        //     .unwrap();
+        //
+        // // Parse response of create transaction
+        // let result_create = harness
         //     .ledger_controller
-        //     .build_msg_update_nym(&alice.account_id, 0u64, "verkey", "bob", "newdid", "role")
+        //     .parse_msg_create_nym_resp(&response_create)
         //     .unwrap();
 
+        // Request created NYM
+        // Build query request
+        let req = harness
+            .ledger_controller
+            // .build_query_get_nym(result_create.id)
+            .build_query_get_nym(1)
+            .unwrap();
+        println!("{:?}", req);
+
+        // Send request
+        let response_create = harness
+            .pool_controller
+            .abci_query(pool_alias, &req)
+            .await
+            .unwrap();
+
+        // Parse response of getting transaction
+        let result = harness
+            .ledger_controller
+            .parse_query_get_nym_resp(&response_create)
+            .unwrap();
+
+        println!("result: {:?}", result);
         assert!(true)
     }
-
-    #[async_std::test]
-    async fn test_msg_delete_nym() {
-        let harness = TestHarness::new();
-
-        // Keys
-        let alice = harness
-            .keys_controller
-            .add_from_mnemonic("alice", "alice")
-            .await
-            .unwrap();
-
-        println!("Alice's account id: {}", alice.account_id);
-
-        // Pool
-        let pool_alias = harness
-            .pool_controller
-            .add("test_pool", "http://localhost:26657", "verimcosmos")
-            .await
-            .unwrap();
-
-        // let msg_create = harness
-        //     .ledger_controller
-        //     .build_msg_create_nym("did", &alice.account_id, "verkey", "bob", "role")
-        //     .unwrap();
-
-        let msg = harness
-            .ledger_controller
-            .build_msg_delete_nym(&alice.account_id, 0u64)
-            .unwrap();
-
-        let tx = harness
-            .pool_controller
-            .build_tx(
-                "test_pool",
-                "alice",
-                &msg,
-                9,
-                2,
-                300000,
-                3u64,
-                "token",
-                39090,
-                "memo",
-            )
-            .await
-            .unwrap();
-
-        let signed = harness.keys_controller.sign("alice", &tx).await.unwrap();
-
-        let response = harness
-            .pool_controller
-            .broadcast_tx_commit("test_pool", &signed)
-            .await
-            .unwrap();
-
-        // let msg = harness
-        //     .ledger_controller
-        //     .build_msg_delete_nym(&alice.account_id, 0u64)
-        //     .unwrap();
-
-        assert!(true)
-    }
-
 }

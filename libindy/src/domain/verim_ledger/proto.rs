@@ -34,6 +34,7 @@ impl MsgProto for verimid::verimcosmos::verimcosmos::MsgDeleteNym {
 impl MsgProto for verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse {
     const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgDeleteNymResponse";
 }
+
 impl MsgProto for verimid::verimcosmos::verimcosmos::QueryGetNymRequest {
     const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryGetNymRequest";
 }

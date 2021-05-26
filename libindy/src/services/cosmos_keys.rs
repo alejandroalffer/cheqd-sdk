@@ -77,7 +77,7 @@ impl CosmosKeysService {
         let key = k256::ecdsa::SigningKey::random(&mut OsRng);
         self.set_signing_key(alias, &key).await?;
 
-        Ok(self.key_info(alias).await?)
+        Ok(self.get_info(alias).await?)
     }
 
     pub(crate) async fn add_from_mnemonic(
@@ -89,10 +89,10 @@ impl CosmosKeysService {
         let key = k256::ecdsa::SigningKey::random(&mut rng);
         self.set_signing_key(alias, &key).await?;
 
-        Ok(self.key_info(alias).await?)
+        Ok(self.get_info(alias).await?)
     }
 
-    pub(crate) async fn key_info(&self, alias: &str) -> IndyResult<KeyInfo> {
+    pub(crate) async fn get_info(&self, alias: &str) -> IndyResult<KeyInfo> {
         let key = self.get_cosmos_signing_key(alias).await?;
         let pub_key = key.public_key();
         let account_id = pub_key.account_id("cosmos")?;

@@ -1,7 +1,7 @@
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymRequest as ProtoQueryGetNymRequest;
-use crate::domain::verim_ledger::VerimMessage;
+use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryGetNymRequest as ProtoQueryGetNymRequest;
+use super::super::super::VerimMessage;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryGetNymRequest {
     pub id: u64,
 }
@@ -30,8 +30,7 @@ impl VerimMessage for QueryGetNymRequest {
 
 #[cfg(test)]
 mod test {
-    use crate::domain::verim_ledger::VerimMessage;
-    use crate::domain::verim_ledger::verimcosmos::queries::query_get_nym_request::QueryGetNymRequest;
+    use super::*;
 
     #[test]
     fn test_query_get_nym_request() {

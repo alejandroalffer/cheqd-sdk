@@ -1,12 +1,12 @@
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgUpdateNymResponse as ProtoMsgUpdateNymResponse;
-use crate::domain::verim_ledger::VerimMessage;
+use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgUpdateNymResponse as ProtoMsgUpdateNymResponse;
+use super::super::super::VerimMessage;
 
-#[derive(Eq, PartialEq, Debug)]
-pub struct MsgUpdateNymResponse { }
+#[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
+pub struct MsgUpdateNymResponse {}
 
 impl MsgUpdateNymResponse {
     pub fn new() -> Self {
-        MsgUpdateNymResponse { }
+        MsgUpdateNymResponse {}
     }
 }
 
@@ -14,19 +14,17 @@ impl VerimMessage for MsgUpdateNymResponse {
     type Proto = ProtoMsgUpdateNymResponse;
 
     fn to_proto(&self) -> Self::Proto {
-        Self::Proto { }
+        Self::Proto {}
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self { }
+    fn from_proto(_proto: &Self::Proto) -> Self {
+        Self::new()
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::domain::verim_ledger::verimcosmos::messages::msg_update_nym::MsgUpdateNym;
-    use crate::domain::verim_ledger::verimcosmos::messages::msg_update_nym_response::MsgUpdateNymResponse;
-    use crate::domain::verim_ledger::VerimMessage;
+    use super::*;
 
     #[test]
     fn test_msg_update_nym_response() {

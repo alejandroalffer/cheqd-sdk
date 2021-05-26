@@ -1,8 +1,8 @@
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse as ProtoQueryGetNymResponse;
-use crate::domain::verim_ledger::VerimMessage;
-use crate::domain::verim_ledger::verimcosmos::models::nym::Nym;
+use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse as ProtoQueryGetNymResponse;
+use super::super::super::VerimMessage;
+use super::super::models::nym::Nym;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryGetNymResponse {
     pub nym: Option<Nym>,
 }
@@ -35,18 +35,17 @@ impl VerimMessage for QueryGetNymResponse {
 
 #[cfg(test)]
 mod test {
-    use crate::domain::verim_ledger::VerimMessage;
-    use crate::domain::verim_ledger::verimcosmos::queries::query_get_nym_response::QueryGetNymResponse;
-    use crate::domain::verim_ledger::verimcosmos::models::nym::Nym;
+    use super::*;
 
     #[test]
     fn test_query_get_nym_response() {
-        let nym = Nym::new("creator".to_string(),
-                           123,
-                           "alias".to_string(),
-                           "verkey".to_string(),
-                           "did".to_string(),
-                           "role".to_string(),
+        let nym = Nym::new(
+            "creator".to_string(),
+            123,
+            "alias".to_string(),
+            "verkey".to_string(),
+            "did".to_string(),
+            "role".to_string(),
         );
         let msg = QueryGetNymResponse::new(Some(nym));
 

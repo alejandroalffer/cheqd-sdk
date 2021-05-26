@@ -25,29 +25,36 @@ impl CosmosPoolController {
         }
     }
 
-    pub async fn add(&self, alias: &str, rpc_address: &str, chain_id: &str) -> IndyResult<()> {
+    pub(crate) async fn add(
+        &self,
+        alias: &str,
+        rpc_address: &str,
+        chain_id: &str,
+    ) -> IndyResult<String> {
         trace!(
             "add > alias {:?} rpc_address {:?} chain_id {:?}",
             alias,
             rpc_address,
             chain_id
         );
-        self.cosmos_pool_service
+        let config = self
+            .cosmos_pool_service
             .add(alias, rpc_address, chain_id)
             .await?;
-        trace!("add <");
-        Ok(())
+        let json = serde_json::to_string(&config)?;
+        trace!("add < {:?}", json);
+        Ok(json)
     }
 
-    pub async fn pool_config(&self, alias: &str) -> IndyResult<CosmosPoolConfig> {
-        trace!("pool_config > alias {:?}", alias);
-        let config = self.cosmos_pool_service.pool_config(alias).await?;
-        trace!("pool_config <");
-        Ok(config)
+    pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<String> {
+        trace!("get_config > alias {:?}", alias);
+        let config = self.cosmos_pool_service.get_config(alias).await?;
+        let json = serde_json::to_string(&config)?;
+        trace!("get_config < {:?}", json);
+        Ok(json)
     }
 
-    // Returns tx bytes.
-    pub async fn build_tx(
+    pub(crate) async fn build_tx(
         &self,
         pool_alias: &str,
         sender_alias: &str,
@@ -57,13 +64,13 @@ impl CosmosPoolController {
         max_gas: u64,
         max_coin_amount: u64,
         max_coin_denom: &str,
-        timeout_height: u16,
+        timeout_height: u64,
         memo: &str,
     ) -> IndyResult<Vec<u8>> {
         trace!("build_tx > pool_alias {:?}, sender_alias {:?}, msg {:?}, account_number {:?}, sequence_number {:?}, max_gas {:?}, max_coin_amount {:?}, max_coin_denom {:?}, timeout_height {:?}, memo {:?}", pool_alias, sender_alias, msg, account_number, sequence_number, max_gas, max_coin_amount, max_coin_denom, timeout_height, memo);
 
-        let pool = self.cosmos_pool_service.pool_config(pool_alias).await?;
-        let sender = self.cosmos_keys_service.key_info(sender_alias).await?;
+        let pool = self.cosmos_pool_service.get_config(pool_alias).await?;
+        let sender = self.cosmos_keys_service.get_info(sender_alias).await?;
         let msg = Msg::from_bytes(&msg)?;
 
         let sign_doc = self
@@ -87,12 +94,11 @@ impl CosmosPoolController {
         Ok(sign_doc.to_bytes()?)
     }
 
-    // Send and wait for commit
-    pub async fn broadcast_tx_commit(
+    pub(crate) async fn broadcast_tx_commit(
         &self,
         pool_alias: &str,
         signed_tx: &[u8],
-    ) -> IndyResult<rpc::endpoint::broadcast::tx_commit::Response> {
+    ) -> IndyResult<String> {
         trace!(
             "broadcast_tx_commit > pool_alias {:?}, signed_tx {:?}",
             pool_alias,
@@ -104,26 +110,17 @@ impl CosmosPoolController {
             .cosmos_pool_service
             .broadcast_tx_commit(pool_alias, tx_raw)
             .await?;
+        let json = serde_json::to_string(&resp)?;
 
-        trace!("broadcast_tx_commit < resp_bytes {:?}", resp);
+        trace!("broadcast_tx_commit < resp {:?}", json);
 
-        Ok(resp)
+        Ok(json)
     }
 
-    pub fn parse_tx_commit_info() {
-        unimplemented!()
+    pub(crate) async fn abci_query(&self, pool_alias: &str, req_json: &str) -> IndyResult<String> {
+        let req: rpc::endpoint::abci_query::Request = serde_json::from_str(req_json)?;
+        let resp = self.cosmos_pool_service.abci_query(pool_alias, req).await?;
+        let json_resp = serde_json::to_string(&resp)?;
+        Ok(json_resp)
     }
-
-    // TODO: Queries
-    // pub async fn abci_query(
-    //     &self,
-    //     rpc_address: &str,
-    //     req: rpc::endpoint::abci_query::Request,
-    // ) -> IndyResult<rpc::endpoint::abci_query::Response> {
-    //     let resp = self.send_req(req, rpc_address).await?;
-    //     Ok(resp)
-    //     // TODO: State proof
-    //     // TODO: Error handling
-    //     // TODO: Return?
-    // }
 }

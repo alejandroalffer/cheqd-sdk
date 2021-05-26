@@ -1,11 +1,13 @@
 //! Pool service for Cosmos back-end
 
 use crate::domain::cosmos_pool::CosmosPoolConfig;
+use crate::domain::pool::PoolConfig;
 use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
 use cosmos_sdk::crypto::PublicKey;
 use cosmos_sdk::rpc::endpoint::broadcast;
 use cosmos_sdk::rpc::{Request, Response};
 use cosmos_sdk::tendermint::abci;
+use cosmos_sdk::tendermint::block::Height;
 use cosmos_sdk::tx::{AuthInfo, Fee, Msg, Raw, SignDoc, SignerInfo};
 use cosmos_sdk::{rpc, tx, Coin};
 use futures::lock::Mutex as MutexF;
@@ -31,7 +33,7 @@ impl CosmosPoolService {
         alias: &str,
         rpc_address: &str,
         chain_id: &str,
-    ) -> IndyResult<()> {
+    ) -> IndyResult<CosmosPoolConfig> {
         let mut pools = self.pools.lock().await;
 
         if pools.contains_key(alias) {
@@ -47,11 +49,11 @@ impl CosmosPoolService {
             chain_id.to_string(),
         );
 
-        pools.insert(alias.to_string(), config);
-        Ok(())
+        pools.insert(alias.to_string(), config.clone());
+        Ok(config)
     }
 
-    pub(crate) async fn pool_config(&self, alias: &str) -> IndyResult<CosmosPoolConfig> {
+    pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<CosmosPoolConfig> {
         let pools = self.pools.lock().await;
 
         let config = pools.get(alias).ok_or(IndyError::from_msg(
@@ -72,9 +74,11 @@ impl CosmosPoolService {
         max_gas: u64,
         max_coin_amount: u64,
         max_coin_denom: &str,
-        timeout_height: u16,
+        timeout_height: u64,
         memo: &str,
     ) -> IndyResult<SignDoc> {
+        let timeout_height: Height = timeout_height.try_into()?;
+
         let tx_body = tx::Body::new(vec![msg], memo, timeout_height);
 
         let signer_info = Self::build_signer_info(sender_public_key, sequence_number)?;
@@ -120,7 +124,7 @@ impl CosmosPoolService {
         pool_alias: &str,
         tx: Raw,
     ) -> IndyResult<rpc::endpoint::broadcast::tx_commit::Response> {
-        let pool = self.pool_config(pool_alias).await?;
+        let pool = self.get_config(pool_alias).await?;
 
         let tx_bytes = tx.to_bytes()?;
         let req = broadcast::tx_commit::Request::new(tx_bytes.into());
@@ -156,10 +160,11 @@ impl CosmosPoolService {
 
     pub(crate) async fn abci_query(
         &self,
-        rpc_address: &str,
+        pool_alias: &str,
         req: rpc::endpoint::abci_query::Request,
     ) -> IndyResult<rpc::endpoint::abci_query::Response> {
-        let resp = self.send_req(req, rpc_address).await?;
+        let pool = self.get_config(pool_alias).await?;
+        let resp = self.send_req(req, pool.rpc_address.as_str()).await?;
         Ok(resp)
         // TODO: State proof
         // TODO: Error handling

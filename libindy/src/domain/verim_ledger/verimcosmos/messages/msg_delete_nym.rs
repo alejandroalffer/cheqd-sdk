@@ -1,5 +1,5 @@
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNym as ProtoMsgDeleteNym;
-use crate::domain::verim_ledger::VerimMessage;
+use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNym as ProtoMsgDeleteNym;
+use super::super::super::VerimMessage;
 use cosmos_sdk::tx::Msg;
 
 #[derive(Eq, PartialEq, Debug)]
@@ -10,10 +10,7 @@ pub struct MsgDeleteNym {
 
 impl MsgDeleteNym {
     pub fn new(creator: String, id: u64) -> Self {
-        MsgDeleteNym {
-            creator,
-            id,
-        }
+        MsgDeleteNym { creator, id }
     }
 }
 
@@ -28,9 +25,6 @@ impl VerimMessage for MsgDeleteNym {
     }
 
     fn from_proto(proto: &Self::Proto) -> Self {
-        Self {
-            creator: proto.creator.clone(),
-            id: proto.id.clone(),
-        }
+        Self::new(proto.creator.clone(), proto.id.clone())
     }
 }

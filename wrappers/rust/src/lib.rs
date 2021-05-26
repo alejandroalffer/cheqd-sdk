@@ -1,9 +1,9 @@
 extern crate futures;
 #[macro_use]
 extern crate lazy_static;
-extern crate log;
-extern crate libc;
 extern crate failure;
+extern crate libc;
+extern crate log;
 extern crate num_traits;
 #[macro_use]
 extern crate num_derive;
@@ -22,42 +22,32 @@ use libc::c_char;
 
 pub mod anoncreds;
 pub mod blob_storage;
+pub mod cache;
+pub mod cosmos_keys;
+pub mod cosmos_pool;
 pub mod crypto;
 pub mod did;
 pub mod ledger;
 pub mod logger;
-pub mod payments;
-pub mod pairwise;
-pub mod pool;
-pub mod wallet;
-pub mod cache;
 pub mod metrics;
+pub mod pairwise;
+pub mod payments;
+pub mod pool;
 mod utils;
+pub mod verim_ledger;
+pub mod wallet;
 
+use std::ffi::CStr;
 use std::ffi::CString;
 use std::fmt;
 use std::ptr;
-use std::ffi::CStr;
 
 use failure::{Backtrace, Fail};
 
 pub use ffi::{
-    RecordHandle,
-    TailWriterHandle,
-    BlobStorageReaderHandle,
-    BlobStorageReaderCfgHandle,
-    MetadataHandle,
-    Timeout,
-    TailsWriterHandle,
-    IndyHandle,
-    CommandHandle,
-    WalletHandle,
-    PoolHandle,
-    SearchHandle,
-    StorageHandle,
-    INVALID_WALLET_HANDLE,
-    INVALID_POOL_HANDLE,
-    INVALID_COMMAND_HANDLE
+    BlobStorageReaderCfgHandle, BlobStorageReaderHandle, CommandHandle, IndyHandle, MetadataHandle,
+    PoolHandle, RecordHandle, SearchHandle, StorageHandle, TailWriterHandle, TailsWriterHandle,
+    Timeout, WalletHandle, INVALID_COMMAND_HANDLE, INVALID_POOL_HANDLE, INVALID_WALLET_HANDLE,
 };
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.
@@ -69,16 +59,13 @@ pub use ffi::{
 pub fn set_runtime_config(config: &str) -> ErrorCode {
     let config = c_str!(config);
 
-    ErrorCode::from(unsafe {
-        ffi::indy_set_runtime_config(config.as_ptr())
-    })
+    ErrorCode::from(unsafe { ffi::indy_set_runtime_config(config.as_ptr()) })
 }
 
 #[derive(Fail, Debug, PartialEq, Copy, Clone, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 #[allow(dead_code)]
-pub enum ErrorCode
-{
+pub enum ErrorCode {
     #[fail(display = "Success")]
     Success = 0,
     // Common errors
@@ -314,7 +301,6 @@ pub enum ErrorCode
     TransactionNotAllowed,
 }
 
-
 impl From<i32> for ErrorCode {
     fn from(i: i32) -> Self {
         let conversion = num_traits::FromPrimitive::from_i32(i);
@@ -336,7 +322,7 @@ impl Into<i32> for ErrorCode {
 pub struct IndyError {
     pub error_code: ErrorCode,
     pub message: String,
-    pub indy_backtrace: Option<String>
+    pub indy_backtrace: Option<String>,
 }
 
 impl Fail for IndyError {
@@ -344,7 +330,9 @@ impl Fail for IndyError {
         self.error_code.cause()
     }
 
-    fn backtrace(&self) -> Option<&Backtrace> { self.error_code.backtrace() }
+    fn backtrace(&self) -> Option<&Backtrace> {
+        self.error_code.backtrace()
+    }
 }
 
 impl fmt::Display for IndyError {
@@ -358,7 +346,9 @@ impl IndyError {
     pub(crate) fn new(error_code: ErrorCode) -> Self {
         let mut error_json_p: *const c_char = ptr::null();
 
-        unsafe { ffi::indy_get_current_error(&mut error_json_p); }
+        unsafe {
+            ffi::indy_get_current_error(&mut error_json_p);
+        }
         let error_json = opt_rust_str!(error_json_p);
 
         let error_json = match error_json {
@@ -382,7 +372,7 @@ impl IndyError {
                 error_code: ErrorCode::CommonInvalidState,
                 message: err.to_string(),
                 indy_backtrace: None,
-            }
+            },
         }
     }
 }
@@ -390,5 +380,5 @@ impl IndyError {
 #[derive(Deserialize)]
 struct ErrorDetails {
     message: String,
-    backtrace: Option<String>
+    backtrace: Option<String>,
 }
