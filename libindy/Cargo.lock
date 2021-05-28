@@ -1425,7 +1425,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sodiumoxide",
- "zeroize 0.9.3",
+ "zeroize 1.1.0",
 ]
 
 [[package]]
