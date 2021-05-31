@@ -43,6 +43,14 @@ impl MsgProto for verimid::verimcosmos::verimcosmos::QueryGetNymResponse {
     const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryGetNymResponse";
 }
 
+impl MsgProto for verimid::verimcosmos::verimcosmos::QueryAllNymRequest {
+    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryAllNymRequest";
+}
+
+impl MsgProto for verimid::verimcosmos::verimcosmos::QueryAllNymResponse {
+    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryAllNymResponse";
+}
+
 impl MsgProto for verimid::verimcosmos::verimcosmos::Nym {
     const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.Nym";
 }

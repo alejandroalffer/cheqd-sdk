@@ -30,7 +30,7 @@ use serde::de::DeserializeOwned;
 use serde_json::{self, Value};
 
 use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos;
-use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse};
+use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse, QueryAllNymResponse, QueryAllNymRequest};
 
 pub(crate) struct VerimLedgerService {}
 
@@ -205,6 +205,25 @@ impl VerimLedgerService {
         let result = QueryGetNymResponse::from_proto(&msg);
         return Ok(result);
     }
+
+    pub(crate) fn build_query_all_nym(&self) -> IndyResult<abci_query::Request> {
+        let query_data = QueryAllNymRequest::new();
+        let path = format!("/verimid.verimcosmos.verimcosmos.Query/Nym");
+        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let req =
+            abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
+        Ok(req)
+    }
+
+    pub(crate) fn parse_query_all_nym_resp(
+        &self,
+        resp: &abci_query::Response,
+    ) -> IndyResult<QueryAllNymResponse> {
+        let msg = verimcosmos::QueryAllNymResponse::from_bytes(&resp.response.value)?;
+        let result = QueryAllNymResponse::from_proto(&msg);
+        return Ok(result);
+    }
+
 }
 
 #[cfg(test)]
