@@ -55,6 +55,7 @@ pub mod wql;
 
 #[path = "../../src/domain/mod.rs"]
 pub mod domain;
+mod verim_pool;
 
 fn setup() -> String {
     let name = crate::utils::rand_utils::get_rand_string(10);
