@@ -224,6 +224,7 @@ mod test {
     use cosmos_sdk::crypto::secp256k1::SigningKey;
     use prost::Message;
     use rust_base58::ToBase58;
+    use ics23::verify_membership;
 
     use crate::domain::cosmos_pool::CosmosPoolConfig;
     use crate::domain::crypto::did::DidValue;
@@ -262,18 +263,29 @@ mod test {
         let cosmos_pool_service = CosmosPoolService::new();
         let cosmos_keys_service = CosmosKeysService::new();
 
+        cosmos_pool_service.add("test_pool", "http://localhost:26657", "chain-id").await;
+        println!("{:?}", cosmos_pool_service.get_config("test_pool").await.unwrap());
+
         let req = verim_ledger_service
-            .build_query_verimcosmos_get_nym(0)
+            .build_query_verimcosmos_get_nym_with_proof(0)
             .unwrap();
 
         let result = cosmos_pool_service
-            .abci_query("http://localhost:26657", req)
+            .abci_query("test_pool", req)
             .await
             .unwrap();
 
         let inner = result.response.value;
         let proof = result.response.proof;
 
+        assert!(verify_membership(
+            &ics_proof,
+            get_proof_spec(),
+            &root.as_bytes().to_vec(),
+            proof[0].key,
+            proof[0].data
+        )
+        );
         let decoded =
             crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::decode(inner.as_slice());
         // let res = QueryGetNymResponse::from_proto(decoded);
