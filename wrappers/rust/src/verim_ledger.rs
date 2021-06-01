@@ -247,3 +247,46 @@ fn _parse_query_get_nym_resp(
         )
     })
 }
+
+pub fn build_query_all_nym() -> Box<dyn Future<Item = String, Error = IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_query_all_nym(command_handle, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_query_all_nym(
+    command_handle: CommandHandle,
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+    ErrorCode::from(unsafe {
+        verim_ledger::indy_verim_ledger_build_query_all_nym(command_handle, cb)
+    })
+}
+
+pub fn parse_query_all_nym_resp(
+    query_resp: &str,
+) -> Box<dyn Future<Item = String, Error = IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _parse_query_all_nym_resp(command_handle, query_resp, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _parse_query_all_nym_resp(
+    command_handle: CommandHandle,
+    query_resp: &str,
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+    let query_resp = c_str!(query_resp);
+
+    ErrorCode::from(unsafe {
+        verim_ledger::indy_verim_ledger_parse_query_all_nym_resp(
+            command_handle,
+            query_resp.as_ptr(),
+            cb,
+        )
+    })
+}

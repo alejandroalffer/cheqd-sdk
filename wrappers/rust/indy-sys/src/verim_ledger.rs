@@ -60,4 +60,15 @@ extern "C" {
         query_resp: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
+
+    pub fn indy_verim_ledger_build_query_all_nym(
+        command_handle: CommandHandle,
+        cb: Option<ResponseStringCB>,
+    ) -> Error;
+
+    pub fn indy_verim_ledger_parse_query_all_nym_resp(
+        command_handle: CommandHandle,
+        query_resp: CString,
+        cb: Option<ResponseStringCB>,
+    ) -> Error;
 }

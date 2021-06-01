@@ -41,7 +41,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_query_get_nym_response() {
+    fn test_query_all_nym_response() {
         let nym: Vec<Nym> = vec![
             Nym::new(
                 "creator0".to_string(),
