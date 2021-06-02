@@ -11,7 +11,7 @@ use crate::domain::verim_ledger::verimcosmos::messages::{MsgCreateNym, MsgCreate
 use crate::domain::verim_ledger::verimcosmos::messages::{
     MsgDeleteNym, MsgDeleteNymResponse, MsgUpdateNymResponse,
 };
-use crate::domain::verim_ledger::{VerimProto, VerimMessage};
+use crate::domain::verim_ledger::VerimProto;
 use cosmos_sdk::bank::MsgSend;
 use cosmos_sdk::proto::cosmos::base::abci::v1beta1::{MsgData, TxMsgData};
 use cosmos_sdk::rpc::endpoint::abci_query;
@@ -31,7 +31,7 @@ use serde_json::{self, Value};
 
 use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos;
 use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse, QueryAllNymResponse, QueryAllNymRequest};
-use crate::domain::verim_ledger::verimcosmos::models::PageRequest;
+use crate::domain::verim_ledger::cosmos::base::query::PageRequest;
 
 pub(crate) struct VerimLedgerService {}
 
@@ -95,7 +95,7 @@ impl VerimLedgerService {
             role.to_string(),
         );
 
-        Ok(msg_send.to_msg()?)
+        Ok(msg_send.to_proto().to_msg()?)
     }
 
     pub(crate) fn parse_msg_update_nym_resp(
@@ -133,7 +133,7 @@ impl VerimLedgerService {
             role.to_string(),
         );
 
-        Ok(msg_send.to_msg()?)
+        Ok(msg_send.to_proto().to_msg()?)
     }
 
     pub(crate) fn parse_msg_delete_nym_resp(
@@ -159,7 +159,7 @@ impl VerimLedgerService {
             id,
         };
 
-        Ok(msg_send.to_msg()?)
+        Ok(msg_send.to_proto().to_msg()?)
     }
 
     // TODO: Queries
@@ -223,6 +223,10 @@ impl VerimLedgerService {
         let msg = verimcosmos::QueryAllNymResponse::from_bytes(&resp.response.value)?;
         let result = QueryAllNymResponse::from_proto(&msg);
         return Ok(result);
+    }
+
+    pub(crate) fn get_account_info(){
+
     }
 
 }

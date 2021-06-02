@@ -1,5 +1,5 @@
 use cosmos_sdk::proto::cosmos::base::query::v1beta1::PageResponse as ProtoPageResponse;
-use super::super::super::{VerimProto, VerimMessage};
+use super::super::super::super::VerimProto;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct PageResponse {

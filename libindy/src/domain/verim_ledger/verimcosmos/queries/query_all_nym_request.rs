@@ -1,6 +1,6 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryAllNymRequest as ProtoQueryAllNymRequest;
 use super::super::super::VerimProto;
-use super::super::models::PageRequest;
+use super::super::super::cosmos::base::query::PageRequest;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryAllNymRequest {

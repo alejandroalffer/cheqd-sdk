@@ -2,9 +2,8 @@ use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryAllNymRe
 use super::super::super::VerimProto;
 use super::super::models::Nym;
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::Nym as ProtoNym;
-use super::super::models::PageResponse;
+use super::super::super::cosmos::base::query::PageResponse;
 
-// use cosmos_sdk::proto::cosmos::base::query::v1beta1::PageResponse;
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryAllNymResponse {
     pub nym: Vec<Nym>,

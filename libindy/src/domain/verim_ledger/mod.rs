@@ -10,6 +10,7 @@ use prost_types::Any;
 pub mod cosmos_ext;
 pub mod proto;
 pub mod verimcosmos;
+pub mod cosmos;
 
 pub trait VerimProto: Eq + Debug {
     type Proto: prost::Message;
@@ -18,24 +19,24 @@ pub trait VerimProto: Eq + Debug {
     fn from_proto(proto: &Self::Proto) -> Self;
 }
 
-pub trait VerimMessage: VerimProto {
-    fn to_msg(&self) -> IndyResult<Msg>;
-
-    fn from_msg(msg: &Msg) -> IndyResult<Self>
-        where
-            Self: Sized;
-}
-
-impl <T> VerimMessage for T where T: VerimProto, <T as VerimProto>::Proto: MsgType {
-    fn to_msg(&self) -> IndyResult<Msg> {
-        Ok(self.to_proto().to_msg()?)
-    }
-
-    fn from_msg(msg: &Msg) -> IndyResult<Self>
-        where
-            Self: Sized,
-    {
-        let proto = Self::Proto::from_msg(msg)?;
-        Ok(Self::from_proto(&proto))
-    }
-}
+// pub trait VerimMessage: VerimProto {
+//     fn to_msg(&self) -> IndyResult<Msg>;
+//
+//     fn from_msg(msg: &Msg) -> IndyResult<Self>
+//         where
+//             Self: Sized;
+// }
+//
+// impl <T> VerimMessage for T where T: VerimProto, <T as VerimProto>::Proto: MsgType {
+//     fn to_msg(&self) -> IndyResult<Msg> {
+//         Ok(self.to_proto().to_msg()?)
+//     }
+//
+//     fn from_msg(msg: &Msg) -> IndyResult<Self>
+//         where
+//             Self: Sized,
+//     {
+//         let proto = Self::Proto::from_msg(msg)?;
+//         Ok(Self::from_proto(&proto))
+//     }
+// }

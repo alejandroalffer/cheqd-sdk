@@ -14,7 +14,7 @@ use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
 use cosmos_sdk::rpc::Request;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
-use crate::domain::verim_ledger::verimcosmos::models::PageRequest;
+use crate::domain::verim_ledger::cosmos::base::query::PageRequest;
 
 pub(crate) struct VerimLedgerController {
     verim_ledger_service: Arc<VerimLedgerService>,
