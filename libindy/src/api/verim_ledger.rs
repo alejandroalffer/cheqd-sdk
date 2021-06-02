@@ -489,7 +489,7 @@ pub extern "C" fn indy_verim_ledger_parse_query_all_nym_resp(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .parse_query_get_nym_resp(&query_resp);
+            .parse_query_all_nym_resp(&query_resp);
         res
     };
 

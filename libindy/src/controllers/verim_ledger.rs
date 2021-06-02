@@ -142,7 +142,7 @@ impl VerimLedgerController {
     pub(crate) fn parse_query_all_nym_resp(&self, resp_json: &str) -> IndyResult<String> {
         trace!("parse_query_all_nym_resp > resp {:?}", resp_json);
         let resp: QueryResponse = serde_json::from_str(resp_json)?;
-        let result = self.verim_ledger_service.parse_query_get_nym_resp(&resp)?;
+        let result = self.verim_ledger_service.parse_query_all_nym_resp(&resp)?;
         let json_result = serde_json::to_string(&result)?;
         trace!("parse_query_all_nym_resp < {:?}", json_result);
         Ok(json_result)

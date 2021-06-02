@@ -50,3 +50,11 @@ pub fn build_query_get_nym(id: u64) -> Result<String, IndyError> {
 pub fn parse_query_get_nym_resp(query_resp: &str) -> Result<String, IndyError> {
     verim_ledger::parse_query_get_nym_resp(query_resp).wait()
 }
+
+pub fn build_query_all_nym() -> Result<String, IndyError> {
+    verim_ledger::build_query_all_nym().wait()
+}
+
+pub fn parse_query_all_nym_resp(query_resp: &str) -> Result<String, IndyError> {
+    verim_ledger::parse_query_all_nym_resp(query_resp).wait()
+}
