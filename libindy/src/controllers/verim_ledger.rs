@@ -14,6 +14,7 @@ use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
 use cosmos_sdk::rpc::Request;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
+use crate::domain::verim_ledger::verimcosmos::models::PageRequest;
 
 pub(crate) struct VerimLedgerController {
     verim_ledger_service: Arc<VerimLedgerService>,
@@ -132,7 +133,7 @@ impl VerimLedgerController {
 
     pub(crate) fn build_query_all_nym(&self) -> IndyResult<String> {
         trace!("build_query_all_nym >");
-        let query = self.verim_ledger_service.build_query_all_nym()?;
+        let query = self.verim_ledger_service.build_query_all_nym(pagination)?;
         let json = serde_json::to_string(&query)?;
         trace!("build_query_all_nym < {:?}", query);
         Ok(json)

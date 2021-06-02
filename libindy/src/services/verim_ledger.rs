@@ -31,6 +31,7 @@ use serde_json::{self, Value};
 
 use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos;
 use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse, QueryAllNymResponse, QueryAllNymRequest};
+use crate::domain::verim_ledger::verimcosmos::models::PageRequest;
 
 pub(crate) struct VerimLedgerService {}
 
@@ -206,8 +207,8 @@ impl VerimLedgerService {
         return Ok(result);
     }
 
-    pub(crate) fn build_query_all_nym(&self) -> IndyResult<abci_query::Request> {
-        let query_data = QueryAllNymRequest::new();
+    pub(crate) fn build_query_all_nym(&self, pagination: PageRequest) -> IndyResult<abci_query::Request> {
+        let query_data = QueryAllNymRequest::new(Some(pagination));
         let path = format!("/verimid.verimcosmos.verimcosmos.Query/Nym");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
         let req =

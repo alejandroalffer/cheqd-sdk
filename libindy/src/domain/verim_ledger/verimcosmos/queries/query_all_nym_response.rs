@@ -1,7 +1,9 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryAllNymResponse as ProtoQueryAllNymResponse;
 use super::super::super::VerimMessage;
 use super::super::models::Nym;
-use cosmos_sdk::proto::cosmos::base::query::v1beta1::PageResponse;
+use super::super::models::PageResponse;
+
+// use cosmos_sdk::proto::cosmos::base::query::v1beta1::PageResponse;
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryAllNymResponse {
     pub nym: Vec<Nym>,
@@ -20,16 +22,17 @@ impl VerimMessage for QueryAllNymResponse {
     fn to_proto(&self) -> Self::Proto {
         let nym = &self.nym;
         let pagination = match &self.pagination {
-            Some(p) => p,
+            Some(p) => Some(p.to_proto()),
             None => None,
         };
         Self::Proto { nym, pagination }
     }
 
     fn from_proto(proto: &Self::Proto) -> Self {
-        let nym: Vec<Nym> = proto.nym;
-        let pagination = match proto.pagination {
-            Some(p) => p,
+        let mut nym = proto.nym;
+
+        let pagination = match &proto.pagination {
+            Some(p) => Some(PageResponse::from_proto(p)),
             None => None,
         };
         Self { nym, pagination }
