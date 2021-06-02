@@ -1,11 +1,10 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryAllNymRequest as ProtoQueryAllNymRequest;
-use super::super::super::VerimMessage;
+use super::super::super::VerimProto;
 use super::super::models::PageRequest;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryAllNymRequest {
     pub pagination: Option<PageRequest>,
-
 }
 
 impl QueryAllNymRequest {
@@ -14,7 +13,7 @@ impl QueryAllNymRequest {
     }
 }
 
-impl VerimMessage for QueryAllNymRequest {
+impl VerimProto for QueryAllNymRequest {
     type Proto = ProtoQueryAllNymRequest;
 
     fn to_proto(&self) -> Self::Proto {

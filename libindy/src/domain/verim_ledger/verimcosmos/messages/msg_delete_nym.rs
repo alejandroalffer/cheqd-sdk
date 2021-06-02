@@ -1,5 +1,5 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNym as ProtoMsgDeleteNym;
-use super::super::super::VerimMessage;
+use super::super::super::VerimProto;
 use cosmos_sdk::tx::Msg;
 
 #[derive(Eq, PartialEq, Debug)]
@@ -14,7 +14,7 @@ impl MsgDeleteNym {
     }
 }
 
-impl VerimMessage for MsgDeleteNym {
+impl VerimProto for MsgDeleteNym {
     type Proto = ProtoMsgDeleteNym;
 
     fn to_proto(&self) -> Self::Proto {

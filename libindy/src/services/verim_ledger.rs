@@ -11,7 +11,7 @@ use crate::domain::verim_ledger::verimcosmos::messages::{MsgCreateNym, MsgCreate
 use crate::domain::verim_ledger::verimcosmos::messages::{
     MsgDeleteNym, MsgDeleteNymResponse, MsgUpdateNymResponse,
 };
-use crate::domain::verim_ledger::VerimMessage;
+use crate::domain::verim_ledger::{VerimProto, VerimMessage};
 use cosmos_sdk::bank::MsgSend;
 use cosmos_sdk::proto::cosmos::base::abci::v1beta1::{MsgData, TxMsgData};
 use cosmos_sdk::rpc::endpoint::abci_query;
@@ -207,8 +207,8 @@ impl VerimLedgerService {
         return Ok(result);
     }
 
-    pub(crate) fn build_query_all_nym(&self, pagination: PageRequest) -> IndyResult<abci_query::Request> {
-        let query_data = QueryAllNymRequest::new(Some(pagination));
+    pub(crate) fn build_query_all_nym(&self, pagination: Option<PageRequest>) -> IndyResult<abci_query::Request> {
+        let query_data = QueryAllNymRequest::new(pagination);
         let path = format!("/verimid.verimcosmos.verimcosmos.Query/Nym");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
         let req =

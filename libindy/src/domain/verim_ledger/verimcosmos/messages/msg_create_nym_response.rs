@@ -1,4 +1,4 @@
-use super::super::super::super::verim_ledger::VerimMessage;
+use super::super::super::super::verim_ledger::VerimProto;
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgCreateNymResponse as ProtoMsgCreateNymResponse;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
@@ -12,7 +12,7 @@ impl MsgCreateNymResponse {
     }
 }
 
-impl VerimMessage for MsgCreateNymResponse {
+impl VerimProto for MsgCreateNymResponse {
     type Proto = ProtoMsgCreateNymResponse;
 
     fn to_proto(&self) -> Self::Proto {
@@ -28,7 +28,7 @@ impl VerimMessage for MsgCreateNymResponse {
 
 #[cfg(test)]
 mod test {
-    use super::super::super::super::VerimMessage;
+    use super::super::super::super::VerimProto;
     use super::super::MsgCreateNym;
     use super::MsgCreateNymResponse;
 

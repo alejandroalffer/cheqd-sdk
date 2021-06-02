@@ -1,5 +1,5 @@
 use cosmos_sdk::proto::cosmos::base::query::v1beta1::PageRequest as ProtoPageRequest;
-use super::super::super::VerimMessage;
+use super::super::super::VerimProto;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct PageRequest {
@@ -25,7 +25,7 @@ impl PageRequest {
     }
 }
 
-impl VerimMessage for PageRequest {
+impl VerimProto for PageRequest {
     type Proto = ProtoPageRequest;
 
     fn to_proto(&self) -> Self::Proto {

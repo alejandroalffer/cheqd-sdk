@@ -6,7 +6,7 @@ use crate::domain::verim_ledger::verimcosmos::messages::{
     MsgCreateNymResponse, MsgDeleteNymResponse, MsgUpdateNymResponse,
 };
 use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
-use crate::domain::verim_ledger::VerimMessage;
+use crate::domain::verim_ledger::VerimProto;
 use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
 use async_std::sync::Arc;
 use cosmos_sdk::rpc::endpoint::abci_query::Response as QueryResponse;
@@ -133,7 +133,7 @@ impl VerimLedgerController {
 
     pub(crate) fn build_query_all_nym(&self) -> IndyResult<String> {
         trace!("build_query_all_nym >");
-        let query = self.verim_ledger_service.build_query_all_nym(pagination)?;
+        let query = self.verim_ledger_service.build_query_all_nym(None)?;
         let json = serde_json::to_string(&query)?;
         trace!("build_query_all_nym < {:?}", query);
         Ok(json)

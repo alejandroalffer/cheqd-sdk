@@ -1,5 +1,5 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgUpdateNym as ProtoMsgUpdateNym;
-use super::super::super::VerimMessage;
+use super::super::super::VerimProto;
 use cosmos_sdk::tx::Msg;
 
 #[derive(Eq, PartialEq, Debug)]
@@ -32,7 +32,7 @@ impl MsgUpdateNym {
     }
 }
 
-impl VerimMessage for MsgUpdateNym {
+impl VerimProto for MsgUpdateNym {
     type Proto = ProtoMsgUpdateNym;
 
     fn to_proto(&self) -> Self::Proto {

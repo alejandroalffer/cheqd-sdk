@@ -101,7 +101,7 @@ mod test {
 
     use super::super::super::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
     use super::super::super::verim_ledger::verimcosmos::messages::MsgCreateNym;
-    use super::super::super::verim_ledger::VerimMessage;
+    use super::super::super::verim_ledger::VerimProto;
     use super::super::cosmos_ext::CosmosMsgExt;
     use super::super::cosmos_ext::ProstMessageExt;
 
