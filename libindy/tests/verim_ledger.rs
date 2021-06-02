@@ -58,9 +58,7 @@ mod high_cases {
         }
 
         #[test]
-        fn test_build_query_all_nym() {
-            println!("QQQQ {:?}", verim_ledger::build_query_all_nym());
-        }
+        fn test_build_query_all_nym() { verim_ledger::build_query_all_nym(); }
     }
 
     #[cfg(test)]
@@ -149,7 +147,7 @@ mod high_cases {
 
             // Transaction #1
             let tx = cosmos_pool::build_tx(
-                pool_alias, "alice", &msg, 9, 10, 300000, 0u64, "token", 39090, "memo",
+                pool_alias, "alice", &msg, 9, 12, 300000, 0u64, "token", 39090, "memo",
             )
                 .unwrap();
 
@@ -176,7 +174,7 @@ mod high_cases {
 
             // Transaction #2
             let tx = cosmos_pool::build_tx(
-                pool_alias, "alice", &msg, 9, 11, 300000, 0u64, "token", 39090, "memo",
+                pool_alias, "alice", &msg, 9, 13, 300000, 0u64, "token", 39090, "memo",
             )
                 .unwrap();
 

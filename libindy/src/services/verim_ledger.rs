@@ -209,7 +209,7 @@ impl VerimLedgerService {
 
     pub(crate) fn build_query_all_nym(&self, pagination: Option<PageRequest>) -> IndyResult<abci_query::Request> {
         let query_data = QueryAllNymRequest::new(pagination);
-        let path = format!("/verimid.verimcosmos.verimcosmos.Query/Nym");
+        let path = format!("/verimid.verimcosmos.verimcosmos.Query/NymAll");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
         let req =
             abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
