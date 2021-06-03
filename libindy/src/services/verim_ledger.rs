@@ -32,6 +32,7 @@ use serde_json::{self, Value};
 use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos;
 use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse, QueryAllNymResponse, QueryAllNymRequest};
 use crate::domain::verim_ledger::cosmos::base::query::PageRequest;
+use crate::domain::verim_ledger::cosmos::auth::{QueryAccountRequest, QueryAccountResponse};
 
 pub(crate) struct VerimLedgerService {}
 
@@ -162,23 +163,25 @@ impl VerimLedgerService {
         Ok(msg_send.to_proto().to_msg()?)
     }
 
-    // TODO: Queries
-    pub(crate) fn build_query_cosmos_account(
+    pub(crate) fn build_query_cosmos_auth_account(
         &self,
         address: &str,
     ) -> IndyResult<abci_query::Request> {
-        let path = "/cosmos.auth.v1beta1.Query/Account";
+        let query_data = QueryAccountRequest::new(address.to_string());
+        let path = format!("/cosmos.auth.v1beta1.Query/Account");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
-
-        let data = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest {
-            address: address.to_string(),
-        };
-
-        let mut data_bytes = Vec::new();
-        data.encode(&mut data_bytes).unwrap(); // TODO
-
-        let req = abci_query::Request::new(Some(path), data_bytes, None, true);
+        let req =
+            abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
         Ok(req)
+    }
+
+    pub(crate) fn parse_query_cosmos_auth_account_resp(
+        &self,
+        resp: &abci_query::Response,
+    ) -> IndyResult<QueryAccountResponse> {
+        let msg = verimcosmos::QueryAccountResponse::from_bytes(&resp.response.value)?;
+        let result = QueryAccountResponse::from_proto(&msg);
+        return Ok(result);
     }
 
     // TODO: Queries
@@ -223,10 +226,6 @@ impl VerimLedgerService {
         let msg = verimcosmos::QueryAllNymResponse::from_bytes(&resp.response.value)?;
         let result = QueryAllNymResponse::from_proto(&msg);
         return Ok(result);
-    }
-
-    pub(crate) fn get_account_info(){
-
     }
 
 }
