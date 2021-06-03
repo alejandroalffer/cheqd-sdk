@@ -97,11 +97,11 @@ impl CosmosRawExt for Raw {
 
 #[cfg(test)]
 mod test {
-    use cosmos_sdk::tx::Msg;
+    use cosmos_sdk::tx::{Msg, MsgType};
 
     use super::super::super::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
     use super::super::super::verim_ledger::verimcosmos::messages::MsgCreateNym;
-    use super::super::super::verim_ledger::VerimMessage;
+    use super::super::super::verim_ledger::VerimProto;
     use super::super::cosmos_ext::CosmosMsgExt;
     use super::super::cosmos_ext::ProstMessageExt;
 
@@ -133,7 +133,7 @@ mod test {
             "role".to_string(),
         );
 
-        let msg = message.to_msg().unwrap();
+        let msg = message.to_proto().to_msg().unwrap();
 
         let bytes: Vec<u8> = msg.to_bytes().unwrap();
         let decoded = Msg::from_bytes(bytes.as_slice()).unwrap();

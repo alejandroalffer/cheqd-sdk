@@ -11,7 +11,7 @@ use crate::domain::verim_ledger::verimcosmos::messages::{MsgCreateNym, MsgCreate
 use crate::domain::verim_ledger::verimcosmos::messages::{
     MsgDeleteNym, MsgDeleteNymResponse, MsgUpdateNymResponse,
 };
-use crate::domain::verim_ledger::VerimMessage;
+use crate::domain::verim_ledger::VerimProto;
 use cosmos_sdk::bank::MsgSend;
 use cosmos_sdk::proto::cosmos::base::abci::v1beta1::{MsgData, TxMsgData};
 use cosmos_sdk::rpc::endpoint::abci_query;
@@ -30,7 +30,8 @@ use serde::de::DeserializeOwned;
 use serde_json::{self, Value};
 
 use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos;
-use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse};
+use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse, QueryAllNymResponse, QueryAllNymRequest};
+use crate::domain::verim_ledger::cosmos::base::query::PageRequest;
 
 pub(crate) struct VerimLedgerService {}
 
@@ -94,7 +95,7 @@ impl VerimLedgerService {
             role.to_string(),
         );
 
-        Ok(msg_send.to_msg()?)
+        Ok(msg_send.to_proto().to_msg()?)
     }
 
     pub(crate) fn parse_msg_update_nym_resp(
@@ -132,7 +133,7 @@ impl VerimLedgerService {
             role.to_string(),
         );
 
-        Ok(msg_send.to_msg()?)
+        Ok(msg_send.to_proto().to_msg()?)
     }
 
     pub(crate) fn parse_msg_delete_nym_resp(
@@ -158,7 +159,7 @@ impl VerimLedgerService {
             id,
         };
 
-        Ok(msg_send.to_msg()?)
+        Ok(msg_send.to_proto().to_msg()?)
     }
 
     // TODO: Queries
@@ -205,6 +206,29 @@ impl VerimLedgerService {
         let result = QueryGetNymResponse::from_proto(&msg);
         return Ok(result);
     }
+
+    pub(crate) fn build_query_all_nym(&self, pagination: Option<PageRequest>) -> IndyResult<abci_query::Request> {
+        let query_data = QueryAllNymRequest::new(pagination);
+        let path = format!("/verimid.verimcosmos.verimcosmos.Query/NymAll");
+        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let req =
+            abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
+        Ok(req)
+    }
+
+    pub(crate) fn parse_query_all_nym_resp(
+        &self,
+        resp: &abci_query::Response,
+    ) -> IndyResult<QueryAllNymResponse> {
+        let msg = verimcosmos::QueryAllNymResponse::from_bytes(&resp.response.value)?;
+        let result = QueryAllNymResponse::from_proto(&msg);
+        return Ok(result);
+    }
+
+    pub(crate) fn get_account_info(){
+
+    }
+
 }
 
 #[cfg(test)]
