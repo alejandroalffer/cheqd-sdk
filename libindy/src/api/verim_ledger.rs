@@ -4,7 +4,6 @@ use crate::services::CommandMetric;
 use crate::Locator;
 use indy_utils::ctypes;
 use libc::c_char;
-use serde_json;
 
 #[no_mangle]
 pub extern "C" fn indy_verim_ledger_build_msg_create_nym(
@@ -520,28 +519,34 @@ pub extern "C" fn indy_verim_ledger_build_query_cosmos_auth_account(
     address: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, query: *const c_char)>,
 ) -> ErrorCode {
-    debug!("indy_verim_ledger_build_query_cosmos_auth_account > address {:?}",
+    debug!(
+        "indy_verim_ledger_build_query_cosmos_auth_account > address {:?}",
         address
     );
 
     check_useful_c_str!(address, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    debug!("indy_verim_ledger_build_query_cosmos_auth_account > address {:?}",
+    debug!(
+        "indy_verim_ledger_build_query_cosmos_auth_account > address {:?}",
         address
     );
 
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.verim_ledger_controller
+        let res = locator
+            .verim_ledger_controller
             .build_query_cosmos_auth_account(&address);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, query) = prepare_result!(res, String::new());
-        debug!("indy_verim_ledger_build_query_cosmos_auth_account: query: {:?}", query);
+        debug!(
+            "indy_verim_ledger_build_query_cosmos_auth_account: query: {:?}",
+            query
+        );
 
         let query = ctypes::string_to_cstring(query);
         cb(command_handle, err, query.as_ptr())
@@ -554,7 +559,10 @@ pub extern "C" fn indy_verim_ledger_build_query_cosmos_auth_account(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_build_query_cosmos_auth_account < {:?}", res);
+    debug!(
+        "indy_verim_ledger_build_query_cosmos_auth_account < {:?}",
+        res
+    );
     res
 }
 
@@ -603,6 +611,9 @@ pub extern "C" fn indy_verim_ledger_parse_query_cosmos_auth_account_resp(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_parse_query_cosmos_auth_account_resp < {:?}", res);
+    debug!(
+        "indy_verim_ledger_parse_query_cosmos_auth_account_resp < {:?}",
+        res
+    );
     res
 }

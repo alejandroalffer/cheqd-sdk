@@ -1,6 +1,7 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse as ProtoQueryGetNymResponse;
 use super::super::super::VerimProto;
 use super::super::models::nym::Nym;
+use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryGetNymResponse {
@@ -17,19 +18,19 @@ impl VerimProto for QueryGetNymResponse {
     type Proto = ProtoQueryGetNymResponse;
 
     fn to_proto(&self) -> Self::Proto {
-        let nym = match &self.nym {
-            Some(n) => Some(n.to_proto()),
-            None => None,
-        };
-        Self::Proto { nym }
+        Self::Proto {
+            nym: self.nym.as_ref().map(|n| n.to_proto()),
+        }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        let nym = match &proto.nym {
-            Some(n) => Some(Nym::from_proto(n)),
-            None => None,
-        };
-        Self { nym }
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self::new(
+            proto
+                .nym
+                .as_ref()
+                .map(|n| Nym::from_proto(&n))
+                .transpose()?,
+        ))
     }
 }
 

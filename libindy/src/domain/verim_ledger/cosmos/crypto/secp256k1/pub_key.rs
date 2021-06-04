@@ -1,5 +1,6 @@
-use cosmos_sdk::proto::cosmos::crypto::secp256k1::PubKey as ProtoPubKey;
 use super::super::super::super::VerimProto;
+use cosmos_sdk::proto::cosmos::crypto::secp256k1::PubKey as ProtoPubKey;
+use indy_api_types::errors::IndyResult;
 
 /// PubKey defines a secp256k1 public key
 /// Key is the compressed form of the pubkey. The first byte depends is a 0x02 byte
@@ -26,9 +27,7 @@ impl VerimProto for PubKey {
         }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self::new(
-            proto.key.clone(),
-        )
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self::new(proto.key.clone()))
     }
 }

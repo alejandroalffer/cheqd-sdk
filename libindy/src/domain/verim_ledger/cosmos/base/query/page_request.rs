@@ -1,5 +1,6 @@
-use cosmos_sdk::proto::cosmos::base::query::v1beta1::PageRequest as ProtoPageRequest;
 use super::super::super::super::VerimProto;
+use cosmos_sdk::proto::cosmos::base::query::v1beta1::PageRequest as ProtoPageRequest;
+use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct PageRequest {
@@ -10,12 +11,7 @@ pub struct PageRequest {
 }
 
 impl PageRequest {
-    pub fn new(
-        key: Vec<u8>,
-        offset: u64,
-        limit: u64,
-        count_total: bool,
-    ) -> Self {
+    pub fn new(key: Vec<u8>, offset: u64, limit: u64, count_total: bool) -> Self {
         PageRequest {
             key,
             offset,
@@ -37,13 +33,13 @@ impl VerimProto for PageRequest {
         }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self::new(
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self::new(
             proto.key.clone(),
             proto.offset.clone(),
             proto.limit.clone(),
             proto.count_total.clone(),
-        )
+        ))
     }
 }
 
@@ -53,13 +49,7 @@ mod test {
 
     #[test]
     fn test_msg_create_nym_request() {
-        let msg = PageRequest::new(
-            vec![0],
-            0,
-            3,
-            false
-
-        );
+        let msg = PageRequest::new(vec![0], 0, 3, false);
 
         let proto = msg.to_proto();
         let decoded = PageRequest::from_proto(&proto);

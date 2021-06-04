@@ -1,6 +1,7 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgUpdateNym as ProtoMsgUpdateNym;
 use super::super::super::VerimProto;
 use cosmos_sdk::tx::Msg;
+use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MsgUpdateNym {
@@ -46,14 +47,14 @@ impl VerimProto for MsgUpdateNym {
         }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self {
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self {
             creator: proto.creator.clone(),
             id: proto.id.clone(),
             alias: proto.alias.clone(),
             verkey: proto.verkey.clone(),
             did: proto.did.clone(),
             role: proto.role.clone(),
-        }
+        })
     }
 }

@@ -6,7 +6,7 @@ use cosmos_sdk::tx::{Msg, Raw};
 use indy_api_types::errors::IndyResult;
 
 use crate::domain::cosmos_pool::CosmosPoolConfig;
-use crate::domain::verim_ledger::cosmos_ext::{CosmosMsgExt, CosmosSignDocExt, ProstMessageExt};
+use crate::domain::verim_ledger::cosmos_ext::{CosmosMsgExt, CosmosSignDocExt};
 use crate::services::{CosmosKeysService, CosmosPoolService};
 
 pub(crate) struct CosmosPoolController {

@@ -4,8 +4,7 @@ use std::convert::TryInto;
 use std::str::FromStr;
 
 use crate::domain::crypto::did::DidValue;
-use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
-use crate::domain::verim_ledger::cosmos_ext::ProstMessageExt;
+use crate::domain::verim_ledger::prost_ext::ProstMessageExt;
 use crate::domain::verim_ledger::verimcosmos::messages::MsgUpdateNym;
 use crate::domain::verim_ledger::verimcosmos::messages::{MsgCreateNym, MsgCreateNymResponse};
 use crate::domain::verim_ledger::verimcosmos::messages::{
@@ -29,10 +28,12 @@ use prost_types::Any;
 use serde::de::DeserializeOwned;
 use serde_json::{self, Value};
 
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos;
-use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse, QueryAllNymResponse, QueryAllNymRequest};
-use crate::domain::verim_ledger::cosmos::base::query::PageRequest;
 use crate::domain::verim_ledger::cosmos::auth::{QueryAccountRequest, QueryAccountResponse};
+use crate::domain::verim_ledger::cosmos::base::query::PageRequest;
+use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos;
+use crate::domain::verim_ledger::verimcosmos::queries::{
+    QueryAllNymRequest, QueryAllNymResponse, QueryGetNymRequest, QueryGetNymResponse,
+};
 
 pub(crate) struct VerimLedgerService {}
 
@@ -73,8 +74,7 @@ impl VerimLedgerService {
         ))?;
         let data = data.value();
         let tx_msg = TxMsgData::from_bytes(&data)?;
-        let msg = verimcosmos::MsgCreateNymResponse::from_bytes(&tx_msg.data[0].data)?;
-        let result = MsgCreateNymResponse::from_proto(&msg);
+        let result = MsgCreateNymResponse::from_proto_bytes(&tx_msg.data[0].data)?;
 
         return Ok(result);
     }
@@ -109,8 +109,7 @@ impl VerimLedgerService {
         ))?;
         let data = data.value();
         let tx_msg = TxMsgData::from_bytes(&data)?;
-        let msg = verimcosmos::MsgUpdateNymResponse::from_bytes(&tx_msg.data[0].data)?;
-        let result = MsgUpdateNymResponse::from_proto(&msg);
+        let result = MsgUpdateNymResponse::from_proto_bytes(&tx_msg.data[0].data)?;
 
         return Ok(result);
     }
@@ -147,8 +146,7 @@ impl VerimLedgerService {
         ))?;
         let data = data.value();
         let tx_msg = TxMsgData::from_bytes(&data)?;
-        let msg = verimcosmos::MsgDeleteNymResponse::from_bytes(&tx_msg.data[0].data)?;
-        let result = MsgDeleteNymResponse::from_proto(&msg);
+        let result = MsgDeleteNymResponse::from_proto_bytes(&tx_msg.data[0].data)?;
 
         return Ok(result);
     }
@@ -179,8 +177,7 @@ impl VerimLedgerService {
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryAccountResponse> {
-        let msg = verimcosmos::QueryAccountResponse::from_bytes(&resp.response.value)?;
-        let result = QueryAccountResponse::from_proto(&msg);
+        let result = QueryAccountResponse::from_proto_bytes(&resp.response.value)?;
         return Ok(result);
     }
 
@@ -205,12 +202,14 @@ impl VerimLedgerService {
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryGetNymResponse> {
-        let msg = verimcosmos::QueryGetNymResponse::from_bytes(&resp.response.value)?;
-        let result = QueryGetNymResponse::from_proto(&msg);
+        let result = QueryGetNymResponse::from_proto_bytes(&resp.response.value)?;
         return Ok(result);
     }
 
-    pub(crate) fn build_query_all_nym(&self, pagination: Option<PageRequest>) -> IndyResult<abci_query::Request> {
+    pub(crate) fn build_query_all_nym(
+        &self,
+        pagination: Option<PageRequest>,
+    ) -> IndyResult<abci_query::Request> {
         let query_data = QueryAllNymRequest::new(pagination);
         let path = format!("/verimid.verimcosmos.verimcosmos.Query/NymAll");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
@@ -223,11 +222,9 @@ impl VerimLedgerService {
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryAllNymResponse> {
-        let msg = verimcosmos::QueryAllNymResponse::from_bytes(&resp.response.value)?;
-        let result = QueryAllNymResponse::from_proto(&msg);
+        let result = QueryAllNymResponse::from_proto_bytes(&resp.response.value)?;
         return Ok(result);
     }
-
 }
 
 #[cfg(test)]

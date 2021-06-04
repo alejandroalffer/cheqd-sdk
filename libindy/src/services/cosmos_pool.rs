@@ -2,7 +2,6 @@
 
 use crate::domain::cosmos_pool::CosmosPoolConfig;
 use crate::domain::pool::PoolConfig;
-use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
 use cosmos_sdk::crypto::PublicKey;
 use cosmos_sdk::rpc::endpoint::broadcast;
 use cosmos_sdk::rpc::{Request, Response};

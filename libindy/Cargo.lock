@@ -1339,16 +1339,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ffi-support"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f85d4d1be103c0b2d86968f0b0690dc09ac0ba205b90adb0389b552869e5000e"
-dependencies = [
- "lazy_static",
- "log",
-]
-
-[[package]]
 name = "fixedbitset"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4571,7 +4561,9 @@ dependencies = [
 
 [[package]]
 name = "ursa"
-version = "0.3.5"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c3a5042fd816173a9992637b8ed2bc7028ea7f469c0a55e4de07e83da56688b"
 dependencies = [
  "aead",
  "aes",
@@ -4585,9 +4577,7 @@ dependencies = [
  "chacha20poly1305",
  "curve25519-dalek",
  "ed25519-dalek",
- "env_logger",
  "failure",
- "ffi-support",
  "hex",
  "hkdf 0.8.0",
  "hmac 0.7.1",
@@ -4600,7 +4590,6 @@ dependencies = [
  "rand_chacha 0.2.1",
  "secp256k1",
  "serde",
- "serde_json",
  "sha2 0.8.2",
  "sha3 0.8.2",
  "subtle 2.4.0",

@@ -9,16 +9,7 @@ use libc::c_char;
 use serde_json;
 
 use crate::services::CommandMetric;
-use crate::{
-    domain::{
-        crypto::{
-            did::{DidMethod, DidValue, MyDidInfo, TheirDidInfo},
-            key::KeyInfo,
-        },
-        ledger::attrib::Endpoint,
-    },
-    Locator,
-};
+use crate::Locator;
 
 /// Creates keys (signing and encryption keys) for a new account.
 /// #Params

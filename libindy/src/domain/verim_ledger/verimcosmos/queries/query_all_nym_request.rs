@@ -1,6 +1,7 @@
+use super::super::super::cosmos::base::query::PageRequest;
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryAllNymRequest as ProtoQueryAllNymRequest;
 use super::super::super::VerimProto;
-use super::super::super::cosmos::base::query::PageRequest;
+use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryAllNymRequest {
@@ -24,12 +25,14 @@ impl VerimProto for QueryAllNymRequest {
         Self::Proto { pagination }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        let pagination = match &proto.pagination {
-            Some(p) => Some(PageRequest::from_proto(p)),
-            None => None,
-        };
-        Self { pagination }
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self::new(
+            proto
+                .pagination
+                .as_ref()
+                .map(|p| PageRequest::from_proto(p))
+                .transpose()?,
+        ))
     }
 }
 
@@ -39,7 +42,12 @@ mod test {
 
     #[test]
     fn test_query_get_all_nyms_request() {
-        let pagination = PageRequest{ key: vec![0], offset: 0, limit: 3, count_total: false };
+        let pagination = PageRequest {
+            key: vec![0],
+            offset: 0,
+            limit: 3,
+            count_total: false,
+        };
         let msg = QueryAllNymRequest::new(Some(pagination));
 
         let proto = msg.to_proto();

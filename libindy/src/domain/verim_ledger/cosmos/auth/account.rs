@@ -1,17 +1,18 @@
-//! Helper class to handle private keys generic proto conversion
+//! Helper class to handle accounts generic proto conversion
 
-use super::secp256k1;
+use super::*;
+use crate::domain::verim_ledger::cosmos::crypto::secp256k1;
 use crate::domain::verim_ledger::prost_ext::ProstMessageExt;
 use crate::domain::verim_ledger::VerimProto;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
-pub enum PubKey {
-    Secp256k1(secp256k1::PubKey),
+pub enum Account {
+    BaseAccount(BaseAccount),
 }
 
-impl VerimProto for PubKey {
+impl VerimProto for Account {
     type Proto = prost_types::Any;
 
     fn to_proto(&self) -> Self::Proto {
@@ -21,12 +22,12 @@ impl VerimProto for PubKey {
     fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
         match &proto.type_url[..] {
             "secp256k" => {
-                let val = secp256k1::PubKey::from_proto_bytes(&proto.value)?;
-                Ok(PubKey::Secp256k1(val))
+                let val = BaseAccount::from_proto_bytes(&proto.value)?;
+                Ok(Account::BaseAccount(val))
             }
             _ => Err(IndyError::from_msg(
                 IndyErrorKind::InvalidStructure,
-                "Unknown pub_key type",
+                "Unknown account type",
             )),
         }
     }

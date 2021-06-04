@@ -1,5 +1,6 @@
-use cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest as ProtoQueryAccountRequest;
 use super::super::super::VerimProto;
+use cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest as ProtoQueryAccountRequest;
+use indy_api_types::errors::IndyResult;
 
 /// QueryAccountRequest is the request type for the Query/Account RPC method.
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
@@ -9,12 +10,8 @@ pub struct QueryAccountRequest {
 }
 
 impl QueryAccountRequest {
-    pub fn new(
-        address: String,
-    ) -> Self {
-        QueryAccountRequest {
-            address,
-        }
+    pub fn new(address: String) -> Self {
+        QueryAccountRequest { address }
     }
 }
 
@@ -27,10 +24,8 @@ impl VerimProto for QueryAccountRequest {
         }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self::new(
-            proto.address.clone(),
-        )
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self::new(proto.address.clone()))
     }
 }
 
@@ -40,9 +35,8 @@ mod test {
 
     #[test]
     fn test_query_account_request() {
-        let msg = QueryAccountRequest::new(
-            "cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd".to_string()
-        );
+        let msg =
+            QueryAccountRequest::new("cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd".to_string());
 
         let proto = msg.to_proto();
         let decoded = QueryAccountRequest::from_proto(&proto);

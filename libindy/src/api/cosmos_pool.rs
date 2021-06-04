@@ -4,7 +4,6 @@ use crate::services::CommandMetric;
 use crate::Locator;
 use indy_utils::ctypes;
 use libc::c_char;
-use serde_json;
 
 #[no_mangle]
 pub extern "C" fn indy_cosmos_pool_add(

@@ -1,5 +1,6 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryGetNymRequest as ProtoQueryGetNymRequest;
 use super::super::super::VerimProto;
+use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryGetNymRequest {
@@ -21,10 +22,10 @@ impl VerimProto for QueryGetNymRequest {
         }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self {
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self {
             id: proto.id.clone(),
-        }
+        })
     }
 }
 
