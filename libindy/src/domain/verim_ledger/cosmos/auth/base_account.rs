@@ -1,24 +1,26 @@
-use cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest as ProtoQueryAccountRequest;
+use cosmos_sdk::proto::cosmos::auth::v1beta1::BaseAccount as ProtoBaseAccount;
 use super::super::super::VerimProto;
+use super::super::crypto::secp256k1::PubKey;
 
-/// QueryAccountRequest is the request type for the Query/Account RPC method.
+/// BaseAccount defines a base account type. It contains all the necessary fields
+/// for basic account functionality. Any custom account type should extend this
+/// type for additional functionality (e.g. vesting).
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
-pub struct QueryAccountRequest {
-    /// address defines the address to query for.
+pub struct BaseAccount {
     pub address: String,
+    pub pub_key: Option<PubKey>,
+    pub account_number: u64,
+    pub sequence: u64,
 }
 
-impl QueryAccountRequest {
-    pub fn new(
-        address: String,
-    ) -> Self {
-        QueryAccountRequest {
-            address,
-        }
+impl BaseAccount {
+    pub fn new(address: String, pub_key: Option<PubKey>, account_number: u64, sequence: u64) -> Self {
+        BaseAccount { address, pub_key, account_number, sequence }
     }
 }
 
-impl VerimProto for QueryAccountRequest {
+
+impl VerimProto for BaseAccount {
     type Proto = ProtoQueryAccountRequest;
 
     fn to_proto(&self) -> Self::Proto {
@@ -50,3 +52,5 @@ mod test {
         assert_eq!(msg, decoded);
     }
 }
+
+

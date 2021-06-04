@@ -16,27 +16,5 @@ pub trait VerimProto: Eq + Debug {
     type Proto: prost::Message;
 
     fn to_proto(&self) -> Self::Proto;
-    fn from_proto(proto: &Self::Proto) -> Self;
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self>;
 }
-
-// pub trait VerimMessage: VerimProto {
-//     fn to_msg(&self) -> IndyResult<Msg>;
-//
-//     fn from_msg(msg: &Msg) -> IndyResult<Self>
-//         where
-//             Self: Sized;
-// }
-//
-// impl <T> VerimMessage for T where T: VerimProto, <T as VerimProto>::Proto: MsgType {
-//     fn to_msg(&self) -> IndyResult<Msg> {
-//         Ok(self.to_proto().to_msg()?)
-//     }
-//
-//     fn from_msg(msg: &Msg) -> IndyResult<Self>
-//         where
-//             Self: Sized,
-//     {
-//         let proto = Self::Proto::from_msg(msg)?;
-//         Ok(Self::from_proto(&proto))
-//     }
-// }
