@@ -513,3 +513,96 @@ pub extern "C" fn indy_verim_ledger_parse_query_all_nym_resp(
     debug!("indy_verim_ledger_parse_query_all_nym_resp < {:?}", res);
     res
 }
+
+#[no_mangle]
+pub extern "C" fn indy_verim_ledger_build_query_cosmos_auth_account(
+    command_handle: CommandHandle,
+    address: *const c_char,
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, query: *const c_char)>,
+) -> ErrorCode {
+    debug!("indy_verim_ledger_build_query_cosmos_auth_account > address {:?}",
+        address
+    );
+
+    check_useful_c_str!(address, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    debug!("indy_verim_ledger_build_query_cosmos_auth_account > address {:?}",
+        address
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator.verim_ledger_controller
+            .build_query_cosmos_auth_account(&address);
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, query) = prepare_result!(res, String::new());
+        debug!("indy_verim_ledger_build_query_cosmos_auth_account: query: {:?}", query);
+
+        let query = ctypes::string_to_cstring(query);
+        cb(command_handle, err, query.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(
+        CommandMetric::VerimLedgerCommandBuildQueryCosmosAuthAccount,
+        action,
+        cb,
+    );
+
+    let res = ErrorCode::Success;
+    debug!("indy_verim_ledger_build_query_cosmos_auth_account < {:?}", res);
+    res
+}
+
+#[no_mangle]
+pub extern "C" fn indy_verim_ledger_parse_query_cosmos_auth_account_resp(
+    command_handle: CommandHandle,
+    query_resp: *const c_char,
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, resp: *const c_char)>,
+) -> ErrorCode {
+    debug!(
+        "indy_verim_ledger_parse_query_cosmos_auth_account_resp > query_resp {:?}",
+        query_resp
+    );
+
+    check_useful_c_str!(query_resp, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    debug!(
+        "indy_verim_ledger_parse_query_cosmos_auth_account_resp > query_resp {:?}",
+        query_resp
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .verim_ledger_controller
+            .parse_query_cosmos_auth_account_resp(&query_resp);
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, resp) = prepare_result!(res, String::new());
+        debug!(
+            "indy_verim_ledger_parse_query_cosmos_auth_account_resp: resp: {:?}",
+            resp
+        );
+        let resp = ctypes::string_to_cstring(resp);
+        cb(command_handle, err, resp.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(
+        CommandMetric::VerimLedgerCommandParseQueryCosmosAuthAccountResp,
+        action,
+        cb,
+    );
+
+    let res = ErrorCode::Success;
+    debug!("indy_verim_ledger_parse_query_cosmos_auth_account_resp < {:?}", res);
+    res
+}

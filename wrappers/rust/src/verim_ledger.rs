@@ -290,3 +290,48 @@ fn _parse_query_all_nym_resp(
         )
     })
 }
+
+pub fn build_query_cosmos_auth_account(address: &str) -> Box<dyn Future<Item = String, Error = IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_query_cosmos_auth_account(command_handle, address, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_query_cosmos_auth_account(
+    command_handle: CommandHandle,
+    address: &str,
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+    ErrorCode::from(unsafe {
+        verim_ledger::indy_verim_ledger_build_query_cosmos_auth_account(command_handle, address, cb)
+    })
+}
+
+pub fn parse_query_cosmos_auth_account_resp(
+    query_resp: &str,
+) -> Box<dyn Future<Item = String, Error = IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _parse_query_cosmos_auth_account_resp(command_handle, query_resp, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _parse_query_cosmos_auth_account_resp(
+    command_handle: CommandHandle,
+    address: &str,
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+    let query_resp = c_str!(query_resp);
+
+    ErrorCode::from(unsafe {
+        verim_ledger::indy_verim_ledger_parse_query_cosmos_auth_account_resp(
+            command_handle,
+            query_resp.as_ptr(),
+            cb,
+        )
+    })
+}
+

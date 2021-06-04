@@ -34,3 +34,20 @@ impl VerimProto for QueryAccountRequest {
         )
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_query_account_request() {
+        let msg = QueryAccountRequest::new(
+            "cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd".to_string()
+        );
+
+        let proto = msg.to_proto();
+        let decoded = QueryAccountRequest::from_proto(&proto);
+
+        assert_eq!(msg, decoded);
+    }
+}

@@ -1,16 +1,17 @@
-use cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest as ProtoQueryAccountResponse;
+use cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountResponse as ProtoQueryAccountResponse;
 use super::super::super::VerimProto;
+use failure::_core::any::Any;
 
 /// QueryAccountResponse is the response type for the Query/Account RPC method.
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryAccountResponse {
     /// account defines the account of the corresponding address.
-    pub account: String,
+    pub account: Option<Any>,
 }
 
 impl QueryAccountResponse {
     pub fn new(
-        account: String,
+        account: Option<Any>,
     ) -> Self {
         QueryAccountResponse {
             account,
@@ -23,7 +24,7 @@ impl VerimProto for QueryAccountResponse {
 
     fn to_proto(&self) -> Self::Proto {
         Self::Proto {
-            address: self.account.clone(),
+            account: self.account.clone(),
         }
     }
 

@@ -147,6 +147,23 @@ impl VerimLedgerController {
         trace!("parse_query_all_nym_resp < {:?}", json_result);
         Ok(json_result)
     }
+
+    pub(crate) fn build_query_cosmos_auth_account(&self, address: &str) -> IndyResult<String> {
+        trace!("build_query_cosmos_auth_account >");
+        let query = self.verim_ledger_service.build_query_cosmos_auth_account(address)?;
+        let json = serde_json::to_string(&query)?;
+        trace!("build_query_cosmos_auth_account < {:?}", query);
+        Ok(json)
+    }
+
+    pub(crate) fn parse_query_cosmos_auth_account_resp(&self, resp_json: &str) -> IndyResult<String> {
+        trace!("parse_query_cosmos_auth_account_resp > resp {:?}", resp_json);
+        let resp: QueryResponse = serde_json::from_str(resp_json)?;
+        let result = self.verim_ledger_service.parse_query_cosmos_auth_account_resp(&resp)?;
+        let json_result = serde_json::to_string(&result)?;
+        trace!("parse_query_cosmos_auth_account_resp < {:?}", json_result);
+        Ok(json_result)
+    }
 }
 
 #[cfg(test)]
