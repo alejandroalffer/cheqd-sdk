@@ -1,5 +1,5 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse as ProtoQueryGetNymResponse;
-use super::super::super::VerimMessage;
+use super::super::super::VerimProto;
 use super::super::models::nym::Nym;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
@@ -13,7 +13,7 @@ impl QueryGetNymResponse {
     }
 }
 
-impl VerimMessage for QueryGetNymResponse {
+impl VerimProto for QueryGetNymResponse {
     type Proto = ProtoQueryGetNymResponse;
 
     fn to_proto(&self) -> Self::Proto {

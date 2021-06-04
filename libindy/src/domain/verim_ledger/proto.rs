@@ -15,34 +15,10 @@ impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNym {
     const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgCreateNym";
 }
 
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNymResponse {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgCreateNymResponse";
-}
-
 impl MsgProto for verimid::verimcosmos::verimcosmos::MsgUpdateNym {
     const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgUpdateNym";
 }
 
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgUpdateNymResponse {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgUpdateNymResponse";
-}
-
 impl MsgProto for verimid::verimcosmos::verimcosmos::MsgDeleteNym {
     const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgDeleteNym";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgDeleteNymResponse";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::QueryGetNymRequest {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryGetNymRequest";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::QueryGetNymResponse {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryGetNymResponse";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::Nym {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.Nym";
 }

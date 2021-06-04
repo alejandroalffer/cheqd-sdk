@@ -1,5 +1,5 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryGetNymRequest as ProtoQueryGetNymRequest;
-use super::super::super::VerimMessage;
+use super::super::super::VerimProto;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryGetNymRequest {
@@ -12,7 +12,7 @@ impl QueryGetNymRequest {
     }
 }
 
-impl VerimMessage for QueryGetNymRequest {
+impl VerimProto for QueryGetNymRequest {
     type Proto = ProtoQueryGetNymRequest;
 
     fn to_proto(&self) -> Self::Proto {

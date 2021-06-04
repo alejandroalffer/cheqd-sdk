@@ -1,5 +1,5 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::Nym as ProtoNym;
-use super::super::super::VerimMessage;
+use super::super::super::VerimProto;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Nym {
@@ -31,7 +31,7 @@ impl Nym {
     }
 }
 
-impl VerimMessage for Nym {
+impl VerimProto for Nym {
     type Proto = ProtoNym;
 
     fn to_proto(&self) -> Self::Proto {

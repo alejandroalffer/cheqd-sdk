@@ -1,5 +1,5 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
-use super::super::super::VerimMessage;
+use super::super::super::VerimProto;
 use cosmos_sdk::tx::Msg;
 
 #[derive(Eq, PartialEq, Debug)]
@@ -23,7 +23,7 @@ impl MsgCreateNym {
     }
 }
 
-impl VerimMessage for MsgCreateNym {
+impl VerimProto for MsgCreateNym {
     type Proto = ProtoMsgCreateNym;
 
     fn to_proto(&self) -> Self::Proto {
@@ -49,7 +49,7 @@ impl VerimMessage for MsgCreateNym {
 
 #[cfg(test)]
 mod test {
-    use super::super::super::super::VerimMessage;
+    use super::super::super::super::VerimProto;
     use super::super::super::messages::msg_create_nym::MsgCreateNym;
 
     #[test]
