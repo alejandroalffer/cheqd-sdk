@@ -138,6 +138,7 @@ impl Locator {
         let payment_service = Arc::new(PaymentsService::new());
         let wallet_service = Arc::new(WalletService::new());
 
+        // TODO: Make it work with lower number of threads (VE-2668)
         let num_threads = cmp::max(8, num_cpus::get());
         let executor = InstrumentedThreadPool {
             executor: futures::executor::ThreadPool::builder().pool_size(num_threads).create().unwrap(),
