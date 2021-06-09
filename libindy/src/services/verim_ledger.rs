@@ -161,24 +161,24 @@ impl VerimLedgerService {
         Ok(msg_send.to_msg()?)
     }
 
-    // TODO: Queries
-    pub(crate) fn build_query_cosmos_account(
-        &self,
-        address: &str,
-    ) -> IndyResult<abci_query::Request> {
-        let path = "/cosmos.auth.v1beta1.Query/Account";
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
-
-        let data = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest {
-            address: address.to_string(),
-        };
-
-        let mut data_bytes = Vec::new();
-        data.encode(&mut data_bytes).unwrap(); // TODO
-
-        let req = abci_query::Request::new(Some(path), data_bytes, None, true);
-        Ok(req)
-    }
+    // // TODO: Queries
+    // pub(crate) fn build_query_cosmos_account(
+    //     &self,
+    //     address: &str,
+    // ) -> IndyResult<abci_query::Request> {
+    //     let path = "/cosmos.auth.v1beta1.Query/Account";
+    //     let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+    //
+    //     let data = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest {
+    //         address: address.to_string(),
+    //     };
+    //
+    //     let mut data_bytes = Vec::new();
+    //     data.encode(&mut data_bytes).unwrap(); // TODO
+    //
+    //     let req = abci_query::Request::new(Some(path), data_bytes, None, true);
+    //     Ok(req)
+    // }
 
     // TODO: Queries
     pub(crate) fn build_query_verimcosmos_list_nym(&self) -> IndyResult<abci_query::Request> {
@@ -202,10 +202,11 @@ impl VerimLedgerService {
         id: u64,
     ) -> IndyResult<abci_query::Request> {
         let query_data = QueryGetNymRequest { id };
-        let query_data = format!("Nym-value-{:?}", id);
+        let mut query_data = "Nym-value-".as_bytes().to_vec();
+        query_data.extend_from_slice(&id.to_be_bytes());
         let path = format!("/store/verimcosmos/key");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
-        let req = abci_query::Request::new(Some(path), query_data.as_bytes(), None, true);
+        let req = abci_query::Request::new(Some(path), query_data, None, true);
         Ok(req)
     }
 
@@ -230,6 +231,9 @@ mod test {
     use crate::domain::crypto::did::DidValue;
     use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
     use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
+    use cosmos_sdk::proto::ics23::{ProofSpec, LeafOp, HashOp, InnerSpec, LengthOp};
+    use std::convert::TryInto;
+
     //
     // #[async_std::test]
     // async fn test_query_list_nym() {
@@ -277,15 +281,41 @@ mod test {
 
         let inner = result.response.value;
         let proof = result.response.proof;
+        // let resp = verim_ledger_service.parse_query_get_nym_resp(&result);
+        // // println!("{:?}", result.response.key);
+        // println!("{:?}", resp);
+        // println!("{:?}", proof);
+        let ops0 = &proof.unwrap().ops[1];
 
-        assert!(verify_membership(
-            &ics_proof,
-            get_proof_spec(),
-            &root.as_bytes().to_vec(),
-            proof[0].key,
-            proof[0].data
-        )
-        );
+        let commitment_proof = ics23::CommitmentProof::decode(ops0.data.as_slice()).unwrap();
+        println!("{:?}", commitment_proof);
+
+        if let Some(ex) = get_exist_proof(&commitment_proof) {
+            let subroot = ics23::calculate_existence_root(&ex).unwrap();
+            // let key = match keys.key_path.get(keys.key_path.len() - 1 - i) {
+            //     Some(key) => key,
+            //     None => return None,
+            // };
+
+            assert!(ics23::verify_membership(
+                &commitment_proof,
+                &ics23::tendermint_spec(),
+                &subroot,
+                ops0.key.as_slice(),
+                inner.as_slice()));
+            println!("tetst");
+        }
+
+        // let root = ics23::calculate_existence_root(proof.proof.unwrap().);
+        // //
+        // assert!(ics23::verify_membership(
+        //     &proof,
+        //     &ics23::tendermint_spec(),
+        //     &root.as_bytes().to_vec(),
+        //     result.response.key,
+        //     inner
+        // )
+        // );
         let decoded =
             crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::decode(inner.as_slice());
         // let res = QueryGetNymResponse::from_proto(decoded);
@@ -293,41 +323,47 @@ mod test {
         // QueryAllNymResponse
 
         println!("{:?}", decoded);
-        println!("{:?}", proof);
+        // println!("{:?}", proof);
     }
 
-    #[async_std::test]
-    async fn test_query_account() {
-        let verim_ledger_service = VerimLedgerService::new();
-        let cosmos_pool_service = CosmosPoolService::new();
-        let cosmos_keys_service = CosmosKeysService::new();
-
-        let req = verim_ledger_service
-            .build_query_cosmos_account("cosmos17gt4any4r9jgg06r47f83vfxrycdk67utjs36m")
-            .unwrap();
-
-        let result = cosmos_pool_service
-            .abci_query("http://localhost:26657", req)
-            .await
-            .unwrap();
-
-        let inner = result.response.value;
-
-        let decoded = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountResponse::decode(
-            inner.as_slice(),
-        )
-        .unwrap();
-
-        let decoded = cosmos_sdk::proto::cosmos::auth::v1beta1::BaseAccount::decode(
-            decoded.account.unwrap().value.as_slice(),
-        )
-        .unwrap();
-
-        // QueryAllNymResponse
-
-        println!("{:?}", decoded);
+    // #[async_std::test]
+    // async fn test_query_account() {
+    //     let verim_ledger_service = VerimLedgerService::new();
+    //     let cosmos_pool_service = CosmosPoolService::new();
+    //     let cosmos_keys_service = CosmosKeysService::new();
+    //
+    //     let req = verim_ledger_service
+    //         .build_query_cosmos_account("cosmos17gt4any4r9jgg06r47f83vfxrycdk67utjs36m")
+    //         .unwrap();
+    //
+    //     let result = cosmos_pool_service
+    //         .abci_query("http://localhost:26657", req)
+    //         .await
+    //         .unwrap();
+    //
+    //     let inner = result.response.value;
+    //
+    //     let decoded = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountResponse::decode(
+    //         inner.as_slice(),
+    //     )
+    //     .unwrap();
+    //
+    //     let decoded = cosmos_sdk::proto::cosmos::auth::v1beta1::BaseAccount::decode(
+    //         decoded.account.unwrap().value.as_slice(),
+    //     )
+    //     .unwrap();
+    //
+    //     // QueryAllNymResponse
+    //
+    //     println!("{:?}", decoded);
+    // }
+    fn get_exist_proof<'a>(proof: &'a ics23::CommitmentProof) -> Option<&'a ics23::ExistenceProof> {
+        match &proof.proof {
+            Some(ics23::commitment_proof::Proof::Exist(ex)) => Some(ex),
+            _ => None,
+        }
     }
-
+    pub const LEAF_PREFIX: [u8; 64] = [0; 64]; // 64 bytes of zeroes.
     pub fn get_proof_spec() -> ProofSpec {
         ProofSpec {
             leaf_spec: Some(LeafOp {
