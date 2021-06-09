@@ -282,63 +282,63 @@ mod test {
             .unwrap();
 
         let result = cosmos_pool_service
-            .abci_query("test_pool", req)
+            .abci_query("test_pool", req.clone())
             .await
             .unwrap();
 
-        let value = result.response.value;
-        let proof = result.response.proof;
-        // let resp = verim_ledger_service.parse_query_get_nym_resp(&result);
-        // // println!("{:?}", result.response.key);
-        // println!("{:?}", resp);
-        println!("{:?}", proof);
-        let proof_op = &proof.unwrap().ops[0];
+        //////////////////////////// 0st proof
 
-        let commitment_proof = ics23::CommitmentProof::decode(proof_op.data.as_slice()).unwrap();
-        println!("{:?}", commitment_proof);
+        println!("verifying iavl proof");
 
-        if let Some(ex) = get_exist_proof(&commitment_proof) {
-            let subroot = ics23::calculate_existence_root(&ex).unwrap();
-            // let key = match keys.key_path.get(keys.key_path.len() - 1 - i) {
-            //     Some(key) => key,
-            //     None => return None,
-            // };
+        let proof_op_0 = &result.response.proof.clone().unwrap().ops[0];
+        assert_eq!(&proof_op_0.key, &req.data);
+        assert_eq!(&proof_op_0.field_type, "ics23:iavl");
 
-            let everything_is_alright = ics23::verify_membership(
-                &commitment_proof,
-                &ics23::iavl_spec(),
-                &subroot,
-                proof_op.key.as_slice(),
-                value.as_slice(),
-            );
+        let proof_0_data_decoded =
+            ics23::CommitmentProof::decode(proof_op_0.data.as_slice()).unwrap();
 
-            assert!(everything_is_alright);
-        }
+        let proof_op_1 = &result.response.proof.unwrap().ops[1];
+        assert_eq!(&proof_op_1.key, "verimcosmos".as_bytes());
+        assert_eq!(&proof_op_1.field_type, "ics23:simple");
 
-        // let root = ics23::calculate_existence_root(proof.proof.unwrap().);
-        // //
-        // assert!(ics23::verify_membership(
-        //     &proof,
-        //     &ics23::tendermint_spec(),
-        //     &root.as_bytes().to_vec(),
-        //     result.response.key,
-        //     inner
-        // )
-        // );
-        let decoded =
-            crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::decode(value.as_slice());
-        // let res = QueryGetNymResponse::from_proto(decoded);
+        let proof_1_data_decoded =
+            ics23::CommitmentProof::decode(proof_op_1.data.as_slice()).unwrap();
 
-        // QueryAllNymResponse
+        let proof_0_root = if let Some(ics23::commitment_proof::Proof::Exist(ex)) =
+            proof_1_data_decoded.proof.clone()
+        {
+            ex.value
+        } else {
+            panic!()
+        };
 
-        println!("{:?}", decoded);
-        // println!("{:?}", proof);
-    }
+        let proof_0_is_ok = ics23::verify_membership(
+            &proof_0_data_decoded,
+            &ics23::iavl_spec(),
+            &proof_0_root,
+            &proof_op_0.key,
+            &result.response.value,
+        );
 
-    fn get_exist_proof(proof: &ics23::CommitmentProof) -> Option<&ics23::ExistenceProof> {
-        match &proof.proof {
-            Some(ics23::commitment_proof::Proof::Exist(ex)) => Some(ex),
-            _ => None,
-        }
+        assert!(proof_0_is_ok);
+
+        // Should be output from light client
+        let proof_1_root = if let Some(ics23::commitment_proof::Proof::Exist(ex)) =
+            proof_1_data_decoded.proof.clone()
+        {
+            ics23::calculate_existence_root(&ex).unwrap()
+        } else {
+            panic!()
+        };
+
+        let proof_1_is_ok = ics23::verify_membership(
+            &proof_1_data_decoded,
+            &ics23::tendermint_spec(),
+            &proof_1_root,
+            &proof_op_1.key,
+            &proof_0_root,
+        );
+
+        assert!(proof_1_is_ok);
     }
 }
