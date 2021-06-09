@@ -51,7 +51,7 @@ mod test {
         let msg = QueryGetNymResponse::new(Some(nym));
 
         let proto = msg.to_proto();
-        let decoded = QueryGetNymResponse::from_proto(&proto);
+        let decoded = QueryGetNymResponse::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

@@ -30,7 +30,7 @@ where
 mod test {
     use cosmos_sdk::tx::{Msg, MsgType};
 
-    use indy::domain::verim_ledger::prost_ext::ProstMessageExt;
+    use super::super::super::verim_ledger::prost_ext::ProstMessageExt;
 
     use super::super::super::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
     use super::super::super::verim_ledger::verimcosmos::messages::MsgCreateNym;

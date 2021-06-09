@@ -52,7 +52,7 @@ mod test {
         let msg = PageRequest::new(vec![0], 0, 3, false);
 
         let proto = msg.to_proto();
-        let decoded = PageRequest::from_proto(&proto);
+        let decoded = PageRequest::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

@@ -1,13 +1,14 @@
 //! Helper class to handle accounts generic proto conversion
 
 use super::*;
-use crate::domain::verim_ledger::cosmos::crypto::secp256k1;
-use crate::domain::verim_ledger::prost_ext::ProstMessageExt;
-use crate::domain::verim_ledger::VerimProto;
+use super::super::super::cosmos::crypto::secp256k1;
+use super::super::super::prost_ext::ProstMessageExt;
+use super::super::super::VerimProto;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Account {
     BaseAccount(BaseAccount),
 }
@@ -21,13 +22,13 @@ impl VerimProto for Account {
 
     fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
         match &proto.type_url[..] {
-            "secp256k" => {
+            "/cosmos.auth.v1beta1.BaseAccount" => {
                 let val = BaseAccount::from_proto_bytes(&proto.value)?;
                 Ok(Account::BaseAccount(val))
             }
-            _ => Err(IndyError::from_msg(
+            unknown_type => Err(IndyError::from_msg(
                 IndyErrorKind::InvalidStructure,
-                "Unknown account type",
+                format!("Unknown account type: {}", unknown_type),
             )),
         }
     }

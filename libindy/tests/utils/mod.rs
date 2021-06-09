@@ -22,11 +22,13 @@ pub mod types;
 pub mod wallet;
 //pub mod payments;
 pub mod cache;
-pub mod cosmos_pool;
 pub mod logger;
 pub mod metrics;
 pub mod rand_utils;
 pub mod verim_ledger;
+pub mod verim_setup;
+pub mod cosmos_ledger;
+pub mod tendermint_pool;
 
 #[macro_use]
 #[allow(unused_macros)]
@@ -55,7 +57,6 @@ pub mod wql;
 
 #[path = "../../src/domain/mod.rs"]
 pub mod domain;
-mod verim_pool;
 
 fn setup() -> String {
     let name = crate::utils::rand_utils::get_rand_string(10);

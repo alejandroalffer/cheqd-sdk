@@ -71,16 +71,4 @@ extern "C" {
         query_resp: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
-
-    pub fn indy_verim_ledger_build_query_cosmos_auth_account(
-        command_handle: CommandHandle,
-        address: CString,
-        cb: Option<ResponseStringCB>,
-    ) -> Error;
-
-    pub fn indy_verim_ledger_parse_query_cosmos_auth_account_resp(
-        command_handle: CommandHandle,
-        query_resp: CString,
-        cb: Option<ResponseStringCB>,
-    ) -> Error;
 }

@@ -83,7 +83,7 @@ mod test {
         let msg = QueryAllNymResponse::new(nym, Some(pagination));
 
         let proto = msg.to_proto();
-        let decoded = QueryAllNymResponse::from_proto(&proto);
+        let decoded = QueryAllNymResponse::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

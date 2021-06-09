@@ -38,7 +38,7 @@ mod test {
         let msg = PageResponse::new(vec![0], 1);
 
         let proto = msg.to_proto();
-        let decoded = PageResponse::from_proto(&proto);
+        let decoded = PageResponse::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

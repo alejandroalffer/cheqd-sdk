@@ -38,7 +38,7 @@ mod test {
         let msg = MsgCreateNymResponse::new(456);
 
         let proto = msg.to_proto();
-        let decoded = MsgCreateNymResponse::from_proto(&proto);
+        let decoded = MsgCreateNymResponse::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

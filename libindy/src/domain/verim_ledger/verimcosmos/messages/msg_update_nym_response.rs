@@ -32,7 +32,7 @@ mod test {
         let msg = MsgUpdateNymResponse::new();
 
         let proto = msg.to_proto();
-        let decoded = MsgUpdateNymResponse::from_proto(&proto);
+        let decoded = MsgUpdateNymResponse::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

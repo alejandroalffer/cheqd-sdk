@@ -1,5 +1,5 @@
 use super::super::super::VerimProto;
-use crate::domain::verim_ledger::cosmos::crypto::PubKey;
+use super::super::super::cosmos::crypto::PubKey;
 use cosmos_sdk::proto::cosmos::auth::v1beta1::BaseAccount as ProtoBaseAccount;
 use indy_api_types::errors::IndyResult;
 
@@ -59,6 +59,7 @@ impl VerimProto for BaseAccount {
 #[cfg(test)]
 mod test {
     use super::*;
+    use super::super::super::super::cosmos::auth::QueryAccountRequest;
 
     #[test]
     fn test_query_account_request() {
@@ -66,7 +67,7 @@ mod test {
             QueryAccountRequest::new("cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd".to_string());
 
         let proto = msg.to_proto();
-        let decoded = QueryAccountRequest::from_proto(&proto);
+        let decoded = QueryAccountRequest::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

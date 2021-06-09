@@ -1,4 +1,4 @@
-use crate::domain::verim_ledger::prost_ext::ProstMessageExt;
+use super::super::verim_ledger::prost_ext::ProstMessageExt;
 use cosmos_sdk::proto::cosmos::tx::v1beta1::{SignDoc as ProtoSignDoc, TxRaw};
 use cosmos_sdk::tx::{Msg, Raw, SignDoc};
 use indy_api_types::errors::IndyResult;
@@ -75,7 +75,7 @@ impl CosmosRawExt for Raw {
 mod test {
     use cosmos_sdk::tx::{Msg, MsgType};
 
-    use indy::domain::verim_ledger::prost_ext::ProstMessageExt;
+    use super::super::super::verim_ledger::prost_ext::ProstMessageExt;
 
     use super::super::super::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
     use super::super::super::verim_ledger::verimcosmos::messages::MsgCreateNym;

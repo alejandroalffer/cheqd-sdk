@@ -39,7 +39,7 @@ mod test {
             QueryAccountRequest::new("cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd".to_string());
 
         let proto = msg.to_proto();
-        let decoded = QueryAccountRequest::from_proto(&proto);
+        let decoded = QueryAccountRequest::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }
