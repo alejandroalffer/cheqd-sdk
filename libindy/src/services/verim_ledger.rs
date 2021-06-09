@@ -223,15 +223,15 @@ impl VerimLedgerService {
 #[cfg(test)]
 mod test {
     use cosmos_sdk::crypto::secp256k1::SigningKey;
+    use ics23::verify_membership;
     use prost::Message;
     use rust_base58::ToBase58;
-    use ics23::verify_membership;
 
     use crate::domain::cosmos_pool::CosmosPoolConfig;
     use crate::domain::crypto::did::DidValue;
     use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
     use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
-    use cosmos_sdk::proto::ics23::{ProofSpec, LeafOp, HashOp, InnerSpec, LengthOp};
+    use cosmos_sdk::proto::ics23::{HashOp, InnerSpec, LeafOp, LengthOp, ProofSpec};
     use std::convert::TryInto;
 
     //
@@ -260,15 +260,22 @@ mod test {
     //
     //     println!("{:?}", decoded);
     // }
-    //
+
     #[async_std::test]
     async fn test_query_get_nym() {
         let verim_ledger_service = VerimLedgerService::new();
         let cosmos_pool_service = CosmosPoolService::new();
         let cosmos_keys_service = CosmosKeysService::new();
 
-        cosmos_pool_service.add("test_pool", "http://localhost:26657", "chain-id").await;
-        println!("{:?}", cosmos_pool_service.get_config("test_pool").await.unwrap());
+        cosmos_pool_service
+            .add("test_pool", "http://localhost:26657", "chain-id")
+            .await
+            .unwrap();
+
+        println!(
+            "{:?}",
+            cosmos_pool_service.get_config("test_pool").await.unwrap()
+        );
 
         let req = verim_ledger_service
             .build_query_verimcosmos_get_nym_with_proof(0)
@@ -279,15 +286,15 @@ mod test {
             .await
             .unwrap();
 
-        let inner = result.response.value;
+        let value = result.response.value;
         let proof = result.response.proof;
         // let resp = verim_ledger_service.parse_query_get_nym_resp(&result);
         // // println!("{:?}", result.response.key);
         // println!("{:?}", resp);
-        // println!("{:?}", proof);
-        let ops0 = &proof.unwrap().ops[1];
+        println!("{:?}", proof);
+        let proof_op = &proof.unwrap().ops[0];
 
-        let commitment_proof = ics23::CommitmentProof::decode(ops0.data.as_slice()).unwrap();
+        let commitment_proof = ics23::CommitmentProof::decode(proof_op.data.as_slice()).unwrap();
         println!("{:?}", commitment_proof);
 
         if let Some(ex) = get_exist_proof(&commitment_proof) {
@@ -297,13 +304,15 @@ mod test {
             //     None => return None,
             // };
 
-            assert!(ics23::verify_membership(
+            let everything_is_alright = ics23::verify_membership(
                 &commitment_proof,
-                &ics23::tendermint_spec(),
+                &ics23::iavl_spec(),
                 &subroot,
-                ops0.key.as_slice(),
-                inner.as_slice()));
-            println!("tetst");
+                proof_op.key.as_slice(),
+                value.as_slice(),
+            );
+
+            assert!(everything_is_alright);
         }
 
         // let root = ics23::calculate_existence_root(proof.proof.unwrap().);
@@ -317,7 +326,7 @@ mod test {
         // )
         // );
         let decoded =
-            crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::decode(inner.as_slice());
+            crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::decode(value.as_slice());
         // let res = QueryGetNymResponse::from_proto(decoded);
 
         // QueryAllNymResponse
@@ -326,63 +335,10 @@ mod test {
         // println!("{:?}", proof);
     }
 
-    // #[async_std::test]
-    // async fn test_query_account() {
-    //     let verim_ledger_service = VerimLedgerService::new();
-    //     let cosmos_pool_service = CosmosPoolService::new();
-    //     let cosmos_keys_service = CosmosKeysService::new();
-    //
-    //     let req = verim_ledger_service
-    //         .build_query_cosmos_account("cosmos17gt4any4r9jgg06r47f83vfxrycdk67utjs36m")
-    //         .unwrap();
-    //
-    //     let result = cosmos_pool_service
-    //         .abci_query("http://localhost:26657", req)
-    //         .await
-    //         .unwrap();
-    //
-    //     let inner = result.response.value;
-    //
-    //     let decoded = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountResponse::decode(
-    //         inner.as_slice(),
-    //     )
-    //     .unwrap();
-    //
-    //     let decoded = cosmos_sdk::proto::cosmos::auth::v1beta1::BaseAccount::decode(
-    //         decoded.account.unwrap().value.as_slice(),
-    //     )
-    //     .unwrap();
-    //
-    //     // QueryAllNymResponse
-    //
-    //     println!("{:?}", decoded);
-    // }
-    fn get_exist_proof<'a>(proof: &'a ics23::CommitmentProof) -> Option<&'a ics23::ExistenceProof> {
+    fn get_exist_proof(proof: &ics23::CommitmentProof) -> Option<&ics23::ExistenceProof> {
         match &proof.proof {
             Some(ics23::commitment_proof::Proof::Exist(ex)) => Some(ex),
             _ => None,
-        }
-    }
-    pub const LEAF_PREFIX: [u8; 64] = [0; 64]; // 64 bytes of zeroes.
-    pub fn get_proof_spec() -> ProofSpec {
-        ProofSpec {
-            leaf_spec: Some(LeafOp {
-                hash: HashOp::Sha256.into(),
-                prehash_key: HashOp::NoHash.into(),
-                prehash_value: HashOp::NoHash.into(),
-                length: LengthOp::NoPrefix.into(),
-                prefix: LEAF_PREFIX.to_vec(),
-            }),
-            inner_spec: Some(InnerSpec {
-                child_order: vec![0, 1, 2],
-                child_size: 32,
-                min_prefix_length: 0,
-                max_prefix_length: 64,
-                empty_child: vec![0, 32],
-                hash: HashOp::Sha256.into(),
-            }),
-            max_depth: 0,
-            min_depth: 0,
         }
     }
 }
