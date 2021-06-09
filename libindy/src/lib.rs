@@ -8,6 +8,8 @@ extern crate serde;
 
 extern crate variant_count;
 
+extern crate num_cpus;
+
 #[macro_use]
 extern crate num_derive;
 
@@ -51,6 +53,7 @@ use std::future::Future;
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::services::PaymentsService;
 use crate::controllers::payments::PaymentsController;
+use std::cmp;
 
 fn get_cur_time() -> u128 {
     let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time has gone backwards");
@@ -135,8 +138,10 @@ impl Locator {
         let payment_service = Arc::new(PaymentsService::new());
         let wallet_service = Arc::new(WalletService::new());
 
+        // TODO: Make it work with lower number of threads (VE-2668)
+        let num_threads = cmp::max(8, num_cpus::get());
         let executor = InstrumentedThreadPool {
-            executor: futures::executor::ThreadPool::new().unwrap(),
+            executor: futures::executor::ThreadPool::builder().pool_size(num_threads).create().unwrap(),
             metrics_service: metrics_service.clone(),
         };
 
