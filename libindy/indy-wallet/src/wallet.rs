@@ -10,9 +10,10 @@ use indy_utils::{
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use crate::{
-    encryption::*, iterator::WalletIterator, query_encryption::encrypt_query, storage, WalletRecord,
-};
+use crate::{encryption::*, iterator::WalletIterator, query_encryption::encrypt_query, storage, WalletRecord, cache::wallet_cache::WalletCache, RecordOptions};
+use crate::storage::StorageRecord;
+use crate::cache::wallet_cache::WalletCacheHitMetrics;
+use futures::future::join;
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct Keys {
@@ -135,11 +136,17 @@ pub(super) struct Wallet {
     id: String,
     storage: Box<dyn storage::WalletStorage>,
     keys: Arc<Keys>,
+    cache: WalletCache,
 }
 
 impl Wallet {
-    pub fn new(id: String, storage: Box<dyn storage::WalletStorage>, keys: Arc<Keys>) -> Wallet {
-        Wallet { id, storage, keys }
+    pub fn new(
+        id: String,
+        storage: Box<dyn storage::WalletStorage>,
+        keys: Arc<Keys>,
+        cache: WalletCache,
+    ) -> Wallet {
+        Wallet { id, storage, keys, cache }
     }
 
     pub async fn add(
@@ -171,6 +178,7 @@ impl Wallet {
         );
 
         self.storage.add(&etype, &ename, &evalue, &etags).await?;
+        self.cache.add(type_, &etype, &ename, &evalue, &etags).await;
 
         Ok(())
     }
@@ -203,6 +211,9 @@ impl Wallet {
         self.storage
             .add_tags(&encrypted_type, &encrypted_name, &encrypted_tags)
             .await?;
+        self.cache
+            .add_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tags)
+            .await;
 
         Ok(())
     }
@@ -235,6 +246,9 @@ impl Wallet {
         self.storage
             .update_tags(&encrypted_type, &encrypted_name, &encrypted_tags)
             .await?;
+        self.cache
+            .update_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tags)
+            .await;
 
         Ok(())
     }
@@ -258,6 +272,9 @@ impl Wallet {
         self.storage
             .delete_tags(&encrypted_type, &encrypted_name, &encrypted_tag_names[..])
             .await?;
+        self.cache
+            .delete_tags(type_, &encrypted_type, &encrypted_name, &encrypted_tag_names[..])
+            .await;
 
         Ok(())
     }
@@ -280,11 +297,14 @@ impl Wallet {
         self.storage
             .update(&encrypted_type, &encrypted_name, &encrypted_value)
             .await?;
+        self.cache
+            .update(type_, &encrypted_type, &encrypted_name, &encrypted_value)
+            .await;
 
         Ok(())
     }
 
-    pub async fn get(&self, type_: &str, name: &str, options: &str) -> IndyResult<WalletRecord> {
+    pub async fn get(&self, type_: &str, name: &str, options: &str, cache_hit_metrics: &WalletCacheHitMetrics) -> IndyResult<WalletRecord> {
         let etype = encrypt_as_searchable(
             type_.as_bytes(),
             &self.keys.type_key,
@@ -297,7 +317,42 @@ impl Wallet {
             &self.keys.item_hmac_key,
         );
 
-        let result = self.storage.get(&etype, &ename, options).await?;
+        let result = if self.cache.is_type_cacheable(type_) {
+            let record_options: RecordOptions = serde_json::from_str(options).to_indy(
+                IndyErrorKind::InvalidStructure,
+                "RecordOptions is malformed json",
+            )?;
+            match self.cache.get(type_, &etype, &ename, &record_options).await {
+                Some(result) => {
+                    cache_hit_metrics.inc_cache_hit(type_).await;
+                    result
+                },
+                None => {
+                    // no item in cache, lets retrieve it and put it in cache.
+                    let metrics_fut = cache_hit_metrics.inc_cache_miss(type_);
+                    let full_options = RecordOptions::id_value_tags();
+                    let storage_fut = self.storage.get(&etype, &ename, &full_options);
+                    // run these two futures in parallel.
+                    let full_result = join(storage_fut, metrics_fut).await.0?;
+
+                    // save to cache only if valid data is returned (this should be always true).
+                    if let (Some(evalue), Some(etags)) = (&full_result.value, &full_result.tags) {
+                        self.cache.add(type_, &etype, &ename, evalue, etags).await;
+                    }
+                    StorageRecord {
+                        id: full_result.id,
+                        type_: if record_options.retrieve_type {Some(etype)} else {None},
+                        value: if record_options.retrieve_value {full_result.value} else {None},
+                        tags: if record_options.retrieve_tags {full_result.tags} else {None},
+                    }
+                }
+            }
+        } else {
+            let metrics_fut = cache_hit_metrics.inc_not_cached(type_);
+            let storage_fut = self.storage.get(&etype, &ename, options);
+            // run these two futures in parallel.
+            join(storage_fut, metrics_fut).await.0?
+        };
 
         let value = match result.value {
             None => None,
@@ -332,6 +387,7 @@ impl Wallet {
         );
 
         self.storage.delete(&etype, &ename).await?;
+        self.cache.delete(type_, &etype, &ename).await;
 
         Ok(())
     }
@@ -389,7 +445,7 @@ impl Drop for Wallet {
 mod tests {
     use super::*;
 
-    use std::{collections::HashMap, rc::Rc};
+    use std::collections::HashMap;
 
     use indy_utils::{assert_kind, assert_match, test};
     use serde_json::json;
@@ -453,6 +509,7 @@ mod tests {
 
         {
             let mut wallet = _wallet("wallet_add_get_works").await;
+            let metrics = WalletCacheHitMetrics::new();
 
             wallet
                 .add(_type1(), _id1(), _value1(), &_tags())
@@ -460,13 +517,14 @@ mod tests {
                 .unwrap();
 
             let record = wallet
-                .get(_type1(), _id1(), &_fetch_options(false, true, true))
+                .get(_type1(), _id1(), &_fetch_options(false, true, true), &metrics)
                 .await
                 .unwrap();
 
             assert_eq!(record.id, _id1());
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(record.tags.unwrap(), _tags());
+            assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 1);
 
             wallet.close().unwrap();
         }
@@ -480,6 +538,7 @@ mod tests {
 
         {
             let mut wallet = _wallet("wallet_add_get_works_for_reopen").await;
+            let metrics = WalletCacheHitMetrics::new();
 
             wallet
                 .add(_type1(), _id1(), _value1(), &_tags())
@@ -491,13 +550,14 @@ mod tests {
             let mut wallet = _exists_wallet("wallet_add_get_works_for_reopen").await;
 
             let record = wallet
-                .get(_type1(), _id1(), &_fetch_options(false, true, true))
+                .get(_type1(), _id1(), &_fetch_options(false, true, true), &metrics)
                 .await
                 .unwrap();
 
             assert_eq!(record.id, _id1());
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(record.tags.unwrap(), _tags());
+            assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 1);
 
             wallet.close().unwrap();
         }
@@ -511,6 +571,7 @@ mod tests {
 
         {
             let mut wallet = _wallet("wallet_get_works_for_non_existing").await;
+            let metrics = WalletCacheHitMetrics::new();
 
             wallet
                 .add(_type1(), _id1(), _value1(), &_tags())
@@ -518,10 +579,11 @@ mod tests {
                 .unwrap();
 
             let res = wallet
-                .get(_type1(), _id2(), &_fetch_options(false, true, true))
+                .get(_type1(), _id2(), &_fetch_options(false, true, true), &metrics)
                 .await;
 
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+            assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 1);
 
             wallet.close().unwrap();
         }
@@ -554,6 +616,7 @@ mod tests {
         test::cleanup_wallet("wallet_update_works");
         {
             let mut wallet = _wallet("wallet_update_works").await;
+            let metrics = WalletCacheHitMetrics::new();
 
             wallet
                 .add(_type1(), _id1(), _value1(), &_tags())
@@ -561,24 +624,26 @@ mod tests {
                 .unwrap();
 
             let record = wallet
-                .get(_type1(), _id1(), &_fetch_options(false, true, true))
+                .get(_type1(), _id1(), &_fetch_options(false, true, true), &metrics)
                 .await
                 .unwrap();
 
             assert_eq!(record.id, _id1());
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(record.tags.unwrap(), _tags());
+            assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 1);
 
             wallet.update(_type1(), _id1(), _value2()).await.unwrap();
 
             let record = wallet
-                .get(_type1(), _id1(), &_fetch_options(false, true, true))
+                .get(_type1(), _id1(), &_fetch_options(false, true, true), &metrics)
                 .await
                 .unwrap();
 
             assert_eq!(record.id, _id1());
             assert_eq!(record.value.unwrap(), _value2());
             assert_eq!(record.tags.unwrap(), _tags());
+            assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 2);
 
             wallet.close().unwrap();
         }
@@ -643,6 +708,7 @@ mod tests {
             });
 
             let mut wallet = _wallet("wallet_add_tags_works").await;
+            let metrics = WalletCacheHitMetrics::new();
 
             wallet
                 .add(_type1(), _id1(), _value1(), &tags)
@@ -657,7 +723,7 @@ mod tests {
             wallet.add_tags(_type1(), _id1(), &new_tags).await.unwrap();
 
             let record = wallet
-                .get(_type1(), _id1(), &_fetch_options(false, true, true))
+                .get(_type1(), _id1(), &_fetch_options(false, true, true), &metrics)
                 .await
                 .unwrap();
 
@@ -668,6 +734,7 @@ mod tests {
             });
 
             assert_eq!(record.tags.unwrap(), expected_tags);
+            assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 1);
 
             wallet.close().unwrap();
         }
@@ -686,6 +753,7 @@ mod tests {
             });
 
             let mut wallet = _wallet("wallet_update_tags_works").await;
+            let metrics = WalletCacheHitMetrics::new();
             wallet
                 .add(_type1(), _id1(), _value1(), &tags)
                 .await
@@ -702,11 +770,12 @@ mod tests {
                 .unwrap();
 
             let record = wallet
-                .get(_type1(), _id1(), &_fetch_options(false, true, true))
+                .get(_type1(), _id1(), &_fetch_options(false, true, true), &metrics)
                 .await
                 .unwrap();
 
             assert_eq!(record.tags.unwrap(), new_tags);
+            assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 1);
 
             wallet.close().unwrap();
         }
@@ -727,6 +796,7 @@ mod tests {
             });
 
             let mut wallet = _wallet("wallet_delete_tags_works").await;
+            let metrics = WalletCacheHitMetrics::new();
 
             wallet
                 .add(_type1(), _id1(), _value1(), &tags)
@@ -748,11 +818,12 @@ mod tests {
             });
 
             let record = wallet
-                .get(_type1(), _id1(), &_fetch_options(false, true, true))
+                .get(_type1(), _id1(), &_fetch_options(false, true, true), &metrics)
                 .await
                 .unwrap();
 
             assert_eq!(record.tags.unwrap(), expected_tags);
+            assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 1);
 
             wallet.close().unwrap();
         }
@@ -766,6 +837,7 @@ mod tests {
 
         {
             let mut wallet = _wallet("wallet_delete_works").await;
+            let metrics = WalletCacheHitMetrics::new();
 
             wallet
                 .add(_type1(), _id1(), _value1(), &_tags())
@@ -773,21 +845,23 @@ mod tests {
                 .unwrap();
 
             let record = wallet
-                .get(_type1(), _id1(), &_fetch_options(false, true, true))
+                .get(_type1(), _id1(), &_fetch_options(false, true, true), &metrics)
                 .await
                 .unwrap();
 
             assert_eq!(record.id, _id1());
             assert_eq!(record.value.unwrap(), _value1());
             assert_eq!(record.tags.unwrap(), _tags());
+            assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 1);
 
             wallet.delete(_type1(), _id1()).await.unwrap();
 
             let res = wallet
-                .get(_type1(), _id1(), &_fetch_options(false, true, true))
+                .get(_type1(), _id1(), &_fetch_options(false, true, true), &metrics)
                 .await;
 
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+            assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 2);
 
             wallet.close().unwrap();
         }
@@ -3604,7 +3678,7 @@ mod tests {
 
         let storage = storage_type.open_storage(name, None, None).await.unwrap();
 
-        Wallet::new(name.to_string(), storage, Arc::new(keys))
+        Wallet::new(name.to_string(), storage, Arc::new(keys), WalletCache::new(None))
     }
 
     async fn _mysql_wallet(name: &str) -> Wallet {
@@ -3634,7 +3708,7 @@ mod tests {
             .await
             .unwrap();
 
-        Wallet::new(name.to_string(), storage, Arc::new(keys))
+        Wallet::new(name.to_string(), storage, Arc::new(keys), WalletCache::new(None))
     }
 
     async fn _exists_wallet(name: &str) -> Wallet {
@@ -3649,7 +3723,7 @@ mod tests {
         let master_key = _master_key();
         let keys = Keys::deserialize_encrypted(&metadata.keys, &master_key).unwrap();
 
-        Wallet::new(name.to_string(), storage, Arc::new(keys))
+        Wallet::new(name.to_string(), storage, Arc::new(keys), WalletCache::new(None))
     }
 
     fn _master_key() -> chacha20poly1305_ietf::Key {

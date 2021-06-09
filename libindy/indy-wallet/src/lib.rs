@@ -1,3 +1,7 @@
+#[allow(unused)]
+#[macro_use]
+extern crate serde_json;
+
 use std::{
     collections::{HashMap, HashSet},
     fs,
@@ -28,8 +32,10 @@ use crate::{
         default::SQLiteStorageType, mysql::MySqlStorageType, WalletStorage, WalletStorageType,
     },
     wallet::{Keys, Wallet},
+    cache::wallet_cache::{WalletCache, WalletCacheHitMetrics, WalletCacheHitData},
 };
 pub use crate::encryption::KeyDerivationData;
+use indy_api_types::domain::wallet::CacheConfig;
 
 //use crate::storage::plugged::PluggedStorageType; FXIME:
 
@@ -43,6 +49,7 @@ pub mod language;
 
 mod export_import;
 mod wallet;
+mod cache;
 
 pub struct WalletService {
     storage_types: Mutex<HashMap<String, Box<dyn WalletStorageType>>>,
@@ -71,6 +78,7 @@ pub struct WalletService {
             ),
         >,
     >,
+    cache_hit_metrics: WalletCacheHitMetrics,
 }
 
 impl WalletService {
@@ -88,6 +96,7 @@ impl WalletService {
             wallet_ids: Mutex::new(HashSet::new()),
             pending_for_open: Mutex::new(HashMap::new()),
             pending_for_import: Mutex::new(HashMap::new()),
+            cache_hit_metrics: WalletCacheHitMetrics::new(),
         }
     }
 
@@ -298,6 +307,7 @@ impl WalletService {
         &self,
         wallet_handle: WalletHandle,
         master_key: (&MasterKey, Option<&MasterKey>),
+        cache_config: Option<CacheConfig>,
     ) -> IndyResult<WalletHandle> {
         let (id, storage, metadata, rekey_data) = self
             .pending_for_open
@@ -314,7 +324,12 @@ impl WalletService {
             storage.set_storage_metadata(&metadata).await?;
         }
 
-        let wallet = Wallet::new(id.clone(), storage, Arc::new(keys));
+        let wallet = Wallet::new(
+            id.clone(),
+            storage,
+            Arc::new(keys),
+            WalletCache::new(cache_config)
+        );
 
         {
             let mut wallets = self.wallets.lock().await;
@@ -554,7 +569,7 @@ impl WalletService {
         options_json: &str,
     ) -> IndyResult<WalletRecord> {
         let wallet = self.get_wallet(wallet_handle).await?;
-        wallet.get(type_, name, options_json).await
+        wallet.get(type_, name, options_json, &self.cache_hit_metrics).await
             .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name))
     }
 
@@ -587,8 +602,7 @@ impl WalletService {
     {
         let type_ = short_type_name::<T>();
 
-        let wallet = self.get_wallet(wallet_handle).await?;
-        let record = wallet.get(&self.add_prefix(type_), name, options_json).await?;
+        let record = self.get_record(wallet_handle, &self.add_prefix(type_), name, options_json).await?;
 
         let record_value = record
             .get_value()
@@ -710,10 +724,10 @@ impl WalletService {
     where
         T: Sized,
     {
-        let wallet = self.get_wallet(wallet_handle).await?;
-        match wallet.get(&self.add_prefix(short_type_name::<T>()),
-                         name,
-                         &RecordOptions::id()).await {
+        match self.get_record(wallet_handle,
+                              &self.add_prefix(short_type_name::<T>()),
+                              name,
+                              &RecordOptions::id()).await {
             Ok(_) => Ok(true),
             Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => Ok(false),
             Err(err) => Err(err),
@@ -828,6 +842,7 @@ impl WalletService {
                 WalletService::_get_wallet_id(&config),
                 storage,
                 Arc::new(keys),
+                WalletCache::new(None),
             );
 
             finish_import(&wallet, reader, import_key, nonce, chunk_size, header_bytes).await
@@ -861,6 +876,10 @@ impl WalletService {
 
     pub async fn get_pending_for_open_count(&self) -> usize {
         self.pending_for_open.lock().await.len()
+    }
+
+    pub async fn get_wallet_cache_hit_metrics_data(&self) -> HashMap<String, WalletCacheHitData> {
+        self.cache_hit_metrics.get_data().await
     }
 
     fn _get_config_and_cred_for_storage<'a>(
@@ -1125,6 +1144,16 @@ impl RecordOptions {
 
         serde_json::to_string(&options).unwrap()
     }
+
+    pub fn id_value_tags() -> String {
+        let options = RecordOptions {
+            retrieve_type: false,
+            retrieve_value: true,
+            retrieve_tags: true,
+        };
+
+        serde_json::to_string(&options).unwrap()
+    }
 }
 
 impl Default for RecordOptions {
@@ -1201,7 +1230,11 @@ fn short_type_name<T>() -> &'static str {
 mod tests {
     use std::{collections::HashMap, fs, path::Path};
 
-    use indy_api_types::{domain::wallet::KeyDerivationMethod, INVALID_WALLET_HANDLE};
+    use indy_api_types::{
+        domain::wallet::{
+            KeyDerivationMethod,
+            CachingAlgorithm
+        }, INVALID_WALLET_HANDLE};
     use indy_utils::{
         assert_kind, assert_match, environment, inmem_wallet::InmemWallet, next_wallet_handle, test,
     };
@@ -1210,6 +1243,7 @@ mod tests {
     use lazy_static::lazy_static;
 
     use super::*;
+    use indy_api_types::domain::wallet::CacheConfig;
 
     impl WalletService {
         async fn open_wallet(
@@ -1253,7 +1287,7 @@ mod tests {
                 None => None,
             };
 
-            self.open_wallet_continue(wallet_handle, (&key, rekey.as_ref()))
+            self.open_wallet_continue(wallet_handle, (&key, rekey.as_ref()), config.cache.clone())
                 .await
         }
 
@@ -1886,6 +1920,7 @@ mod tests {
             id: String::from("same_id"),
             storage_type: None,
             storage_config: None,
+            cache: None,
         };
 
         wallet_service
@@ -1904,6 +1939,7 @@ mod tests {
             storage_config: Some(json!({
                 "path": _custom_path("wallet_service_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths")
             })),
+            cache: None
         };
 
         wallet_service
@@ -2175,6 +2211,45 @@ mod tests {
     }
 
     #[async_std::test]
+    async fn wallet_service_add_record_works_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_add_record_works_for_cached_wallet");
+        {
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_add_record_works_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(&_config_cached("wallet_service_add_record_works_for_cached_wallet"), &RAW_CREDENTIAL)
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, "type", "key1", "value1", &HashMap::new())
+                .await
+                .unwrap();
+
+            wallet_service
+                .get_record(wallet_handle, "type", "key1", "{}")
+                .await
+                .unwrap();
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_hit(), 1);
+        }
+
+        test::cleanup_wallet(
+            "wallet_service_add_record_works_for_cached_wallet",
+        );
+    }
+
+    #[async_std::test]
     #[ignore]
     async fn wallet_service_add_record_works_for_plugged() {
         _cleanup("wallet_service_add_record_works_for_plugged");
@@ -2248,9 +2323,61 @@ mod tests {
             assert!(record.get_value().is_none());
             assert!(record.get_type().is_none());
             assert!(record.get_tags().is_none());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_not_cached(), 1);
         }
 
         test::cleanup_wallet("wallet_service_get_record_works_for_id_only");
+    }
+
+    #[async_std::test]
+    async fn wallet_service_get_record_works_for_id_only_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_get_record_works_for_id_only_for_cached_wallet");
+
+        {
+            let wallet_service = WalletService::new();
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_get_record_works_for_id_only_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(
+                    &_config_cached("wallet_service_get_record_works_for_id_only_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                )
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, "type", "key1", "value1", &HashMap::new())
+                .await
+                .unwrap();
+
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    "type",
+                    "key1",
+                    &_fetch_options(false, false, false),
+                )
+                .await
+                .unwrap();
+
+            assert!(record.get_value().is_none());
+            assert!(record.get_type().is_none());
+            assert!(record.get_tags().is_none());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_hit(), 1);
+        }
+
+        test::cleanup_wallet("wallet_service_get_record_works_for_id_only_for_cached_wallet");
     }
 
     #[async_std::test]
@@ -2336,9 +2463,60 @@ mod tests {
             assert_eq!("value1", record.get_value().unwrap());
             assert!(record.get_type().is_none());
             assert!(record.get_tags().is_none());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_not_cached(), 1);
         }
 
         test::cleanup_wallet("wallet_service_get_record_works_for_id_value");
+    }
+
+    #[async_std::test]
+    async fn wallet_service_get_record_works_for_id_value_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_get_record_works_for_id_value_for_cached_wallet");
+        {
+            let wallet_service = WalletService::new();
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_get_record_works_for_id_value_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(
+                    &_config_cached("wallet_service_get_record_works_for_id_value_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                )
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, "type", "key1", "value1", &HashMap::new())
+                .await
+                .unwrap();
+
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    "type",
+                    "key1",
+                    &_fetch_options(false, true, false),
+                )
+                .await
+                .unwrap();
+
+            assert_eq!("value1", record.get_value().unwrap());
+            assert!(record.get_type().is_none());
+            assert!(record.get_tags().is_none());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_hit(), 1);
+        }
+
+        test::cleanup_wallet("wallet_service_get_record_works_for_id_value_for_cached_wallet");
     }
 
     #[async_std::test]
@@ -2428,9 +2606,65 @@ mod tests {
             assert_eq!("type", record.get_type().unwrap());
             assert_eq!("value1", record.get_value().unwrap());
             assert_eq!(&tags, record.get_tags().unwrap());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_not_cached(), 1);
         }
 
         test::cleanup_wallet("wallet_service_get_record_works_for_all_fields");
+    }
+
+    #[async_std::test]
+    async fn wallet_service_get_record_works_for_all_fields_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_get_record_works_for_all_fields_for_cached_wallet");
+
+        {
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_get_record_works_for_all_fields_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(
+                    &_config_cached("wallet_service_get_record_works_for_all_fields_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                )
+                .await
+                .unwrap();
+
+            let mut tags = HashMap::new();
+            tags.insert(String::from("1"), String::from("some"));
+
+            wallet_service
+                .add_record(wallet_handle, "type", "key1", "value1", &tags)
+                .await
+                .unwrap();
+
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    "type",
+                    "key1",
+                    &_fetch_options(true, true, true),
+                )
+                .await
+                .unwrap();
+
+            assert_eq!("type", record.get_type().unwrap());
+            assert_eq!("value1", record.get_value().unwrap());
+            assert_eq!(&tags, record.get_tags().unwrap());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_hit(), 1);
+        }
+
+        test::cleanup_wallet("wallet_service_get_record_works_for_all_fields_for_cached_wallet");
     }
 
     #[async_std::test]
@@ -2533,6 +2767,64 @@ mod tests {
     }
 
     #[async_std::test]
+    async fn wallet_service_add_get_works_for_reopen_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_add_get_works_for_reopen_for_cached_wallet");
+
+        {
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_add_get_works_for_reopen_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(
+                    &_config_cached("wallet_service_add_get_works_for_reopen_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                )
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, "type", "key1", "value1", &HashMap::new())
+                .await
+                .unwrap();
+
+            wallet_service.close_wallet(wallet_handle).await.unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(
+                    &_config_cached("wallet_service_add_get_works_for_reopen_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                )
+                .await
+                .unwrap();
+
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    "type",
+                    "key1",
+                    &_fetch_options(false, true, false),
+                )
+                .await
+                .unwrap();
+
+            assert_eq!("value1", record.get_value().unwrap());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_miss(), 1);
+        }
+
+        test::cleanup_wallet("wallet_service_add_get_works_for_reopen_for_cached_wallet");
+    }
+
+    #[async_std::test]
     async fn wallet_service_get_works_for_unknown() {
         test::cleanup_wallet("wallet_service_get_works_for_unknown");
 
@@ -2566,9 +2858,54 @@ mod tests {
                 .await;
 
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_not_cached(), 1);
         }
 
         test::cleanup_wallet("wallet_service_get_works_for_unknown");
+    }
+
+    #[async_std::test]
+    async fn wallet_service_get_works_for_unknown_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_get_works_for_unknown_for_cached_wallet");
+
+        {
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_get_works_for_unknown_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(
+                    &_config_cached("wallet_service_get_works_for_unknown_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                )
+                .await
+                .unwrap();
+
+            let res = wallet_service
+                .get_record(
+                    wallet_handle,
+                    "type",
+                    "key1",
+                    &_fetch_options(false, true, false),
+                )
+                .await;
+
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_miss(), 1);
+        }
+
+        test::cleanup_wallet("wallet_service_get_works_for_unknown_for_cached_wallet");
     }
 
     #[async_std::test]
@@ -2665,10 +3002,81 @@ mod tests {
                 .unwrap();
 
             assert_eq!(new_value, record.get_value().unwrap());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get(type_).unwrap().get_not_cached(), 2);
+
         }
 
         test::cleanup_wallet("wallet_service_update");
     }
+
+    #[async_std::test]
+    async fn wallet_service_update_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_update_for_cached_wallet");
+        {
+            let type_ = "type";
+            let name = "name";
+            let value = "value";
+            let new_value = "new_value";
+
+            let wallet_service = WalletService::new();
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_update_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(&_config_cached("wallet_service_update_for_cached_wallet"), &RAW_CREDENTIAL)
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, type_, name, value, &HashMap::new())
+                .await
+                .unwrap();
+
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    type_,
+                    name,
+                    &_fetch_options(false, true, false),
+                )
+                .await
+                .unwrap();
+
+            assert_eq!(value, record.get_value().unwrap());
+
+            wallet_service
+                .update_record_value(wallet_handle, type_, name, new_value)
+                .await
+                .unwrap();
+
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    type_,
+                    name,
+                    &_fetch_options(false, true, false),
+                )
+                .await
+                .unwrap();
+
+            assert_eq!(new_value, record.get_value().unwrap());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get(type_).unwrap().get_hit(), 2);
+
+        }
+
+        test::cleanup_wallet("wallet_service_update_for_cached_wallet");
+    }
+
     #[async_std::test]
     #[ignore]
     async fn wallet_service_update_for_plugged() {
@@ -2790,9 +3198,77 @@ mod tests {
                 .await;
 
             assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get(type_).unwrap().get_not_cached(), 2);
         }
 
         test::cleanup_wallet("wallet_service_delete_record");
+    }
+
+    #[async_std::test]
+    async fn wallet_service_delete_record_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_delete_record_for_cached_wallet");
+        {
+            let type_ = "type";
+            let name = "name";
+            let value = "value";
+
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_delete_record_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(&_config_cached("wallet_service_delete_record_for_cached_wallet"), &RAW_CREDENTIAL)
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, type_, name, value, &HashMap::new())
+                .await
+                .unwrap();
+
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    type_,
+                    name,
+                    &_fetch_options(false, true, false),
+                )
+                .await
+                .unwrap();
+
+            assert_eq!(value, record.get_value().unwrap());
+
+            wallet_service
+                .delete_record(wallet_handle, type_, name)
+                .await
+                .unwrap();
+
+            let res = wallet_service
+                .get_record(
+                    wallet_handle,
+                    type_,
+                    name,
+                    &_fetch_options(false, true, false),
+                )
+                .await;
+
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get(type_).unwrap().get_hit(), 1);
+            assert_eq!(metrics_data.get(type_).unwrap().get_miss(), 1); // after delete
+        }
+
+        test::cleanup_wallet("wallet_service_delete_record_for_cached_wallet");
     }
 
     #[async_std::test]
@@ -2913,9 +3389,75 @@ mod tests {
             let expected_tags: Tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
             let retrieved_tags = item.tags.unwrap();
             assert_eq!(expected_tags, retrieved_tags);
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get(type_).unwrap().get_not_cached(), 1);
         }
 
         test::cleanup_wallet("wallet_service_add_tags");
+    }
+
+    #[async_std::test]
+    async fn wallet_service_add_tags_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_add_tags_for_cached_wallet");
+
+        {
+            let type_ = "type";
+            let name = "name";
+            let value = "value";
+
+            let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1"}"#).unwrap();
+
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_add_tags_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(&_config_cached("wallet_service_add_tags_for_cached_wallet"), &RAW_CREDENTIAL)
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, type_, name, value, &tags)
+                .await
+                .unwrap();
+
+            let new_tags = serde_json::from_str(
+                r#"{"tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#,
+            )
+            .unwrap();
+
+            wallet_service
+                .add_record_tags(wallet_handle, type_, name, &new_tags)
+                .await
+                .unwrap();
+
+            let item = wallet_service
+                .get_record(
+                    wallet_handle,
+                    type_,
+                    name,
+                    &_fetch_options(true, true, true),
+                )
+                .await
+                .unwrap();
+
+            let expected_tags: Tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+            let retrieved_tags = item.tags.unwrap();
+            assert_eq!(expected_tags, retrieved_tags);
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get(type_).unwrap().get_hit(), 1);
+        }
+
+        test::cleanup_wallet("wallet_service_add_tags_for_cached_wallet");
     }
 
     #[async_std::test]
@@ -3028,9 +3570,68 @@ mod tests {
 
             let retrieved_tags = item.tags.unwrap();
             assert_eq!(new_tags, retrieved_tags);
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get(type_).unwrap().get_not_cached(), 1);
         }
 
         test::cleanup_wallet("wallet_service_update_tags");
+    }
+
+    #[async_std::test]
+    async fn wallet_service_update_tags_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_update_tags_for_cached_wallet");
+        {
+            let type_ = "type";
+            let name = "name";
+            let value = "value";
+            let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_update_tags_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(&_config_cached("wallet_service_update_tags_for_cached_wallet"), &RAW_CREDENTIAL)
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, type_, name, value, &tags)
+                .await
+                .unwrap();
+
+            let new_tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
+
+            wallet_service
+                .update_record_tags(wallet_handle, type_, name, &new_tags)
+                .await
+                .unwrap();
+
+            let item = wallet_service
+                .get_record(
+                    wallet_handle,
+                    type_,
+                    name,
+                    &_fetch_options(true, true, true),
+                )
+                .await
+                .unwrap();
+
+            let retrieved_tags = item.tags.unwrap();
+            assert_eq!(new_tags, retrieved_tags);
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get(type_).unwrap().get_hit(), 1);
+        }
+
+        test::cleanup_wallet("wallet_service_update_tags_for_cached_wallet");
     }
 
     #[async_std::test]
@@ -3145,9 +3746,72 @@ mod tests {
 
             let retrieved_tags = item.tags.unwrap();
             assert_eq!(expected_tags, retrieved_tags);
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get(type_).unwrap().get_not_cached(), 1);
         }
 
         test::cleanup_wallet("wallet_service_delete_tags");
+    }
+
+    #[async_std::test]
+    async fn wallet_service_delete_tags_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_delete_tags_for_cached_wallet");
+        {
+            let type_ = "type";
+            let name = "name";
+            let value = "value";
+            let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
+
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_delete_tags_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(&_config_cached("wallet_service_delete_tags_for_cached_wallet"), &RAW_CREDENTIAL)
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, type_, name, value, &tags)
+                .await
+                .unwrap();
+
+            let tag_names = vec!["tag_name_1", "~tag_name_3"];
+
+            wallet_service
+                .delete_record_tags(wallet_handle, type_, name, &tag_names)
+                .await
+                .unwrap();
+
+            let item = wallet_service
+                .get_record(
+                    wallet_handle,
+                    type_,
+                    name,
+                    &_fetch_options(true, true, true),
+                )
+                .await
+                .unwrap();
+
+            let expected_tags: Tags =
+                serde_json::from_str(r#"{"tag_name_2":"new_tag_value_2"}"#).unwrap();
+
+            let retrieved_tags = item.tags.unwrap();
+            assert_eq!(expected_tags, retrieved_tags);
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get(type_).unwrap().get_hit(), 1);
+        }
+
+        test::cleanup_wallet("wallet_service_delete_tags_for_cached_wallet");
     }
 
     #[async_std::test]
@@ -3263,9 +3927,72 @@ mod tests {
             assert_eq!(HashMap::new(), record.get_tags().unwrap().clone());
 
             assert!(search.fetch_next_record().await.unwrap().is_none());
+
+            assert_eq!(wallet_service.get_wallet_cache_hit_metrics_data().await.len(), 0); // only get is using cache
         }
 
         test::cleanup_wallet("wallet_service_search_records_works");
+    }
+
+    #[async_std::test]
+    #[ignore]
+    async fn wallet_service_search_records_works_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_search_records_works_for_cached_wallet");
+        {
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(
+                    &_config("wallet_service_search_records_works_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                    (&RAW_KDD, &RAW_MASTER_KEY),
+                )
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(
+                    &_config("wallet_service_search_records_works_for_cached_wallet"),
+                    &RAW_CREDENTIAL,
+                )
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, "type", "key1", "value1", &HashMap::new())
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, "type", "key2", "value2", &HashMap::new())
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, "type3", "key3", "value3", &HashMap::new())
+                .await
+                .unwrap();
+
+            let mut search = wallet_service
+                .search_records(
+                    wallet_handle,
+                    "type3",
+                    "{}",
+                    &_fetch_options(true, true, true),
+                )
+                .await
+                .unwrap();
+
+            let record = search.fetch_next_record().await.unwrap().unwrap();
+            assert_eq!("value3", record.get_value().unwrap());
+            assert_eq!(HashMap::new(), record.get_tags().unwrap().clone());
+
+            assert!(search.fetch_next_record().await.unwrap().is_none());
+
+            assert_eq!(wallet_service.get_wallet_cache_hit_metrics_data().await.len(), 0); // only get() is using cache
+        }
+
+        test::cleanup_wallet("wallet_service_search_records_works_for_cached_wallet");
     }
 
     #[async_std::test]
@@ -3403,9 +4130,114 @@ mod tests {
 
             assert_eq!("type", record.get_type().unwrap());
             assert_eq!("value1", record.get_value().unwrap());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            assert_eq!(metrics_data.get("type").unwrap().get_not_cached(), 3);
         }
 
         test::cleanup_wallet("wallet_service_key_rotation");
+    }
+
+    #[async_std::test]
+    async fn wallet_service_key_rotation_for_cached_wallet() {
+        test::cleanup_wallet("wallet_service_key_rotation_for_cached_wallet");
+        {
+            let config: &Config = &_config_cached("wallet_service_key_rotation_for_cached_wallet");
+            let wallet_service = WalletService::new();
+
+            wallet_service
+                .create_wallet(config, &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY))
+                .await
+                .unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(config, &RAW_CREDENTIAL)
+                .await
+                .unwrap();
+
+            wallet_service
+                .add_record(wallet_handle, "type", "key1", "value1", &HashMap::new())
+                .await
+                .unwrap();
+
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    "type",
+                    "key1",
+                    &_fetch_options(true, true, true),
+                )
+                .await
+                .unwrap(); // cache hit
+
+            assert_eq!("type", record.get_type().unwrap());
+            assert_eq!("value1", record.get_value().unwrap());
+
+            wallet_service.close_wallet(wallet_handle).await.unwrap();
+
+            let wallet_handle = wallet_service
+                .open_wallet(config, &_rekey_credentials_moderate())
+                .await
+                .unwrap();
+
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    "type",
+                    "key1",
+                    &_fetch_options(true, true, true),
+                )
+                .await
+                .unwrap(); // cache miss (wallet just opened)
+
+            assert_eq!("type", record.get_type().unwrap());
+            assert_eq!("value1", record.get_value().unwrap());
+            wallet_service.close_wallet(wallet_handle).await.unwrap();
+
+            // Access failed for old key
+            let res = wallet_service.open_wallet(config, &RAW_CREDENTIAL).await;
+            assert_kind!(IndyErrorKind::WalletAccessFailed, res);
+
+            // Works ok with new key when reopening
+            let wallet_handle = wallet_service
+                .open_wallet(config, &_credentials_for_new_key_moderate())
+                .await
+                .unwrap();
+
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    "type",
+                    "key1",
+                    &_fetch_options(true, true, true),
+                )
+                .await
+                .unwrap(); // cache miss (wallet just opened)
+
+            assert_eq!("type", record.get_type().unwrap());
+            assert_eq!("value1", record.get_value().unwrap());
+
+            // check again, now it should be in cache.
+            let record = wallet_service
+                .get_record(
+                    wallet_handle,
+                    "type",
+                    "key1",
+                    &_fetch_options(true, true, true),
+                )
+                .await
+                .unwrap(); // cache hit
+
+            assert_eq!("type", record.get_type().unwrap());
+            assert_eq!("value1", record.get_value().unwrap());
+
+            let metrics_data = wallet_service.get_wallet_cache_hit_metrics_data().await;
+            println!("metrics: {:?}", metrics_data);
+            assert_eq!(metrics_data.get("type").unwrap().get_hit(), 2);
+            assert_eq!(metrics_data.get("type").unwrap().get_miss(), 2);
+        }
+
+        test::cleanup_wallet("wallet_service_key_rotation_for_cached_wallet");
     }
 
     #[async_std::test]
@@ -4372,6 +5204,22 @@ mod tests {
             id: name.to_string(),
             storage_type: None,
             storage_config: None,
+            cache: None,
+        }
+    }
+
+    fn _config_cached(name: &str) -> Config {
+        Config {
+            id: name.to_string(),
+            storage_type: None,
+            storage_config: None,
+            cache: Some(
+                CacheConfig {
+                    size: 10,
+                    entities: vec!["did".to_string(), "their_did".to_string(), "type".to_string()],
+                    algorithm: CachingAlgorithm::LRU,
+                }
+            ),
         }
     }
 
@@ -4380,6 +5228,22 @@ mod tests {
             id: name.to_string(),
             storage_type: Some("default".to_string()),
             storage_config: None,
+            cache: None,
+        }
+    }
+
+    fn _config_default_cached(name: &str) -> Config {
+        Config {
+            id: name.to_string(),
+            storage_type: Some("default".to_string()),
+            storage_config: None,
+            cache: Some(
+                CacheConfig {
+                    size: 10,
+                    entities: vec!["did".to_string(), "their_did".to_string(), "type".to_string()],
+                    algorithm: CachingAlgorithm::LRU,
+                }
+            ),
         }
     }
 
@@ -4388,6 +5252,7 @@ mod tests {
             id: "w1".to_string(),
             storage_type: Some("inmem".to_string()),
             storage_config: None,
+            cache: None,
         }
     }
 
@@ -4396,6 +5261,7 @@ mod tests {
             id: name.to_string(),
             storage_type: Some("unknown".to_string()),
             storage_config: None,
+            cache: None,
         }
     }
 
@@ -4641,4 +5507,10 @@ mod tests {
     fn short_type_name_works() {
         assert_eq!("WalletRecord", short_type_name::<WalletRecord>());
     }
+
+    // #[test]
+    // fn short_type_name_works2() {
+    //     assert_eq!("WalletRecord2", short_type_name::<Key>());
+    // }
+
 }
