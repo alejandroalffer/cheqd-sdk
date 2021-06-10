@@ -6,8 +6,7 @@ extern crate libc;
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod cache;
-pub mod cosmos_keys;
-pub mod cosmos_pool;
+
 pub mod crypto;
 pub mod did;
 pub mod ledger;
@@ -17,8 +16,11 @@ pub mod non_secrets;
 pub mod pairwise;
 pub mod payments;
 pub mod pool;
-pub mod verim_ledger;
 pub mod wallet;
+pub mod verim_ledger;
+pub mod cosmos_keys;
+pub mod cosmos_ledger;
+pub mod tendermint_pool;
 
 use libc::{c_char, c_void};
 

@@ -4,7 +4,6 @@ use crate::services::CommandMetric;
 use crate::Locator;
 use indy_utils::ctypes;
 use libc::c_char;
-use serde_json;
 
 #[no_mangle]
 pub extern "C" fn indy_verim_ledger_build_msg_create_nym(
@@ -251,7 +250,7 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_build_msg_update_nym > creator {:?} id {:?}",
+        "indy_verim_ledger_build_msg_delete_nym > creator {:?} id {:?}",
         creator, id
     );
 
@@ -259,7 +258,7 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     debug!(
-        "indy_verim_ledger_build_msg_update_nym > creator {:?} id {:?}",
+        "indy_verim_ledger_build_msg_delete_nym > creator {:?} id {:?}",
         creator, id
     );
 
@@ -274,7 +273,7 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
 
     let cb = move |res: IndyResult<_>| {
         let (err, msg) = prepare_result!(res, Vec::new());
-        debug!("indy_verim_ledger_build_msg_update_nym: msg: {:?}", msg);
+        debug!("indy_verim_ledger_build_msg_delete_nym: msg: {:?}", msg);
         let (msg_raw, msg_len) = ctypes::vec_to_pointer(&msg);
         cb(command_handle, err, msg_raw, msg_len)
     };
@@ -286,7 +285,7 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_build_msg_update_nym < {:?}", res);
+    debug!("indy_verim_ledger_build_msg_delete_nym < {:?}", res);
     res
 }
 
@@ -513,3 +512,5 @@ pub extern "C" fn indy_verim_ledger_parse_query_all_nym_resp(
     debug!("indy_verim_ledger_parse_query_all_nym_resp < {:?}", res);
     res
 }
+
+

@@ -1,5 +1,6 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse as ProtoMsgDeleteNymResponse;
 use super::super::super::VerimProto;
+use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct MsgDeleteNymResponse {}
@@ -17,8 +18,8 @@ impl VerimProto for MsgDeleteNymResponse {
         Self::Proto {}
     }
 
-    fn from_proto(_proto: &Self::Proto) -> Self {
-        Self::new()
+    fn from_proto(_proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self::new())
     }
 }
 
@@ -31,7 +32,7 @@ mod test {
         let msg = MsgDeleteNymResponse::new();
 
         let proto = msg.to_proto();
-        let decoded = MsgDeleteNymResponse::from_proto(&proto);
+        let decoded = MsgDeleteNymResponse::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

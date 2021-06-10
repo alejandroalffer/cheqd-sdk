@@ -1,13 +1,14 @@
+use super::super::super::cosmos::base::query::PageResponse;
+use super::super::super::proto::verimid::verimcosmos::verimcosmos::Nym as ProtoNym;
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryAllNymResponse as ProtoQueryAllNymResponse;
 use super::super::super::VerimProto;
 use super::super::models::Nym;
-use super::super::super::proto::verimid::verimcosmos::verimcosmos::Nym as ProtoNym;
-use super::super::super::cosmos::base::query::PageResponse;
+use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryAllNymResponse {
     pub nym: Vec<Nym>,
-    pub pagination: Option<PageResponse>
+    pub pagination: Option<PageResponse>,
 }
 
 impl QueryAllNymResponse {
@@ -20,7 +21,7 @@ impl VerimProto for QueryAllNymResponse {
     type Proto = ProtoQueryAllNymResponse;
 
     fn to_proto(&self) -> Self::Proto {
-        let nym: Vec<ProtoNym> = self.nym.iter().map(| n | n.to_proto()).collect();
+        let nym: Vec<ProtoNym> = self.nym.iter().map(|n| n.to_proto()).collect();
         let pagination = match &self.pagination {
             Some(p) => Some(p.to_proto()),
             None => None,
@@ -28,14 +29,17 @@ impl VerimProto for QueryAllNymResponse {
         Self::Proto { nym, pagination }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        let nym: Vec<Nym> = proto.nym.iter().map(| n | Nym::from_proto(n)).collect();
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        let nym: IndyResult<Vec<Nym>> = proto.nym.iter().map(|n| Nym::from_proto(n)).collect();
+        let nym = nym?;
 
-        let pagination = match &proto.pagination {
-            Some(p) => Some(PageResponse::from_proto(p)),
-            None => None,
-        };
-        Self { nym, pagination }
+        let pagination = proto
+            .pagination
+            .as_ref()
+            .map(|p| PageResponse::from_proto(p))
+            .transpose()?;
+
+        Ok(Self::new(nym, pagination))
     }
 }
 
@@ -72,11 +76,14 @@ mod test {
             ),
         ];
 
-        let pagination = PageResponse{ next_key: vec![0], total: 3 };
+        let pagination = PageResponse {
+            next_key: vec![0],
+            total: 3,
+        };
         let msg = QueryAllNymResponse::new(nym, Some(pagination));
 
         let proto = msg.to_proto();
-        let decoded = QueryAllNymResponse::from_proto(&proto);
+        let decoded = QueryAllNymResponse::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

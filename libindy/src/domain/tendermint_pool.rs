@@ -1,16 +1,16 @@
 #[derive(Clone, Debug, Serialize)]
-pub struct CosmosPoolConfig {
+pub struct TendermintPoolConfig {
     pub alias: String,
     pub rpc_address: String,
     pub chain_id: String,
 }
 
-impl CosmosPoolConfig {
+impl TendermintPoolConfig {
     pub fn new(alias: String, rpc_address: String, chain_id: String) -> Self {
-        CosmosPoolConfig {
+        TendermintPoolConfig {
             alias,
             rpc_address,
             chain_id,
         }
-    }
+    } 
 }

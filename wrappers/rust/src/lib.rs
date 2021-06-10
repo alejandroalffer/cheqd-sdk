@@ -23,8 +23,7 @@ use libc::c_char;
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod cache;
-pub mod cosmos_keys;
-pub mod cosmos_pool;
+
 pub mod crypto;
 pub mod did;
 pub mod ledger;
@@ -35,6 +34,9 @@ pub mod payments;
 pub mod pool;
 mod utils;
 pub mod verim_ledger;
+pub mod cosmos_ledger;
+pub mod cosmos_keys;
+pub mod tendermint_pool;
 pub mod wallet;
 
 use std::ffi::CStr;

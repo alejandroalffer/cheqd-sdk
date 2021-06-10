@@ -1,6 +1,7 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNym as ProtoMsgDeleteNym;
 use super::super::super::VerimProto;
 use cosmos_sdk::tx::Msg;
+use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MsgDeleteNym {
@@ -24,7 +25,7 @@ impl VerimProto for MsgDeleteNym {
         }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self::new(proto.creator.clone(), proto.id.clone())
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self::new(proto.creator.clone(), proto.id.clone()))
     }
 }

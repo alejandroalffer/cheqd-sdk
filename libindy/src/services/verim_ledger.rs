@@ -4,8 +4,7 @@ use std::convert::TryInto;
 use std::str::FromStr;
 
 use crate::domain::crypto::did::DidValue;
-use crate::domain::verim_ledger::cosmos_ext::CosmosMsgExt;
-use crate::domain::verim_ledger::cosmos_ext::ProstMessageExt;
+use crate::domain::verim_ledger::prost_ext::ProstMessageExt;
 use crate::domain::verim_ledger::verimcosmos::messages::MsgUpdateNym;
 use crate::domain::verim_ledger::verimcosmos::messages::{MsgCreateNym, MsgCreateNymResponse};
 use crate::domain::verim_ledger::verimcosmos::messages::{
@@ -29,37 +28,18 @@ use prost_types::Any;
 use serde::de::DeserializeOwned;
 use serde_json::{self, Value};
 
-use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos;
-use crate::domain::verim_ledger::verimcosmos::queries::{QueryGetNymRequest, QueryGetNymResponse, QueryAllNymResponse, QueryAllNymRequest};
+use crate::domain::verim_ledger::cosmos::auth::{QueryAccountRequest, QueryAccountResponse};
 use crate::domain::verim_ledger::cosmos::base::query::PageRequest;
+use crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos;
+use crate::domain::verim_ledger::verimcosmos::queries::{
+    QueryAllNymRequest, QueryAllNymResponse, QueryGetNymRequest, QueryGetNymResponse,
+};
 
 pub(crate) struct VerimLedgerService {}
 
 impl VerimLedgerService {
     pub(crate) fn new() -> Self {
         Self {}
-    }
-
-    #[logfn(Info)]
-    pub(crate) fn build_msg_bank_send(
-        &self,
-        sender_account_id: &str,
-        recipient_account_id: &str,
-        amount: u64,
-        denom: &str,
-    ) -> IndyResult<Msg> {
-        let amount = Coin {
-            amount: amount.into(),
-            denom: denom.parse()?,
-        };
-
-        let msg_send = MsgSend {
-            from_address: sender_account_id.parse()?,
-            to_address: recipient_account_id.parse()?,
-            amount: vec![amount.clone()],
-        };
-
-        Ok(msg_send.to_msg()?)
     }
 
     pub(crate) fn parse_msg_create_nym_resp(
@@ -72,8 +52,7 @@ impl VerimLedgerService {
         ))?;
         let data = data.value();
         let tx_msg = TxMsgData::from_bytes(&data)?;
-        let msg = verimcosmos::MsgCreateNymResponse::from_bytes(&tx_msg.data[0].data)?;
-        let result = MsgCreateNymResponse::from_proto(&msg);
+        let result = MsgCreateNymResponse::from_proto_bytes(&tx_msg.data[0].data)?;
 
         return Ok(result);
     }
@@ -108,8 +87,7 @@ impl VerimLedgerService {
         ))?;
         let data = data.value();
         let tx_msg = TxMsgData::from_bytes(&data)?;
-        let msg = verimcosmos::MsgUpdateNymResponse::from_bytes(&tx_msg.data[0].data)?;
-        let result = MsgUpdateNymResponse::from_proto(&msg);
+        let result = MsgUpdateNymResponse::from_proto_bytes(&tx_msg.data[0].data)?;
 
         return Ok(result);
     }
@@ -146,8 +124,7 @@ impl VerimLedgerService {
         ))?;
         let data = data.value();
         let tx_msg = TxMsgData::from_bytes(&data)?;
-        let msg = verimcosmos::MsgDeleteNymResponse::from_bytes(&tx_msg.data[0].data)?;
-        let result = MsgDeleteNymResponse::from_proto(&msg);
+        let result = MsgDeleteNymResponse::from_proto_bytes(&tx_msg.data[0].data)?;
 
         return Ok(result);
     }
@@ -162,26 +139,6 @@ impl VerimLedgerService {
         Ok(msg_send.to_proto().to_msg()?)
     }
 
-    // TODO: Queries
-    pub(crate) fn build_query_cosmos_account(
-        &self,
-        address: &str,
-    ) -> IndyResult<abci_query::Request> {
-        let path = "/cosmos.auth.v1beta1.Query/Account";
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
-
-        let data = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest {
-            address: address.to_string(),
-        };
-
-        let mut data_bytes = Vec::new();
-        data.encode(&mut data_bytes).unwrap(); // TODO
-
-        let req = abci_query::Request::new(Some(path), data_bytes, None, true);
-        Ok(req)
-    }
-
-    // TODO: Queries
     pub(crate) fn build_query_verimcosmos_list_nym(&self) -> IndyResult<abci_query::Request> {
         let path = format!("custom/verimcosmos/list-nym");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
@@ -202,12 +159,14 @@ impl VerimLedgerService {
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryGetNymResponse> {
-        let msg = verimcosmos::QueryGetNymResponse::from_bytes(&resp.response.value)?;
-        let result = QueryGetNymResponse::from_proto(&msg);
+        let result = QueryGetNymResponse::from_proto_bytes(&resp.response.value)?;
         return Ok(result);
     }
 
-    pub(crate) fn build_query_all_nym(&self, pagination: Option<PageRequest>) -> IndyResult<abci_query::Request> {
+    pub(crate) fn build_query_all_nym(
+        &self,
+        pagination: Option<PageRequest>,
+    ) -> IndyResult<abci_query::Request> {
         let query_data = QueryAllNymRequest::new(pagination);
         let path = format!("/verimid.verimcosmos.verimcosmos.Query/NymAll");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
@@ -220,109 +179,7 @@ impl VerimLedgerService {
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryAllNymResponse> {
-        let msg = verimcosmos::QueryAllNymResponse::from_bytes(&resp.response.value)?;
-        let result = QueryAllNymResponse::from_proto(&msg);
+        let result = QueryAllNymResponse::from_proto_bytes(&resp.response.value)?;
         return Ok(result);
-    }
-
-    pub(crate) fn get_account_info(){
-
-    }
-
-}
-
-#[cfg(test)]
-mod test {
-    use cosmos_sdk::crypto::secp256k1::SigningKey;
-    use prost::Message;
-    use rust_base58::ToBase58;
-
-    use crate::domain::cosmos_pool::CosmosPoolConfig;
-    use crate::domain::crypto::did::DidValue;
-    use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
-    use crate::services::{CosmosKeysService, CosmosPoolService, VerimLedgerService};
-    //
-    // #[async_std::test]
-    // async fn test_query_list_nym() {
-    //     let verim_ledger_service = VerimLedgerService::new();
-    //     let cosmos_pool_service = CosmosPoolService::new();
-    //     let cosmos_keys_service = CosmosKeysService::new();
-    //
-    //     let req = verim_ledger_service
-    //         .build_query_verimcosmos_list_nym()
-    //         .unwrap();
-    //
-    //     let result = cosmos_pool_service
-    //         .abci_query("http://localhost:26657", req)
-    //         .await
-    //         .unwrap();
-    //
-    //     let inner = result.response.value;
-    //
-    //     let decoded =
-    //         crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryAllNymResponse::decode(inner.as_slice())
-    //             .unwrap();
-    //
-    //     // QueryAllNymResponse
-    //
-    //     println!("{:?}", decoded);
-    // }
-    //
-    // #[async_std::test]
-    // async fn test_query_get_nym() {
-    //     let verim_ledger_service = VerimLedgerService::new();
-    //     let cosmos_pool_service = CosmosPoolService::new();
-    //     let cosmos_keys_service = CosmosKeysService::new();
-    //
-    //     let req = verim_ledger_service
-    //         .build_query_verimcosmos_get_nym(0)
-    //         .unwrap();
-    //
-    //     let result = cosmos_pool_service
-    //         .abci_query("http://localhost:26657", req)
-    //         .await
-    //         .unwrap();
-    //
-    //     let inner = result.response.value;
-    //
-    //     let decoded =
-    //         crate::domain::verim_ledger::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse::from_bytes(inner.as_slice());
-    //     // let res = QueryGetNymResponse::from_proto(decoded);
-    //
-    //     // QueryAllNymResponse
-    //
-    //     println!("{:?}", decoded);
-    // }
-
-    #[async_std::test]
-    async fn test_query_account() {
-        let verim_ledger_service = VerimLedgerService::new();
-        let cosmos_pool_service = CosmosPoolService::new();
-        let cosmos_keys_service = CosmosKeysService::new();
-
-        let req = verim_ledger_service
-            .build_query_cosmos_account("cosmos17gt4any4r9jgg06r47f83vfxrycdk67utjs36m")
-            .unwrap();
-
-        let result = cosmos_pool_service
-            .abci_query("http://localhost:26657", req)
-            .await
-            .unwrap();
-
-        let inner = result.response.value;
-
-        let decoded = cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountResponse::decode(
-            inner.as_slice(),
-        )
-        .unwrap();
-
-        let decoded = cosmos_sdk::proto::cosmos::auth::v1beta1::BaseAccount::decode(
-            decoded.account.unwrap().value.as_slice(),
-        )
-        .unwrap();
-
-        // QueryAllNymResponse
-
-        println!("{:?}", decoded);
     }
 }

@@ -1,5 +1,6 @@
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::Nym as ProtoNym;
 use super::super::super::VerimProto;
+use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Nym {
@@ -45,15 +46,15 @@ impl VerimProto for Nym {
         }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self::new(
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self::new(
             proto.creator.clone(),
             proto.id.clone(),
             proto.alias.clone(),
             proto.verkey.clone(),
             proto.did.clone(),
             proto.role.clone(),
-        )
+        ))
     }
 }
 
@@ -73,7 +74,7 @@ mod test {
         );
 
         let proto = msg.to_proto();
-        let decoded = Nym::from_proto(&proto);
+        let decoded = Nym::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

@@ -1,33 +1,9 @@
+use super::super::verim_ledger::prost_ext::ProstMessageExt;
 use cosmos_sdk::proto::cosmos::tx::v1beta1::{SignDoc as ProtoSignDoc, TxRaw};
 use cosmos_sdk::tx::{Msg, Raw, SignDoc};
 use indy_api_types::errors::IndyResult;
 use prost::Message;
 use prost_types::Any;
-
-pub trait ProstMessageExt {
-    fn to_bytes(&self) -> IndyResult<Vec<u8>>;
-    fn from_bytes(bytes: &[u8]) -> IndyResult<Self>
-    where
-        Self: Sized;
-}
-
-impl<T> ProstMessageExt for T
-where
-    T: Message + Default,
-{
-    fn to_bytes(&self) -> IndyResult<Vec<u8>> {
-        let mut bytes = Vec::new();
-        Message::encode(self, &mut bytes)?;
-        Ok(bytes)
-    }
-
-    fn from_bytes(bytes: &[u8]) -> IndyResult<Self>
-    where
-        Self: Sized,
-    {
-        Ok(Self::decode(bytes)?)
-    }
-}
 
 pub trait CosmosMsgExt {
     fn to_bytes(&self) -> IndyResult<Vec<u8>>;
@@ -99,29 +75,12 @@ impl CosmosRawExt for Raw {
 mod test {
     use cosmos_sdk::tx::{Msg, MsgType};
 
+    use super::super::super::verim_ledger::prost_ext::ProstMessageExt;
+
     use super::super::super::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
     use super::super::super::verim_ledger::verimcosmos::messages::MsgCreateNym;
     use super::super::super::verim_ledger::VerimProto;
     use super::super::cosmos_ext::CosmosMsgExt;
-    use super::super::cosmos_ext::ProstMessageExt;
-
-    #[test]
-    fn test_prost_message_ext() {
-        let message = MsgCreateNym::new(
-            "creator".to_string(),
-            "alias".to_string(),
-            "verkey".to_string(),
-            "did".to_string(),
-            "role".to_string(),
-        );
-
-        let proto: ProtoMsgCreateNym = message.to_proto();
-
-        let bytes: Vec<u8> = proto.to_bytes().unwrap();
-        let decoded = ProtoMsgCreateNym::from_bytes(bytes.as_slice()).unwrap();
-
-        assert_eq!(proto, decoded);
-    }
 
     #[test]
     fn test_cosmos_msg_ext() {

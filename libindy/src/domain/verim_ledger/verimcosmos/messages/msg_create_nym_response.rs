@@ -1,5 +1,6 @@
 use super::super::super::super::verim_ledger::VerimProto;
 use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgCreateNymResponse as ProtoMsgCreateNymResponse;
+use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct MsgCreateNymResponse {
@@ -21,8 +22,8 @@ impl VerimProto for MsgCreateNymResponse {
         }
     }
 
-    fn from_proto(proto: &Self::Proto) -> Self {
-        Self::new(proto.id.clone())
+    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+        Ok(Self::new(proto.id.clone()))
     }
 }
 
@@ -37,7 +38,7 @@ mod test {
         let msg = MsgCreateNymResponse::new(456);
 
         let proto = msg.to_proto();
-        let decoded = MsgCreateNymResponse::from_proto(&proto);
+        let decoded = MsgCreateNymResponse::from_proto(&proto).unwrap();
 
         assert_eq!(msg, decoded);
     }

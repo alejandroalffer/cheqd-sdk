@@ -129,12 +129,16 @@ pub enum CommandMetric {
     VerimLedgerCommandParseMsgDeleteNymResp,
     VerimLedgerCommandParseQueryGetNymResp,
     VerimLedgerCommandParseQueryAllNymResp,
-    // CosmosPool
-    CosmosPoolAdd,
-    CosmosPoolGetConfig,
-    CosmosPoolBuildTx,
-    CosmosPoolBroadcastTxCommit,
-    CosmosPoolAbciQuery,
+    // CosmosLedger
+    CosmosLedgerCommandBuildTx,
+    CosmosLedgerCommandBuildQueryCosmosAuthAccount,
+    CosmosLedgerCommandParseQueryCosmosAuthAccountResp,
+    // TendermintPool
+    TendermintPoolCommandAdd,
+    TendermintPoolCommandGetConfig,
+    TendermintPoolCommandBroadcastTxCommit,
+    TendermintPoolCommandAbciQuery,
+    TendermintPoolCommandAbciInfo,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,

@@ -3,21 +3,7 @@ use super::*;
 use {CString, CommandHandle, Error};
 
 extern "C" {
-    pub fn indy_cosmos_pool_add(
-        command_handle: CommandHandle,
-        alias: CString,
-        rpc_address: CString,
-        chain_id: CString,
-        cb: Option<ResponseStringCB>,
-    ) -> Error;
-
-    pub fn indy_cosmos_pool_get_config(
-        command_handle: CommandHandle,
-        alias: CString,
-        cb: Option<ResponseStringCB>,
-    ) -> Error;
-
-    pub fn indy_cosmos_pool_build_tx(
+    pub fn indy_cosmos_ledger_build_tx(
         command_handle: CommandHandle,
         pool_alias: CString,
         sender_alias: CString,
@@ -33,18 +19,15 @@ extern "C" {
         cb: Option<ResponseSliceCB>,
     ) -> Error;
 
-    pub fn indy_cosmos_pool_broadcast_tx_commit(
+    pub fn indy_cosmos_ledger_build_query_cosmos_auth_account(
         command_handle: CommandHandle,
-        pool_alias: CString,
-        signed_tx_raw: BString,
-        signed_tx_len: u32,
+        address: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_cosmos_pool_abci_query(
+    pub fn indy_cosmos_ledger_parse_query_cosmos_auth_account_resp(
         command_handle: CommandHandle,
-        pool_alias: CString,
-        req_json: CString,
+        query_resp: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
 }

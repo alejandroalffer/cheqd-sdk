@@ -38,15 +38,15 @@ use lazy_static::lazy_static;
 use crate::{
     controllers::{
         payments::PaymentsController, BlobStorageController, CacheController, ConfigController,
-        CosmosKeysController, CosmosPoolController, CryptoController, DidController,
+        CosmosKeysController, CosmosLedgerController, TendermintPoolController, CryptoController, DidController,
         IssuerController, LedgerController, MetricsController, NonSecretsController,
         PairwiseController, PoolController, ProverController, VerifierController,
         VerimLedgerController, WalletController,
     },
     services::{
-        BlobStorageService, CommandMetric, CosmosKeysService, CosmosPoolService, CryptoService,
+        BlobStorageService, CommandMetric, CryptoService,
         IssuerService, LedgerService, MetricsService, PaymentsService, PoolService, ProverService,
-        VerifierService, VerimLedgerService, WalletService,
+        VerifierService, VerimLedgerService, CosmosKeysService, CosmosLedgerService, TendermintPoolService, WalletService,
     },
 };
 use indy_api_types::errors::IndyResult;
@@ -112,10 +112,11 @@ pub(crate) struct Locator {
     pub(crate) crypto_controller: CryptoController,
     pub(crate) config_controller: ConfigController,
     pub(crate) ledger_controller: LedgerController,
-    pub(crate) verim_ledger_controller: VerimLedgerController,
     pub(crate) pool_controller: PoolController,
-    pub(crate) cosmos_pool_controller: CosmosPoolController,
+    pub(crate) verim_ledger_controller: VerimLedgerController,
+    pub(crate) cosmos_ledger_controller: CosmosLedgerController,
     pub(crate) cosmos_keys_controller: CosmosKeysController,
+    pub(crate) tendermint_pool_controller: TendermintPoolController,
     pub(crate) did_controller: DidController,
     pub(crate) wallet_controller: WalletController,
     pub(crate) pairwise_controller: PairwiseController,
@@ -152,7 +153,8 @@ impl Locator {
         let cosmos_keys_service = Arc::new(CosmosKeysService::new());
         let metrics_service = Arc::new(MetricsService::new());
         let pool_service = Arc::new(PoolService::new());
-        let cosmos_pool_service = Arc::new(CosmosPoolService::new());
+        let cosmos_ledger_service = Arc::new(CosmosLedgerService::new());
+        let tendermint_pool_service = Arc::new(TendermintPoolService::new());
         let payment_service = Arc::new(PaymentsService::new());
         let wallet_service = Arc::new(WalletService::new());
 
@@ -190,8 +192,6 @@ impl Locator {
             ledger_service.clone(),
         );
 
-        let verim_ledger_controller = VerimLedgerController::new(verim_ledger_service.clone());
-
         let payment_controller = PaymentsController::new(
             payment_service.clone(),
             wallet_service.clone(),
@@ -201,8 +201,11 @@ impl Locator {
 
         let pool_controller = PoolController::new(pool_service.clone());
 
-        let cosmos_pool_controller =
-            CosmosPoolController::new(cosmos_pool_service.clone(), cosmos_keys_service.clone());
+        let verim_ledger_controller = VerimLedgerController::new(verim_ledger_service.clone());
+
+        let cosmos_ledger_controller = CosmosLedgerController::new(cosmos_ledger_service.clone(), cosmos_keys_service.clone(), tendermint_pool_service.clone());
+
+        let tendermint_pool_controller = TendermintPoolController::new(tendermint_pool_service.clone());
 
         let cosmos_keys_controller = CosmosKeysController::new(cosmos_keys_service.clone());
 
@@ -238,8 +241,9 @@ impl Locator {
             ledger_controller,
             verim_ledger_controller,
             pool_controller,
-            cosmos_pool_controller,
+            cosmos_ledger_controller,
             cosmos_keys_controller,
+            tendermint_pool_controller,
             did_controller,
             wallet_controller,
             pairwise_controller,
