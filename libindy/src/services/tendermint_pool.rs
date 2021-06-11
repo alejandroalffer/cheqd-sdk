@@ -10,10 +10,14 @@ use cosmos_sdk::tendermint::block::Height;
 use cosmos_sdk::tx::{AuthInfo, Fee, Msg, Raw, SignDoc, SignerInfo};
 use cosmos_sdk::{rpc, tx, Coin};
 use futures::lock::Mutex as MutexF;
-use indy_api_types::errors::{IndyErrorKind, IndyResult};
+use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use indy_api_types::IndyError;
 use std::collections::HashMap;
 use std::convert::TryInto;
+use crate::utils::environment;
+use indy_api_types::errors::*;
+use std::io::Write;
+use std::fs;
 
 pub(crate) struct TendermintPoolService {
     // TODO: Persistence
@@ -33,22 +37,43 @@ impl TendermintPoolService {
         rpc_address: &str,
         chain_id: &str,
     ) -> IndyResult<TendermintPoolConfig> {
-        let mut pools = self.pools.lock().await;
-
-        if pools.contains_key(alias) {
-            return Err(IndyError::from_msg(
-                IndyErrorKind::InvalidState,
-                "Pool already exists",
-            ));
-        }
-
         let config = TendermintPoolConfig::new(
             alias.to_string(),
             rpc_address.to_string(),
             chain_id.to_string(),
         );
 
-        pools.insert(alias.to_string(), config.clone());
+        let mut path = environment::verim_pool_path(alias);
+
+        if path.as_path().exists() {
+            return Err(err_msg(
+                IndyErrorKind::PoolConfigAlreadyExists,
+                format!(
+                    "Pool ledger config file with alias \"{}\" already exists",
+                    alias
+                ),
+            ));
+        }
+
+        fs::create_dir_all(path.as_path())
+            .to_indy(IndyErrorKind::IOError, "Can't create pool config directory")?;
+
+        path.push("config");
+        path.set_extension("json");
+
+        let mut f: fs::File = fs::File::create(path.as_path())
+            .to_indy(IndyErrorKind::IOError, "Can't create pool config file")?;
+
+        f.write_all({
+            serde_json::to_string(&config)
+                .to_indy(IndyErrorKind::InvalidState, "Can't serialize pool config")?
+                .as_bytes()
+        })
+            .to_indy(IndyErrorKind::IOError, "Can't write to pool config file")?;
+
+        f.flush()
+            .to_indy(IndyErrorKind::IOError, "Can't write to pool config file")?;
+
         Ok(config)
     }
 
