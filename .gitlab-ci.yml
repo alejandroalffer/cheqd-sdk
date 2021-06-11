@@ -193,11 +193,11 @@ dockerbuild-libindy-ubuntu18:
     # - libindy/ci/scripts/lint.sh
     # - cli/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
-#    - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+    - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
-#    - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+    - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - cli/ci/scripts/build.sh ${BUILD_TYPE}
-#    - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+    - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
 
 build-libindy-ubuntu16-from-branch:
   extends: .build-libindy
@@ -257,56 +257,56 @@ build-libindy-ubuntu18-release:
 
 
 ## - Jobs : Test - ##
-#.test-libindy-java-wrapper:
-#  extends: .tags_micro
-#  stage: test
-#  services:
-#    - name: registry.gitlab.com/evernym/containers/indy-pool:1.9.2_1.0.2
-#      alias: pool_network
-#  script:
-#    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-#    - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
-#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
-#    - wrappers/java/ci/test.sh ${TEST_POOL_IP}
+.test-libindy-java-wrapper:
+  extends: .tags_micro
+  stage: test
+  services:
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.9.2_1.0.2
+      alias: pool_network
+  script:
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
+    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
+    - wrappers/java/ci/test.sh ${TEST_POOL_IP}
 
-#test-libindy-java-wrapper-from-branch:
-#  extends: .test-libindy-java-wrapper
-#  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
-#  dependencies:
-#    - build-libindy-ubuntu16-from-branch
-#  variables:
-#    PACKAGE_TYPE: 'xenial'
-#    BUILD_TYPE: 'debug'
-#  only:
-#    refs:
-#      - /^docker-.*/
+test-libindy-java-wrapper-from-branch:
+  extends: .test-libindy-java-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
+  dependencies:
+    - build-libindy-ubuntu16-from-branch
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'debug'
+  only:
+    refs:
+      - /^docker-.*/
 
-#test-libindy-java-wrapper-from-latest:
-#  extends: .test-libindy-java-wrapper
-#  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
-#  dependencies:
-#    - build-libindy-ubuntu16-from-latest
-#  variables:
-#    PACKAGE_TYPE: 'xenial'
-#    BUILD_TYPE: 'debug'
-#  except:
-#    refs:
-#      - /^docker-.*/
-#      - async@evernym/mobile/indy-sdk
-#      - main@evernym/mobile/indy-sdk
-#      - stable@evernym/mobile/indy-sdk
+test-libindy-java-wrapper-from-latest:
+  extends: .test-libindy-java-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  dependencies:
+    - build-libindy-ubuntu16-from-latest
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'debug'
+  except:
+    refs:
+      - /^docker-.*/
+      - async@evernym/mobile/indy-sdk
+      - main@evernym/mobile/indy-sdk
+      - stable@evernym/mobile/indy-sdk
 
-#test-libindy-java-wrapper-release:
-#  extends: .test-libindy-java-wrapper
-#  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
-#  dependencies:
-#    - build-libindy-ubuntu16-release
-#  variables:
-#    PACKAGE_TYPE: 'xenial'
-#    BUILD_TYPE: 'release'
-#  only:
-#    refs:
-#      - async@evernym/mobile/indy-sdk
+test-libindy-java-wrapper-release:
+  extends: .test-libindy-java-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  dependencies:
+    - build-libindy-ubuntu16-release
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'release'
+  only:
+    refs:
+      - async@evernym/mobile/indy-sdk
 
 
 ## - Jobs : Package - ##
