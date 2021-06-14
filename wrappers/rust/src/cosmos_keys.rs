@@ -60,15 +60,15 @@ fn _add_from_mnemonic(
     })
 }
 
-pub fn key_info(alias: &str) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+pub fn get_info(alias: &str) -> Box<dyn Future<Item = (String), Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _key_info(command_handle, alias, cb);
+    let err = _get_info(command_handle, alias, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _key_info(
+fn _get_info(
     command_handle: CommandHandle,
     alias: &str,
     cb: Option<ResponseStringCB>,
@@ -76,7 +76,7 @@ fn _key_info(
     let alias = c_str!(alias);
 
     ErrorCode::from(unsafe {
-        cosmos_keys::indy_cosmos_keys_key_info(command_handle, alias.as_ptr(), cb)
+        cosmos_keys::indy_cosmos_keys_get_info(command_handle, alias.as_ptr(), cb)
     })
 }
 

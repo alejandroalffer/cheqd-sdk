@@ -10,8 +10,8 @@ pub fn add_from_mnemonic(alias: &str, mnemonic: &str) -> Result<String, IndyErro
     cosmos_keys::add_from_mnemonic(alias, mnemonic).wait()
 }
 
-pub fn key_info(alias: &str) -> Result<String, IndyError> {
-    cosmos_keys::key_info(alias).wait()
+pub fn get_info(alias: &str) -> Result<String, IndyError> {
+    cosmos_keys::get_info(alias).wait()
 }
 
 pub fn sign(alias: &str, tx: &[u8]) -> Result<Vec<u8>, IndyError> {

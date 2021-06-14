@@ -16,7 +16,7 @@ extern "C" {
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_cosmos_keys_key_info(
+    pub fn indy_cosmos_keys_get_info(
         command_handle: CommandHandle,
         alias: CString,
         cb: Option<ResponseStringCB>,

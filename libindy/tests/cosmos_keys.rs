@@ -39,7 +39,7 @@ mod get_keys {
     fn indy_key_info() {
         let alias = "some_alias";
         cosmos_keys::add_random(alias).unwrap();
-        let result = cosmos_keys::key_info(alias).unwrap();
+        let result = cosmos_keys::get_info(alias).unwrap();
         println!("Data: {:?} ", result);
     }
 }
