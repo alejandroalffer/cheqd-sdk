@@ -13,6 +13,8 @@ mod utils;
 use indyrs::ErrorCode;
 
 use utils::{constants::*, cosmos_keys, cosmos_ledger, tendermint_pool, verim_setup, verim_ledger, types::ResponseType};
+use rand::prelude::*;
+use rand::Rng;
 
 mod high_cases {
     use super::*;
@@ -34,8 +36,11 @@ mod high_cases {
 
         #[test]
         fn test_get() {
-            tendermint_pool::add("pool1", "rpc_address", "chain_id").unwrap();
-            let result = tendermint_pool::get_config("pool1").unwrap();
+            let pool_number: u16 = rand::thread_rng().gen();
+            let pool_name = format!("pool{}", pool_number);
+
+            tendermint_pool::add(&pool_name, "rpc_address", "chain_id").unwrap();
+            let result = tendermint_pool::get_config(&pool_name).unwrap();
             println!("Data: {:?} ", result);
         }
     }

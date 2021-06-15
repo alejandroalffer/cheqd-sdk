@@ -16,8 +16,9 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use crate::utils::environment;
 use indy_api_types::errors::*;
-use std::io::Write;
+use std::io::{Write, Read};
 use std::fs;
+use serde_json::Value;
 
 pub(crate) struct TendermintPoolService {
     // TODO: Persistence
@@ -78,14 +79,45 @@ impl TendermintPoolService {
     }
 
     pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<TendermintPoolConfig> {
-        let pools = self.pools.lock().await;
+        let mut pool_home_path = environment::verim_pool_path(alias);
 
-        let config = pools.get(alias).ok_or(IndyError::from_msg(
-            IndyErrorKind::InvalidState,
-            "Pool not found",
-        ))?;
+        if let Ok(entries) = fs::read_dir(pool_home_path) {
+            for entry in entries {
 
-        Ok(config.clone())
+                let dir_entry = if let Ok(dir_entry) = entry {
+                    dir_entry
+                } else {
+                    continue;
+                };
+
+                if let Some(pool_name) = dir_entry
+                    .path()
+                    .file_name()
+                    .and_then(|os_str| os_str.to_str())
+                {
+                    let mut f: fs::File = fs::File::open(dir_entry.path())
+                        .to_indy(IndyErrorKind::IOError, format!("Can't open pool config file: {}", alias))?;
+                    let mut out = String::new();
+                    f.read_to_string(&mut out)?;
+                    let pool_json: Value = serde_json::from_str(&out)
+                        .to_indy(IndyErrorKind::IOError, "Invalid data of pool config file")?;
+                    let pool_obj = pool_json.as_object().unwrap();
+
+                    let result = TendermintPoolConfig::new(
+                        pool_obj["alias"].to_string(),
+                        pool_obj["rpc_address"].to_string(),
+                        pool_obj["chain_id"].to_string(),
+                    );
+
+                    return Ok(result);
+                }
+            }
+        }
+
+        return Err(IndyError::from_msg(
+            IndyErrorKind::PoolNotCreated,
+            format!("Can't find pool config file: {}", alias),
+        ));
     }
 
     // Send and wait for commit
