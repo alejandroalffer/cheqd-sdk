@@ -12,8 +12,8 @@ pub mod payments;
 mod pool;
 mod verim_ledger;
 mod cosmos_ledger;
-mod cosmos_keys;
-mod tendermint_pool;
+mod verim_keys;
+mod verim_pool;
 mod wallet;
 
 pub(crate) use anoncreds::{IssuerController, ProverController, VerifierController};
@@ -30,5 +30,5 @@ pub(crate) use pool::PoolController;
 pub(crate) use wallet::WalletController;
 pub(crate) use verim_ledger::VerimLedgerController;
 pub(crate) use cosmos_ledger::CosmosLedgerController;
-pub(crate) use cosmos_keys::CosmosKeysController;
-pub(crate) use tendermint_pool::TendermintPoolController;
+pub(crate) use verim_keys::VerimKeysController;
+pub(crate) use verim_pool::VerimPoolController;

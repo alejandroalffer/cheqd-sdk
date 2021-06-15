@@ -1,7 +1,7 @@
 pub mod anoncreds;
 pub mod cache;
-pub mod cosmos_keys;
-pub mod tendermint_pool;
+pub mod verim_keys;
+pub mod verim_pool;
 pub mod crypto;
 pub mod ledger;
 pub mod pairwise;

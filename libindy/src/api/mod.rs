@@ -15,8 +15,8 @@ pub mod pool;
 pub mod wallet;
 pub mod verim_ledger;
 pub mod cosmos_ledger;
-pub mod cosmos_keys;
-pub mod tendermint_pool;
+pub mod verim_keys;
+pub mod verim_pool;
 
 use indy_api_types::{errors::prelude::*, validation::Validatable, ErrorCode};
 use indy_utils::ctypes;

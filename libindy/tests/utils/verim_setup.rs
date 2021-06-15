@@ -1,5 +1,5 @@
 #![allow(dead_code, unused_macros)]
-use crate::utils::{cosmos_keys, tendermint_pool, cosmos_ledger, verim_ledger};
+use crate::utils::{verim_keys, verim_pool, cosmos_ledger, verim_ledger};
 use indy_api_types::errors::IndyResult;
 use indyrs::{
     ErrorCode, IndyError, PoolHandle, WalletHandle, INVALID_POOL_HANDLE, INVALID_WALLET_HANDLE,
@@ -51,14 +51,14 @@ impl VerimSetup {
 
         // Pool
         let pool_alias = "test_pool";
-        let pool = tendermint_pool::add(pool_alias, "http://localhost:26657", "verimcosmos").unwrap();
+        let pool = verim_pool::add(pool_alias, "http://localhost:26657", "verimcosmos").unwrap();
         println!("Verim setup. Pool config: {}", pool);
 
         setup
     }
 
     pub fn create_key(alias: &str, mnemonic: &str) -> Result<String, IndyError> {
-        let key = cosmos_keys::add_from_mnemonic(alias, mnemonic).unwrap();
+        let key = verim_keys::add_from_mnemonic(alias, mnemonic).unwrap();
         println!("Verim setup. Create key: {}", key);
         let key: Value = serde_json::from_str(&key).unwrap();
         Ok(key["account_id"].as_str().unwrap().to_string())
@@ -66,7 +66,7 @@ impl VerimSetup {
 
     pub fn get_base_account_number_and_sequence(&self, account_id: &str) -> Result<(u64, u64), IndyError> {
         let req = cosmos_ledger::build_query_cosmos_auth_account(account_id).unwrap();
-        let resp = tendermint_pool::abci_query(&self.pool_alias, &req).unwrap();
+        let resp = verim_pool::abci_query(&self.pool_alias, &req).unwrap();
         let resp = cosmos_ledger::parse_query_cosmos_auth_account_resp(&resp).unwrap();
 
         println!("Get account: {}", resp);

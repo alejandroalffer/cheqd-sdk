@@ -31,30 +31,30 @@ use crate::Locator;
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern "C" fn indy_cosmos_keys_add_random(
+pub extern "C" fn indy_verim_keys_add_random(
     command_handle: CommandHandle,
     alias: *const c_char,
     cb: Option<
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key_info: *const c_char),
     >,
 ) -> ErrorCode {
-    debug!("indy_cosmos_keys_add_random > alias {:?} ", alias);
+    debug!("indy_verim_keys_add_random > alias {:?} ", alias);
 
     check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
 
-    debug!("indy_cosmos_keys_add_random > alias {:?} ", alias);
+    debug!("indy_verim_keys_add_random > alias {:?} ", alias);
 
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.cosmos_keys_controller.add_random(&alias).await;
+        let res = locator.verim_keys_controller.add_random(&alias).await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result!(res, String::new());
-        debug!("indy_cosmos_keys_add_random ? err {:?} res {:?}", err, res);
+        debug!("indy_verim_keys_add_random ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
@@ -62,7 +62,7 @@ pub extern "C" fn indy_cosmos_keys_add_random(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::CosmosKeysAddRandom, action, cb);
+        .spawn_ok_instrumented(CommandMetric::VerimKeysAddRandom, action, cb);
 
     let res = ErrorCode::Success;
     debug!("indy_replace_keys_start < {:?}", res);
@@ -91,7 +91,7 @@ pub extern "C" fn indy_cosmos_keys_add_random(
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern "C" fn indy_cosmos_keys_add_from_mnemonic(
+pub extern "C" fn indy_verim_keys_add_from_mnemonic(
     command_handle: CommandHandle,
     alias: *const c_char,
     mnemonic: *const c_char,
@@ -100,7 +100,7 @@ pub extern "C" fn indy_cosmos_keys_add_from_mnemonic(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_cosmos_keys_add_from_mnemonic > alias {:?}, mnemonic {:?} ",
+        "indy_verim_keys_add_from_mnemonic > alias {:?}, mnemonic {:?} ",
         alias, mnemonic
     );
 
@@ -109,7 +109,7 @@ pub extern "C" fn indy_cosmos_keys_add_from_mnemonic(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     debug!(
-        "indy_cosmos_keys_add_from_mnemonic > alias {:?}, mnemonic {:?} ",
+        "indy_verim_keys_add_from_mnemonic > alias {:?}, mnemonic {:?} ",
         alias, mnemonic
     );
 
@@ -117,7 +117,7 @@ pub extern "C" fn indy_cosmos_keys_add_from_mnemonic(
 
     let action = async move {
         let res = locator
-            .cosmos_keys_controller
+            .verim_keys_controller
             .add_from_mnemonic(&alias, &mnemonic)
             .await;
         res
@@ -126,7 +126,7 @@ pub extern "C" fn indy_cosmos_keys_add_from_mnemonic(
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result!(res, String::new());
         debug!(
-            "indy_cosmos_keys_add_from_mnemonic ? err {:?} res {:?}",
+            "indy_verim_keys_add_from_mnemonic ? err {:?} res {:?}",
             err, res
         );
 
@@ -136,10 +136,10 @@ pub extern "C" fn indy_cosmos_keys_add_from_mnemonic(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::CosmosKeysAddFromMnemonic, action, cb);
+        .spawn_ok_instrumented(CommandMetric::VerimKeysAddFromMnemonic, action, cb);
 
     let res = ErrorCode::Success;
-    debug!("indy_cosmos_keys_add_from_mnemonic < {:?}", res);
+    debug!("indy_verim_keys_add_from_mnemonic < {:?}", res);
     res
 }
 
@@ -163,30 +163,30 @@ pub extern "C" fn indy_cosmos_keys_add_from_mnemonic(
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern "C" fn indy_cosmos_keys_get_info(
+pub extern "C" fn indy_verim_keys_get_info(
     command_handle: CommandHandle,
     alias: *const c_char,
     cb: Option<
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key_info: *const c_char),
     >,
 ) -> ErrorCode {
-    debug!("indy_cosmos_keys_key_info > alias {:?} ", alias);
+    debug!("indy_verim_keys_key_info > alias {:?} ", alias);
 
     check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
 
-    debug!("indy_cosmos_keys_key_info > alias {:?} ", alias);
+    debug!("indy_verim_keys_key_info > alias {:?} ", alias);
 
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.cosmos_keys_controller.get_info(&alias).await;
+        let res = locator.verim_keys_controller.get_info(&alias).await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result!(res, String::new());
-        debug!("indy_cosmos_keys_key_info ? err {:?} res {:?}", err, res);
+        debug!("indy_verim_keys_key_info ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
@@ -194,10 +194,10 @@ pub extern "C" fn indy_cosmos_keys_get_info(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::CosmosKeysKeyInfo, action, cb);
+        .spawn_ok_instrumented(CommandMetric::VerimKeysKeyInfo, action, cb);
 
     let res = ErrorCode::Success;
-    debug!("indy_cosmos_keys_key_info < {:?}", res);
+    debug!("indy_verim_keys_key_info < {:?}", res);
     res
 }
 
@@ -218,7 +218,7 @@ pub extern "C" fn indy_cosmos_keys_get_info(
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern "C" fn indy_cosmos_keys_sign(
+pub extern "C" fn indy_verim_keys_sign(
     command_handle: CommandHandle,
     alias: *const c_char,
     tx_raw: *const u8,
@@ -233,7 +233,7 @@ pub extern "C" fn indy_cosmos_keys_sign(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_cosmos_keys_sign > alias {:?} tx_raw {:?} tx_len {:?}",
+        "indy_verim_keys_sign > alias {:?} tx_raw {:?} tx_len {:?}",
         alias, tx_raw, tx_len
     );
 
@@ -246,18 +246,18 @@ pub extern "C" fn indy_cosmos_keys_sign(
     );
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    debug!("indy_cosmos_keys_sign > alias {:?} ", alias);
+    debug!("indy_verim_keys_sign > alias {:?} ", alias);
 
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.cosmos_keys_controller.sign(&alias, &tx_raw).await;
+        let res = locator.verim_keys_controller.sign(&alias, &tx_raw).await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result!(res, Vec::new());
-        debug!("indy_cosmos_keys_sign ? err {:?} res {:?}", err, res);
+        debug!("indy_verim_keys_sign ? err {:?} res {:?}", err, res);
 
         let (signed_raw, signed_len) = ctypes::vec_to_pointer(&res);
         cb(command_handle, err, signed_raw, signed_len)
@@ -265,9 +265,9 @@ pub extern "C" fn indy_cosmos_keys_sign(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::CosmosKeysSign, action, cb);
+        .spawn_ok_instrumented(CommandMetric::VerimKeysSign, action, cb);
 
     let res = ErrorCode::Success;
-    debug!("indy_cosmos_keys_sign < {:?}", res);
+    debug!("indy_verim_keys_sign < {:?}", res);
     res
 }

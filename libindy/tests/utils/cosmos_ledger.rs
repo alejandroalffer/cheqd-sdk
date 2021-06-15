@@ -1,4 +1,4 @@
-use indyrs::{cosmos_keys, cosmos_ledger, future::Future, IndyError, PoolHandle, WalletHandle};
+use indyrs::{verim_keys, cosmos_ledger, future::Future, IndyError, PoolHandle, WalletHandle};
 
 use crate::utils::{constants::DEFAULT_METHOD_NAME, ledger, pool, types::ResponseType};
 

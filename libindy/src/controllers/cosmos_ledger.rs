@@ -2,27 +2,27 @@ use std::sync::Arc;
 use crate::services::VerimLedgerService;
 use indy_api_types::errors::IndyResult;
 use cosmos_sdk::rpc::endpoint::abci_query::Response as QueryResponse;
-use crate::services::{CosmosKeysService, CosmosLedgerService, TendermintPoolService};
+use crate::services::{VerimKeysService, CosmosLedgerService, VerimPoolService};
 use cosmos_sdk::tx::Msg;
 use crate::domain::verim_ledger::cosmos_ext::{CosmosMsgExt, CosmosSignDocExt};
 
 pub(crate) struct CosmosLedgerController {
     cosmos_ledger_service: Arc<CosmosLedgerService>,
-    cosmos_keys_service: Arc<CosmosKeysService>,
-    tendermint_pool_service: Arc<TendermintPoolService>
+    verim_keys_service: Arc<VerimKeysService>,
+    verim_pool_service: Arc<VerimPoolService>
 }
 
 impl CosmosLedgerController {
     pub(crate) fn new(
         cosmos_ledger_service: Arc<CosmosLedgerService>,
-        cosmos_keys_service: Arc<CosmosKeysService>,
-        tendermint_pool_service: Arc<TendermintPoolService>
+        verim_keys_service: Arc<VerimKeysService>,
+        verim_pool_service: Arc<VerimPoolService>
 
     ) -> Self {
         Self {
             cosmos_ledger_service,
-            cosmos_keys_service,
-            tendermint_pool_service
+            verim_keys_service,
+            verim_pool_service
         }
     }
 
@@ -41,8 +41,8 @@ impl CosmosLedgerController {
     ) -> IndyResult<Vec<u8>> {
         trace!("build_tx > pool_alias {:?}, sender_alias {:?}, msg {:?}, account_number {:?}, sequence_number {:?}, max_gas {:?}, max_coin_amount {:?}, max_coin_denom {:?}, timeout_height {:?}, memo {:?}", pool_alias, sender_alias, msg, account_number, sequence_number, max_gas, max_coin_amount, max_coin_denom, timeout_height, memo);
 
-        let pool = self.tendermint_pool_service.get_config(pool_alias).await?;
-        let sender = self.cosmos_keys_service.get_info(sender_alias).await?;
+        let pool = self.verim_pool_service.get_config(pool_alias).await?;
+        let sender = self.verim_keys_service.get_info(sender_alias).await?;
         let msg = Msg::from_bytes(&msg)?;
 
         let sign_doc = self

@@ -133,12 +133,12 @@ pub enum CommandMetric {
     CosmosLedgerCommandBuildTx,
     CosmosLedgerCommandBuildQueryCosmosAuthAccount,
     CosmosLedgerCommandParseQueryCosmosAuthAccountResp,
-    // TendermintPool
-    TendermintPoolCommandAdd,
-    TendermintPoolCommandGetConfig,
-    TendermintPoolCommandBroadcastTxCommit,
-    TendermintPoolCommandAbciQuery,
-    TendermintPoolCommandAbciInfo,
+    // VerimPool
+    VerimPoolCommandAdd,
+    VerimPoolCommandGetConfig,
+    VerimPoolCommandBroadcastTxCommit,
+    VerimPoolCommandAbciQuery,
+    VerimPoolCommandAbciInfo,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,
@@ -167,11 +167,11 @@ pub enum CommandMetric {
     DidCommandGetNymAck,
     DidCommandGetAttribAck,
     DidCommandQualifyDid,
-    // CosmosKeys
-    CosmosKeysAddRandom,
-    CosmosKeysAddFromMnemonic,
-    CosmosKeysKeyInfo,
-    CosmosKeysSign,
+    // VerimKeys
+    VerimKeysAddRandom,
+    VerimKeysAddFromMnemonic,
+    VerimKeysKeyInfo,
+    VerimKeysSign,
     // WalletCommand
     WalletCommandRegisterWalletType,
     WalletCommandCreate,

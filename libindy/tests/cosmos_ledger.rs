@@ -12,7 +12,7 @@ mod utils;
 
 use indyrs::ErrorCode;
 
-use utils::{constants::*, cosmos_keys, cosmos_ledger, tendermint_pool, verim_setup, verim_ledger, types::ResponseType};
+use utils::{constants::*, verim_keys, cosmos_ledger, verim_pool, verim_setup, verim_ledger, types::ResponseType};
 
 mod high_cases {
     use super::*;

@@ -7,7 +7,7 @@ use crate::domain::verim_ledger::verimcosmos::messages::{
 };
 use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
 use crate::domain::verim_ledger::VerimProto;
-use crate::services::{CosmosKeysService, CosmosLedgerService, VerimLedgerService};
+use crate::services::{VerimKeysService, CosmosLedgerService, VerimLedgerService};
 use async_std::sync::Arc;
 use cosmos_sdk::rpc::endpoint::abci_query::Response as QueryResponse;
 use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;

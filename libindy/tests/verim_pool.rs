@@ -12,7 +12,7 @@ mod utils;
 
 use indyrs::ErrorCode;
 
-use utils::{constants::*, cosmos_keys, cosmos_ledger, tendermint_pool, verim_setup, verim_ledger, types::ResponseType};
+use utils::{constants::*, verim_keys, cosmos_ledger, verim_pool, verim_setup, verim_ledger, types::ResponseType};
 
 mod high_cases {
     use super::*;
@@ -23,7 +23,7 @@ mod high_cases {
 
         #[test]
         fn test_add() {
-            let result = tendermint_pool::add("pool1", "rpc_address", "chain_id").unwrap();
+            let result = verim_pool::add("pool1", "rpc_address", "chain_id").unwrap();
             println!("Data: {:?} ", result);
         }
     }
@@ -34,8 +34,8 @@ mod high_cases {
 
         #[test]
         fn test_get() {
-            tendermint_pool::add("pool1", "rpc_address", "chain_id").unwrap();
-            let result = tendermint_pool::get_config("pool1").unwrap();
+            verim_pool::add("pool1", "rpc_address", "chain_id").unwrap();
+            let result = verim_pool::get_config("pool1").unwrap();
             println!("Data: {:?} ", result);
         }
     }
@@ -66,9 +66,9 @@ mod high_cases {
             ).unwrap();
 
             // Signature
-            let signed = cosmos_keys::sign(&setup.alice_key_alias, &tx).unwrap();
-            let resp = tendermint_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
-            tendermint_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
+            let signed = verim_keys::sign(&setup.alice_key_alias, &tx).unwrap();
+            let resp = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
+            verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
 
             assert!(true);
         }
