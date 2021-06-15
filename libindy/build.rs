@@ -96,7 +96,7 @@ fn main() {
 /// ------ PROTO ------
 
 const COSMOS_SDK_DIR: &str = "cosmos-sdk-go";
-const VERIMCOSMOS_DIR: &str = "verim-cosmos";
+const VERIMCOSMOS_DIR: &str = "verim-node";
 
 fn build_proto() {
     let out_dir = std::env::var("OUT_DIR").unwrap();
@@ -131,7 +131,7 @@ fn compile_protos(out_dir: &Path) {
         // format!("{}/proto/cosmos/bank", sdk_dir.display()),
         // format!("{}/proto/cosmos/base", sdk_dir.display()),
         // format!("{}/proto/cosmos/staking", sdk_dir.display()),
-        format!("{}/proto/verimcosmos", verimcosmos_dir.display()),
+        format!("{}/proto/verim", verimcosmos_dir.display()),
     ];
 
     let proto_includes_paths = [
@@ -196,8 +196,8 @@ fn compile_proto_services(out_dir: impl AsRef<Path>) {
         // sdk_dir.join("proto/cosmos/bank/v1beta1/tx.proto"),
         // sdk_dir.join("proto/cosmos/tx/v1beta1/service.proto"),
         // sdk_dir.join("proto/cosmos/tx/v1beta1/tx.proto"),
-        verimcosmos_dir.join("proto/verimcosmos/tx.proto"),
-        verimcosmos_dir.join("proto/verimcosmos/query.proto"),
+        verimcosmos_dir.join("proto/verim/tx.proto"),
+        verimcosmos_dir.join("proto/verim/query.proto"),
     ];
 
     // List available paths for dependencies
