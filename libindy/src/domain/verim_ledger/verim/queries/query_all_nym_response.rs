@@ -1,6 +1,6 @@
 use super::super::super::cosmos::base::query::PageResponse;
-use super::super::super::proto::verimid::verimcosmos::verimcosmos::Nym as ProtoNym;
-use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryAllNymResponse as ProtoQueryAllNymResponse;
+use super::super::super::proto::verimid::verimnode::verim::Nym as ProtoNym;
+use super::super::super::proto::verimid::verimnode::verim::QueryAllNymResponse as ProtoQueryAllNymResponse;
 use super::super::super::VerimProto;
 use super::super::models::Nym;
 use indy_api_types::errors::IndyResult;

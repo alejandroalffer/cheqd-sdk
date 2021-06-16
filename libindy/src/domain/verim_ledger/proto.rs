@@ -11,14 +11,14 @@ pub mod verimid {
     }
 }
 
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNym {
+impl MsgProto for verimid::verimnode::verim::MsgCreateNym {
     const TYPE_URL: &'static str = "/verimid.verimnode.verim.MsgCreateNym";
 }
 
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgUpdateNym {
+impl MsgProto for verimid::verimnode::verim::MsgUpdateNym {
     const TYPE_URL: &'static str = "/verimid.verimnode.verim.MsgUpdateNym";
 }
 
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgDeleteNym {
+impl MsgProto for verimid::verimnode::verim::MsgDeleteNym {
     const TYPE_URL: &'static str = "/verimid.verimnode.verim.MsgDeleteNym";
 }

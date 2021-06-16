@@ -11,7 +11,7 @@ pub mod cosmos;
 pub mod cosmos_ext;
 pub mod prost_ext;
 pub mod proto;
-pub mod verimcosmos;
+pub mod verim;
 
 pub trait VerimProto: Eq + Debug + Sized {
     type Proto: prost::Message + Default;

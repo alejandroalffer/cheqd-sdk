@@ -1,5 +1,5 @@
 use super::super::super::cosmos::base::query::PageRequest;
-use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryAllNymRequest as ProtoQueryAllNymRequest;
+use super::super::super::proto::verimid::verimnode::verim::QueryAllNymRequest as ProtoQueryAllNymRequest;
 use super::super::super::VerimProto;
 use indy_api_types::errors::IndyResult;
 

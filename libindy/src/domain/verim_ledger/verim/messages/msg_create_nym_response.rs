@@ -1,5 +1,5 @@
 use super::super::super::super::verim_ledger::VerimProto;
-use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgCreateNymResponse as ProtoMsgCreateNymResponse;
+use super::super::super::proto::verimid::verimnode::verim::MsgCreateNymResponse as ProtoMsgCreateNymResponse;
 use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]

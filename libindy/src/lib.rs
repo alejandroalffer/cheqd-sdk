@@ -38,7 +38,7 @@ use lazy_static::lazy_static;
 use crate::{
     controllers::{
         payments::PaymentsController, BlobStorageController, CacheController, ConfigController,
-        VerimKeysController, CosmosLedgerController, VerimPoolController, CryptoController, DidController,
+        VerimKeysController, VerimPoolController, CryptoController, DidController,
         IssuerController, LedgerController, MetricsController, NonSecretsController,
         PairwiseController, PoolController, ProverController, VerifierController,
         VerimLedgerController, WalletController,
@@ -46,7 +46,7 @@ use crate::{
     services::{
         BlobStorageService, CommandMetric, CryptoService,
         IssuerService, LedgerService, MetricsService, PaymentsService, PoolService, ProverService,
-        VerifierService, VerimLedgerService, VerimKeysService, CosmosLedgerService, VerimPoolService, WalletService,
+        VerifierService, VerimLedgerService, VerimKeysService, VerimPoolService, WalletService,
     },
 };
 use indy_api_types::errors::IndyResult;
@@ -114,7 +114,6 @@ pub(crate) struct Locator {
     pub(crate) ledger_controller: LedgerController,
     pub(crate) pool_controller: PoolController,
     pub(crate) verim_ledger_controller: VerimLedgerController,
-    pub(crate) cosmos_ledger_controller: CosmosLedgerController,
     pub(crate) verim_keys_controller: VerimKeysController,
     pub(crate) verim_pool_controller: VerimPoolController,
     pub(crate) did_controller: DidController,
@@ -153,7 +152,6 @@ impl Locator {
         let verim_keys_service = Arc::new(VerimKeysService::new());
         let metrics_service = Arc::new(MetricsService::new());
         let pool_service = Arc::new(PoolService::new());
-        let cosmos_ledger_service = Arc::new(CosmosLedgerService::new());
         let verim_pool_service = Arc::new(VerimPoolService::new());
         let payment_service = Arc::new(PaymentsService::new());
         let wallet_service = Arc::new(WalletService::new());
@@ -201,9 +199,7 @@ impl Locator {
 
         let pool_controller = PoolController::new(pool_service.clone());
 
-        let verim_ledger_controller = VerimLedgerController::new(verim_ledger_service.clone());
-
-        let cosmos_ledger_controller = CosmosLedgerController::new(cosmos_ledger_service.clone(), verim_keys_service.clone(), verim_pool_service.clone());
+        let verim_ledger_controller = VerimLedgerController::new(verim_ledger_service.clone(), verim_pool_service.clone(), verim_keys_service.clone());
 
         let verim_pool_controller = VerimPoolController::new(verim_pool_service.clone());
 
@@ -241,7 +237,6 @@ impl Locator {
             ledger_controller,
             verim_ledger_controller,
             pool_controller,
-            cosmos_ledger_controller,
             verim_keys_controller,
             verim_pool_controller,
             did_controller,

@@ -1,4 +1,4 @@
-use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse as ProtoMsgDeleteNymResponse;
+use super::super::super::proto::verimid::verimnode::verim::MsgDeleteNymResponse as ProtoMsgDeleteNymResponse;
 use super::super::super::VerimProto;
 use indy_api_types::errors::IndyResult;
 
