@@ -10,7 +10,7 @@ extern crate serde_json;
 #[macro_use]
 mod utils;
 
-use utils::{constants::*, cosmos_keys, cosmos_ledger, tendermint_pool, verim_ledger, verim_setup};
+use utils::{constants::*, verim_keys, cosmos_ledger, verim_pool, verim_ledger, verim_setup};
 
 mod high_cases {
     use super::*;
@@ -90,10 +90,10 @@ mod high_cases {
             .unwrap();
 
             // Signature
-            let signed = cosmos_keys::sign(&setup.alice_key_alias, &tx).unwrap();
+            let signed = verim_keys::sign(&setup.alice_key_alias, &tx).unwrap();
 
             // Broadcast
-            let resp = tendermint_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
+            let resp = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
 
             // Parse the response
             let tx_resp_parsed = verim_ledger::parse_msg_create_nym_resp(&resp).unwrap();
@@ -104,7 +104,7 @@ mod high_cases {
 
             let query = verim_ledger::build_query_get_nym(tx_resp["id"].as_u64().unwrap()).unwrap();
 
-            let query_resp = tendermint_pool::abci_query(&setup.pool_alias, &query).unwrap();
+            let query_resp = verim_pool::abci_query(&setup.pool_alias, &query).unwrap();
             let query_resp_parsed = verim_ledger::parse_query_get_nym_resp(&query_resp).unwrap();
 
             println!("Query response: {:?}", query_resp_parsed);
@@ -134,10 +134,10 @@ mod high_cases {
             ).unwrap();
 
             // Signature #1
-            let signed1 = cosmos_keys::sign(&setup.alice_key_alias, &tx1).unwrap();
+            let signed1 = verim_keys::sign(&setup.alice_key_alias, &tx1).unwrap();
 
             // Broadcast #1
-            let resp1 = tendermint_pool::broadcast_tx_commit(&setup.pool_alias, &signed1).unwrap();
+            let resp1 = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed1).unwrap();
 
             // Parse the response #1
             let tx_resp_parsed1 = verim_ledger::parse_msg_create_nym_resp(&resp1).unwrap();
@@ -159,10 +159,10 @@ mod high_cases {
             ).unwrap();
 
             // Signature #2
-            let signed2 = cosmos_keys::sign(&setup.alice_key_alias, &tx2).unwrap();
+            let signed2 = verim_keys::sign(&setup.alice_key_alias, &tx2).unwrap();
 
             // Broadcast #2
-            let resp2 = tendermint_pool::broadcast_tx_commit(&setup.pool_alias, &signed2).unwrap();
+            let resp2 = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed2).unwrap();
 
             // Parse the response #2
             let tx_resp_parsed2 = verim_ledger::parse_msg_create_nym_resp(&resp2).unwrap();
@@ -173,7 +173,7 @@ mod high_cases {
 
             let query = verim_ledger::build_query_all_nym().unwrap();
 
-            let resp = tendermint_pool::abci_query(&setup.pool_alias, &query).unwrap();
+            let resp = verim_pool::abci_query(&setup.pool_alias, &query).unwrap();
             let resp = verim_ledger::parse_query_all_nym_resp(&resp).unwrap();
             let resp: Value = serde_json::from_str(&resp).unwrap();
 

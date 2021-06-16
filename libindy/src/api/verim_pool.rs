@@ -6,7 +6,7 @@ use indy_utils::ctypes;
 use libc::c_char;
 
 #[no_mangle]
-pub extern "C" fn indy_tendermint_pool_add(
+pub extern "C" fn indy_verim_pool_add(
     command_handle: CommandHandle,
     alias: *const c_char,
     rpc_address: *const c_char,
@@ -16,7 +16,7 @@ pub extern "C" fn indy_tendermint_pool_add(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_tendermint_pool_add > alias {:?} rpc_address {:?} chain_id {:?}",
+        "indy_verim_pool_add > alias {:?} rpc_address {:?} chain_id {:?}",
         alias, rpc_address, chain_id
     );
 
@@ -26,7 +26,7 @@ pub extern "C" fn indy_tendermint_pool_add(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     debug!(
-        "indy_tendermint_pool_add > alias {:?} rpc_address {:?} chain_id {:?}",
+        "indy_verim_pool_add > alias {:?} rpc_address {:?} chain_id {:?}",
         alias, rpc_address, chain_id
     );
 
@@ -34,7 +34,7 @@ pub extern "C" fn indy_tendermint_pool_add(
 
     let action = async move {
         let res = locator
-            .tendermint_pool_controller
+            .verim_pool_controller
             .add(&alias, &rpc_address, &chain_id)
             .await;
         res
@@ -43,7 +43,7 @@ pub extern "C" fn indy_tendermint_pool_add(
     let cb = move |res: IndyResult<_>| {
         let (err, pool_info) = prepare_result!(res, String::new());
         debug!(
-            "indy_tendermint_pool_add ? err {:?} pool_info {:?}",
+            "indy_verim_pool_add ? err {:?} pool_info {:?}",
             err, pool_info
         );
 
@@ -53,39 +53,39 @@ pub extern "C" fn indy_tendermint_pool_add(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::TendermintPoolCommandAdd, action, cb);
+        .spawn_ok_instrumented(CommandMetric::VerimPoolCommandAdd, action, cb);
 
     let res = ErrorCode::Success;
-    debug!("indy_tendermint_pool_add < {:?}", res);
+    debug!("indy_verim_pool_add < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_tendermint_pool_get_config(
+pub extern "C" fn indy_verim_pool_get_config(
     command_handle: CommandHandle,
     alias: *const c_char,
     cb: Option<
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, pool_info: *const c_char),
     >,
 ) -> ErrorCode {
-    debug!("indy_tendermint_pool_get_config > alias {:?}", alias);
+    debug!("indy_verim_pool_get_config > alias {:?}", alias);
 
     check_useful_c_str!(alias, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    debug!("indy_tendermint_pool_get_config > alias {:?}", alias);
+    debug!("indy_verim_pool_get_config > alias {:?}", alias);
 
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.tendermint_pool_controller.get_config(&alias).await;
+        let res = locator.verim_pool_controller.get_config(&alias).await;
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, pool_info) = prepare_result!(res, String::new());
         debug!(
-            "indy_tendermint_pool_get_config ? err {:?} pool_info {:?}",
+            "indy_verim_pool_get_config ? err {:?} pool_info {:?}",
             err, pool_info
         );
 
@@ -95,15 +95,15 @@ pub extern "C" fn indy_tendermint_pool_get_config(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::TendermintPoolCommandGetConfig, action, cb);
+        .spawn_ok_instrumented(CommandMetric::VerimPoolCommandGetConfig, action, cb);
 
     let res = ErrorCode::Success;
-    debug!("indy_tendermint_pool_get_config < {:?}", res);
+    debug!("indy_verim_pool_get_config < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_tendermint_pool_broadcast_tx_commit(
+pub extern "C" fn indy_verim_pool_broadcast_tx_commit(
     command_handle: CommandHandle,
     pool_alias: *const c_char,
     signed_tx_raw: *const u8,
@@ -117,7 +117,7 @@ pub extern "C" fn indy_tendermint_pool_broadcast_tx_commit(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_tendermint_pool_broadcast_tx_commit > pool_alias {:?} signed_tx_raw {:?} signed_tx_len {:?}",
+        "indy_verim_pool_broadcast_tx_commit > pool_alias {:?} signed_tx_raw {:?} signed_tx_len {:?}",
         pool_alias, signed_tx_raw, signed_tx_len
     );
 
@@ -131,7 +131,7 @@ pub extern "C" fn indy_tendermint_pool_broadcast_tx_commit(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     debug!(
-        "indy_tendermint_pool_broadcast_tx_commit > pool_alias {:?} signed_tx_raw {:?} signed_tx_len {:?}",
+        "indy_verim_pool_broadcast_tx_commit > pool_alias {:?} signed_tx_raw {:?} signed_tx_len {:?}",
         pool_alias, signed_tx_raw, signed_tx_len
     );
 
@@ -139,7 +139,7 @@ pub extern "C" fn indy_tendermint_pool_broadcast_tx_commit(
 
     let action = async move {
         let res = locator
-            .tendermint_pool_controller
+            .verim_pool_controller
             .broadcast_tx_commit(&pool_alias, &signed_tx_raw)
             .await;
         res
@@ -148,7 +148,7 @@ pub extern "C" fn indy_tendermint_pool_broadcast_tx_commit(
     let cb = move |res: IndyResult<_>| {
         let (err, pool_info) = prepare_result!(res, String::new());
         debug!(
-            "indy_tendermint_pool_broadcast_tx_commit ? err {:?} tx_commit_response {:?}",
+            "indy_verim_pool_broadcast_tx_commit ? err {:?} tx_commit_response {:?}",
             err, pool_info
         );
 
@@ -158,22 +158,22 @@ pub extern "C" fn indy_tendermint_pool_broadcast_tx_commit(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::TendermintPoolCommandBroadcastTxCommit, action, cb);
+        .spawn_ok_instrumented(CommandMetric::VerimPoolCommandBroadcastTxCommit, action, cb);
 
     let res = ErrorCode::Success;
-    debug!("indy_tendermint_pool_broadcast_tx_commit < {:?}", res);
+    debug!("indy_verim_pool_broadcast_tx_commit < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_tendermint_pool_abci_query(
+pub extern "C" fn indy_verim_pool_abci_query(
     command_handle: CommandHandle,
     pool_alias: *const c_char,
     req_json: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, resp: *const c_char)>,
 ) -> ErrorCode {
     debug!(
-        "indy_tendermint_pool_abci_query > pool_alias {:?}, req_json {:?} ",
+        "indy_verim_pool_abci_query > pool_alias {:?}, req_json {:?} ",
         pool_alias, req_json
     );
 
@@ -182,7 +182,7 @@ pub extern "C" fn indy_tendermint_pool_abci_query(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     debug!(
-        "indy_tendermint_pool_abci_query > pool_alias {:?}, req_json {:?} ",
+        "indy_verim_pool_abci_query > pool_alias {:?}, req_json {:?} ",
         pool_alias, req_json
     );
 
@@ -190,7 +190,7 @@ pub extern "C" fn indy_tendermint_pool_abci_query(
 
     let action = async move {
         let res = locator
-            .tendermint_pool_controller
+            .verim_pool_controller
             .abci_query(&pool_alias, &req_json)
             .await;
         res
@@ -198,7 +198,7 @@ pub extern "C" fn indy_tendermint_pool_abci_query(
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result!(res, String::new());
-        debug!("indy_tendermint_pool_abci_query ? err {:?} res {:?}", err, res);
+        debug!("indy_verim_pool_abci_query ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
@@ -206,21 +206,21 @@ pub extern "C" fn indy_tendermint_pool_abci_query(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::TendermintPoolCommandAbciQuery, action, cb);
+        .spawn_ok_instrumented(CommandMetric::VerimPoolCommandAbciQuery, action, cb);
 
     let res = ErrorCode::Success;
-    debug!("indy_tendermint_pool_abci_query < {:?}", res);
+    debug!("indy_verim_pool_abci_query < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_tendermint_pool_abci_info(
+pub extern "C" fn indy_verim_pool_abci_info(
     command_handle: CommandHandle,
     pool_alias: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, resp: *const c_char)>,
 ) -> ErrorCode {
     debug!(
-        "indy_tendermint_pool_abci_info > pool_alias {:?}",
+        "indy_verim_pool_abci_info > pool_alias {:?}",
         pool_alias
     );
 
@@ -228,7 +228,7 @@ pub extern "C" fn indy_tendermint_pool_abci_info(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     debug!(
-        "indy_tendermint_pool_abci_info > pool_alias {:?} ",
+        "indy_verim_pool_abci_info > pool_alias {:?} ",
         pool_alias
     );
 
@@ -236,7 +236,7 @@ pub extern "C" fn indy_tendermint_pool_abci_info(
 
     let action = async move {
         let res = locator
-            .tendermint_pool_controller
+            .verim_pool_controller
             .abci_info(&pool_alias)
             .await;
         res
@@ -244,7 +244,7 @@ pub extern "C" fn indy_tendermint_pool_abci_info(
 
     let cb = move |res: IndyResult<_>| {
         let (err, res) = prepare_result!(res, String::new());
-        debug!("indy_tendermint_pool_abci_info ? err {:?} res {:?}", err, res);
+        debug!("indy_verim_pool_abci_info ? err {:?} res {:?}", err, res);
 
         let res = ctypes::string_to_cstring(res);
         cb(command_handle, err, res.as_ptr())
@@ -252,9 +252,9 @@ pub extern "C" fn indy_tendermint_pool_abci_info(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::TendermintPoolCommandAbciInfo, action, cb);
+        .spawn_ok_instrumented(CommandMetric::VerimPoolCommandAbciInfo, action, cb);
 
     let res = ErrorCode::Success;
-    debug!("indy_tendermint_pool_abci_info < {:?}", res);
+    debug!("indy_verim_pool_abci_info < {:?}", res);
     res
 }

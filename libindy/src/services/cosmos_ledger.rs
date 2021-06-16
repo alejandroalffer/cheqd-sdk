@@ -1,6 +1,6 @@
 //! Cosmos service for Cosmos back-end
 
-use crate::domain::tendermint_pool::TendermintPoolConfig;
+use crate::domain::verim_pool::VerimPoolConfig;
 use cosmos_sdk::rpc::endpoint::{broadcast, abci_query};
 use cosmos_sdk::rpc::{Request, Response};
 use cosmos_sdk::tendermint::block::Height;
@@ -20,7 +20,7 @@ use cosmos_sdk::crypto::PublicKey;
 
 pub(crate) struct CosmosLedgerService {
     // TODO: Persistence
-    pools: MutexF<HashMap<String, TendermintPoolConfig>>,
+    pools: MutexF<HashMap<String, VerimPoolConfig>>,
 }
 
 impl CosmosLedgerService {

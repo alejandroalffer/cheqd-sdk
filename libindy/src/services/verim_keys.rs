@@ -1,6 +1,6 @@
 //! Service to manage Cosmos keys
 
-use crate::domain::cosmos_keys::KeyInfo;
+use crate::domain::verim_keys::KeyInfo;
 use cosmos_sdk::crypto::secp256k1::signing_key::Secp256k1Signer;
 use cosmos_sdk::crypto::secp256k1::SigningKey as CosmosSigningKey;
 use cosmos_sdk::tx::{Raw, SignDoc};
@@ -16,13 +16,13 @@ use rand_seeder::Seeder;
 use rust_base58::ToBase58;
 use std::collections::HashMap;
 
-pub(crate) struct CosmosKeysService {
+pub(crate) struct VerimKeysService {
     // TODO: Persistence
     // key alias -> SEC1-encoded secp256k1 ECDSA private key
     keys: MutexF<HashMap<String, Vec<u8>>>,
 }
 
-impl CosmosKeysService {
+impl VerimKeysService {
     pub(crate) fn new() -> Self {
         Self {
             keys: MutexF::new(HashMap::new()),
@@ -124,23 +124,23 @@ mod test {
 
     #[async_std::test]
     async fn test_add_random() {
-        let cosmos_keys_service = CosmosKeysService::new();
+        let verim_keys_service = VerimKeysService::new();
 
-        let key_info = cosmos_keys_service.add_random("alice").await.unwrap();
+        let key_info = verim_keys_service.add_random("alice").await.unwrap();
 
         assert_eq!(key_info.alias, "alice")
     }
 
     #[async_std::test]
     async fn test_add_from_mnemonic() {
-        let cosmos_keys_service = CosmosKeysService::new();
+        let verim_keys_service = VerimKeysService::new();
 
-        let alice = cosmos_keys_service
+        let alice = verim_keys_service
             .add_from_mnemonic("alice", "secret phrase")
             .await
             .unwrap();
 
-        let bob = cosmos_keys_service
+        let bob = verim_keys_service
             .add_from_mnemonic("bob", "secret phrase")
             .await
             .unwrap();

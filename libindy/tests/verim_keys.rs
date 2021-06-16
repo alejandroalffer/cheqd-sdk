@@ -11,7 +11,7 @@ mod utils;
 
 use indyrs::ErrorCode;
 
-use utils::{constants::*, cosmos_keys, types::ResponseType};
+use utils::{constants::*, verim_keys, types::ResponseType};
 
 mod add_keys {
     use super::*;
@@ -19,7 +19,7 @@ mod add_keys {
     #[test]
     fn indy_add_random() {
         let alias = "some_alias";
-        let result = cosmos_keys::add_random(alias).unwrap();
+        let result = verim_keys::add_random(alias).unwrap();
         println!("Data: {:?} ", result);
     }
 
@@ -27,7 +27,7 @@ mod add_keys {
     fn indy_add_from_mnemonic() {
         let alias = "some_alias_2";
         let mnemonic = "some_mnemonic";
-        let result = cosmos_keys::add_from_mnemonic(alias, mnemonic).unwrap();
+        let result = verim_keys::add_from_mnemonic(alias, mnemonic).unwrap();
         println!("Mnemonic: {:?}, Data: {:?}", mnemonic, result);
     }
 }
@@ -38,8 +38,8 @@ mod get_keys {
     #[test]
     fn indy_key_info() {
         let alias = "some_alias";
-        cosmos_keys::add_random(alias).unwrap();
-        let result = cosmos_keys::get_info(alias).unwrap();
+        verim_keys::add_random(alias).unwrap();
+        let result = verim_keys::get_info(alias).unwrap();
         println!("Data: {:?} ", result);
     }
 }

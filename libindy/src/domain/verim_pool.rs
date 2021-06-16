@@ -1,13 +1,13 @@
 #[derive(Clone, Debug, Serialize)]
-pub struct TendermintPoolConfig {
+pub struct VerimPoolConfig {
     pub alias: String,
     pub rpc_address: String,
     pub chain_id: String,
 }
 
-impl TendermintPoolConfig {
+impl VerimPoolConfig {
     pub fn new(alias: String, rpc_address: String, chain_id: String) -> Self {
-        TendermintPoolConfig {
+        VerimPoolConfig {
             alias,
             rpc_address,
             chain_id,

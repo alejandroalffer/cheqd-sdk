@@ -1,6 +1,6 @@
 //! Pool service for Tendermint back-end
 
-use crate::domain::tendermint_pool::TendermintPoolConfig;
+use crate::domain::verim_pool::VerimPoolConfig;
 use crate::domain::pool::PoolConfig;
 use cosmos_sdk::crypto::PublicKey;
 use cosmos_sdk::rpc::endpoint::broadcast;
@@ -15,12 +15,12 @@ use indy_api_types::IndyError;
 use std::collections::HashMap;
 use std::convert::TryInto;
 
-pub(crate) struct TendermintPoolService {
+pub(crate) struct VerimPoolService {
     // TODO: Persistence
-    pools: MutexF<HashMap<String, TendermintPoolConfig>>,
+    pools: MutexF<HashMap<String, VerimPoolConfig>>,
 }
 
-impl TendermintPoolService {
+impl VerimPoolService {
     pub(crate) fn new() -> Self {
         Self {
             pools: MutexF::new(HashMap::new()),
@@ -32,7 +32,7 @@ impl TendermintPoolService {
         alias: &str,
         rpc_address: &str,
         chain_id: &str,
-    ) -> IndyResult<TendermintPoolConfig> {
+    ) -> IndyResult<VerimPoolConfig> {
         let mut pools = self.pools.lock().await;
 
         if pools.contains_key(alias) {
@@ -42,7 +42,7 @@ impl TendermintPoolService {
             ));
         }
 
-        let config = TendermintPoolConfig::new(
+        let config = VerimPoolConfig::new(
             alias.to_string(),
             rpc_address.to_string(),
             chain_id.to_string(),
@@ -52,7 +52,7 @@ impl TendermintPoolService {
         Ok(config)
     }
 
-    pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<TendermintPoolConfig> {
+    pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<VerimPoolConfig> {
         let pools = self.pools.lock().await;
 
         let config = pools.get(alias).ok_or(IndyError::from_msg(
