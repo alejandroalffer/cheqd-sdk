@@ -1,7 +1,6 @@
 mod anoncreds;
 mod blob_storage;
 mod verim_keys;
-mod cosmos_ledger;
 mod verim_pool;
 mod crypto;
 mod ledger;
@@ -15,7 +14,6 @@ pub(crate) use anoncreds::{AnoncredsHelpers, IssuerService, ProverService, Verif
 
 pub(crate) use blob_storage::BlobStorageService;
 pub(crate) use verim_keys::VerimKeysService;
-pub(crate) use cosmos_ledger::CosmosLedgerService;
 pub(crate) use crypto::CryptoService;
 pub(crate) use ledger::LedgerService;
 pub(crate) use metrics::{command_metrics::CommandMetric, MetricsService};

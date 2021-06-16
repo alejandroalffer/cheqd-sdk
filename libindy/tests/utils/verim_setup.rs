@@ -51,7 +51,7 @@ impl VerimSetup {
 
         // Pool
         let pool_alias = "test_pool";
-        let pool = verim_pool::add(pool_alias, "http://localhost:26657", "verimcosmos").unwrap();
+        let pool = verim_pool::add(pool_alias, "http://localhost:26657", "verim").unwrap();
         println!("Verim setup. Pool config: {}", pool);
 
         setup

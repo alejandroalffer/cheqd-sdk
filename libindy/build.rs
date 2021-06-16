@@ -1,4 +1,3 @@
-use regex::Regex;
 use std::env;
 use std::fs;
 use std::fs::{create_dir_all, remove_dir_all};
@@ -8,6 +7,8 @@ use std::{
     path::{Path, PathBuf},
     process,
 };
+
+use regex::Regex;
 use walkdir::WalkDir;
 
 fn main() {
@@ -109,7 +110,6 @@ fn build_proto() {
     fs::create_dir(proto_dir.clone()).unwrap();
 
     compile_protos(&proto_dir);
-    // compile_proto_services(&proto_dir);
 }
 
 fn compile_protos(out_dir: &Path) {
@@ -125,12 +125,6 @@ fn compile_protos(out_dir: &Path) {
 
     // Paths
     let proto_paths = [
-        // format!("{}/../proto/definitions/mock", root),
-        // format!("{}/proto/ibc", sdk_dir.display()),
-        // format!("{}/proto/cosmos/tx", sdk_dir.display()),
-        // format!("{}/proto/cosmos/bank", sdk_dir.display()),
-        // format!("{}/proto/cosmos/base", sdk_dir.display()),
-        // format!("{}/proto/cosmos/staking", sdk_dir.display()),
         format!("{}/proto/verim", verimcosmos_dir.display()),
     ];
 
@@ -190,12 +184,6 @@ fn compile_proto_services(out_dir: impl AsRef<Path>) {
         .collect::<Vec<_>>();
 
     let proto_services_path = [
-        // sdk_dir.join("proto/cosmos/auth/v1beta1/query.proto"),
-        // sdk_dir.join("proto/cosmos/staking/v1beta1/query.proto"),
-        // sdk_dir.join("proto/cosmos/bank/v1beta1/query.proto"),
-        // sdk_dir.join("proto/cosmos/bank/v1beta1/tx.proto"),
-        // sdk_dir.join("proto/cosmos/tx/v1beta1/service.proto"),
-        // sdk_dir.join("proto/cosmos/tx/v1beta1/tx.proto"),
         verimcosmos_dir.join("proto/verim/tx.proto"),
         verimcosmos_dir.join("proto/verim/query.proto"),
     ];

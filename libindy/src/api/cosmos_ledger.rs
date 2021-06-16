@@ -77,7 +77,7 @@ pub extern "C" fn indy_cosmos_ledger_build_tx(
 
     let action = async move {
         let res = locator
-            .cosmos_ledger_controller
+            .verim_ledger_controller
             .build_tx(
                 &pool_alias,
                 &sender_alias,
@@ -134,7 +134,7 @@ pub extern "C" fn indy_cosmos_ledger_build_query_cosmos_auth_account(
 
     let action = async move {
         let res = locator
-            .cosmos_ledger_controller
+            .verim_ledger_controller
             .build_query_cosmos_auth_account(&address);
         res
     };
@@ -187,7 +187,7 @@ pub extern "C" fn indy_cosmos_ledger_parse_query_cosmos_auth_account_resp(
 
     let action = async move {
         let res = locator
-            .cosmos_ledger_controller
+            .verim_ledger_controller
             .parse_query_cosmos_auth_account_resp(&query_resp);
         res
     };

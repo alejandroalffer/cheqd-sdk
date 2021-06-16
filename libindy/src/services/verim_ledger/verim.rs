@@ -1,41 +1,30 @@
+use std::str::FromStr;
+
 use cosmos_sdk::proto::cosmos::base::abci::v1beta1::TxMsgData;
 use cosmos_sdk::rpc::endpoint::abci_query;
 use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
 use cosmos_sdk::tx::Msg;
+use cosmos_sdk::tx::MsgType;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
 use log_derive::logfn;
 
 use crate::domain::verim_ledger::cosmos::base::query::PageRequest;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgCreateNym;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgCreateNymResponse;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgDeleteNym;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgDeleteNymResponse;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgUpdateNym;
-use crate::domain::verim_ledger::verimcosmos::messages::MsgUpdateNymResponse;
-use crate::domain::verim_ledger::verimcosmos::queries::QueryAllNymRequest;
-use crate::domain::verim_ledger::verimcosmos::queries::QueryAllNymResponse;
-use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymRequest;
-use crate::domain::verim_ledger::verimcosmos::queries::QueryGetNymResponse;
+use crate::domain::verim_ledger::prost_ext::ProstMessageExt;
+use crate::domain::verim_ledger::verim::messages::MsgCreateNym;
+use crate::domain::verim_ledger::verim::messages::MsgCreateNymResponse;
+use crate::domain::verim_ledger::verim::messages::MsgDeleteNym;
+use crate::domain::verim_ledger::verim::messages::MsgDeleteNymResponse;
+use crate::domain::verim_ledger::verim::messages::MsgUpdateNym;
+use crate::domain::verim_ledger::verim::messages::MsgUpdateNymResponse;
+use crate::domain::verim_ledger::verim::queries::QueryAllNymRequest;
+use crate::domain::verim_ledger::verim::queries::QueryAllNymResponse;
+use crate::domain::verim_ledger::verim::queries::QueryGetNymRequest;
+use crate::domain::verim_ledger::verim::queries::QueryGetNymResponse;
+use crate::domain::verim_ledger::VerimProto;
 use crate::services::VerimLedgerService;
 
 impl VerimLedgerService {
-
-    pub(crate) fn parse_msg_create_nym_resp(
-        &self,
-        resp: &Response,
-    ) -> IndyResult<MsgCreateNymResponse> {
-        let data = resp.deliver_tx.data.as_ref().ok_or(IndyError::from_msg(
-            IndyErrorKind::InvalidState,
-            "Expected response data but got None",
-        ))?;
-        let data = data.value();
-        let tx_msg = TxMsgData::from_bytes(&data)?;
-        let result = MsgCreateNymResponse::from_proto_bytes(&tx_msg.data[0].data)?;
-
-        return Ok(result);
-    }
-
     #[logfn(Info)]
     pub(crate) fn build_msg_create_nym(
         &self,
@@ -56,19 +45,12 @@ impl VerimLedgerService {
         Ok(msg_send.to_proto().to_msg()?)
     }
 
-    pub(crate) fn parse_msg_update_nym_resp(
+    #[logfn(Info)]
+    pub(crate) fn parse_msg_create_nym_resp(
         &self,
         resp: &Response,
-    ) -> IndyResult<MsgUpdateNymResponse> {
-        let data = resp.deliver_tx.data.as_ref().ok_or(IndyError::from_msg(
-            IndyErrorKind::InvalidState,
-            "Expected response data but got None",
-        ))?;
-        let data = data.value();
-        let tx_msg = TxMsgData::from_bytes(&data)?;
-        let result = MsgUpdateNymResponse::from_proto_bytes(&tx_msg.data[0].data)?;
-
-        return Ok(result);
+    ) -> IndyResult<MsgCreateNymResponse> {
+        self.parse_msg_resp(resp)
     }
 
     #[logfn(Info)]
@@ -93,19 +75,12 @@ impl VerimLedgerService {
         Ok(msg_send.to_proto().to_msg()?)
     }
 
-    pub(crate) fn parse_msg_delete_nym_resp(
+    #[logfn(Info)]
+    pub(crate) fn parse_msg_update_nym_resp(
         &self,
         resp: &Response,
-    ) -> IndyResult<MsgDeleteNymResponse> {
-        let data = resp.deliver_tx.data.as_ref().ok_or(IndyError::from_msg(
-            IndyErrorKind::InvalidState,
-            "Expected response data but got None",
-        ))?;
-        let data = data.value();
-        let tx_msg = TxMsgData::from_bytes(&data)?;
-        let result = MsgDeleteNymResponse::from_proto_bytes(&tx_msg.data[0].data)?;
-
-        return Ok(result);
+    ) -> IndyResult<MsgUpdateNymResponse> {
+        self.parse_msg_resp(resp)
     }
 
     #[logfn(Info)]
@@ -118,13 +93,15 @@ impl VerimLedgerService {
         Ok(msg_send.to_proto().to_msg()?)
     }
 
-    pub(crate) fn build_query_verimcosmos_list_nym(&self) -> IndyResult<abci_query::Request> {
-        let path = format!("custom/verimcosmos/list-nym");
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
-        let req = abci_query::Request::new(Some(path), Vec::new(), None, false);
-        Ok(req)
+    #[logfn(Info)]
+    pub(crate) fn parse_msg_delete_nym_resp(
+        &self,
+        resp: &Response,
+    ) -> IndyResult<MsgDeleteNymResponse> {
+        self.parse_msg_resp(resp)
     }
 
+    #[logfn(Info)]
     pub(crate) fn build_query_get_nym(&self, id: u64) -> IndyResult<abci_query::Request> {
         let query_data = QueryGetNymRequest::new(id);
         let path = format!("/verimid.verimnode.verim.Query/Nym");
@@ -134,6 +111,7 @@ impl VerimLedgerService {
         Ok(req)
     }
 
+    #[logfn(Info)]
     pub(crate) fn parse_query_get_nym_resp(
         &self,
         resp: &abci_query::Response,
@@ -142,6 +120,7 @@ impl VerimLedgerService {
         return Ok(result);
     }
 
+    #[logfn(Info)]
     pub(crate) fn build_query_all_nym(
         &self,
         pagination: Option<PageRequest>,
@@ -154,6 +133,7 @@ impl VerimLedgerService {
         Ok(req)
     }
 
+    #[logfn(Info)]
     pub(crate) fn parse_query_all_nym_resp(
         &self,
         resp: &abci_query::Response,
