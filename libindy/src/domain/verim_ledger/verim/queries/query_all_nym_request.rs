@@ -1,7 +1,9 @@
-use super::super::super::cosmos::base::query::PageRequest;
+use indy_api_types::errors::IndyResult;
+
+use crate::domain::verim_ledger::base::query::PageRequest;
+
 use super::super::super::proto::verimid::verimnode::verim::QueryAllNymRequest as ProtoQueryAllNymRequest;
 use super::super::super::VerimProto;
-use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct QueryAllNymRequest {

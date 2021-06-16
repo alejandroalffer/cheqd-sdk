@@ -1,12 +1,11 @@
 //! Cosmos key management service
 
-use crate::domain::verim_keys::KeyInfo;
+use async_std::sync::Arc;
+use cosmos_sdk::tx::SignDoc;
+use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
+
 use crate::domain::verim_ledger::cosmos_ext::CosmosSignDocExt;
 use crate::services::VerimKeysService;
-use async_std::sync::Arc;
-use cosmos_sdk::tx::{Raw, SignDoc};
-use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
-use indy_api_types::IndyError;
 
 pub(crate) struct VerimKeysController {
     verim_keys_service: Arc<VerimKeysService>,

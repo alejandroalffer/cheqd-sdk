@@ -1,12 +1,12 @@
-use indy_api_types::{errors::prelude::*, CommandHandle, ErrorCode};
-
-use crate::services::CommandMetric;
-use crate::Locator;
+use indy_api_types::{CommandHandle, ErrorCode, errors::prelude::*};
 use indy_utils::ctypes;
 use libc::c_char;
 
+use crate::Locator;
+use crate::services::CommandMetric;
+
 #[no_mangle]
-pub extern "C" fn indy_verim_ledger_build_msg_create_nym(
+pub extern "C" fn indy_verim_ledger_verim_build_msg_create_nym(
     command_handle: CommandHandle,
     did: *const c_char,
     creator: *const c_char,
@@ -23,7 +23,7 @@ pub extern "C" fn indy_verim_ledger_build_msg_create_nym(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_build_msg_create_nym > did {:?} creator {:?} verkey {:?} alias {:?} role {:?}",
+        "indy_verim_ledger_verim_build_msg_create_nym > did {:?} creator {:?} verkey {:?} alias {:?} role {:?}",
         did, creator, verkey, alias, role
     );
 
@@ -35,7 +35,7 @@ pub extern "C" fn indy_verim_ledger_build_msg_create_nym(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     debug!(
-        "indy_verim_ledger_build_msg_create_nym > did {:?} creator {:?} verkey {:?} alias {:?} role {:?}",
+        "indy_verim_ledger_verim_build_msg_create_nym > did {:?} creator {:?} verkey {:?} alias {:?} role {:?}",
         did, creator, verkey, alias, role
     );
 
@@ -44,14 +44,14 @@ pub extern "C" fn indy_verim_ledger_build_msg_create_nym(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .build_msg_create_nym(&did, &creator, &verkey, &alias, &role);
+            .verim_build_msg_create_nym(&did, &creator, &verkey, &alias, &role);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, msg) = prepare_result!(res, Vec::new());
         debug!(
-            "indy_verim_ledger_build_msg_create_nym: signature: {:?}",
+            "indy_verim_ledger_verim_build_msg_create_nym: signature: {:?}",
             msg
         );
         let (msg_raw, msg_len) = ctypes::vec_to_pointer(&msg);
@@ -65,12 +65,12 @@ pub extern "C" fn indy_verim_ledger_build_msg_create_nym(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_build_msg_create_nym < {:?}", res);
+    debug!("indy_verim_ledger_verim_build_msg_create_nym < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_verim_ledger_parse_msg_create_nym_resp(
+pub extern "C" fn indy_verim_ledger_verim_parse_msg_create_nym_resp(
     command_handle: CommandHandle,
     commit_resp: *const c_char,
     cb: Option<
@@ -78,7 +78,7 @@ pub extern "C" fn indy_verim_ledger_parse_msg_create_nym_resp(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_parse_msg_create_nym_resp > commit_resp {:?}",
+        "indy_verim_ledger_verim_parse_msg_create_nym_resp > commit_resp {:?}",
         commit_resp
     );
 
@@ -86,7 +86,7 @@ pub extern "C" fn indy_verim_ledger_parse_msg_create_nym_resp(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     debug!(
-        "indy_verim_ledger_parse_msg_create_nym_resp > commit_resp {:?}",
+        "indy_verim_ledger_verim_parse_msg_create_nym_resp > commit_resp {:?}",
         commit_resp
     );
 
@@ -95,14 +95,14 @@ pub extern "C" fn indy_verim_ledger_parse_msg_create_nym_resp(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .parse_msg_create_nym_resp(&commit_resp);
+            .verim_parse_msg_create_nym_resp(&commit_resp);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, msg_resp) = prepare_result!(res, String::new());
         debug!(
-            "indy_verim_ledger_parse_msg_create_nym_resp: msg_resp: {:?}",
+            "indy_verim_ledger_verim_parse_msg_create_nym_resp: msg_resp: {:?}",
             msg_resp
         );
         let msg_resp = ctypes::string_to_cstring(msg_resp);
@@ -116,12 +116,12 @@ pub extern "C" fn indy_verim_ledger_parse_msg_create_nym_resp(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_parse_msg_create_nym_resp < {:?}", res);
+    debug!("indy_verim_ledger_verim_parse_msg_create_nym_resp < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_verim_ledger_build_msg_update_nym(
+pub extern "C" fn indy_verim_ledger_verim_build_msg_update_nym(
     command_handle: CommandHandle,
     did: *const c_char,
     creator: *const c_char,
@@ -139,7 +139,7 @@ pub extern "C" fn indy_verim_ledger_build_msg_update_nym(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_build_msg_update_nym > did {:?} creator {:?} verkey {:?} alias {:?} role {:?} id {:?}",
+        "indy_verim_ledger_verim_build_msg_update_nym > did {:?} creator {:?} verkey {:?} alias {:?} role {:?} id {:?}",
         did, creator, verkey, alias, role, id,
     );
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam2);
@@ -150,7 +150,7 @@ pub extern "C" fn indy_verim_ledger_build_msg_update_nym(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     debug!(
-        "indy_verim_ledger_build_msg_update_nym > did {:?} creator {:?} verkey {:?} alias {:?} role {:?} id {:?}",
+        "indy_verim_ledger_verim_build_msg_update_nym > did {:?} creator {:?} verkey {:?} alias {:?} role {:?} id {:?}",
         did, creator, verkey, alias, role, id,
     );
 
@@ -159,14 +159,14 @@ pub extern "C" fn indy_verim_ledger_build_msg_update_nym(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .build_msg_update_nym(&did, &creator, &verkey, &alias, &role, id);
+            .verim_build_msg_update_nym(&did, &creator, &verkey, &alias, &role, id);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, msg) = prepare_result!(res, Vec::new());
         debug!(
-            "indy_verim_ledger_build_msg_update_nym: signature: {:?}",
+            "indy_verim_ledger_verim_build_msg_update_nym: signature: {:?}",
             msg
         );
         let (msg_raw, msg_len) = ctypes::vec_to_pointer(&msg);
@@ -180,12 +180,12 @@ pub extern "C" fn indy_verim_ledger_build_msg_update_nym(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_build_msg_update_nym < {:?}", res);
+    debug!("indy_verim_ledger_verim_build_msg_update_nym < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_verim_ledger_parse_msg_update_nym_resp(
+pub extern "C" fn indy_verim_ledger_verim_parse_msg_update_nym_resp(
     command_handle: CommandHandle,
     commit_resp: *const c_char,
     cb: Option<
@@ -193,7 +193,7 @@ pub extern "C" fn indy_verim_ledger_parse_msg_update_nym_resp(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_parse_msg_update_nym_resp > commit_resp {:?}",
+        "indy_verim_ledger_verim_parse_msg_update_nym_resp > commit_resp {:?}",
         commit_resp
     );
 
@@ -201,7 +201,7 @@ pub extern "C" fn indy_verim_ledger_parse_msg_update_nym_resp(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     debug!(
-        "indy_verim_ledger_parse_msg_update_nym_resp > commit_resp {:?}",
+        "indy_verim_ledger_verim_parse_msg_update_nym_resp > commit_resp {:?}",
         commit_resp
     );
 
@@ -210,14 +210,14 @@ pub extern "C" fn indy_verim_ledger_parse_msg_update_nym_resp(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .parse_msg_update_nym_resp(&commit_resp);
+            .verim_parse_msg_update_nym_resp(&commit_resp);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, msg_resp) = prepare_result!(res, String::new());
         debug!(
-            "indy_verim_ledger_parse_msg_update_nym_resp: msg_resp: {:?}",
+            "indy_verim_ledger_verim_parse_msg_update_nym_resp: msg_resp: {:?}",
             msg_resp
         );
         let msg_resp = ctypes::string_to_cstring(msg_resp);
@@ -231,12 +231,12 @@ pub extern "C" fn indy_verim_ledger_parse_msg_update_nym_resp(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_parse_msg_update_nym_resp < {:?}", res);
+    debug!("indy_verim_ledger_verim_parse_msg_update_nym_resp < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
+pub extern "C" fn indy_verim_ledger_verim_build_msg_delete_nym(
     command_handle: CommandHandle,
     creator: *const c_char,
     id: u64,
@@ -250,7 +250,7 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_build_msg_delete_nym > creator {:?} id {:?}",
+        "indy_verim_ledger_verim_build_msg_delete_nym > creator {:?} id {:?}",
         creator, id
     );
 
@@ -258,7 +258,7 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     debug!(
-        "indy_verim_ledger_build_msg_delete_nym > creator {:?} id {:?}",
+        "indy_verim_ledger_verim_build_msg_delete_nym > creator {:?} id {:?}",
         creator, id
     );
 
@@ -267,13 +267,13 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .build_msg_delete_nym(&creator, id);
+            .verim_build_msg_delete_nym(&creator, id);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, msg) = prepare_result!(res, Vec::new());
-        debug!("indy_verim_ledger_build_msg_delete_nym: msg: {:?}", msg);
+        debug!("indy_verim_ledger_verim_build_msg_delete_nym: msg: {:?}", msg);
         let (msg_raw, msg_len) = ctypes::vec_to_pointer(&msg);
         cb(command_handle, err, msg_raw, msg_len)
     };
@@ -285,12 +285,12 @@ pub extern "C" fn indy_verim_ledger_build_msg_delete_nym(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_build_msg_delete_nym < {:?}", res);
+    debug!("indy_verim_ledger_verim_build_msg_delete_nym < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_verim_ledger_parse_msg_delete_nym_resp(
+pub extern "C" fn indy_verim_ledger_verim_parse_msg_delete_nym_resp(
     command_handle: CommandHandle,
     commit_resp: *const c_char,
     cb: Option<
@@ -298,7 +298,7 @@ pub extern "C" fn indy_verim_ledger_parse_msg_delete_nym_resp(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_parse_msg_delete_nym_resp > commit_resp {:?}",
+        "indy_verim_ledger_verim_parse_msg_delete_nym_resp > commit_resp {:?}",
         commit_resp
     );
 
@@ -306,7 +306,7 @@ pub extern "C" fn indy_verim_ledger_parse_msg_delete_nym_resp(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     debug!(
-        "indy_verim_ledger_parse_msg_delete_nym_resp > commit_resp {:?}",
+        "indy_verim_ledger_verim_parse_msg_delete_nym_resp > commit_resp {:?}",
         commit_resp
     );
 
@@ -315,14 +315,14 @@ pub extern "C" fn indy_verim_ledger_parse_msg_delete_nym_resp(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .parse_msg_delete_nym_resp(&commit_resp);
+            .verim_parse_msg_delete_nym_resp(&commit_resp);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, msg_resp) = prepare_result!(res, String::new());
         debug!(
-            "indy_verim_ledger_parse_msg_delete_nym_resp: msg_resp: {:?}",
+            "indy_verim_ledger_verim_parse_msg_delete_nym_resp: msg_resp: {:?}",
             msg_resp
         );
         let msg_resp = ctypes::string_to_cstring(msg_resp);
@@ -336,32 +336,32 @@ pub extern "C" fn indy_verim_ledger_parse_msg_delete_nym_resp(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_parse_msg_delete_nym_resp < {:?}", res);
+    debug!("indy_verim_ledger_verim_parse_msg_delete_nym_resp < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_verim_ledger_build_query_get_nym(
+pub extern "C" fn indy_verim_ledger_verim_build_query_get_nym(
     command_handle: CommandHandle,
     id: u64,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, query: *const c_char)>,
 ) -> ErrorCode {
-    debug!("indy_verim_ledger_build_query_get_nym > id {:?}", id);
+    debug!("indy_verim_ledger_verim_build_query_get_nym > id {:?}", id);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    debug!("indy_verim_ledger_build_query_get_nym > id {:?}", id);
+    debug!("indy_verim_ledger_verim_build_query_get_nym > id {:?}", id);
 
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.verim_ledger_controller.build_query_get_nym(id);
+        let res = locator.verim_ledger_controller.verim_build_query_get_nym(id);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, query) = prepare_result!(res, String::new());
-        debug!("indy_verim_ledger_build_query_get_nym: query: {:?}", query);
+        debug!("indy_verim_ledger_verim_build_query_get_nym: query: {:?}", query);
 
         let query = ctypes::string_to_cstring(query);
         cb(command_handle, err, query.as_ptr())
@@ -374,18 +374,18 @@ pub extern "C" fn indy_verim_ledger_build_query_get_nym(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_build_query_get_nym < {:?}", res);
+    debug!("indy_verim_ledger_verim_build_query_get_nym < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_verim_ledger_parse_query_get_nym_resp(
+pub extern "C" fn indy_verim_ledger_verim_parse_query_get_nym_resp(
     command_handle: CommandHandle,
     query_resp: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, resp: *const c_char)>,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_parse_query_get_nym_resp > query_resp {:?}",
+        "indy_verim_ledger_verim_parse_query_get_nym_resp > query_resp {:?}",
         query_resp
     );
 
@@ -393,7 +393,7 @@ pub extern "C" fn indy_verim_ledger_parse_query_get_nym_resp(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     debug!(
-        "indy_verim_ledger_parse_query_get_nym_resp > query_resp {:?}",
+        "indy_verim_ledger_verim_parse_query_get_nym_resp > query_resp {:?}",
         query_resp
     );
 
@@ -402,14 +402,14 @@ pub extern "C" fn indy_verim_ledger_parse_query_get_nym_resp(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .parse_query_get_nym_resp(&query_resp);
+            .verim_parse_query_get_nym_resp(&query_resp);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, resp) = prepare_result!(res, String::new());
         debug!(
-            "indy_verim_ledger_parse_query_get_nym_resp: resp: {:?}",
+            "indy_verim_ledger_verim_parse_query_get_nym_resp: resp: {:?}",
             resp
         );
         let resp = ctypes::string_to_cstring(resp);
@@ -423,31 +423,31 @@ pub extern "C" fn indy_verim_ledger_parse_query_get_nym_resp(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_parse_query_get_nym_resp < {:?}", res);
+    debug!("indy_verim_ledger_verim_parse_query_get_nym_resp < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_verim_ledger_build_query_all_nym(
+pub extern "C" fn indy_verim_ledger_verim_build_query_all_nym(
     command_handle: CommandHandle,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, query: *const c_char)>,
 ) -> ErrorCode {
-    debug!("indy_verim_ledger_build_query_all_nym >");
+    debug!("indy_verim_ledger_verim_build_query_all_nym >");
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
 
-    debug!("indy_verim_ledger_build_query_all_nym >");
+    debug!("indy_verim_ledger_verim_build_query_all_nym >");
 
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.verim_ledger_controller.build_query_all_nym();
+        let res = locator.verim_ledger_controller.verim_build_query_all_nym();
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, query) = prepare_result!(res, String::new());
-        debug!("indy_verim_ledger_build_query_all_nym: query: {:?}", query);
+        debug!("indy_verim_ledger_verim_build_query_all_nym: query: {:?}", query);
 
         let query = ctypes::string_to_cstring(query);
         cb(command_handle, err, query.as_ptr())
@@ -460,18 +460,18 @@ pub extern "C" fn indy_verim_ledger_build_query_all_nym(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_build_query_all_nym < {:?}", res);
+    debug!("indy_verim_ledger_verim_build_query_all_nym < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_verim_ledger_parse_query_all_nym_resp(
+pub extern "C" fn indy_verim_ledger_verim_parse_query_all_nym_resp(
     command_handle: CommandHandle,
     query_resp: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, resp: *const c_char)>,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_parse_query_all_nym_resp > query_resp {:?}",
+        "indy_verim_ledger_verim_parse_query_all_nym_resp > query_resp {:?}",
         query_resp
     );
 
@@ -479,7 +479,7 @@ pub extern "C" fn indy_verim_ledger_parse_query_all_nym_resp(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     debug!(
-        "indy_verim_ledger_parse_query_all_nym_resp > query_resp {:?}",
+        "indy_verim_ledger_verim_parse_query_all_nym_resp > query_resp {:?}",
         query_resp
     );
 
@@ -488,14 +488,14 @@ pub extern "C" fn indy_verim_ledger_parse_query_all_nym_resp(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .parse_query_all_nym_resp(&query_resp);
+            .verim_parse_query_all_nym_resp(&query_resp);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, resp) = prepare_result!(res, String::new());
         debug!(
-            "indy_verim_ledger_parse_query_all_nym_resp: resp: {:?}",
+            "indy_verim_ledger_verim_parse_query_all_nym_resp: resp: {:?}",
             resp
         );
         let resp = ctypes::string_to_cstring(resp);
@@ -509,8 +509,6 @@ pub extern "C" fn indy_verim_ledger_parse_query_all_nym_resp(
     );
 
     let res = ErrorCode::Success;
-    debug!("indy_verim_ledger_parse_query_all_nym_resp < {:?}", res);
+    debug!("indy_verim_ledger_verim_parse_query_all_nym_resp < {:?}", res);
     res
 }
-
-

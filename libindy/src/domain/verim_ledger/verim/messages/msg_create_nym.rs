@@ -1,7 +1,7 @@
+use indy_api_types::errors::IndyResult;
+
 use super::super::super::proto::verimid::verimnode::verim::MsgCreateNym as ProtoMsgCreateNym;
 use super::super::super::VerimProto;
-use cosmos_sdk::tx::Msg;
-use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MsgCreateNym {
@@ -50,8 +50,8 @@ impl VerimProto for MsgCreateNym {
 
 #[cfg(test)]
 mod test {
-    use super::super::super::super::VerimProto;
     use super::super::super::messages::msg_create_nym::MsgCreateNym;
+    use super::super::super::super::VerimProto;
 
     #[test]
     fn test_msg_create_nym() {

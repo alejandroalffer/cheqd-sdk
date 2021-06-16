@@ -2,12 +2,10 @@
 
 use async_std::sync::Arc;
 use cosmos_sdk::rpc;
-use cosmos_sdk::tx::{Msg, Raw};
+use cosmos_sdk::tx::Raw;
 use indy_api_types::errors::IndyResult;
 
-use crate::domain::verim_pool::VerimPoolConfig;
-use crate::domain::verim_ledger::cosmos_ext::{CosmosMsgExt, CosmosSignDocExt};
-use crate::services::{VerimKeysService, VerimPoolService};
+use crate::services::VerimPoolService;
 
 pub(crate) struct VerimPoolController {
     verim_pool_service: Arc<VerimPoolService>,

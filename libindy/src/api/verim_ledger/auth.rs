@@ -6,7 +6,7 @@ use indy_utils::ctypes;
 use libc::c_char;
 
 #[no_mangle]
-pub extern "C" fn indy_cosmos_ledger_build_tx(
+pub extern "C" fn indy_verim_ledger_auth_build_tx(
     command_handle: CommandHandle,
     pool_alias: *const c_char,
     sender_alias: *const c_char,
@@ -29,7 +29,7 @@ pub extern "C" fn indy_cosmos_ledger_build_tx(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_cosmos_ledger_build_tx > pool_alias {:?} sender_alias {:?} msg_raw {:?} \
+        "indy_verim_ledger_auth_build_tx > pool_alias {:?} sender_alias {:?} msg_raw {:?} \
         msg_len {:?} account_number {:?} sequence_number {:?} max_gas {:?} max_coin_amount \
         {:?} max_coin_denom {:?} timeout_height {:?} memo {:?}",
         pool_alias,
@@ -58,7 +58,7 @@ pub extern "C" fn indy_cosmos_ledger_build_tx(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam13);
 
     debug!(
-        "indy_cosmos_ledger_build_tx > pool_alias {:?} sender_alias {:?} msg_raw {:?} \
+        "indy_verim_ledger_auth_build_tx > pool_alias {:?} sender_alias {:?} msg_raw {:?} \
         account_number {:?} sequence_number {:?} max_gas {:?} max_coin_amount \
         {:?} max_coin_denom {:?} timeout_height {:?} memo {:?}",
         pool_alias,
@@ -78,7 +78,7 @@ pub extern "C" fn indy_cosmos_ledger_build_tx(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .build_tx(
+            .auth_build_tx(
                 &pool_alias,
                 &sender_alias,
                 &msg_raw,
@@ -96,7 +96,7 @@ pub extern "C" fn indy_cosmos_ledger_build_tx(
 
     let cb = move |res: IndyResult<_>| {
         let (err, tx) = prepare_result!(res, Vec::new());
-        debug!("indy_cosmos_ledger_build_tx ? err {:?} tx {:?}", err, tx);
+        debug!("indy_verim_ledger_auth_build_tx ? err {:?} tx {:?}", err, tx);
 
         let (tx_raw, tx_len) = ctypes::vec_to_pointer(&tx);
         cb(command_handle, err, tx_raw, tx_len)
@@ -107,18 +107,18 @@ pub extern "C" fn indy_cosmos_ledger_build_tx(
         .spawn_ok_instrumented(CommandMetric::CosmosLedgerCommandBuildTx, action, cb);
 
     let res = ErrorCode::Success;
-    debug!("indy_cosmos_ledger_build_tx < {:?}", res);
+    debug!("indy_verim_ledger_auth_build_tx < {:?}", res);
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_cosmos_ledger_build_query_cosmos_auth_account(
+pub extern "C" fn indy_verim_ledger_auth_build_query_account(
     command_handle: CommandHandle,
     address: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, query: *const c_char)>,
 ) -> ErrorCode {
     debug!(
-        "indy_cosmos_ledger_build_query_cosmos_auth_account > address {:?}",
+        "indy_verim_ledger_auth_build_query_account > address {:?}",
         address
     );
 
@@ -126,7 +126,7 @@ pub extern "C" fn indy_cosmos_ledger_build_query_cosmos_auth_account(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     debug!(
-        "indy_cosmos_ledger_build_query_cosmos_auth_account > address {:?}",
+        "indy_verim_ledger_auth_build_query_account > address {:?}",
         address
     );
 
@@ -135,14 +135,14 @@ pub extern "C" fn indy_cosmos_ledger_build_query_cosmos_auth_account(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .build_query_cosmos_auth_account(&address);
+            .auth_build_query_account(&address);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, query) = prepare_result!(res, String::new());
         debug!(
-            "indy_cosmos_ledger_build_query_cosmos_auth_account: query: {:?}",
+            "indy_verim_ledger_auth_build_query_account: query: {:?}",
             query
         );
 
@@ -158,20 +158,20 @@ pub extern "C" fn indy_cosmos_ledger_build_query_cosmos_auth_account(
 
     let res = ErrorCode::Success;
     debug!(
-        "indy_cosmos_ledger_build_query_cosmos_auth_account < {:?}",
+        "indy_verim_ledger_auth_build_query_account < {:?}",
         res
     );
     res
 }
 
 #[no_mangle]
-pub extern "C" fn indy_cosmos_ledger_parse_query_cosmos_auth_account_resp(
+pub extern "C" fn indy_verim_ledger_auth_parse_query_account_resp(
     command_handle: CommandHandle,
     query_resp: *const c_char,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, resp: *const c_char)>,
 ) -> ErrorCode {
     debug!(
-        "indy_cosmos_ledger_parse_query_cosmos_auth_account_resp > query_resp {:?}",
+        "indy_verim_ledger_auth_parse_query_account_resp > query_resp {:?}",
         query_resp
     );
 
@@ -179,7 +179,7 @@ pub extern "C" fn indy_cosmos_ledger_parse_query_cosmos_auth_account_resp(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     debug!(
-        "indy_cosmos_ledger_parse_query_cosmos_auth_account_resp > query_resp {:?}",
+        "indy_verim_ledger_auth_parse_query_account_resp > query_resp {:?}",
         query_resp
     );
 
@@ -188,14 +188,14 @@ pub extern "C" fn indy_cosmos_ledger_parse_query_cosmos_auth_account_resp(
     let action = async move {
         let res = locator
             .verim_ledger_controller
-            .parse_query_cosmos_auth_account_resp(&query_resp);
+            .auth_parse_query_account_resp(&query_resp);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
         let (err, resp) = prepare_result!(res, String::new());
         debug!(
-            "indy_cosmos_ledger_parse_query_cosmos_auth_account_resp: resp: {:?}",
+            "indy_verim_ledger_auth_parse_query_account_resp: resp: {:?}",
             resp
         );
         let resp = ctypes::string_to_cstring(resp);
@@ -210,7 +210,7 @@ pub extern "C" fn indy_cosmos_ledger_parse_query_cosmos_auth_account_resp(
 
     let res = ErrorCode::Success;
     debug!(
-        "indy_cosmos_ledger_parse_query_cosmos_auth_account_resp < {:?}",
+        "indy_verim_ledger_auth_parse_query_account_resp < {:?}",
         res
     );
     res

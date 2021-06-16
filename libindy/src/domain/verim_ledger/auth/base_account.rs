@@ -1,7 +1,8 @@
-use super::super::super::VerimProto;
-use super::super::super::cosmos::crypto::PubKey;
 use cosmos_sdk::proto::cosmos::auth::v1beta1::BaseAccount as ProtoBaseAccount;
 use indy_api_types::errors::IndyResult;
+
+use crate::domain::verim_ledger::crypto::PubKey;
+use crate::domain::verim_ledger::VerimProto;
 
 /// BaseAccount defines a base account type. It contains all the necessary fields
 /// for basic account functionality. Any custom account type should extend this
@@ -58,8 +59,9 @@ impl VerimProto for BaseAccount {
 
 #[cfg(test)]
 mod test {
+    use crate::domain::verim_ledger::auth::QueryAccountRequest;
+
     use super::*;
-    use super::super::super::super::cosmos::auth::QueryAccountRequest;
 
     #[test]
     fn test_query_account_request() {

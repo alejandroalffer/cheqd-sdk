@@ -1,6 +1,7 @@
-use super::super::super::super::verim_ledger::VerimProto;
-use super::super::super::proto::verimid::verimnode::verim::MsgCreateNymResponse as ProtoMsgCreateNymResponse;
 use indy_api_types::errors::IndyResult;
+
+use super::super::super::proto::verimid::verimnode::verim::MsgCreateNymResponse as ProtoMsgCreateNymResponse;
+use super::super::super::super::verim_ledger::VerimProto;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct MsgCreateNymResponse {
@@ -29,9 +30,9 @@ impl VerimProto for MsgCreateNymResponse {
 
 #[cfg(test)]
 mod test {
-    use super::super::super::super::VerimProto;
-    use super::super::MsgCreateNym;
     use super::MsgCreateNymResponse;
+    use super::super::MsgCreateNym;
+    use super::super::super::super::VerimProto;
 
     #[test]
     fn test_msg_create_nym_response() {

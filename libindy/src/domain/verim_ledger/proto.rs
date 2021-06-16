@@ -4,8 +4,8 @@ pub mod verimid {
     pub mod verimnode {
         pub mod verim {
             include!(concat!(
-                env!("OUT_DIR"),
-                "/prost/verimid.verimnode.verim.rs"
+            env!("OUT_DIR"),
+            "/prost/verimid.verimnode.verim.rs"
             ));
         }
     }

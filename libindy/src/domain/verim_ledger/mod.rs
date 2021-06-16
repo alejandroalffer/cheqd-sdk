@@ -1,17 +1,16 @@
 use std::fmt::Debug;
 
-use cosmos_sdk::proto::cosmos::tx::v1beta1::{SignDoc as ProtoSignDoc, TxRaw};
-use cosmos_sdk::tx::{Msg, MsgProto, MsgType, Raw, SignDoc};
 use indy_api_types::errors::IndyResult;
-use prost::Message;
-use prost_ext::ProstMessageExt;
-use prost_types::Any;
 
-pub mod cosmos;
+use prost_ext::ProstMessageExt;
+
 pub mod cosmos_ext;
 pub mod prost_ext;
 pub mod proto;
 pub mod verim;
+pub mod auth;
+pub mod base;
+pub mod crypto;
 
 pub trait VerimProto: Eq + Debug + Sized {
     type Proto: prost::Message + Default;

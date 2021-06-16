@@ -1,6 +1,7 @@
+use indy_api_types::errors::IndyResult;
+
 use super::super::super::proto::verimid::verimnode::verim::Nym as ProtoNym;
 use super::super::super::VerimProto;
-use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Nym {

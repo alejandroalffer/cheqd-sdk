@@ -1,14 +1,9 @@
 use std::env;
 use std::fs;
-use std::fs::{create_dir_all, remove_dir_all};
 use std::{
-    ffi::OsStr,
-    io,
     path::{Path, PathBuf},
-    process,
 };
 
-use regex::Regex;
 use walkdir::WalkDir;
 
 fn main() {
@@ -121,8 +116,6 @@ fn compile_protos(out_dir: &Path) {
         out_dir.display()
     );
 
-    let root = env!("CARGO_MANIFEST_DIR");
-
     // Paths
     let proto_paths = [
         format!("{}/proto/verim", verimcosmos_dir.display()),
@@ -164,45 +157,4 @@ fn compile_protos(out_dir: &Path) {
         eprintln!("[error] couldn't compile protos: {}", e);
         panic!("protoc failed!");
     }
-}
-
-fn compile_proto_services(out_dir: impl AsRef<Path>) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let sdk_dir = PathBuf::from(COSMOS_SDK_DIR);
-    let verimcosmos_dir = PathBuf::from(VERIMCOSMOS_DIR);
-
-    let proto_includes_paths = [
-        sdk_dir.join("proto"),
-        sdk_dir.join("third_party/proto"),
-        verimcosmos_dir.join("proto"),
-    ];
-
-    // List available paths for dependencies
-    let includes = proto_includes_paths
-        .iter()
-        .map(|p| p.as_os_str().to_os_string())
-        .collect::<Vec<_>>();
-
-    let proto_services_path = [
-        verimcosmos_dir.join("proto/verim/tx.proto"),
-        verimcosmos_dir.join("proto/verim/query.proto"),
-    ];
-
-    // List available paths for dependencies
-    let services = proto_services_path
-        .iter()
-        .map(|p| p.as_os_str().to_os_string())
-        .collect::<Vec<_>>();
-
-    // Compile all proto client for GRPC services
-    println!("[info] Compiling proto clients for GRPC services!");
-    tonic_build::configure()
-        .build_client(true)
-        .build_server(false)
-        .format(true)
-        .out_dir(out_dir)
-        .compile(&services, &includes)
-        .unwrap();
-
-    println!("[info ] => Done!");
 }
