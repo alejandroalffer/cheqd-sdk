@@ -1,3 +1,9 @@
+use indy_api_types::{ErrorCode, errors::prelude::*, validation::Validatable};
+use indy_utils::ctypes;
+use libc::c_char;
+
+use crate::domain::IndyConfig;
+
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod cache;
@@ -14,15 +20,8 @@ pub mod payments_v2;
 pub mod pool;
 pub mod wallet;
 pub mod verim_ledger;
-pub mod cosmos_ledger;
-pub mod cosmos_keys;
-pub mod tendermint_pool;
-
-use indy_api_types::{errors::prelude::*, validation::Validatable, ErrorCode};
-use indy_utils::ctypes;
-use libc::c_char;
-
-use crate::domain::IndyConfig;
+pub mod verim_keys;
+pub mod verim_pool;
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.
 ///
