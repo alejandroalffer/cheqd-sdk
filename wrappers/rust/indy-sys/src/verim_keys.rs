@@ -3,26 +3,26 @@ use super::*;
 use {CString, CommandHandle, Error};
 
 extern "C" {
-    pub fn indy_cosmos_keys_add_random(
+    pub fn indy_verim_keys_add_random(
         command_handle: CommandHandle,
         alias: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_cosmos_keys_add_from_mnemonic(
+    pub fn indy_verim_keys_add_from_mnemonic(
         command_handle: CommandHandle,
         alias: CString,
         mnemonic: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_cosmos_keys_get_info(
+    pub fn indy_verim_keys_get_info(
         command_handle: CommandHandle,
         alias: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_cosmos_keys_sign(
+    pub fn indy_verim_keys_sign(
         command_handle: CommandHandle,
         alias: CString,
         tx_raw: BString,

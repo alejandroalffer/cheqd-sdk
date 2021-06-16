@@ -35,8 +35,8 @@ pub mod pool;
 mod utils;
 pub mod verim_ledger;
 pub mod cosmos_ledger;
-pub mod cosmos_keys;
-pub mod tendermint_pool;
+pub mod verim_keys;
+pub mod verim_pool;
 pub mod wallet;
 
 use std::ffi::CStr;

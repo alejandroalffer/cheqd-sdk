@@ -4,7 +4,7 @@ use std::ffi::CString;
 
 use futures::Future;
 
-use ffi::tendermint_pool;
+use ffi::verim_pool;
 use ffi::{ResponseSliceCB, ResponseStringCB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
@@ -34,7 +34,7 @@ fn _add(
     let chain_id = c_str!(chain_id);
 
     ErrorCode::from(unsafe {
-        tendermint_pool::indy_tendermint_pool_add(
+        verim_pool::indy_verim_pool_add(
             command_handle,
             alias.as_ptr(),
             rpc_address.as_ptr(),
@@ -60,7 +60,7 @@ fn _get_config(
     let alias = c_str!(alias);
 
     ErrorCode::from(unsafe {
-        tendermint_pool::indy_tendermint_pool_get_config(command_handle, alias.as_ptr(), cb)
+        verim_pool::indy_verim_pool_get_config(command_handle, alias.as_ptr(), cb)
     })
 }
 
@@ -84,7 +84,7 @@ fn _broadcast_tx_commit(
     let pool_alias = c_str!(pool_alias);
 
     ErrorCode::from(unsafe {
-        tendermint_pool::indy_tendermint_pool_broadcast_tx_commit(
+        verim_pool::indy_verim_pool_broadcast_tx_commit(
             command_handle,
             pool_alias.as_ptr(),
             signed_tx.as_ptr() as *const u8,
@@ -115,7 +115,7 @@ fn _abci_query(
     let req_json = c_str!(req_json);
 
     ErrorCode::from(unsafe {
-        tendermint_pool::indy_tendermint_pool_abci_query(
+        verim_pool::indy_verim_pool_abci_query(
             command_handle,
             pool_alias.as_ptr(),
             req_json.as_ptr(),
@@ -142,7 +142,7 @@ fn _abci_info(
     let pool_alias = c_str!(pool_alias);
 
     ErrorCode::from(unsafe {
-        tendermint_pool::indy_tendermint_pool_abci_info(
+        verim_pool::indy_verim_pool_abci_info(
             command_handle,
             pool_alias.as_ptr(),
             cb,

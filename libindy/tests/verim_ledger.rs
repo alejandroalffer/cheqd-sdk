@@ -188,4 +188,29 @@ mod high_cases {
         }
 
     }
+
+    #[cfg(test)]
+    mod build_tx {
+        use super::*;
+
+        #[test]
+        fn cosmos_ledger_build_tx() {
+            unimplemented!();
+        }
+    }
+
+    #[cfg(test)]
+    mod auth_account {
+        use super::*;
+
+        #[test]
+        fn cosmos_ledger_build_query_cosmos_auth_account() {
+            unimplemented!();
+        }
+
+        #[test]
+        fn cosmos_ledger_parse_query_cosmos_auth_account_resp() {
+            unimplemented!();
+        }
+    }
 }

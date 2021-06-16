@@ -4,7 +4,7 @@ use std::ffi::CString;
 
 use futures::Future;
 
-use ffi::cosmos_keys;
+use ffi::verim_keys;
 use ffi::{ResponseSliceCB, ResponseStringCB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
@@ -26,7 +26,7 @@ fn _add_random(
     let alias = c_str!(alias);
 
     ErrorCode::from(unsafe {
-        cosmos_keys::indy_cosmos_keys_add_random(command_handle, alias.as_ptr(), cb)
+        verim_keys::indy_verim_keys_add_random(command_handle, alias.as_ptr(), cb)
     })
 }
 
@@ -51,7 +51,7 @@ fn _add_from_mnemonic(
     let mnemonic = c_str!(mnemonic);
 
     ErrorCode::from(unsafe {
-        cosmos_keys::indy_cosmos_keys_add_from_mnemonic(
+        verim_keys::indy_verim_keys_add_from_mnemonic(
             command_handle,
             alias.as_ptr(),
             mnemonic.as_ptr(),
@@ -76,7 +76,7 @@ fn _get_info(
     let alias = c_str!(alias);
 
     ErrorCode::from(unsafe {
-        cosmos_keys::indy_cosmos_keys_get_info(command_handle, alias.as_ptr(), cb)
+        verim_keys::indy_verim_keys_get_info(command_handle, alias.as_ptr(), cb)
     })
 }
 
@@ -97,7 +97,7 @@ fn _sign(
     let alias = c_str!(alias);
 
     ErrorCode::from(unsafe {
-        cosmos_keys::indy_cosmos_keys_sign(
+        verim_keys::indy_verim_keys_sign(
             command_handle,
             alias.as_ptr(),
             tx.as_ptr() as *const u8,
