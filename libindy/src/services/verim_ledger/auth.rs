@@ -1,36 +1,19 @@
+use std::convert::TryInto;
 use std::str::FromStr;
 
-use cosmos_sdk::proto::cosmos::base::abci::v1beta1::TxMsgData;
+use cosmos_sdk::{Coin, tx};
+use cosmos_sdk::crypto::PublicKey;
 use cosmos_sdk::rpc::endpoint::abci_query;
-use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
-use cosmos_sdk::tx::{Msg, SignDoc, SignerInfo, Fee, AuthInfo};
-use cosmos_sdk::tx::MsgType;
-use indy_api_types::errors::{IndyErrorKind, IndyResult};
-use indy_api_types::IndyError;
-use log_derive::logfn;
+use cosmos_sdk::tendermint::block::Height;
+use cosmos_sdk::tx::{AuthInfo, Fee, Msg, SignDoc, SignerInfo};
+use indy_api_types::errors::IndyResult;
 
-use crate::domain::verim_ledger::cosmos::base::query::PageRequest;
-use crate::domain::verim_ledger::prost_ext::ProstMessageExt;
-use crate::domain::verim_ledger::verim::messages::MsgCreateNym;
-use crate::domain::verim_ledger::verim::messages::MsgCreateNymResponse;
-use crate::domain::verim_ledger::verim::messages::MsgDeleteNym;
-use crate::domain::verim_ledger::verim::messages::MsgDeleteNymResponse;
-use crate::domain::verim_ledger::verim::messages::MsgUpdateNym;
-use crate::domain::verim_ledger::verim::messages::MsgUpdateNymResponse;
-use crate::domain::verim_ledger::verim::queries::QueryAllNymRequest;
-use crate::domain::verim_ledger::verim::queries::QueryAllNymResponse;
-use crate::domain::verim_ledger::verim::queries::QueryGetNymRequest;
-use crate::domain::verim_ledger::verim::queries::QueryGetNymResponse;
+use crate::domain::verim_ledger::auth::{QueryAccountRequest, QueryAccountResponse};
 use crate::domain::verim_ledger::VerimProto;
 use crate::services::VerimLedgerService;
-use crate::domain::verim_ledger::cosmos::auth::{QueryAccountResponse, QueryAccountRequest};
-use cosmos_sdk::{tx, Coin};
-use cosmos_sdk::tendermint::block::Height;
-use std::convert::TryInto;
-use cosmos_sdk::crypto::PublicKey;
 
 impl VerimLedgerService {
-    pub(crate) async fn build_tx(
+    pub(crate) async fn auth_build_tx(
         &self,
         chain_id: &str,
         sender_public_key: &str,
@@ -84,7 +67,7 @@ impl VerimLedgerService {
         Ok(signer_info)
     }
 
-    pub(crate) fn build_query_cosmos_auth_account(
+    pub(crate) fn auth_build_query_account(
         &self,
         address: &str,
     ) -> IndyResult<abci_query::Request> {
@@ -92,11 +75,11 @@ impl VerimLedgerService {
         let path = format!("/cosmos.auth.v1beta1.Query/Account");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
         let req =
-            abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
+            abci_query::Request::new(Some(path), query_data.to_proto_bytes()?, None, true);
         Ok(req)
     }
 
-    pub(crate) fn parse_query_cosmos_auth_account_resp(
+    pub(crate) fn auth_parse_query_account_resp(
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryAccountResponse> {

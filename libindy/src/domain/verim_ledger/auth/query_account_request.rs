@@ -1,6 +1,7 @@
-use super::super::super::VerimProto;
 use cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest as ProtoQueryAccountRequest;
 use indy_api_types::errors::IndyResult;
+
+use crate::domain::verim_ledger::VerimProto;
 
 /// QueryAccountRequest is the request type for the Query/Account RPC method.
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]

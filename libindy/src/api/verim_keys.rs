@@ -1,15 +1,11 @@
-use std::ptr;
-
 use indy_api_types::{
-    errors::prelude::*, validation::Validatable, CommandHandle, ErrorCode, PoolHandle, WalletHandle,
+    CommandHandle, ErrorCode, errors::prelude::*,
 };
-
 use indy_utils::ctypes;
 use libc::c_char;
-use serde_json;
 
-use crate::services::CommandMetric;
 use crate::Locator;
+use crate::services::CommandMetric;
 
 /// Creates keys (signing and encryption keys) for a new account.
 /// #Params

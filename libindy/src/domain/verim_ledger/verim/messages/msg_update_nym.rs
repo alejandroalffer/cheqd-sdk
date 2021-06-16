@@ -1,7 +1,7 @@
+use indy_api_types::errors::IndyResult;
+
 use super::super::super::proto::verimid::verimnode::verim::MsgUpdateNym as ProtoMsgUpdateNym;
 use super::super::super::VerimProto;
-use cosmos_sdk::tx::Msg;
-use indy_api_types::errors::IndyResult;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MsgUpdateNym {

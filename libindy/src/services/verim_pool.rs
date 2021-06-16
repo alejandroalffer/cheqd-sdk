@@ -1,23 +1,21 @@
 //! Pool service for Tendermint back-end
 
-use crate::domain::verim_pool::VerimPoolConfig;
-use crate::domain::pool::PoolConfig;
-use cosmos_sdk::crypto::PublicKey;
-use cosmos_sdk::rpc::endpoint::broadcast;
+use std::collections::HashMap;
+
+use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::{Request, Response};
+use cosmos_sdk::rpc::endpoint::broadcast;
 use cosmos_sdk::tendermint::abci;
-use cosmos_sdk::tendermint::block::Height;
-use cosmos_sdk::tx::{AuthInfo, Fee, Msg, Raw, SignDoc, SignerInfo};
-use cosmos_sdk::{rpc, tx, Coin};
+use cosmos_sdk::tx::Raw;
 use futures::lock::Mutex as MutexF;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
-use std::collections::HashMap;
-use std::convert::TryInto;
+
+use crate::domain::verim_pool::PoolConfig;
 
 pub(crate) struct VerimPoolService {
     // TODO: Persistence
-    pools: MutexF<HashMap<String, VerimPoolConfig>>,
+    pools: MutexF<HashMap<String, PoolConfig>>,
 }
 
 impl VerimPoolService {
@@ -32,7 +30,7 @@ impl VerimPoolService {
         alias: &str,
         rpc_address: &str,
         chain_id: &str,
-    ) -> IndyResult<VerimPoolConfig> {
+    ) -> IndyResult<PoolConfig> {
         let mut pools = self.pools.lock().await;
 
         if pools.contains_key(alias) {
@@ -42,7 +40,7 @@ impl VerimPoolService {
             ));
         }
 
-        let config = VerimPoolConfig::new(
+        let config = PoolConfig::new(
             alias.to_string(),
             rpc_address.to_string(),
             chain_id.to_string(),
@@ -52,7 +50,7 @@ impl VerimPoolService {
         Ok(config)
     }
 
-    pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<VerimPoolConfig> {
+    pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<PoolConfig> {
         let pools = self.pools.lock().await;
 
         let config = pools.get(alias).ok_or(IndyError::from_msg(
