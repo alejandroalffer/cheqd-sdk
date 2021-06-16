@@ -1,4 +1,4 @@
-use super::super::super::proto::verimid::verimcosmos::verimcosmos::MsgDeleteNym as ProtoMsgDeleteNym;
+use super::super::super::proto::verimid::verimnode::verim::MsgDeleteNym as ProtoMsgDeleteNym;
 use super::super::super::VerimProto;
 use cosmos_sdk::tx::Msg;
 use indy_api_types::errors::IndyResult;

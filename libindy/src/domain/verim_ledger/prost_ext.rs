@@ -32,7 +32,7 @@ mod test {
 
     use super::super::super::verim_ledger::prost_ext::ProstMessageExt;
 
-    use super::super::super::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
+    use super::super::super::verim_ledger::proto::verimid::verimnode::verim::MsgCreateNym as ProtoMsgCreateNym;
     use super::super::super::verim_ledger::verimcosmos::messages::MsgCreateNym;
     use super::super::super::verim_ledger::VerimProto;
     use super::super::cosmos_ext::CosmosMsgExt;

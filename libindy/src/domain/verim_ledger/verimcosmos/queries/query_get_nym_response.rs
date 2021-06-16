@@ -1,4 +1,4 @@
-use super::super::super::proto::verimid::verimcosmos::verimcosmos::QueryGetNymResponse as ProtoQueryGetNymResponse;
+use super::super::super::proto::verimid::verimnode::verim::QueryGetNymResponse as ProtoQueryGetNymResponse;
 use super::super::super::VerimProto;
 use super::super::models::nym::Nym;
 use indy_api_types::errors::IndyResult;
