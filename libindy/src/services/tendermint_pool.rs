@@ -21,15 +21,11 @@ use std::fs;
 use serde_json::Value;
 
 pub(crate) struct TendermintPoolService {
-    // TODO: Persistence
-    pools: MutexF<HashMap<String, TendermintPoolConfig>>,
 }
 
 impl TendermintPoolService {
     pub(crate) fn new() -> Self {
-        Self {
-            pools: MutexF::new(HashMap::new()),
-        }
+        Self { }
     }
 
     pub(crate) async fn add(
@@ -50,74 +46,51 @@ impl TendermintPoolService {
             return Err(err_msg(
                 IndyErrorKind::PoolConfigAlreadyExists,
                 format!(
-                    "Pool ledger config file with alias \"{}\" already exists",
+                    "Verim pool ledger config file with alias \"{}\" already exists",
                     alias
                 ),
             ));
         }
 
         fs::create_dir_all(path.as_path())
-            .to_indy(IndyErrorKind::IOError, "Can't create pool config directory")?;
+            .to_indy(IndyErrorKind::IOError, "Can't create verim pool config directory")?;
 
         path.push("config");
         path.set_extension("json");
 
         let mut f: fs::File = fs::File::create(path.as_path())
-            .to_indy(IndyErrorKind::IOError, "Can't create pool config file")?;
+            .to_indy(IndyErrorKind::IOError, "Can't create verim pool config file")?;
 
         f.write_all({
             serde_json::to_string(&config)
                 .to_indy(IndyErrorKind::InvalidState, "Can't serialize pool config")?
                 .as_bytes()
         })
-            .to_indy(IndyErrorKind::IOError, "Can't write to pool config file")?;
+            .to_indy(IndyErrorKind::IOError, "Can't write to verim pool config file")?;
 
         f.flush()
-            .to_indy(IndyErrorKind::IOError, "Can't write to pool config file")?;
+            .to_indy(IndyErrorKind::IOError, "Can't write to verim pool config file")?;
 
         Ok(config)
     }
 
     pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<TendermintPoolConfig> {
-        let mut pool_home_path = environment::verim_pool_path(alias);
+        let mut path = environment::verim_pool_path(alias);
 
-        if let Ok(entries) = fs::read_dir(pool_home_path) {
-            for entry in entries {
-
-                let dir_entry = if let Ok(dir_entry) = entry {
-                    dir_entry
-                } else {
-                    continue;
-                };
-
-                if let Some(pool_name) = dir_entry
-                    .path()
-                    .file_name()
-                    .and_then(|os_str| os_str.to_str())
-                {
-                    let mut f: fs::File = fs::File::open(dir_entry.path())
-                        .to_indy(IndyErrorKind::IOError, format!("Can't open pool config file: {}", alias))?;
-                    let mut out = String::new();
-                    f.read_to_string(&mut out)?;
-                    let pool_json: Value = serde_json::from_str(&out)
-                        .to_indy(IndyErrorKind::IOError, "Invalid data of pool config file")?;
-                    let pool_obj = pool_json.as_object().unwrap();
-
-                    let result = TendermintPoolConfig::new(
-                        pool_obj["alias"].to_string(),
-                        pool_obj["rpc_address"].to_string(),
-                        pool_obj["chain_id"].to_string(),
-                    );
-
-                    return Ok(result);
-                }
-            }
+        if !path.exists() {
+            return Err(IndyError::from_msg(IndyErrorKind::IOError, format!("Can't find verim pool config file: {}", alias)));
         }
 
-        return Err(IndyError::from_msg(
-            IndyErrorKind::PoolNotCreated,
-            format!("Can't find pool config file: {}", alias),
-        ));
+        path.push("config");
+        path.set_extension("json");
+
+        let config = fs::read_to_string(path)
+            .to_indy(IndyErrorKind::IOError, format!("Can't open verim pool config file: {}", alias))?;
+
+        let result: TendermintPoolConfig = serde_json::from_str(&config)
+            .to_indy(IndyErrorKind::IOError, "Invalid data of verim pool config file")?;
+
+        Ok(result)
     }
 
     // Send and wait for commit

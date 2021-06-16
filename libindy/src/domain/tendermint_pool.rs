@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TendermintPoolConfig {
     pub alias: String,
     pub rpc_address: String,

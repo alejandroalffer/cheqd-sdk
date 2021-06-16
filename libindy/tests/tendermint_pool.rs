@@ -25,7 +25,9 @@ mod high_cases {
 
         #[test]
         fn test_add() {
-            let result = tendermint_pool::add("pool1", "rpc_address", "chain_id").unwrap();
+            let pool_number: u16 = rand::thread_rng().gen();
+            let pool_name = format!("pool{}", pool_number);
+            let result = tendermint_pool::add(&pool_name, "rpc_address", "chain_id").unwrap();
             println!("Data: {:?} ", result);
         }
     }
