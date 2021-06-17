@@ -34,7 +34,6 @@ pub mod payments;
 pub mod pool;
 mod utils;
 pub mod verim_ledger;
-pub mod cosmos_ledger;
 pub mod verim_keys;
 pub mod verim_pool;
 pub mod wallet;

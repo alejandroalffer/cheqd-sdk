@@ -16,7 +16,7 @@ pub fn build_msg_create_nym(
     verkey: &str,
     alias: &str,
     role: &str,
-) -> Box<dyn Future<Item = (Vec<u8>), Error = IndyError>> {
+) -> Box<dyn Future<Item = Vec<u8>, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
     let err = _build_msg_create_nym(command_handle, did, creator, verkey, alias, role, cb);
@@ -40,7 +40,7 @@ fn _build_msg_create_nym(
     let role = c_str!(role);
 
     ErrorCode::from(unsafe {
-        verim_ledger::indy_verim_ledger_verim_build_msg_create_nym(
+        verim_ledger::verim::indy_verim_ledger_verim_build_msg_create_nym(
             command_handle,
             did.as_ptr(),
             creator.as_ptr(),
@@ -54,7 +54,7 @@ fn _build_msg_create_nym(
 
 pub fn parse_msg_create_nym_resp(
     commit_resp: &str,
-) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _parse_msg_create_nym_resp(command_handle, commit_resp, cb);
@@ -70,7 +70,7 @@ fn _parse_msg_create_nym_resp(
     let commit_resp = c_str!(commit_resp);
 
     ErrorCode::from(unsafe {
-        verim_ledger::indy_verim_ledger_verim_parse_msg_create_nym_resp(
+        verim_ledger::verim::indy_verim_ledger_verim_parse_msg_create_nym_resp(
             command_handle,
             commit_resp.as_ptr(),
             cb,
@@ -85,7 +85,7 @@ pub fn build_msg_update_nym(
     alias: &str,
     role: &str,
     id: u64,
-) -> Box<dyn Future<Item = (Vec<u8>), Error = IndyError>> {
+) -> Box<dyn Future<Item = Vec<u8>, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
     let err = _build_msg_update_nym(command_handle, did, creator, verkey, alias, role, id, cb);
@@ -110,7 +110,7 @@ fn _build_msg_update_nym(
     let role = c_str!(role);
 
     ErrorCode::from(unsafe {
-        verim_ledger::indy_verim_ledger_verim_build_msg_update_nym(
+        verim_ledger::verim::indy_verim_ledger_verim_build_msg_update_nym(
             command_handle,
             did.as_ptr(),
             creator.as_ptr(),
@@ -125,7 +125,7 @@ fn _build_msg_update_nym(
 
 pub fn parse_msg_update_nym_resp(
     commit_resp: &str,
-) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _parse_msg_update_nym_resp(command_handle, commit_resp, cb);
@@ -141,7 +141,7 @@ fn _parse_msg_update_nym_resp(
     let commit_resp = c_str!(commit_resp);
 
     ErrorCode::from(unsafe {
-        verim_ledger::indy_verim_ledger_parse_msg_update_nym_resp(
+        verim_ledger::verim::indy_verim_ledger_verim_parse_msg_update_nym_resp(
             command_handle,
             commit_resp.as_ptr(),
             cb,
@@ -152,7 +152,7 @@ fn _parse_msg_update_nym_resp(
 pub fn build_msg_delete_nym(
     creator: &str,
     id: u64,
-) -> Box<dyn Future<Item = (Vec<u8>), Error = IndyError>> {
+) -> Box<dyn Future<Item = Vec<u8>, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
     let err = _build_msg_delete_nym(command_handle, creator, id, cb);
@@ -169,7 +169,7 @@ fn _build_msg_delete_nym(
     let creator = c_str!(creator);
 
     ErrorCode::from(unsafe {
-        verim_ledger::indy_verim_ledger_verim_build_msg_delete_nym(
+        verim_ledger::verim::indy_verim_ledger_verim_build_msg_delete_nym(
             command_handle,
             creator.as_ptr(),
             id,
@@ -180,7 +180,7 @@ fn _build_msg_delete_nym(
 
 pub fn parse_msg_delete_nym_resp(
     commit_resp: &str,
-) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _parse_msg_delete_nym_resp(command_handle, commit_resp, cb);
@@ -196,7 +196,7 @@ fn _parse_msg_delete_nym_resp(
     let commit_resp = c_str!(commit_resp);
 
     ErrorCode::from(unsafe {
-        verim_ledger::indy_verim_ledger_parse_msg_delete_nym_resp(
+        verim_ledger::verim::indy_verim_ledger_verim_parse_msg_delete_nym_resp(
             command_handle,
             commit_resp.as_ptr(),
             cb,
@@ -218,7 +218,7 @@ fn _build_query_get_nym(
     cb: Option<ResponseStringCB>,
 ) -> ErrorCode {
     ErrorCode::from(unsafe {
-        verim_ledger::indy_verim_ledger_verim_build_query_get_nym(command_handle, id, cb)
+        verim_ledger::verim::indy_verim_ledger_verim_build_query_get_nym(command_handle, id, cb)
     })
 }
 
@@ -240,7 +240,7 @@ fn _parse_query_get_nym_resp(
     let query_resp = c_str!(query_resp);
 
     ErrorCode::from(unsafe {
-        verim_ledger::indy_verim_ledger_verim_parse_query_get_nym_resp(
+        verim_ledger::verim::indy_verim_ledger_verim_parse_query_get_nym_resp(
             command_handle,
             query_resp.as_ptr(),
             cb,
@@ -261,7 +261,7 @@ fn _build_query_all_nym(
     cb: Option<ResponseStringCB>,
 ) -> ErrorCode {
     ErrorCode::from(unsafe {
-        verim_ledger::indy_verim_ledger_verim_build_query_all_nym(command_handle, cb)
+        verim_ledger::verim::indy_verim_ledger_verim_build_query_all_nym(command_handle, cb)
     })
 }
 
@@ -283,7 +283,7 @@ fn _parse_query_all_nym_resp(
     let query_resp = c_str!(query_resp);
 
     ErrorCode::from(unsafe {
-        verim_ledger::indy_verim_ledger_verim_parse_query_all_nym_resp(
+        verim_ledger::verim::indy_verim_ledger_verim_parse_query_all_nym_resp(
             command_handle,
             query_resp.as_ptr(),
             cb,

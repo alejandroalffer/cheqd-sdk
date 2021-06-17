@@ -19,7 +19,6 @@ pub mod pool;
 pub mod wallet;
 pub mod verim_ledger;
 pub mod verim_keys;
-pub mod cosmos_ledger;
 pub mod verim_pool;
 
 use libc::{c_char, c_void};

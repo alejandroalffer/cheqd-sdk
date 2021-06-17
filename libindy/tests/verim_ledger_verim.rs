@@ -10,57 +10,68 @@ extern crate serde_json;
 #[macro_use]
 mod utils;
 
-use utils::{constants::*, verim_keys, cosmos_ledger, verim_pool, verim_ledger, verim_setup};
+use utils::{verim_keys, verim_ledger, verim_pool, verim_setup};
 
 mod high_cases {
     use super::*;
 
     #[cfg(test)]
-    mod verim_ledger_transactions {
+    mod create_nym {
         use super::*;
 
         #[test]
-        fn build_msg_create_nym() {
-            let did = "0";
-            let creator = "1";
-            let role = "some_role";
-            let alias = "some_alias";
-            let verkey = "some_verkey";
-            verim_ledger::build_msg_create_nym(did, creator, verkey, alias, role);
+        #[cfg(feature = "local_nodes_verim_pool")]
+        fn test_create_nym() {
+            unimplemented!()
         }
+    }
+
+
+    #[cfg(test)]
+    mod update_nym {
+        use super::*;
 
         #[test]
-        fn build_msg_update_nym() {
-            let did = "0";
-            let creator = "1";
-            let role = "some_role";
-            let alias = "some_alias";
-            let verkey = "some_verkey";
-            let id = 2;
-            verim_ledger::build_msg_update_nym(did, creator, verkey, alias, role, id);
-        }
-
-        #[test]
-        fn build_msg_delete_nym() {
-            let creator = "1";
-            let id = 2;
-            verim_ledger::build_msg_delete_nym(creator, id);
+        #[cfg(feature = "local_nodes_verim_pool")]
+        fn test_update_nym() {
+            unimplemented!()
         }
     }
 
     #[cfg(test)]
-    mod verim_ledger_queries {
+    mod delete_nym {
         use super::*;
 
         #[test]
-        fn test_build_query_get_nym() {
-            verim_ledger::build_query_get_nym(1);
+        #[cfg(feature = "local_nodes_verim_pool")]
+        fn test_delete_nym() {
+            unimplemented!()
         }
-
-        #[test]
-        fn test_build_query_all_nym() { verim_ledger::build_query_all_nym(); }
     }
 
+    #[cfg(test)]
+    mod get_nym {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_verim_pool")]
+        fn test_get_nym() {
+            unimplemented!()
+        }
+    }
+
+    #[cfg(test)]
+    mod all_nym {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_verim_pool")]
+        fn test_all_nym() {
+            unimplemented!()
+        }
+    }
+
+    // TODO: Remove
     #[cfg(test)]
     mod e2e {
         use super::*;
@@ -74,7 +85,7 @@ mod high_cases {
             let (account_number, account_sequence) = setup.get_base_account_number_and_sequence(&setup.alice_account_id).unwrap();
 
             // Message
-            let msg = verim_ledger::build_msg_create_nym(
+            let msg = verim_ledger::verim::build_msg_create_nym(
                 "test-did",
                 &setup.alice_account_id,
                 "test-verkey",
@@ -84,7 +95,7 @@ mod high_cases {
             .unwrap();
 
             // Transaction
-            let tx = cosmos_ledger::build_tx(
+            let tx = verim_ledger::auth::build_tx(
                 &setup.pool_alias, &setup.alice_key_alias, &msg, account_number, account_sequence, 300000, 0u64, "token", 39090, "memo",
             )
             .unwrap();
@@ -96,16 +107,16 @@ mod high_cases {
             let resp = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
 
             // Parse the response
-            let tx_resp_parsed = verim_ledger::parse_msg_create_nym_resp(&resp).unwrap();
+            let tx_resp_parsed = verim_ledger::verim::parse_msg_create_nym_resp(&resp).unwrap();
             println!("Tx response: {:?}", tx_resp_parsed);
             let tx_resp: Value = serde_json::from_str(&tx_resp_parsed).unwrap();
 
             ///// Querying
 
-            let query = verim_ledger::build_query_get_nym(tx_resp["id"].as_u64().unwrap()).unwrap();
+            let query = verim_ledger::verim::build_query_get_nym(tx_resp["id"].as_u64().unwrap()).unwrap();
 
             let query_resp = verim_pool::abci_query(&setup.pool_alias, &query).unwrap();
-            let query_resp_parsed = verim_ledger::parse_query_get_nym_resp(&query_resp).unwrap();
+            let query_resp_parsed = verim_ledger::verim::parse_query_get_nym_resp(&query_resp).unwrap();
 
             println!("Query response: {:?}", query_resp_parsed);
 
@@ -120,7 +131,7 @@ mod high_cases {
             let (account_number, account_sequence) = setup.get_base_account_number_and_sequence(&setup.alice_account_id).unwrap();
 
             // Message #1
-            let msg1 = verim_ledger::build_msg_create_nym(
+            let msg1 = verim_ledger::verim::build_msg_create_nym(
                 "test-did-1",
                 &setup.alice_account_id,
                 "test-verkey-1",
@@ -129,7 +140,7 @@ mod high_cases {
             ).unwrap();
 
             // Transaction #1
-            let tx1 = cosmos_ledger::build_tx(
+            let tx1 = verim_ledger::auth::build_tx(
                 &setup.pool_alias, &setup.alice_key_alias, &msg1, account_number, account_sequence, 300000, 0u64, "token", 39090, "memo",
             ).unwrap();
 
@@ -140,12 +151,12 @@ mod high_cases {
             let resp1 = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed1).unwrap();
 
             // Parse the response #1
-            let tx_resp_parsed1 = verim_ledger::parse_msg_create_nym_resp(&resp1).unwrap();
+            let tx_resp_parsed1 = verim_ledger::verim::parse_msg_create_nym_resp(&resp1).unwrap();
             println!("Tx response: {:?}", tx_resp_parsed1);
             let tx_resp1: Value = serde_json::from_str(&tx_resp_parsed1).unwrap();
 
             // Message #2
-            let msg2 = verim_ledger::build_msg_create_nym(
+            let msg2 = verim_ledger::verim::build_msg_create_nym(
                 "test-did-2",
                 &setup.alice_account_id,
                 "test-verkey-2",
@@ -154,7 +165,7 @@ mod high_cases {
             ).unwrap();
 
             // Transaction #2
-            let tx2 = cosmos_ledger::build_tx(
+            let tx2 = verim_ledger::auth::build_tx(
                 &setup.pool_alias, &setup.alice_key_alias, &msg2, account_number, account_sequence+1, 300000, 0u64, "token", 39090, "memo",
             ).unwrap();
 
@@ -165,16 +176,16 @@ mod high_cases {
             let resp2 = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed2).unwrap();
 
             // Parse the response #2
-            let tx_resp_parsed2 = verim_ledger::parse_msg_create_nym_resp(&resp2).unwrap();
+            let tx_resp_parsed2 = verim_ledger::verim::parse_msg_create_nym_resp(&resp2).unwrap();
             println!("Tx response: {:?}", tx_resp_parsed2);
             let tx_resp2: Value = serde_json::from_str(&tx_resp_parsed2).unwrap();
 
             ///// Querying
 
-            let query = verim_ledger::build_query_all_nym().unwrap();
+            let query = verim_ledger::verim::build_query_all_nym().unwrap();
 
             let resp = verim_pool::abci_query(&setup.pool_alias, &query).unwrap();
-            let resp = verim_ledger::parse_query_all_nym_resp(&resp).unwrap();
+            let resp = verim_ledger::verim::parse_query_all_nym_resp(&resp).unwrap();
             let resp: Value = serde_json::from_str(&resp).unwrap();
 
             println!("Query response: {:?}", resp);
@@ -187,30 +198,5 @@ mod high_cases {
             assert!(nym_list.contains(expected_nym2));
         }
 
-    }
-
-    #[cfg(test)]
-    mod build_tx {
-        use super::*;
-
-        #[test]
-        fn cosmos_ledger_build_tx() {
-            unimplemented!();
-        }
-    }
-
-    #[cfg(test)]
-    mod auth_account {
-        use super::*;
-
-        #[test]
-        fn cosmos_ledger_build_query_cosmos_auth_account() {
-            unimplemented!();
-        }
-
-        #[test]
-        fn cosmos_ledger_parse_query_cosmos_auth_account_resp() {
-            unimplemented!();
-        }
     }
 }

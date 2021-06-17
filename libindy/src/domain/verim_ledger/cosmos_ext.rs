@@ -76,8 +76,6 @@ mod test {
     use cosmos_sdk::tx::{Msg, MsgType};
 
     use super::super::cosmos_ext::CosmosMsgExt;
-    use super::super::super::verim_ledger::prost_ext::ProstMessageExt;
-    use super::super::super::verim_ledger::proto::verimid::verimnode::verim::MsgCreateNym as ProtoMsgCreateNym;
     use super::super::super::verim_ledger::verim::messages::MsgCreateNym;
     use super::super::super::verim_ledger::VerimProto;
 

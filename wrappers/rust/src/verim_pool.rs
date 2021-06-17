@@ -1,20 +1,18 @@
-use {ErrorCode, IndyError};
-
 use std::ffi::CString;
 
-use futures::Future;
-
-use ffi::verim_pool;
-use ffi::{ResponseSliceCB, ResponseStringCB};
-
-use utils::callbacks::{ClosureHandler, ResultHandler};
 use CommandHandle;
+use ffi::ResponseStringCB;
+use ffi::verim_pool;
+use futures::Future;
+use utils::callbacks::{ClosureHandler, ResultHandler};
+
+use {ErrorCode, IndyError};
 
 pub fn add(
     alias: &str,
     rpc_address: &str,
     chain_id: &str,
-) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _add(command_handle, alias, rpc_address, chain_id, cb);
@@ -44,7 +42,7 @@ fn _add(
     })
 }
 
-pub fn get_config(alias: &str) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+pub fn get_config(alias: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _get_config(command_handle, alias, cb);
@@ -67,7 +65,7 @@ fn _get_config(
 pub fn broadcast_tx_commit(
     pool_alias: &str,
     signed_tx: &[u8],
-) -> Box<dyn Future<Item = String, Error = IndyError>> {
+) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _broadcast_tx_commit(command_handle, pool_alias, signed_tx, cb);
@@ -97,7 +95,7 @@ fn _broadcast_tx_commit(
 pub fn abci_query(
     pool_alias: &str,
     req_json: &str,
-) -> Box<dyn Future<Item = String, Error = IndyError>> {
+) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _abci_query(command_handle, pool_alias, req_json, cb);
@@ -126,7 +124,7 @@ fn _abci_query(
 
 pub fn abci_info(
     pool_alias: &str,
-) -> Box<dyn Future<Item = String, Error = IndyError>> {
+) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _abci_info(command_handle, pool_alias, cb);

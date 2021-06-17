@@ -31,7 +31,6 @@ impl VerimProto for MsgCreateNymResponse {
 #[cfg(test)]
 mod test {
     use super::MsgCreateNymResponse;
-    use super::super::MsgCreateNym;
     use super::super::super::super::VerimProto;
 
     #[test]

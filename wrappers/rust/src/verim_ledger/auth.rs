@@ -2,7 +2,7 @@ use {ErrorCode, IndyError};
 
 use futures::Future;
 use std::ffi::CString;
-use ffi::cosmos_ledger;
+use ffi::verim_ledger::auth;
 use ffi::{ResponseSliceCB, ResponseStringCB};
 use utils::callbacks::{ClosureHandler, ResultHandler};
 use CommandHandle;
@@ -59,7 +59,7 @@ fn _build_tx(
     let memo = c_str!(memo);
 
     ErrorCode::from(unsafe {
-        cosmos_ledger::indy_verim_ledger_auth_build_tx(
+        auth::indy_verim_ledger_auth_build_tx(
             command_handle,
             pool_alias.as_ptr(),
             sender_alias.as_ptr(),
@@ -77,15 +77,15 @@ fn _build_tx(
     })
 }
 
-pub fn build_query_cosmos_auth_account(address: &str) -> Box<dyn Future<Item = String, Error = IndyError>> {
+pub fn build_query_account(address: &str) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _build_query_cosmos_auth_account(command_handle, address, cb);
+    let err = _build_query_account(command_handle, address, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_query_cosmos_auth_account(
+fn _build_query_account(
     command_handle: CommandHandle,
     address: &str,
     cb: Option<ResponseStringCB>,
@@ -93,21 +93,21 @@ fn _build_query_cosmos_auth_account(
     let address = c_str!(address);
 
     ErrorCode::from(unsafe {
-        cosmos_ledger::indy_verim_ledger_auth_build_query_account(command_handle, address.as_ptr(), cb)
+        auth::indy_verim_ledger_auth_build_query_account(command_handle, address.as_ptr(), cb)
     })
 }
 
-pub fn parse_query_cosmos_auth_account_resp(
+pub fn parse_query_account_resp(
     query_resp: &str,
 ) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _parse_query_cosmos_auth_account_resp(command_handle, query_resp, cb);
+    let err = _parse_query_account_resp(command_handle, query_resp, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _parse_query_cosmos_auth_account_resp(
+fn _parse_query_account_resp(
     command_handle: CommandHandle,
     query_resp: &str,
     cb: Option<ResponseStringCB>,
@@ -115,7 +115,7 @@ fn _parse_query_cosmos_auth_account_resp(
     let query_resp = c_str!(query_resp);
 
     ErrorCode::from(unsafe {
-        cosmos_ledger::indy_verim_ledger_auth_parse_query_account_resp(
+        auth::indy_verim_ledger_auth_parse_query_account_resp(
             command_handle,
             query_resp.as_ptr(),
             cb,

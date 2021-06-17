@@ -27,7 +27,6 @@ pub mod metrics;
 pub mod rand_utils;
 pub mod verim_ledger;
 pub mod verim_setup;
-pub mod cosmos_ledger;
 pub mod verim_pool;
 
 #[macro_use]

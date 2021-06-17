@@ -1,6 +1,5 @@
-use super::*;
-
 use {CString, CommandHandle, Error};
+use ::{ResponseSliceCB, ResponseStringCB};
 
 extern "C" {
     pub fn indy_verim_ledger_verim_build_msg_create_nym(
@@ -30,7 +29,7 @@ extern "C" {
         cb: Option<ResponseSliceCB>,
     ) -> Error;
 
-    pub fn indy_verim_ledger_parse_msg_update_nym_resp(
+    pub fn indy_verim_ledger_verim_parse_msg_update_nym_resp(
         command_handle: CommandHandle,
         commit_resp: CString,
         cb: Option<ResponseStringCB>,
@@ -43,7 +42,7 @@ extern "C" {
         cb: Option<ResponseSliceCB>,
     ) -> Error;
 
-    pub fn indy_verim_ledger_parse_msg_delete_nym_resp(
+    pub fn indy_verim_ledger_verim_parse_msg_delete_nym_resp(
         command_handle: CommandHandle,
         commit_resp: CString,
         cb: Option<ResponseStringCB>,

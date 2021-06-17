@@ -1,6 +1,4 @@
-use indyrs::{verim_keys, verim_pool, future::Future, IndyError, PoolHandle, WalletHandle};
-
-use crate::utils::{constants::DEFAULT_METHOD_NAME, ledger, pool, types::ResponseType};
+use indyrs::{verim_pool, future::Future, IndyError};
 
 pub fn add(alias: &str, rpc_address: &str, chain_id: &str) -> Result<String, IndyError> {
     verim_pool::add(alias, rpc_address, chain_id).wait()
