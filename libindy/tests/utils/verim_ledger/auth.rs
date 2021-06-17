@@ -1,4 +1,4 @@
-use indyrs::{verim_keys, cosmos_ledger, future::Future, IndyError, PoolHandle, WalletHandle};
+use indyrs::{verim_keys, verim_ledger, future::Future, IndyError, PoolHandle, WalletHandle};
 
 use crate::utils::{constants::DEFAULT_METHOD_NAME, ledger, pool, types::ResponseType};
 
@@ -14,7 +14,7 @@ pub fn build_tx(
     timeout_height: u64,
     memo: &str,
 ) -> Result<Vec<u8>, IndyError> {
-    cosmos_ledger::build_tx(
+    verim_ledger::auth::build_tx(
         pool_alias,
         sender_alias,
         msg,
@@ -30,9 +30,9 @@ pub fn build_tx(
 }
 
 pub fn build_query_cosmos_auth_account(address: &str) -> Result<String, IndyError> {
-    cosmos_ledger::build_query_cosmos_auth_account(address).wait()
+    verim_ledger::auth::build_query_cosmos_auth_account(address).wait()
 }
 
 pub fn parse_query_cosmos_auth_account_resp(query_resp: &str) -> Result<String, IndyError> {
-    cosmos_ledger::parse_query_cosmos_auth_account_resp(query_resp).wait()
+    verim_ledger::auth::parse_query_cosmos_auth_account_resp(query_resp).wait()
 }

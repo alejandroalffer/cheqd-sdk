@@ -1,5 +1,5 @@
 #![allow(dead_code, unused_macros)]
-use crate::utils::{verim_keys, verim_pool, cosmos_ledger, verim_ledger};
+use crate::utils::{verim_keys, verim_pool, auth, verim_ledger};
 use indy_api_types::errors::IndyResult;
 use indyrs::{
     ErrorCode, IndyError, PoolHandle, WalletHandle, INVALID_POOL_HANDLE, INVALID_WALLET_HANDLE,
@@ -65,9 +65,9 @@ impl VerimSetup {
     }
 
     pub fn get_base_account_number_and_sequence(&self, account_id: &str) -> Result<(u64, u64), IndyError> {
-        let req = cosmos_ledger::build_query_cosmos_auth_account(account_id).unwrap();
+        let req = auth::build_query_cosmos_auth_account(account_id).unwrap();
         let resp = verim_pool::abci_query(&self.pool_alias, &req).unwrap();
-        let resp = cosmos_ledger::parse_query_cosmos_auth_account_resp(&resp).unwrap();
+        let resp = auth::parse_query_cosmos_auth_account_resp(&resp).unwrap();
 
         println!("Get account: {}", resp);
 

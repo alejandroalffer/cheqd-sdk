@@ -12,7 +12,7 @@ mod utils;
 
 use indyrs::ErrorCode;
 
-use utils::{constants::*, verim_keys, cosmos_ledger, verim_pool, verim_setup, verim_ledger, types::ResponseType};
+use utils::{constants::*, verim_keys, verim_ledger, verim_pool, verim_setup, verim_ledger, types::ResponseType};
 
 mod high_cases {
     use super::*;
@@ -22,7 +22,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn cosmos_ledger_build_tx() {
+        fn verim_ledger_build_tx() {
             unimplemented!();
         }
     }
@@ -32,7 +32,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn cosmos_ledger_build_query_cosmos_auth_account() {
+        fn verim_ledger_build_query_cosmos_auth_account() {
             unimplemented!();
         }
 

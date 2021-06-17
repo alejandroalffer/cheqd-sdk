@@ -12,7 +12,7 @@ mod utils;
 
 use indyrs::ErrorCode;
 
-use utils::{constants::*, verim_keys, cosmos_ledger, verim_pool, verim_setup, verim_ledger, types::ResponseType};
+use utils::{constants::*, verim_keys, auth, verim_pool, verim_setup, verim_ledger, types::ResponseType};
 
 mod high_cases {
     use super::*;
@@ -52,7 +52,7 @@ mod high_cases {
             let (account_number, account_sequence) = setup.get_base_account_number_and_sequence(&setup.alice_account_id).unwrap();
 
             // Message
-            let msg = verim_ledger::build_msg_create_nym(
+            let msg = verim_ledger::verim::build_msg_create_nym(
                 "test-did",
                 &setup.alice_account_id,
                 "test-verkey",
@@ -61,7 +61,7 @@ mod high_cases {
             ).unwrap();
 
             // Transaction
-            let tx = cosmos_ledger::build_tx(
+            let tx = auth::build_tx(
                 &setup.pool_alias, &setup.alice_key_alias, &msg, account_number, account_sequence, 300000, 0u64, "token", 39090, "memo",
             ).unwrap();
 
