@@ -7,4 +7,3 @@ mod query_get_nym_request;
 mod query_get_nym_response;
 mod query_all_nym_request;
 mod query_all_nym_response;
-

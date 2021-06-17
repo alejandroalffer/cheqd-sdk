@@ -11,4 +11,3 @@ mod msg_update_nym;
 mod msg_update_nym_response;
 mod msg_delete_nym;
 mod msg_delete_nym_response;
-

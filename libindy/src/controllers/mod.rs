@@ -7,8 +7,8 @@ mod did;
 mod ledger;
 mod metrics;
 mod non_secrets;
-mod pairwise;
 pub mod payments;
+mod pairwise;
 mod pool;
 mod verim_ledger;
 mod verim_keys;
@@ -20,7 +20,7 @@ pub(crate) use blob_storage::BlobStorageController;
 pub(crate) use cache::CacheController;
 pub(crate) use config::ConfigController;
 pub(crate) use crypto::CryptoController;
-pub(crate) use did::DidController;
+pub(crate) use did::DidController;\
 pub(crate) use ledger::LedgerController;
 pub(crate) use metrics::MetricsController;
 pub(crate) use non_secrets::NonSecretsController;

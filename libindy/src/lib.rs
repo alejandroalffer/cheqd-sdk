@@ -37,28 +37,25 @@ use lazy_static::lazy_static;
 
 use crate::{
     controllers::{
-        payments::PaymentsController, BlobStorageController, CacheController, ConfigController,
-        VerimKeysController, VerimPoolController, CryptoController, DidController,
+        BlobStorageController, CacheController, ConfigController, CryptoController, DidController,
         IssuerController, LedgerController, MetricsController, NonSecretsController,
-        PairwiseController, PoolController, ProverController, VerifierController,
-        VerimLedgerController, WalletController,
+        PairwiseController, PoolController, ProverController, VerifierController, WalletController,
+        VerimKeysController, VerimPoolController, VerimLedgerController,
     },
     services::{
-        BlobStorageService, CommandMetric, CryptoService,
-        IssuerService, LedgerService, MetricsService, PaymentsService, PoolService, ProverService,
-        VerifierService, VerimLedgerService, VerimKeysService, VerimPoolService, WalletService,
+        BlobStorageService, CryptoService, IssuerService, LedgerService, MetricsService,
+        CommandMetric, PoolService, ProverService, VerifierService, WalletService,
+        VerimLedgerService, VerimKeysService, VerimPoolService,
     },
 };
 use indy_api_types::errors::IndyResult;
-use std::{
-    future::Future,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::future::Future;
+use std::time::{SystemTime, UNIX_EPOCH};
+use crate::services::PaymentsService;
+use crate::controllers::payments::PaymentsController;
 
 fn get_cur_time() -> u128 {
-    let since_epoch = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time has gone backwards");
+    let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time has gone backwards");
     since_epoch.as_millis()
 }
 
@@ -69,15 +66,11 @@ pub(crate) struct InstrumentedThreadPool {
 }
 
 impl InstrumentedThreadPool {
-    pub fn spawn_ok_instrumented<T, FutIndyRes, FnCb>(
-        &self,
-        idx: CommandMetric,
-        action: FutIndyRes,
-        cb: FnCb,
-    ) where
-        FutIndyRes: Future<Output = IndyResult<T>> + Send + 'static,
-        FnCb: Fn(IndyResult<T>) + Sync + Send + 'static,
-        T: Send + 'static,
+    pub fn spawn_ok_instrumented<T, FutIndyRes, FnCb>(&self, idx: CommandMetric, action: FutIndyRes, cb: FnCb)
+        where
+            FutIndyRes: Future<Output = IndyResult<T>> + Send + 'static,
+            FnCb: Fn(IndyResult<T>) + Sync + Send + 'static,
+            T: Send + 'static
     {
         let requested_time = get_cur_time();
         let metrics_service = self.metrics_service.clone();
@@ -87,15 +80,9 @@ impl InstrumentedThreadPool {
             let executed_time = get_cur_time();
             cb(res);
             let cb_finished_time = get_cur_time();
-            metrics_service
-                .cmd_left_queue(idx, start_time - requested_time)
-                .await;
-            metrics_service
-                .cmd_executed(idx, executed_time - start_time)
-                .await;
-            metrics_service
-                .cmd_callback(idx, cb_finished_time - executed_time)
-                .await;
+            metrics_service.cmd_left_queue(idx, start_time - requested_time).await;
+            metrics_service.cmd_executed(idx, executed_time - start_time).await;
+            metrics_service.cmd_callback(idx, cb_finished_time - executed_time).await;
         })
     }
 }
@@ -150,9 +137,9 @@ impl Locator {
         let ledger_service = Arc::new(LedgerService::new());
         let verim_ledger_service = Arc::new(VerimLedgerService::new());
         let verim_keys_service = Arc::new(VerimKeysService::new());
+        let verim_pool_service = Arc::new(VerimPoolService::new());
         let metrics_service = Arc::new(MetricsService::new());
         let pool_service = Arc::new(PoolService::new());
-        let verim_pool_service = Arc::new(VerimPoolService::new());
         let payment_service = Arc::new(PaymentsService::new());
         let wallet_service = Arc::new(WalletService::new());
 
@@ -217,8 +204,7 @@ impl Locator {
 
         let pairwise_controller = PairwiseController::new(wallet_service.clone());
         let blob_storage_controller = BlobStorageController::new(blob_storage_service.clone());
-        let metrics_controller =
-            MetricsController::new(wallet_service.clone(), metrics_service.clone());
+        let metrics_controller = MetricsController::new(wallet_service.clone(), metrics_service.clone());
         let non_secret_controller = NonSecretsController::new(wallet_service.clone());
 
         let cache_controller = CacheController::new(

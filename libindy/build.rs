@@ -31,19 +31,10 @@ fn main() {
         println!("cargo:rustc-flags=-L {}\\lib", prebuilt_dir);
         println!("cargo:include={}\\include", prebuilt_dir);
 
-        let files = vec![
-            "libeay32md.dll",
-            "libsodium.dll",
-            "libzmq.dll",
-            "ssleay32md.dll",
-        ];
+        let files = vec!["libeay32md.dll", "libsodium.dll", "libzmq.dll", "ssleay32md.dll"];
         for f in files.iter() {
             if let Ok(_) = fs::copy(&prebuilt_lib.join(f), &dst.join(f)) {
-                println!(
-                    "copy {} -> {}",
-                    &prebuilt_lib.join(f).display(),
-                    &dst.join(f).display()
-                );
+                println!("copy {} -> {}", &prebuilt_lib.join(f).display(), &dst.join(f).display());
             }
         }
     } else if target.find("linux-android").is_some() {
@@ -51,32 +42,22 @@ fn main() {
         let openssl = match env::var("OPENSSL_LIB_DIR") {
             Ok(val) => val,
             Err(..) => match env::var("OPENSSL_DIR") {
-                Ok(dir) => Path::new(&dir[..])
-                    .join("lib")
-                    .to_string_lossy()
-                    .into_owned(),
-                Err(..) => {
-                    panic!("Missing required environment variables OPENSSL_DIR or OPENSSL_LIB_DIR")
-                }
-            },
+                Ok(dir) => Path::new(&dir[..]).join("lib").to_string_lossy().into_owned(),
+                Err(..) => panic!("Missing required environment variables OPENSSL_DIR or OPENSSL_LIB_DIR")
+            }
         };
 
         let sodium = match env::var("SODIUM_LIB_DIR") {
             Ok(val) => val,
-            Err(..) => panic!("Missing required environment variable SODIUM_LIB_DIR"),
+            Err(..) => panic!("Missing required environment variable SODIUM_LIB_DIR")
         };
 
         let zmq = match env::var("LIBZMQ_LIB_DIR") {
             Ok(val) => val,
             Err(..) => match env::var("LIBZMQ_PREFIX") {
-                Ok(dir) => Path::new(&dir[..])
-                    .join("lib")
-                    .to_string_lossy()
-                    .into_owned(),
-                Err(..) => {
-                    panic!("Missing required environment variables LIBZMQ_PREFIX or LIBZMQ_LIB_DIR")
-                }
-            },
+                Ok(dir) => Path::new(&dir[..]).join("lib").to_string_lossy().into_owned(),
+                Err(..) => panic!("Missing required environment variables LIBZMQ_PREFIX or LIBZMQ_LIB_DIR")
+            }
         };
 
         println!("cargo:rustc-link-search=native={}", openssl);

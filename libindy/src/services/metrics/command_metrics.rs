@@ -1,5 +1,5 @@
-use std::fmt;
 use variant_count::VariantCount;
+use std::fmt;
 
 impl fmt::Display for CommandMetric {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
