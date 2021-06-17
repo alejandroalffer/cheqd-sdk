@@ -12,6 +12,9 @@ pub mod payments_v2;
 pub mod pairwise;
 pub mod pool;
 pub mod wallet;
+pub mod verim_ledger;
+pub mod verim_keys;
+pub mod verim_pool;
 
 use indy_api_types::{errors::prelude::*, validation::Validatable, ErrorCode};
 use indy_utils::ctypes;

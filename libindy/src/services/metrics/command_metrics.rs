@@ -118,6 +118,32 @@ pub enum CommandMetric {
     LedgerCommandBuildGetAcceptanceMechanismsRequest,
     LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest,
     LedgerCommandAppendRequestEndorser,
+    // VerimLedger - Verim Module
+    VerimLedgerCommandBuildMsgCreateNym,
+    VerimLedgerCommandBuildMsgUpdateNym,
+    VerimLedgerCommandBuildMsgDeleteNym,
+    VerimLedgerCommandBuildQueryGetNym,
+    VerimLedgerCommandBuildQueryAllNym,
+    VerimLedgerCommandParseMsgCreateNymResp,
+    VerimLedgerCommandParseMsgUpdateNymResp,
+    VerimLedgerCommandParseMsgDeleteNymResp,
+    VerimLedgerCommandParseQueryGetNymResp,
+    VerimLedgerCommandParseQueryAllNymResp,
+    // VerimLedger - Auth Module
+    VerimLedgerCommandBuildTx,
+    VerimLedgerCommandBuildQueryCosmosAuthAccount,
+    VerimLedgerCommandParseQueryCosmosAuthAccountResp,
+    // VerimPool
+    VerimPoolCommandAdd,
+    VerimPoolCommandGetConfig,
+    VerimPoolCommandBroadcastTxCommit,
+    VerimPoolCommandAbciQuery,
+    VerimPoolCommandAbciInfo,
+    // VerimKeys
+    VerimKeysAddRandom,
+    VerimKeysAddFromMnemonic,
+    VerimKeysKeyInfo,
+    VerimKeysSign,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,

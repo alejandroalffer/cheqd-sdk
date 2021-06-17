@@ -24,6 +24,10 @@ pub mod cache;
 pub mod logger;
 pub mod rand_utils;
 pub mod metrics;
+pub mod verim_keys;
+pub mod verim_ledger;
+pub mod verim_setup;
+pub mod verim_pool;
 
 #[macro_use]
 #[allow(unused_macros)]

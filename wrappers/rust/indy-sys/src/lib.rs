@@ -16,6 +16,9 @@ pub mod wallet;
 pub mod logger;
 pub mod cache;
 pub mod metrics;
+pub mod verim_ledger;
+pub mod verim_keys;
+pub mod verim_pool;
 
 use libc::{c_void, c_char};
 

@@ -40,10 +40,12 @@ use crate::{
         BlobStorageController, CacheController, ConfigController, CryptoController, DidController,
         IssuerController, LedgerController, MetricsController, NonSecretsController,
         PairwiseController, PoolController, ProverController, VerifierController, WalletController,
+        VerimKeysController, VerimPoolController, VerimLedgerController,
     },
     services::{
         BlobStorageService, CryptoService, IssuerService, LedgerService, MetricsService,
         CommandMetric, PoolService, ProverService, VerifierService, WalletService,
+        VerimLedgerService, VerimKeysService, VerimPoolService,
     },
 };
 use indy_api_types::errors::IndyResult;
@@ -98,6 +100,9 @@ pub(crate) struct Locator {
     pub(crate) config_controller: ConfigController,
     pub(crate) ledger_controller: LedgerController,
     pub(crate) pool_controller: PoolController,
+    pub(crate) verim_ledger_controller: VerimLedgerController,
+    pub(crate) verim_keys_controller: VerimKeysController,
+    pub(crate) verim_pool_controller: VerimPoolController,
     pub(crate) did_controller: DidController,
     pub(crate) wallet_controller: WalletController,
     pub(crate) pairwise_controller: PairwiseController,
@@ -130,6 +135,9 @@ impl Locator {
         let blob_storage_service = Arc::new(BlobStorageService::new());
         let crypto_service = Arc::new(CryptoService::new());
         let ledger_service = Arc::new(LedgerService::new());
+        let verim_ledger_service = Arc::new(VerimLedgerService::new());
+        let verim_keys_service = Arc::new(VerimKeysService::new());
+        let verim_pool_service = Arc::new(VerimPoolService::new());
         let metrics_service = Arc::new(MetricsService::new());
         let pool_service = Arc::new(PoolService::new());
         let payment_service = Arc::new(PaymentsService::new());
@@ -178,6 +186,12 @@ impl Locator {
 
         let pool_controller = PoolController::new(pool_service.clone());
 
+        let verim_ledger_controller = VerimLedgerController::new(verim_ledger_service.clone(), verim_pool_service.clone(), verim_keys_service.clone());
+
+        let verim_pool_controller = VerimPoolController::new(verim_pool_service.clone());
+
+        let verim_keys_controller = VerimKeysController::new(verim_keys_service.clone());
+
         let did_controller = DidController::new(
             wallet_service.clone(),
             crypto_service.clone(),
@@ -207,7 +221,10 @@ impl Locator {
             crypto_controller,
             config_controller,
             ledger_controller,
+            verim_ledger_controller,
             pool_controller,
+            verim_keys_controller,
+            verim_pool_controller,
             did_controller,
             wallet_controller,
             pairwise_controller,

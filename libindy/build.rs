@@ -1,6 +1,10 @@
 use std::env;
 use std::fs;
-use std::path::Path;
+use std::{
+    path::{Path, PathBuf},
+};
+
+use walkdir::WalkDir;
 
 fn main() {
     let target = env::var("TARGET").unwrap();
@@ -12,6 +16,8 @@ fn main() {
     if sodium_static.is_some() {
         println!("cargo:rustc-link-lib=static=sodium");
     }
+
+    build_proto();
 
     if target.find("-windows-").is_some() {
         // do not build c-code on windows, use binaries
@@ -61,5 +67,75 @@ fn main() {
         println!("cargo:rustc-link-lib=static=sodium");
         println!("cargo:rustc-link-search=native={}", zmq);
         println!("cargo:rustc-link-lib=static=zmq");
+    }
+}
+
+/// ------ PROTO ------
+
+const COSMOS_SDK_DIR: &str = "cosmos-sdk-go";
+const VERIMCOSMOS_DIR: &str = "verim-node";
+
+fn build_proto() {
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let proto_dir: PathBuf = format!("{}/prost", out_dir).parse().unwrap();
+
+    if proto_dir.exists() {
+        fs::remove_dir_all(proto_dir.clone()).unwrap();
+    }
+
+    fs::create_dir(proto_dir.clone()).unwrap();
+
+    compile_protos(&proto_dir);
+}
+
+fn compile_protos(out_dir: &Path) {
+    let sdk_dir = Path::new(COSMOS_SDK_DIR);
+    let verimcosmos_dir = Path::new(VERIMCOSMOS_DIR);
+
+    println!(
+        "[info] Compiling .proto files to Rust into '{}'...",
+        out_dir.display()
+    );
+
+    // Paths
+    let proto_paths = [
+        format!("{}/proto/verim", verimcosmos_dir.display()),
+    ];
+
+    let proto_includes_paths = [
+        format!("{}/proto", sdk_dir.display()),
+        format!("{}/proto", verimcosmos_dir.display()),
+        format!("{}/third_party/proto", sdk_dir.display()),
+    ];
+
+    // List available proto files
+    let mut protos: Vec<PathBuf> = vec![];
+    for proto_path in &proto_paths {
+        protos.append(
+            &mut WalkDir::new(proto_path)
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .filter(|e| {
+                    e.file_type().is_file()
+                        && e.path().extension().is_some()
+                        && e.path().extension().unwrap() == "proto"
+                })
+                .map(|e| e.into_path())
+                .collect(),
+        );
+    }
+
+    // List available paths for dependencies
+    let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
+
+    // Compile all proto files
+    let mut config = prost_build::Config::default();
+    config.out_dir(out_dir);
+    config.extern_path(".tendermint", "::tendermint_proto");
+    config.extern_path(".cosmos", "cosmos_sdk::proto::cosmos");
+
+    if let Err(e) = config.compile_protos(&protos, &includes) {
+        eprintln!("[error] couldn't compile protos: {}", e);
+        panic!("protoc failed!");
     }
 }

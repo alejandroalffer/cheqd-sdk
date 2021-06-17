@@ -65,14 +65,14 @@ num-derive = "0.2"
 convert_case = "0.3.2"
 futures = "0.3.1"
 
-[dependencies.uuid]
-version = "0.7.4"
-default-features = false
-features = ["v4"]
-
-[dependencies.ursa]
-version =  "0.3.2"
-optional = true
+cosmos_sdk = { version = "0.1.1", features = ["rpc"] }
+k256 = { version = "0.7", features = ["ecdsa-core", "ecdsa"] }
+rand_seeder = { version = "0.2.2" }
+surf = { version = "2.2.0" }
+uuid = { version = "0.7.4", default-features = false, features = ["v4"] }
+ursa = { version = "0.3.6", optional = true }
+prost = "0.7.0"
+prost-types = "0.7.0"
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.5"
@@ -137,3 +137,12 @@ assets = [
     ["include/*.h", "usr/include/indy/", "644"],
     ["target/release/libindy.a", "usr/lib/", "644"],
 ]
+
+[build-dependencies]
+regex = "1.2.1"
+prost = "0.7"
+prost-build = "0.7"
+tonic = "0.4"
+tonic-build = "0.4"
+tempdir = "0.3"
+walkdir = "2"

@@ -10,6 +10,9 @@ mod non_secrets;
 pub mod payments;
 mod pairwise;
 mod pool;
+mod verim_ledger;
+mod verim_keys;
+mod verim_pool;
 mod wallet;
 
 pub(crate) use anoncreds::{IssuerController, ProverController, VerifierController};
@@ -24,3 +27,6 @@ pub(crate) use non_secrets::NonSecretsController;
 pub(crate) use pairwise::PairwiseController;
 pub(crate) use pool::PoolController;
 pub(crate) use wallet::WalletController;
+pub(crate) use verim_ledger::VerimLedgerController;
+pub(crate) use verim_keys::VerimKeysController;
+pub(crate) use verim_pool::VerimPoolController;

@@ -4,6 +4,9 @@ pub mod ledger;
 pub mod pairwise;
 pub mod pool;
 pub mod cache;
+pub mod verim_keys;
+pub mod verim_pool;
+pub mod verim_ledger;
 
 use indy_api_types::validation::Validatable;
 
