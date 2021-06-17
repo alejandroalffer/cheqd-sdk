@@ -3,7 +3,7 @@
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
 
-use crate::domain::verim_ledger::VerimProto;
+use super::super::VerimProto;
 
 use super::*;
 
