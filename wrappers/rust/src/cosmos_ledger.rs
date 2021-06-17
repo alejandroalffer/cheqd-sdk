@@ -59,7 +59,7 @@ fn _build_tx(
     let memo = c_str!(memo);
 
     ErrorCode::from(unsafe {
-        cosmos_ledger::indy_cosmos_ledger_build_tx(
+        cosmos_ledger::indy_verim_ledger_auth_build_tx(
             command_handle,
             pool_alias.as_ptr(),
             sender_alias.as_ptr(),
@@ -93,7 +93,7 @@ fn _build_query_cosmos_auth_account(
     let address = c_str!(address);
 
     ErrorCode::from(unsafe {
-        cosmos_ledger::indy_cosmos_ledger_build_query_cosmos_auth_account(command_handle, address.as_ptr(), cb)
+        cosmos_ledger::indy_verim_ledger_auth_build_query_account(command_handle, address.as_ptr(), cb)
     })
 }
 

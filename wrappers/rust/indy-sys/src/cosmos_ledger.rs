@@ -3,7 +3,7 @@ use super::*;
 use {CString, CommandHandle, Error};
 
 extern "C" {
-    pub fn indy_cosmos_ledger_build_tx(
+    pub fn indy_verim_ledger_auth_build_tx(
         command_handle: CommandHandle,
         pool_alias: CString,
         sender_alias: CString,
@@ -19,7 +19,7 @@ extern "C" {
         cb: Option<ResponseSliceCB>,
     ) -> Error;
 
-    pub fn indy_cosmos_ledger_build_query_cosmos_auth_account(
+    pub fn indy_verim_ledger_auth_build_query_account(
         command_handle: CommandHandle,
         address: CString,
         cb: Option<ResponseStringCB>,
