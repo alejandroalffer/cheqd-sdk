@@ -1,6 +1,4 @@
-use indyrs::{verim_keys, verim_ledger, future::Future, IndyError, PoolHandle, WalletHandle};
-
-use crate::utils::{constants::DEFAULT_METHOD_NAME, ledger, pool, types::ResponseType};
+use indyrs::{future::Future, IndyError, verim_ledger};
 
 pub fn build_tx(
     pool_alias: &str,
@@ -29,10 +27,10 @@ pub fn build_tx(
         .wait()
 }
 
-pub fn build_query_cosmos_auth_account(address: &str) -> Result<String, IndyError> {
-    verim_ledger::auth::build_query_cosmos_auth_account(address).wait()
+pub fn build_query_account(address: &str) -> Result<String, IndyError> {
+    verim_ledger::auth::build_query_account(address).wait()
 }
 
-pub fn parse_query_cosmos_auth_account_resp(query_resp: &str) -> Result<String, IndyError> {
-    verim_ledger::auth::parse_query_cosmos_auth_account_resp(query_resp).wait()
+pub fn parse_query_account_resp(query_resp: &str) -> Result<String, IndyError> {
+    verim_ledger::auth::parse_query_account_resp(query_resp).wait()
 }

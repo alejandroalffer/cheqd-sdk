@@ -1,6 +1,4 @@
-use indyrs::{verim_keys, future::Future, IndyError, PoolHandle, WalletHandle};
-
-use crate::utils::{constants::DEFAULT_METHOD_NAME, ledger, pool, types::ResponseType};
+use indyrs::{verim_keys, future::Future, IndyError};
 
 pub fn add_random(alias: &str) -> Result<String, IndyError> {
     verim_keys::add_random(alias).wait()

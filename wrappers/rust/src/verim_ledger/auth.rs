@@ -2,7 +2,7 @@ use {ErrorCode, IndyError};
 
 use futures::Future;
 use std::ffi::CString;
-use ffi::auth;
+use ffi::verim_ledger::auth;
 use ffi::{ResponseSliceCB, ResponseStringCB};
 use utils::callbacks::{ClosureHandler, ResultHandler};
 use CommandHandle;
@@ -77,15 +77,15 @@ fn _build_tx(
     })
 }
 
-pub fn build_query_cosmos_auth_account(address: &str) -> Box<dyn Future<Item = String, Error = IndyError>> {
+pub fn build_query_account(address: &str) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _build_query_cosmos_auth_account(command_handle, address, cb);
+    let err = _build_query_account(command_handle, address, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_query_cosmos_auth_account(
+fn _build_query_account(
     command_handle: CommandHandle,
     address: &str,
     cb: Option<ResponseStringCB>,
@@ -97,17 +97,17 @@ fn _build_query_cosmos_auth_account(
     })
 }
 
-pub fn parse_query_cosmos_auth_account_resp(
+pub fn parse_query_account_resp(
     query_resp: &str,
 ) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _parse_query_cosmos_auth_account_resp(command_handle, query_resp, cb);
+    let err = _parse_query_account_resp(command_handle, query_resp, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _parse_query_cosmos_auth_account_resp(
+fn _parse_query_account_resp(
     command_handle: CommandHandle,
     query_resp: &str,
     cb: Option<ResponseStringCB>,

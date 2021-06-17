@@ -1,10 +1,4 @@
-use std::{mem, sync::Once};
-
-use indy_utils::crypto::hash::hash;
-use indyrs::{future::Future, ledger, verim_ledger, IndyError, PoolHandle, WalletHandle};
-use lazy_static::lazy_static;
-
-use crate::utils::{anoncreds, blob_storage, constants::*, did, pool, timeout, wallet};
+use indyrs::{future::Future, verim_ledger, IndyError};
 
 pub fn build_msg_create_nym(
     did: &str,

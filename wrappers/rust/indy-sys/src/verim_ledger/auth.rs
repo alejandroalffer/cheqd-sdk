@@ -1,6 +1,6 @@
-use super::*;
+use ::{ResponseSliceCB, ResponseStringCB};
 
-use {CString, CommandHandle, Error};
+use {BString, CommandHandle, CString, Error};
 
 extern "C" {
     pub fn indy_verim_ledger_auth_build_tx(

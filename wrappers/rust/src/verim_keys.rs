@@ -10,7 +10,7 @@ use ffi::{ResponseSliceCB, ResponseStringCB};
 use utils::callbacks::{ClosureHandler, ResultHandler};
 use CommandHandle;
 
-pub fn add_random(alias: &str) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+pub fn add_random(alias: &str) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _add_random(command_handle, alias, cb);
@@ -33,7 +33,7 @@ fn _add_random(
 pub fn add_from_mnemonic(
     alias: &str,
     mnemonic: &str,
-) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _add_from_mnemonic(command_handle, alias, mnemonic, cb);
@@ -60,7 +60,7 @@ fn _add_from_mnemonic(
     })
 }
 
-pub fn get_info(alias: &str) -> Box<dyn Future<Item = (String), Error = IndyError>> {
+pub fn get_info(alias: &str) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _get_info(command_handle, alias, cb);

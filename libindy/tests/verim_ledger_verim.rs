@@ -7,60 +7,71 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
-// #[macro_use]
-// mod utils;
+#[macro_use]
+mod utils;
 
-use super::utils::{constants::*, verim_keys, verim_ledger, verim_pool, verim_ledger, verim_setup};
+use utils::{verim_keys, verim_ledger, verim_pool, verim_setup};
 
 mod high_cases {
     use super::*;
 
     #[cfg(test)]
-    mod verim_ledger_transactions {
+    mod create_nym {
         use super::*;
 
         #[test]
-        fn build_msg_create_nym() {
-            let did = "0";
-            let creator = "1";
-            let role = "some_role";
-            let alias = "some_alias";
-            let verkey = "some_verkey";
-            verim_ledger::verim::build_msg_create_nym(did, creator, verkey, alias, role);
+        #[cfg(feature = "local_nodes_verim_pool")]
+        fn test_create_nym() {
+            unimplemented!()
         }
+    }
+
+
+    #[cfg(test)]
+    mod update_nym {
+        use super::*;
 
         #[test]
-        fn build_msg_update_nym() {
-            let did = "0";
-            let creator = "1";
-            let role = "some_role";
-            let alias = "some_alias";
-            let verkey = "some_verkey";
-            let id = 2;
-            verim_ledger::verim::build_msg_update_nym(did, creator, verkey, alias, role, id);
-        }
-
-        #[test]
-        fn build_msg_delete_nym() {
-            let creator = "1";
-            let id = 2;
-            verim_ledger::verim::build_msg_delete_nym(creator, id);
+        #[cfg(feature = "local_nodes_verim_pool")]
+        fn test_update_nym() {
+            unimplemented!()
         }
     }
 
     #[cfg(test)]
-    mod verim_ledger_queries {
+    mod delete_nym {
         use super::*;
 
         #[test]
-        fn test_build_query_get_nym() {
-            verim_ledger::verim::build_query_get_nym(1);
+        #[cfg(feature = "local_nodes_verim_pool")]
+        fn test_delete_nym() {
+            unimplemented!()
         }
-
-        #[test]
-        fn test_build_query_all_nym() { verim_ledger::verim::build_query_all_nym(); }
     }
 
+    #[cfg(test)]
+    mod get_nym {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_verim_pool")]
+        fn test_get_nym() {
+            unimplemented!()
+        }
+    }
+
+    #[cfg(test)]
+    mod all_nym {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_verim_pool")]
+        fn test_all_nym() {
+            unimplemented!()
+        }
+    }
+
+    // TODO: Remove
     #[cfg(test)]
     mod e2e {
         use super::*;
@@ -187,30 +198,5 @@ mod high_cases {
             assert!(nym_list.contains(expected_nym2));
         }
 
-    }
-
-    #[cfg(test)]
-    mod build_tx {
-        use super::*;
-
-        #[test]
-        fn cosmos_ledger_build_tx() {
-            unimplemented!();
-        }
-    }
-
-    #[cfg(test)]
-    mod auth_account {
-        use super::*;
-
-        #[test]
-        fn cosmos_ledger_build_query_cosmos_auth_account() {
-            unimplemented!();
-        }
-
-        #[test]
-        fn cosmos_ledger_parse_query_cosmos_auth_account_resp() {
-            unimplemented!();
-        }
     }
 }
