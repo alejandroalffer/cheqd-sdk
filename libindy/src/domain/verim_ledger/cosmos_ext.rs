@@ -1,15 +1,15 @@
-use super::super::verim_ledger::prost_ext::ProstMessageExt;
 use cosmos_sdk::proto::cosmos::tx::v1beta1::{SignDoc as ProtoSignDoc, TxRaw};
 use cosmos_sdk::tx::{Msg, Raw, SignDoc};
 use indy_api_types::errors::IndyResult;
-use prost::Message;
 use prost_types::Any;
+
+use super::super::verim_ledger::prost_ext::ProstMessageExt;
 
 pub trait CosmosMsgExt {
     fn to_bytes(&self) -> IndyResult<Vec<u8>>;
     fn from_bytes(bytes: &[u8]) -> IndyResult<Self>
-    where
-        Self: Sized;
+        where
+            Self: Sized;
 }
 
 impl CosmosMsgExt for Msg {
@@ -19,8 +19,8 @@ impl CosmosMsgExt for Msg {
     }
 
     fn from_bytes(bytes: &[u8]) -> IndyResult<Self>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         let res = Any::from_bytes(bytes)?;
         Ok(res.into())
@@ -30,8 +30,8 @@ impl CosmosMsgExt for Msg {
 pub trait CosmosSignDocExt {
     fn to_bytes(&self) -> IndyResult<Vec<u8>>;
     fn from_bytes(bytes: &[u8]) -> IndyResult<Self>
-    where
-        Self: Sized;
+        where
+            Self: Sized;
 }
 
 impl CosmosSignDocExt for SignDoc {
@@ -41,8 +41,8 @@ impl CosmosSignDocExt for SignDoc {
     }
 
     fn from_bytes(bytes: &[u8]) -> IndyResult<Self>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         let proto = ProtoSignDoc::from_bytes(bytes)?;
         Ok(proto.into())
@@ -52,8 +52,8 @@ impl CosmosSignDocExt for SignDoc {
 pub trait CosmosRawExt {
     fn to_bytes(&self) -> IndyResult<Vec<u8>>;
     fn from_bytes(bytes: &[u8]) -> IndyResult<Self>
-    where
-        Self: Sized;
+        where
+            Self: Sized;
 }
 
 impl CosmosRawExt for Raw {
@@ -63,8 +63,8 @@ impl CosmosRawExt for Raw {
     }
 
     fn from_bytes(bytes: &[u8]) -> IndyResult<Self>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         let proto = TxRaw::from_bytes(bytes)?;
         Ok(proto.into())
@@ -75,12 +75,9 @@ impl CosmosRawExt for Raw {
 mod test {
     use cosmos_sdk::tx::{Msg, MsgType};
 
-    use super::super::super::verim_ledger::prost_ext::ProstMessageExt;
-
-    use super::super::super::verim_ledger::proto::verimid::verimcosmos::verimcosmos::MsgCreateNym as ProtoMsgCreateNym;
-    use super::super::super::verim_ledger::verimcosmos::messages::MsgCreateNym;
-    use super::super::super::verim_ledger::VerimProto;
     use super::super::cosmos_ext::CosmosMsgExt;
+    use super::super::super::verim_ledger::verim::messages::MsgCreateNym;
+    use super::super::super::verim_ledger::VerimProto;
 
     #[test]
     fn test_cosmos_msg_ext() {

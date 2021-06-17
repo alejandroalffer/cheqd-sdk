@@ -10,7 +10,7 @@ pub mod environment;
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod constants;
-pub mod cosmos_keys;
+pub mod verim_keys;
 pub mod crypto;
 pub mod did;
 pub mod ledger;
@@ -27,8 +27,7 @@ pub mod metrics;
 pub mod rand_utils;
 pub mod verim_ledger;
 pub mod verim_setup;
-pub mod cosmos_ledger;
-pub mod tendermint_pool;
+pub mod verim_pool;
 
 #[macro_use]
 #[allow(unused_macros)]
