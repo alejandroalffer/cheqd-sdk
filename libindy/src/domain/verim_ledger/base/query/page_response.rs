@@ -1,7 +1,7 @@
 use cosmos_sdk::proto::cosmos::base::query::v1beta1::PageResponse as ProtoPageResponse;
 use indy_api_types::errors::IndyResult;
 
-use crate::domain::verim_ledger::VerimProto;
+use super::super::super::VerimProto;
 
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub struct PageResponse {

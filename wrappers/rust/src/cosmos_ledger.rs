@@ -115,7 +115,7 @@ fn _parse_query_cosmos_auth_account_resp(
     let query_resp = c_str!(query_resp);
 
     ErrorCode::from(unsafe {
-        cosmos_ledger::indy_cosmos_ledger_parse_query_cosmos_auth_account_resp(
+        cosmos_ledger::indy_verim_ledger_auth_parse_query_account_resp(
             command_handle,
             query_resp.as_ptr(),
             cb,

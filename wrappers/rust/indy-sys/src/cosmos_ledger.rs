@@ -25,7 +25,7 @@ extern "C" {
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_cosmos_ledger_parse_query_cosmos_auth_account_resp(
+    pub fn indy_verim_ledger_auth_parse_query_account_resp(
         command_handle: CommandHandle,
         query_resp: CString,
         cb: Option<ResponseStringCB>,
