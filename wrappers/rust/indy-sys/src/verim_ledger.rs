@@ -3,7 +3,7 @@ use super::*;
 use {CString, CommandHandle, Error};
 
 extern "C" {
-    pub fn indy_verim_ledger_build_msg_create_nym(
+    pub fn indy_verim_ledger_verim_build_msg_create_nym(
         command_handle: CommandHandle,
         did: CString,
         creator: CString,
@@ -13,13 +13,13 @@ extern "C" {
         cb: Option<ResponseSliceCB>,
     ) -> Error;
 
-    pub fn indy_verim_ledger_parse_msg_create_nym_resp(
+    pub fn indy_verim_ledger_verim_parse_msg_create_nym_resp(
         command_handle: CommandHandle,
         commit_resp: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_verim_ledger_build_msg_update_nym(
+    pub fn indy_verim_ledger_verim_build_msg_update_nym(
         command_handle: CommandHandle,
         did: CString,
         creator: CString,
@@ -36,7 +36,7 @@ extern "C" {
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_verim_ledger_build_msg_delete_nym(
+    pub fn indy_verim_ledger_verim_build_msg_delete_nym(
         command_handle: CommandHandle,
         creator: CString,
         id: u64,
@@ -49,24 +49,24 @@ extern "C" {
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_verim_ledger_build_query_get_nym(
+    pub fn indy_verim_ledger_verim_build_query_get_nym(
         command_handle: CommandHandle,
         id: u64,
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_verim_ledger_parse_query_get_nym_resp(
+    pub fn indy_verim_ledger_verim_parse_query_get_nym_resp(
         command_handle: CommandHandle,
         query_resp: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_verim_ledger_build_query_all_nym(
+    pub fn indy_verim_ledger_verim_build_query_all_nym(
         command_handle: CommandHandle,
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
-    pub fn indy_verim_ledger_parse_query_all_nym_resp(
+    pub fn indy_verim_ledger_verim_parse_query_all_nym_resp(
         command_handle: CommandHandle,
         query_resp: CString,
         cb: Option<ResponseStringCB>,

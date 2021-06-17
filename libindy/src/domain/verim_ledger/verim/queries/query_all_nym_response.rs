@@ -1,6 +1,6 @@
 use indy_api_types::errors::IndyResult;
 
-use crate::domain::verim_ledger::base::query::PageResponse;
+use super::super::super::base::query::PageResponse;
 
 use super::super::models::Nym;
 use super::super::super::proto::verimid::verimnode::verim::Nym as ProtoNym;

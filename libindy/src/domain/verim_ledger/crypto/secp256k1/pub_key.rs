@@ -1,7 +1,7 @@
 use cosmos_sdk::proto::cosmos::crypto::secp256k1::PubKey as ProtoPubKey;
 use indy_api_types::errors::IndyResult;
 
-use crate::domain::verim_ledger::VerimProto;
+use super::super::super::VerimProto;
 
 /// PubKey defines a secp256k1 public key
 /// Key is the compressed form of the pubkey. The first byte depends is a 0x02 byte

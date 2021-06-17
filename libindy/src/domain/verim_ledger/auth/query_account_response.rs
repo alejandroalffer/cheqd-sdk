@@ -1,7 +1,7 @@
 use cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountResponse as ProtoQueryAccountResponse;
 use indy_api_types::errors::IndyResult;
 
-use crate::domain::verim_ledger::VerimProto;
+use super::super::VerimProto;
 
 use super::Account;
 
