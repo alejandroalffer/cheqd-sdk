@@ -1,7 +1,5 @@
 //! Pool service for Tendermint back-end
 
-use std::collections::HashMap;
-
 use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::{Request, Response};
 use cosmos_sdk::rpc::endpoint::broadcast;

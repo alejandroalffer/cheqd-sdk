@@ -1,5 +1,5 @@
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TendermintPoolConfig {
+pub struct PoolConfig {
     pub alias: String,
     pub rpc_address: String,
     pub chain_id: String,
