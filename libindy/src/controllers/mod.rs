@@ -20,7 +20,7 @@ pub(crate) use blob_storage::BlobStorageController;
 pub(crate) use cache::CacheController;
 pub(crate) use config::ConfigController;
 pub(crate) use crypto::CryptoController;
-pub(crate) use did::DidController;\
+pub(crate) use did::DidController;
 pub(crate) use ledger::LedgerController;
 pub(crate) use metrics::MetricsController;
 pub(crate) use non_secrets::NonSecretsController;
