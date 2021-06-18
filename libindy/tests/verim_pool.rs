@@ -4,12 +4,10 @@ extern crate derivative;
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
-
 #[macro_use]
 mod utils;
 
 use indyrs::ErrorCode;
-
 use utils::{constants::*, verim_keys, verim_pool, verim_setup, verim_ledger, types::ResponseType};
 use rand::prelude::*;
 use rand::Rng;

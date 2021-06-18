@@ -2,11 +2,13 @@
 use crate::utils::{verim_keys, verim_pool, verim_ledger::auth};
 use serde_json::Value;
 use super::test;
+use super::logger;
 use indyrs::IndyError;
 
 fn setup() -> String {
     let name = crate::utils::rand_utils::get_rand_string(10);
     test::cleanup_storage(&name);
+    logger::set_default_logger();
     name
 }
 

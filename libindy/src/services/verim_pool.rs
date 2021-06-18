@@ -60,7 +60,7 @@ impl VerimPoolService {
 
         f.write_all({
             serde_json::to_string(&config)
-                .to_indy(IndyErrorKind::InvalidState, "Can't serialize pool config")?
+                .to_indy(IndyErrorKind::InvalidState, "Can't serialize verim pool config")?
                 .as_bytes()
         })
             .to_indy(IndyErrorKind::IOError, "Can't write to verim pool config file")?;
