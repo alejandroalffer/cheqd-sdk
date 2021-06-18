@@ -2,11 +2,13 @@
 use crate::utils::{verim_keys, verim_pool, verim_ledger::auth};
 use serde_json::Value;
 use super::test;
+use super::logger;
 use indyrs::IndyError;
 
 fn setup() -> String {
     let name = crate::utils::rand_utils::get_rand_string(10);
     test::cleanup_storage(&name);
+    logger::set_default_logger();
     name
 }
 
@@ -36,11 +38,11 @@ impl VerimSetup {
         let bob_account_address = VerimSetup::create_key(bob_alias, "bob").unwrap();
 
         // Pool
-        let pool_alias = "test_pool";
+        verim_pool::add(&name, "http://localhost:26657", "verim");
 
         let setup = VerimSetup {
-            name,
-            pool_alias: pool_alias.to_string(),
+            name: name.clone(),
+            pool_alias: name.to_string(),
             alice_key_alias: alice_alias.to_string(),
             alice_account_id: alice_account_address.to_string(),
             bob_key_alias: bob_alias.to_string(),

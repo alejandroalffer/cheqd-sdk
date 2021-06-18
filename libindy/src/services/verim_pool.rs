@@ -1,28 +1,28 @@
 //! Pool service for Tendermint back-end
 
-use std::collections::HashMap;
-
 use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::{Request, Response};
 use cosmos_sdk::rpc::endpoint::broadcast;
 use cosmos_sdk::tendermint::abci;
 use cosmos_sdk::tx::Raw;
 use futures::lock::Mutex as MutexF;
-use indy_api_types::errors::{IndyErrorKind, IndyResult};
+use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use indy_api_types::IndyError;
-
+use std::collections::HashMap;
+use std::convert::TryInto;
+use crate::utils::environment;
+use indy_api_types::errors::*;
+use std::io::{Write, Read};
+use std::fs;
+use serde_json::Value;
 use crate::domain::verim_pool::PoolConfig;
 
 pub(crate) struct VerimPoolService {
-    // TODO: Persistence
-    pools: MutexF<HashMap<String, PoolConfig>>,
 }
 
 impl VerimPoolService {
     pub(crate) fn new() -> Self {
-        Self {
-            pools: MutexF::new(HashMap::new()),
-        }
+        Self { }
     }
 
     pub(crate) async fn add(
@@ -31,34 +31,63 @@ impl VerimPoolService {
         rpc_address: &str,
         chain_id: &str,
     ) -> IndyResult<PoolConfig> {
-        let mut pools = self.pools.lock().await;
-
-        if pools.contains_key(alias) {
-            return Err(IndyError::from_msg(
-                IndyErrorKind::InvalidState,
-                "Pool already exists",
-            ));
-        }
-
         let config = PoolConfig::new(
             alias.to_string(),
             rpc_address.to_string(),
             chain_id.to_string(),
         );
 
-        pools.insert(alias.to_string(), config.clone());
+        let mut path = environment::verim_pool_path(alias);
+
+        if path.as_path().exists() {
+            return Err(err_msg(
+                IndyErrorKind::PoolConfigAlreadyExists,
+                format!(
+                    "Verim pool ledger config file with alias \"{}\" already exists",
+                    alias
+                ),
+            ));
+        }
+
+        fs::create_dir_all(path.as_path())
+            .to_indy(IndyErrorKind::IOError, "Can't create verim pool config directory")?;
+
+        path.push("config");
+        path.set_extension("json");
+
+        let mut f: fs::File = fs::File::create(path.as_path())
+            .to_indy(IndyErrorKind::IOError, "Can't create verim pool config file")?;
+
+        f.write_all({
+            serde_json::to_string(&config)
+                .to_indy(IndyErrorKind::InvalidState, "Can't serialize verim pool config")?
+                .as_bytes()
+        })
+            .to_indy(IndyErrorKind::IOError, "Can't write to verim pool config file")?;
+
+        f.flush()
+            .to_indy(IndyErrorKind::IOError, "Can't write to verim pool config file")?;
+
         Ok(config)
     }
 
     pub(crate) async fn get_config(&self, alias: &str) -> IndyResult<PoolConfig> {
-        let pools = self.pools.lock().await;
+        let mut path = environment::verim_pool_path(alias);
 
-        let config = pools.get(alias).ok_or(IndyError::from_msg(
-            IndyErrorKind::InvalidState,
-            "Pool not found",
-        ))?;
+        if !path.exists() {
+            return Err(IndyError::from_msg(IndyErrorKind::IOError, format!("Can't find verim pool config file: {}", alias)));
+        }
 
-        Ok(config.clone())
+        path.push("config");
+        path.set_extension("json");
+
+        let config = fs::read_to_string(path)
+            .to_indy(IndyErrorKind::IOError, format!("Can't open verim pool config file: {}", alias))?;
+
+        let result: PoolConfig = serde_json::from_str(&config)
+            .to_indy(IndyErrorKind::IOError, "Invalid data of verim pool config file")?;
+
+        Ok(result)
     }
 
     // Send and wait for commit

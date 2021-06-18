@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PoolConfig {
     pub alias: String,
     pub rpc_address: String,

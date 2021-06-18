@@ -4,25 +4,40 @@ extern crate derivative;
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
-
-use indyrs::ErrorCode;
-
-use utils::{constants::*, types::ResponseType, verim_keys, verim_ledger, verim_ledger::auth, verim_pool, verim_setup};
-
 #[macro_use]
 mod utils;
+
+use indyrs::ErrorCode;
+use utils::{constants::*, verim_keys, verim_pool, verim_setup, verim_ledger, test, types::ResponseType};
+use rand::prelude::*;
+use rand::Rng;
 
 mod high_cases {
     use super::*;
 
     #[cfg(test)]
-    mod config {
+    mod add {
         use super::*;
 
         #[test]
-        fn test_add_get_config() {
-            verim_pool::add("pool1", "rpc_address", "chain_id").unwrap();
-            let result = verim_pool::get_config("pool1").unwrap();
+        fn test_add() {
+            let pool_name = "test_pool";
+            let result = verim_pool::add(&pool_name, "rpc_address", "chain_id").unwrap();
+            test::cleanup_storage(&pool_name);
+            println!("Data: {:?} ", result);
+        }
+    }
+
+    #[cfg(test)]
+    mod get_config {
+        use super::*;
+
+        #[test]
+        fn test_get_config() {
+            let pool_name = "test_pool";
+            verim_pool::add(&pool_name, "rpc_address", "chain_id").unwrap();
+            let result = verim_pool::get_config(&pool_name).unwrap();
+            test::cleanup_storage(&pool_name);
             println!("Data: {:?} ", result);
         }
     }
@@ -48,7 +63,7 @@ mod high_cases {
             ).unwrap();
 
             // Transaction
-            let tx = auth::build_tx(
+            let tx = verim_ledger::auth::build_tx(
                 &setup.pool_alias, &setup.alice_key_alias, &msg, account_number, account_sequence, 300000, 0, "token", 100000, "memo",
             ).unwrap();
 

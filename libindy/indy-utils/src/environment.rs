@@ -51,6 +51,18 @@ pub fn pool_path(pool_name: &str) -> PathBuf {
     path
 }
 
+pub fn verim_pool_home_path() -> PathBuf {
+    let mut path = indy_home_path();
+    path.push("verim_pool");
+    path
+}
+
+pub fn verim_pool_path(pool_name: &str) -> PathBuf {
+    let mut path = verim_pool_home_path();
+    path.push(pool_name);
+    path
+}
+
 pub fn tmp_path() -> PathBuf {
     let mut path = env::temp_dir();
     path.push("indy_client");
