@@ -104,7 +104,7 @@ pub extern "C" fn indy_verim_ledger_auth_build_tx(
 
     locator
         .executor
-        .spawn_ok_instrumented(CommandMetric::CosmosLedgerCommandBuildTx, action, cb);
+        .spawn_ok_instrumented(CommandMetric::VerimLedgerCommandBuildTx, action, cb);
 
     let res = ErrorCode::Success;
     debug!("indy_verim_ledger_auth_build_tx < {:?}", res);
@@ -151,7 +151,7 @@ pub extern "C" fn indy_verim_ledger_auth_build_query_account(
     };
 
     locator.executor.spawn_ok_instrumented(
-        CommandMetric::CosmosLedgerCommandBuildQueryCosmosAuthAccount,
+        CommandMetric::VerimLedgerCommandBuildQueryCosmosAuthAccount,
         action,
         cb,
     );
@@ -203,7 +203,7 @@ pub extern "C" fn indy_verim_ledger_auth_parse_query_account_resp(
     };
 
     locator.executor.spawn_ok_instrumented(
-        CommandMetric::CosmosLedgerCommandParseQueryCosmosAuthAccountResp,
+        CommandMetric::VerimLedgerCommandParseQueryCosmosAuthAccountResp,
         action,
         cb,
     );

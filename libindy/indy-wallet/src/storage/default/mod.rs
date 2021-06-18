@@ -926,6 +926,7 @@ impl WalletStorageType for SQLiteStorageType {
             pool: SqlitePoolOptions::default()
                 .min_connections(1)
                 .max_connections(1)
+                .max_lifetime(None)
                 .connect_with(
                     SqliteConnectOptions::new()
                         .filename(db_path.as_path())

@@ -45,7 +45,6 @@ mod high_cases {
     #[cfg(test)]
     mod broadcast_tx_commit {
         use super::*;
-        use crate::utils::verim_ledger::auth;
 
         #[test]
         #[cfg(feature = "local_nodes_verim_pool")]
@@ -64,7 +63,7 @@ mod high_cases {
             ).unwrap();
 
             // Transaction
-            let tx = auth::build_tx(
+            let tx = verim_ledger::auth::build_tx(
                 &setup.pool_alias, &setup.alice_key_alias, &msg, account_number, account_sequence, 300000, 0, "token", 100000, "memo",
             ).unwrap();
 

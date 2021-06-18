@@ -1,7 +1,7 @@
 #![warn(dead_code)]
 
-use ffi::{CommandHandle, WalletHandle};
-use {ErrorCode, IndyError};
+use ::{ErrorCode, IndyError};
+use ffi::{WalletHandle, CommandHandle};
 
 use libc::c_char;
 
@@ -9,42 +9,24 @@ use std::collections::HashMap;
 use std::ffi::CStr;
 use std::sync::Mutex;
 
-use futures::sync::oneshot;
 use futures::*;
+use futures::sync::oneshot;
 
 lazy_static! {
-    static ref CALLBACKS_EMPTY: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(), IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_SLICE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<Vec<u8>, IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_HANDLE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<CommandHandle, IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_WALLETHANDLE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<WalletHandle, IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_BOOL: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<bool, IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_STR_SLICE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, Vec<u8>), IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_HANDLE_USIZE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(CommandHandle, usize), IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_STR_STR_U64: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String, u64), IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<String, IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_STR_I64: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, i64), IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_STR_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String), IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_STR_OPTSTR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, Option<String>), IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_STR_STR_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String, String), IndyError>>>> =
-        Default::default();
-    static ref CALLBACKS_STR_OPTSTR_OPTSTR: Mutex<
-        HashMap<
-            CommandHandle,
-            oneshot::Sender<Result<(String, Option<String>, Option<String>), IndyError>>,
-        >,
-    > = Default::default();
+    static ref CALLBACKS_EMPTY: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(), IndyError>>>> = Default::default();
+    static ref CALLBACKS_SLICE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<Vec<u8>, IndyError>>>> = Default::default();
+    static ref CALLBACKS_HANDLE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<CommandHandle, IndyError>>>> = Default::default();
+    static ref CALLBACKS_WALLETHANDLE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<WalletHandle, IndyError>>>> = Default::default();
+    static ref CALLBACKS_BOOL: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<bool, IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_SLICE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, Vec<u8>), IndyError>>>> = Default::default();
+    static ref CALLBACKS_HANDLE_USIZE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(CommandHandle, usize), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_STR_U64: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String, u64), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<String, IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_I64: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, i64), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_OPTSTR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, Option<String>), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_STR_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String, String), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_OPTSTR_OPTSTR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, Option<String>, Option<String>), IndyError>>>> = Default::default();
 }
 
 macro_rules! cb_ec {
@@ -128,21 +110,21 @@ impl ClosureHandler {
 }
 
 macro_rules! result_handler {
-    ($name:ident($res_type:ty), $map:ident) => {
-        pub fn $name(
-            command_handle: CommandHandle,
-            err: ErrorCode,
-            rx: sync::oneshot::Receiver<Result<$res_type, IndyError>>,
-        ) -> Box<dyn Future<Item = $res_type, Error = IndyError>> {
-            if err != ErrorCode::Success {
-                let mut callbacks = $map.lock().unwrap();
-                callbacks.remove(&command_handle).unwrap();
-                Box::new(future::err(IndyError::new(err)))
-            } else {
-                Box::new(rx.map_err(|_| panic!("channel error!")).and_then(|res| res))
-            }
+    ($name:ident($res_type:ty), $map:ident) => (
+    pub fn $name(command_handle: CommandHandle,
+                 err: ErrorCode,
+                 rx: sync::oneshot::Receiver<Result<$res_type, IndyError>>) -> Box<dyn Future<Item=$res_type, Error= IndyError>> {
+        if err != ErrorCode::Success {
+            let mut callbacks = $map.lock().unwrap();
+            callbacks.remove(&command_handle).unwrap();
+            Box::new(future::err(IndyError::new(err)))
+        } else {
+            Box::new(rx
+                .map_err(|_| panic!("channel error!"))
+                .and_then(|res| res))
         }
-    };
+    }
+    )
 }
 
 pub struct ResultHandler {}
@@ -159,10 +141,7 @@ impl ResultHandler {
     result_handler!(str_slice((String, Vec<u8>)), CALLBACKS_STR_SLICE);
     result_handler!(str_str((String, String)), CALLBACKS_STR_STR);
     result_handler!(str_optstr((String, Option<String>)), CALLBACKS_STR_OPTSTR);
-    result_handler!(
-        str_optstr_optstr((String, Option<String>, Option<String>)),
-        CALLBACKS_STR_OPTSTR_OPTSTR
-    );
+    result_handler!(str_optstr_optstr((String, Option<String>, Option<String>)), CALLBACKS_STR_OPTSTR_OPTSTR);
     result_handler!(str_str_str((String, String, String)), CALLBACKS_STR_STR_STR);
     result_handler!(str_str_u64((String, String, u64)), CALLBACKS_STR_STR_U64);
 }
@@ -191,12 +170,7 @@ mod test {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string();
 
         let callback = cb.unwrap();
-        callback(
-            command_handle,
-            0,
-            CString::new("This is a test").unwrap().as_ptr(),
-            null(),
-        );
+        callback(command_handle, 0, CString::new("This is a test").unwrap().as_ptr(), null());
 
         let (str1, str2) = receiver.wait().unwrap().unwrap();
         assert_eq!(str1, "This is a test".to_string());
@@ -208,14 +182,7 @@ mod test {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string();
 
         let callback = cb.unwrap();
-        callback(
-            command_handle,
-            0,
-            CString::new("This is a test").unwrap().as_ptr(),
-            CString::new("The second string has something")
-                .unwrap()
-                .as_ptr(),
-        );
+        callback(command_handle, 0, CString::new("This is a test").unwrap().as_ptr(), CString::new("The second string has something").unwrap().as_ptr());
 
         let (str1, str2) = receiver.wait().unwrap().unwrap();
         assert_eq!(str1, "This is a test".to_string());
