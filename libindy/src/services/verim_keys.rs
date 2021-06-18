@@ -1,87 +1,91 @@
 //! Service to manage Cosmos keys
 
-use crate::domain::verim_keys::KeyInfo;
+use crate::domain::verim_keys::{KeyInfo, Key};
 use cosmos_sdk::crypto::secp256k1::signing_key::Secp256k1Signer;
 use cosmos_sdk::crypto::secp256k1::SigningKey as CosmosSigningKey;
 use cosmos_sdk::tx::{Raw, SignDoc};
 use futures::lock::Mutex as MutexF;
-use indy_api_types::{
-    errors::{IndyErrorKind, IndyResult},
-    IndyError,
-};
+use indy_api_types::{errors::{IndyErrorKind, IndyResult}, IndyError, WalletHandle};
 use k256::ecdsa::signature::rand_core::OsRng;
 use k256::ecdsa::SigningKey;
 use rand::rngs::StdRng;
 use rand_seeder::Seeder;
 use rust_base58::ToBase58;
 use std::collections::HashMap;
+use indy_wallet::{WalletService, RecordOptions};
+use failure::ResultExt;
+use indy_api_types::errors::IndyResultExt;
 
 pub(crate) struct VerimKeysService {
-    // TODO: Persistence
-    // key alias -> SEC1-encoded secp256k1 ECDSA private key
-    keys: MutexF<HashMap<String, Vec<u8>>>,
+    wallet_service: WalletService,
 }
 
 impl VerimKeysService {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(wallet_service: WalletService) -> Self {
         Self {
-            keys: MutexF::new(HashMap::new()),
+            wallet_service
         }
     }
 
-    async fn set_signing_key_bytes(&self, alias: &str, bytes: &[u8]) -> IndyResult<()> {
-        let mut keys = self.keys.lock().await;
-
-        if keys.contains_key(alias) {
-            return Err(IndyError::from_msg(
-                IndyErrorKind::InvalidState,
-                "Key already exists",
-            ));
-        }
-
-        keys.insert(alias.to_owned(), bytes.to_vec());
+    async fn store_key(&self, wallet_handle: WalletHandle, key: &Key) -> IndyResult<()> {
+        self.wallet_service
+            .add_indy_object(wallet_handle, &key.alias, &key, &HashMap::new())
+            .await
+            .to_indy(IndyErrorKind::IOError, "Can't write verim key")?;
 
         Ok(())
     }
 
-    async fn get_signing_key_bytes(&self, alias: &str) -> IndyResult<Vec<u8>> {
-        let keys = self.keys.lock().await;
+    async fn load_key(&self, wallet_handle: WalletHandle, alias: &str) -> IndyResult<Key> {
+        let key = self.wallet_service
+            .get_indy_object(wallet_handle, &alias, &RecordOptions::id_value())
+            .await
+            .to_indy(IndyErrorKind::IOError, "Can't write verim key")?;
 
-        let bytes = keys.get(alias).ok_or(IndyError::from_msg(
-            IndyErrorKind::InvalidState,
-            "Key not found",
-        ))?;
-
-        Ok(bytes.clone())
+        Ok(key)
     }
 
-    async fn set_signing_key(&self, alias: &str, key: &SigningKey) -> IndyResult<()> {
-        let bytes = key.to_bytes().to_vec();
-        self.set_signing_key_bytes(alias, &bytes).await?;
-        Ok(())
+    // TODO: Keep or remove?
+    fn signing_key_to_bytes(&self, key: &SigningKey) -> Vec<u8> {
+        key.to_bytes().to_vec()
     }
 
-    async fn get_signing_key(&self, alias: &str) -> IndyResult<SigningKey> {
-        let bytes = self.get_signing_key_bytes(alias).await?;
-        Ok(SigningKey::from_bytes(&bytes)?)
+    // TODO: Keep or remove?
+    fn bytes_to_signing_key(&self, bytes: &[u8]) -> IndyResult<SigningKey> {
+        Ok(SigningKey::from_bytes(bytes)?)
     }
 
-    async fn get_cosmos_signing_key(&self, alias: &str) -> IndyResult<CosmosSigningKey> {
-        let key = self.get_signing_key(alias).await?;
-        Ok(CosmosSigningKey::from(
-            Box::new(key) as Box<dyn Secp256k1Signer>
-        ))
+    // TODO: Keep or remove?
+    fn bytes_to_cosmos_signing_key(&self, bytes: &[u8]) -> CosmosSigningKey {
+        CosmosSigningKey::from(
+            Box::new(bytes.clone()) as Box<dyn Secp256k1Signer>
+        )
     }
 
-    pub(crate) async fn add_random(&self, alias: &str) -> IndyResult<KeyInfo> {
-        let key = k256::ecdsa::SigningKey::random(&mut OsRng);
-        self.set_signing_key(alias, &key).await?;
+    fn key_to_key_info(&self, key: &Key) -> IndyResult<KeyInfo> {
+        let sig_key = self.bytes_to_cosmos_signing_key(&key.priv_key);
+        let pub_key = sig_key.public_key();
+        let account_id = pub_key.account_id("cosmos")?;
 
-        Ok(self.get_info(alias).await?)
+        let key_info = KeyInfo::new(
+            alias.to_owned(),
+            account_id.to_string(),
+            pub_key.to_bytes().to_base58(),
+        );
+
+        Ok(key_info)
+    }
+
+    pub(crate) async fn add_random(&self, wallet_handle: WalletHandle, alias: &str) -> IndyResult<KeyInfo> {
+        let signing_key = k256::ecdsa::SigningKey::random(&mut OsRng);
+        let key = Key::new(alias.to_string(), signing_key.to_bytes().to_vec());
+        self.store_key(wallet_handle, &key).await?;
+        Ok(self.key_to_key_info(&key)?)
     }
 
     pub(crate) async fn add_from_mnemonic(
         &self,
+        wallet_handle: WalletHandle,
         alias: &str,
         mnemonic: &str,
     ) -> IndyResult<KeyInfo> {
