@@ -15,7 +15,7 @@ mod high_cases {
     use super::*;
 
     #[cfg(test)]
-    mod add_pool {
+    mod add {
         use super::*;
 
         #[test]
@@ -28,11 +28,11 @@ mod high_cases {
     }
 
     #[cfg(test)]
-    mod get_pool {
+    mod get_config {
         use super::*;
 
         #[test]
-        fn test_get() {
+        fn test_get_config() {
             let pool_number: u16 = rand::thread_rng().gen();
             let pool_name = format!("pool{}", pool_number);
 
