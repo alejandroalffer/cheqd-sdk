@@ -48,7 +48,7 @@ variables:
     name: gcr.io/kaniko-project/executor:debug-v0.16.0
     entrypoint: [""]
   script:
-    - if [ "$CI_COMMIT_REF_SLUG" == 'master' ] || [ "$CI_COMMIT_REF_SLUG" == 'async' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
+    - if [ "$CI_COMMIT_REF_SLUG" == 'main' ] || [ "$CI_COMMIT_REF_SLUG" == 'async' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
     - echo "${KANIKO_ARGS}"
     - |
         echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" \
@@ -89,14 +89,66 @@ variables:
         --destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:${CI_COMMIT_REF_SLUG}
 
 
+
 ## - Jobs : dockerbuild-pre - ##
+# ToDo: it was copy-pasted from the master branch.
+.dockerbuild-vcx-libindy:
+  extends: .kaniko_large
+  variables:
+    KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
+  only:
+    refs:
+      - master
+      - stable
+      - /^docker-.*/
+
+dockerbuild-vcx-libindy-ubuntu16:
+  stage: dockerbuild-pre
+  extends: .dockerbuild-vcx-libindy
+  variables:
+    DOCKERFILE_PATH: vcx/ci/libindy-ubuntu16.dockerfile
+    DOCKER_IMAGE_NAME: vcx-libindy-ubuntu16
+  only:
+    changes:
+      - .gitlab-ci.yml
+      - vcx/ci/libindy-ubuntu16.dockerfile
+
+dockerbuild-vcx-libindy-ubuntu18:
+  stage: dockerbuild-pre
+  extends: .dockerbuild-vcx-libindy
+  variables:
+    DOCKERFILE_PATH: vcx/ci/libindy-ubuntu18.dockerfile
+    DOCKER_IMAGE_NAME: vcx-libindy-ubuntu18
+  only:
+    changes:
+      - .gitlab-ci.yml
+      - vcx/ci/libindy-ubuntu18.dockerfile
+
+dockerbuild-vcx-libindy-centos:
+  stage: dockerbuild-pre
+  extends: .kaniko_micro
+  variables:
+    DOCKERFILE_PATH: vcx/ci/libindy-centos.dockerfile
+    DOCKER_IMAGE_NAME: vcx-libindy-centos
+    KANIKO_ARGS: "--build-arg LIBINDY_VER=${indyFullVersion} --build-arg LIBINDY_SIMPLE_VER=${indySimpleVersion} --build-arg LIBINDY_BRANCH=${indyBranch} --build-arg RUST_VER=${rustVersion}"
+  only:
+    refs:
+      - master
+      - stable
+      - /^docker-.*/
+    changes:
+      - .gitlab-ci.yml
+      - vcx/ci/libindy-centos.dockerfile
+
+
+
 .dockerbuild-libindy:
   extends: .kaniko_large
   variables:
     KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - async@evernym/mobile/indy-sdk
       - /^docker-.*/
 
 dockerbuild-libindy-ubuntu16:
@@ -133,7 +185,7 @@ dockerbuild-libindy-ubuntu18:
       - libnullpay/target/${BUILD_TYPE}/libnullpay.so
       - cli/target/${BUILD_TYPE}/indy-cli
   services:
-    - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.12.3_1.0.8
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
   timeout: 3h
   script:
@@ -164,7 +216,7 @@ build-libindy-ubuntu16-from-latest:
   except:
     refs:
       - /^docker-.*/
-      - async@dev/vcx/indy-sdk
+      - async@evernym/mobile/indy-sdk
 
 build-libindy-ubuntu16-release:
   extends: .build-libindy
@@ -173,7 +225,7 @@ build-libindy-ubuntu16-release:
     BUILD_TYPE: 'release'
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - async@evernym/mobile/indy-sdk
 
 build-libindy-ubuntu18-from-branch:
   extends: .build-libindy
@@ -192,7 +244,7 @@ build-libindy-ubuntu18-from-latest:
   except:
     refs:
       - /^docker-.*/
-      - async@dev/vcx/indy-sdk
+      - async@evernym/mobile/indy-sdk
 
 build-libindy-ubuntu18-release:
   extends: .build-libindy
@@ -201,7 +253,7 @@ build-libindy-ubuntu18-release:
     BUILD_TYPE: 'release'
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - async@evernym/mobile/indy-sdk
 
 
 ## - Jobs : Test - ##
@@ -209,7 +261,7 @@ build-libindy-ubuntu18-release:
   extends: .tags_micro
   stage: test
   services:
-    - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.9.2_1.0.2
       alias: pool_network
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
@@ -240,9 +292,9 @@ test-libindy-java-wrapper-from-latest:
   except:
     refs:
       - /^docker-.*/
-      - async@dev/vcx/indy-sdk
-      - master@dev/vcx/indy-sdk
-      - stable@dev/vcx/indy-sdk
+      - async@evernym/mobile/indy-sdk
+      - main@evernym/mobile/indy-sdk
+      - stable@evernym/mobile/indy-sdk
 
 test-libindy-java-wrapper-release:
   extends: .test-libindy-java-wrapper
@@ -254,7 +306,7 @@ test-libindy-java-wrapper-release:
     BUILD_TYPE: 'release'
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - async@evernym/mobile/indy-sdk
 
 
 ## - Jobs : Package - ##
@@ -269,7 +321,7 @@ test-libindy-java-wrapper-release:
       - cli/target/debian/*.deb
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - async@evernym/mobile/indy-sdk
   script:
     - libindy/ci/scripts/package.sh ${CI_PIPELINE_IID}
     - libnullpay/ci/scripts/package.sh ${CI_PIPELINE_IID}
@@ -291,11 +343,11 @@ package-libindy-ubuntu18:
 # - Jobs : Publish - ##
 publish-libindy-java-wrapper:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-java:latest
+  image: registry.gitlab.com/evernym/containers/vcx-java/vcx-java:latest
   extends: .tags_micro
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - async@evernym/mobile/indy-sdk
   script:
     - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
     - wrappers/java/ci/publish.sh ${CI_COMMIT_BRANCH} ${CI_PIPELINE_IID}
@@ -309,7 +361,7 @@ publish-libindy:
     - package-libindy-ubuntu18
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - async@evernym/mobile/indy-sdk
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output

@@ -1971,7 +1971,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sodiumoxide",
- "zeroize 0.9.3",
+ "zeroize 1.1.0",
 ]
 
 [[package]]
@@ -1986,6 +1986,7 @@ dependencies = [
  "indy-utils",
  "libc",
  "log",
+ "lru",
  "owning_ref",
  "rmp-serde",
  "rust-base58",
@@ -2158,8 +2159,10 @@ dependencies = [
  "log",
  "log-derive",
  "log-panics",
- "num-derive 0.2.5",
+ "lru",
+ "num-derive",
  "num-traits",
+ "num_cpus",
  "openssl",
  "prost",
  "prost-build",
@@ -2277,6 +2280,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae0136257df209261daa18d6c16394757c63e032e27aafd8b07788b051082bef"
 dependencies = [
  "log",
+]
+
+[[package]]
+name = "lru"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f374d42cdfc1d7dbf3d3dec28afab2eb97ffbf43a3234d795b5986dbf4b90ba"
+dependencies = [
+ "hashbrown",
 ]
 
 [[package]]
