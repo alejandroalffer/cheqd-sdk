@@ -6,7 +6,7 @@ extern "C" {
     pub fn indy_verim_ledger_auth_build_tx(
         command_handle: CommandHandle,
         pool_alias: CString,
-        sender_alias: CString,
+        sender_public_key: CString,
         msg_raw: BString,
         msg_len: u32,
         account_number: u64,

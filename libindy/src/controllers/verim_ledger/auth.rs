@@ -8,7 +8,7 @@ impl VerimLedgerController {
     pub(crate) async fn auth_build_tx(
         &self,
         pool_alias: &str,
-        sender_alias: &str,
+        sender_public_key: &str,
         msg: &[u8],
         account_number: u64,
         sequence_number: u64,
@@ -18,17 +18,16 @@ impl VerimLedgerController {
         timeout_height: u64,
         memo: &str,
     ) -> IndyResult<Vec<u8>> {
-        trace!("auth_build_tx > pool_alias {:?}, sender_alias {:?}, msg {:?}, account_number {:?}, sequence_number {:?}, max_gas {:?}, max_coin_amount {:?}, max_coin_denom {:?}, timeout_height {:?}, memo {:?}", pool_alias, sender_alias, msg, account_number, sequence_number, max_gas, max_coin_amount, max_coin_denom, timeout_height, memo);
+        trace!("auth_build_tx > pool_alias {:?}, sender_public_key {:?}, msg {:?}, account_number {:?}, sequence_number {:?}, max_gas {:?}, max_coin_amount {:?}, max_coin_denom {:?}, timeout_height {:?}, memo {:?}", pool_alias, sender_public_key, msg, account_number, sequence_number, max_gas, max_coin_amount, max_coin_denom, timeout_height, memo);
 
         let pool = self.verim_pool_service.get_config(pool_alias).await?;
-        let sender = self.verim_keys_service.get_info(sender_alias).await?;
         let msg = Msg::from_bytes(&msg)?;
 
         let sign_doc = self
             .verim_ledger_service
             .auth_build_tx(
                 &pool.chain_id,
-                &sender.pub_key,
+                sender_public_key,
                 msg,
                 account_number,
                 sequence_number,

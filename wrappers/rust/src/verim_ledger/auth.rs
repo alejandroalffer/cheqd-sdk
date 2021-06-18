@@ -9,7 +9,7 @@ use CommandHandle;
 
 pub fn build_tx(
     pool_alias: &str,
-    sender_alias: &str,
+    sender_public_key: &str,
     msg: &[u8],
     account_number: u64,
     sequence_number: u64,
@@ -24,7 +24,7 @@ pub fn build_tx(
     let err = _build_tx(
         command_handle,
         pool_alias,
-        sender_alias,
+        sender_public_key,
         msg,
         account_number,
         sequence_number,
@@ -42,7 +42,7 @@ pub fn build_tx(
 fn _build_tx(
     command_handle: CommandHandle,
     pool_alias: &str,
-    sender_alias: &str,
+    sender_public_key: &str,
     msg: &[u8],
     account_number: u64,
     sequence_number: u64,
@@ -54,7 +54,7 @@ fn _build_tx(
     cb: Option<ResponseSliceCB>,
 ) -> ErrorCode {
     let pool_alias = c_str!(pool_alias);
-    let sender_alias = c_str!(sender_alias);
+    let sender_public_key = c_str!(sender_public_key);
     let max_coin_denom = c_str!(max_coin_denom);
     let memo = c_str!(memo);
 
@@ -62,7 +62,7 @@ fn _build_tx(
         auth::indy_verim_ledger_auth_build_tx(
             command_handle,
             pool_alias.as_ptr(),
-            sender_alias.as_ptr(),
+            sender_public_key.as_ptr(),
             msg.as_ptr() as *const u8,
             msg.len() as u32,
             account_number,
