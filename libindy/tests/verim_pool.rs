@@ -8,7 +8,7 @@ extern crate serde_json;
 mod utils;
 
 use indyrs::ErrorCode;
-use utils::{constants::*, verim_keys, verim_pool, verim_setup, verim_ledger, types::ResponseType};
+use utils::{constants::*, verim_keys, verim_pool, verim_setup, verim_ledger, test, types::ResponseType};
 use rand::prelude::*;
 use rand::Rng;
 
@@ -21,9 +21,9 @@ mod high_cases {
 
         #[test]
         fn test_add() {
-            let pool_number: u16 = rand::thread_rng().gen();
-            let pool_name = format!("pool{}", pool_number);
+            let pool_name = "test_pool";
             let result = verim_pool::add(&pool_name, "rpc_address", "chain_id").unwrap();
+            test::cleanup_storage(&pool_name);
             println!("Data: {:?} ", result);
         }
     }
@@ -34,11 +34,10 @@ mod high_cases {
 
         #[test]
         fn test_get_config() {
-            let pool_number: u16 = rand::thread_rng().gen();
-            let pool_name = format!("pool{}", pool_number);
-
+            let pool_name = "test_pool";
             verim_pool::add(&pool_name, "rpc_address", "chain_id").unwrap();
             let result = verim_pool::get_config(&pool_name).unwrap();
+            test::cleanup_storage(&pool_name);
             println!("Data: {:?} ", result);
         }
     }
@@ -46,6 +45,7 @@ mod high_cases {
     #[cfg(test)]
     mod broadcast_tx_commit {
         use super::*;
+        use crate::utils::verim_ledger::auth;
 
         #[test]
         #[cfg(feature = "local_nodes_verim_pool")]
