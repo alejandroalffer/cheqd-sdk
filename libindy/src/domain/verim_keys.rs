@@ -26,13 +26,13 @@ impl Key {
 
 impl Zeroize for Key {
     fn zeroize(&mut self) {
-        self.signkey.zeroize();
+        self.priv_key.zeroize();
     }
 }
 
 impl Drop for Key {
     fn drop(&mut self) {
-        self.signkey.zeroize();
+        self.zeroize();
     }
 }
 

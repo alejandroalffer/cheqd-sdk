@@ -191,11 +191,11 @@ impl Locator {
 
         let pool_controller = PoolController::new(pool_service.clone());
 
-        let verim_ledger_controller = VerimLedgerController::new(verim_ledger_service.clone(), verim_pool_service.clone(), verim_keys_service.clone());
+        let verim_ledger_controller = VerimLedgerController::new(verim_ledger_service.clone(), verim_pool_service.clone());
 
         let verim_pool_controller = VerimPoolController::new(verim_pool_service.clone());
 
-        let verim_keys_controller = VerimKeysController::new(verim_keys_service.clone());
+        let verim_keys_controller = VerimKeysController::new(verim_keys_service.clone(), wallet_service.clone());
 
         let did_controller = DidController::new(
             wallet_service.clone(),

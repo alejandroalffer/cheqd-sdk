@@ -1,6 +1,4 @@
-use indy_api_types::{
-    CommandHandle, ErrorCode, errors::prelude::*,
-};
+use indy_api_types::{CommandHandle, ErrorCode, errors::prelude::*, WalletHandle};
 use indy_utils::ctypes;
 use libc::c_char;
 
@@ -29,12 +27,13 @@ use crate::services::CommandMetric;
 #[no_mangle]
 pub extern "C" fn indy_verim_keys_add_random(
     command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
     alias: *const c_char,
     cb: Option<
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key_info: *const c_char),
     >,
 ) -> ErrorCode {
-    debug!("indy_verim_keys_add_random > alias {:?} ", alias);
+    debug!("indy_verim_keys_add_random > wallet_handle {:?} alias {:?} ", wallet_handle, alias);
 
     check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
@@ -44,7 +43,7 @@ pub extern "C" fn indy_verim_keys_add_random(
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.verim_keys_controller.add_random(&alias).await;
+        let res = locator.verim_keys_controller.add_random(wallet_handle, &alias).await;
         res
     };
 
@@ -89,6 +88,7 @@ pub extern "C" fn indy_verim_keys_add_random(
 #[no_mangle]
 pub extern "C" fn indy_verim_keys_add_from_mnemonic(
     command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
     alias: *const c_char,
     mnemonic: *const c_char,
     cb: Option<
@@ -96,8 +96,8 @@ pub extern "C" fn indy_verim_keys_add_from_mnemonic(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_keys_add_from_mnemonic > alias {:?}, mnemonic {:?} ",
-        alias, mnemonic
+        "indy_verim_keys_add_from_mnemonic > wallet_handle {:?} alias {:?}, mnemonic {:?} ",
+        wallet_handle, alias, mnemonic
     );
 
     check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
@@ -114,7 +114,7 @@ pub extern "C" fn indy_verim_keys_add_from_mnemonic(
     let action = async move {
         let res = locator
             .verim_keys_controller
-            .add_from_mnemonic(&alias, &mnemonic)
+            .add_from_mnemonic(wallet_handle, &alias, &mnemonic)
             .await;
         res
     };
@@ -161,12 +161,13 @@ pub extern "C" fn indy_verim_keys_add_from_mnemonic(
 #[no_mangle]
 pub extern "C" fn indy_verim_keys_get_info(
     command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
     alias: *const c_char,
     cb: Option<
         extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key_info: *const c_char),
     >,
 ) -> ErrorCode {
-    debug!("indy_verim_keys_key_info > alias {:?} ", alias);
+    debug!("indy_verim_keys_key_info > wallet_handle {:?} alias {:?} ", wallet_handle, alias);
 
     check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
@@ -176,7 +177,7 @@ pub extern "C" fn indy_verim_keys_get_info(
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.verim_keys_controller.get_info(&alias).await;
+        let res = locator.verim_keys_controller.get_info(wallet_handle, &alias).await;
         res
     };
 
@@ -216,6 +217,7 @@ pub extern "C" fn indy_verim_keys_get_info(
 #[no_mangle]
 pub extern "C" fn indy_verim_keys_sign(
     command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
     alias: *const c_char,
     tx_raw: *const u8,
     tx_len: u32,
@@ -229,8 +231,8 @@ pub extern "C" fn indy_verim_keys_sign(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_keys_sign > alias {:?} tx_raw {:?} tx_len {:?}",
-        alias, tx_raw, tx_len
+        "indy_verim_keys_sign > wallet_handle {:?} alias {:?} tx_raw {:?} tx_len {:?}",
+        wallet_handle, alias, tx_raw, tx_len
     );
 
     check_useful_c_str!(alias, ErrorCode::CommonInvalidParam1);
@@ -247,7 +249,7 @@ pub extern "C" fn indy_verim_keys_sign(
     let locator = Locator::instance();
 
     let action = async move {
-        let res = locator.verim_keys_controller.sign(&alias, &tx_raw).await;
+        let res = locator.verim_keys_controller.sign(wallet_handle, &alias, &tx_raw).await;
         res
     };
 

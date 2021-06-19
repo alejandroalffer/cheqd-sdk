@@ -19,10 +19,6 @@ impl VerimKeysService {
         Self {}
     }
 
-    fn signing_key_to_bytes(&self, key: &SigningKey) -> Vec<u8> {
-        key.to_bytes().to_vec()
-    }
-
     fn bytes_to_signing_key(bytes: &[u8]) -> IndyResult<SigningKey> {
         Ok(SigningKey::from_bytes(bytes)?)
     }
@@ -86,7 +82,7 @@ mod test {
     async fn test_add_random() {
         let verim_keys_service = VerimKeysService::new();
 
-        let key = verim_keys_service.new_random("alice").await.unwrap();
+        let key = verim_keys_service.new_random("alice").unwrap();
 
         assert_eq!(key.alias, "alice")
     }
@@ -96,16 +92,16 @@ mod test {
         let verim_keys_service = VerimKeysService::new();
 
         let alice = verim_keys_service
-            .add_from_mnemonic("alice", "secret phrase")
-            .await
+            .new_from_mnemonic("alice", "secret phrase")
             .unwrap();
+        let alice_info = verim_keys_service.get_info(&alice).unwrap();
 
         let bob = verim_keys_service
-            .add_from_mnemonic("bob", "secret phrase")
-            .await
+            .new_from_mnemonic("bob", "secret phrase")
             .unwrap();
+        let bob_info = verim_keys_service.get_info(&bob).unwrap();
 
-        assert_eq!(alice.pub_key, bob.pub_key)
+        assert_eq!(alice_info.pub_key, bob_info.pub_key)
     }
 
     #[test]
