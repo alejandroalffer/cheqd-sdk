@@ -1,8 +1,8 @@
 #![allow(dead_code, unused_macros)]
-use crate::utils::{verim_keys, verim_pool, verim_ledger::auth};
+use crate::utils::{verim_keys, verim_pool, verim_ledger::auth, verim_setup};
 use serde_json::Value;
 use super::test;
-use super::logger;
+use super::{constants::*, logger, wallet};
 use indyrs::IndyError;
 
 fn setup() -> String {
@@ -14,6 +14,10 @@ fn setup() -> String {
 
 fn tear_down(name: &str) {
     test::cleanup_storage(name);
+}
+
+fn config(name: &str) -> String {
+    json!({ "id": name }).to_string()
 }
 
 pub struct VerimSetup {
@@ -31,11 +35,11 @@ impl VerimSetup {
 
         // Create Alice's key
         let alice_alias = "alice";
-        let alice_account_address = VerimSetup::create_key(alice_alias, "alice").unwrap();
+        let alice_account_address = VerimSetup::create_key(&name, alice_alias, "alice").unwrap();
 
         // Create Bob's key
         let bob_alias = "bob";
-        let bob_account_address = VerimSetup::create_key(bob_alias, "bob").unwrap();
+        let bob_account_address = VerimSetup::create_key(&name, bob_alias, "bob").unwrap();
 
         // Pool
         verim_pool::add(&name, "http://localhost:26657", "verim");
@@ -52,8 +56,10 @@ impl VerimSetup {
         setup
     }
 
-    pub fn create_key(alias: &str, mnemonic: &str) -> Result<String, IndyError> {
-        let key = verim_keys::add_from_mnemonic(alias, mnemonic).unwrap();
+    pub fn create_key(name: &str, alias: &str, mnemonic: &str) -> Result<String, IndyError> {
+        let config = config(name);
+        let (wallet_handle, _) = wallet::create_and_open_default_wallet(&config).unwrap();
+        let key = verim_keys::add_from_mnemonic(wallet_handle, alias, mnemonic).unwrap();
         println!("Verim setup. Create key: {}", key);
         let key: Value = serde_json::from_str(&key).unwrap();
         Ok(key["account_id"].as_str().unwrap().to_string())

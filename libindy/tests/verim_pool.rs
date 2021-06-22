@@ -8,7 +8,7 @@ extern crate serde_json;
 mod utils;
 
 use indyrs::ErrorCode;
-use utils::{constants::*, verim_keys, verim_pool, verim_setup, verim_ledger, test, types::ResponseType};
+use utils::{constants::*, verim_keys, verim_pool, verim_setup, verim_ledger, test, wallet, types::ResponseType};
 use rand::prelude::*;
 use rand::Rng;
 
@@ -67,8 +67,11 @@ mod high_cases {
                 &setup.pool_alias, &setup.alice_key_alias, &msg, account_number, account_sequence, 300000, 0, "token", 100000, "memo",
             ).unwrap();
 
+            //Wallet
+            let (wallet_handle, _) = wallet::create_and_open_default_wallet(&config).unwrap();
+
             // Sign
-            let signed = verim_keys::sign(&setup.alice_key_alias, &tx).unwrap();
+            let signed = verim_keys::sign(wallet_handle, &setup.alice_key_alias, &tx).unwrap();
 
             // Broadcast
             let resp = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
