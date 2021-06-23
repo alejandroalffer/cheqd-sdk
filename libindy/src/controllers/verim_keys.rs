@@ -38,7 +38,7 @@ impl VerimKeysController {
         let key = self.wallet_service
             .get_indy_object(wallet_handle, &alias, &RecordOptions::id_value())
             .await
-            .to_indy(IndyErrorKind::IOError, "Can't write verim key")?;
+            .to_indy(IndyErrorKind::IOError, "Can't read verim key")?;
 
         Ok(key)
     }

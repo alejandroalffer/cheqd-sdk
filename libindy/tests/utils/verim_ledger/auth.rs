@@ -23,8 +23,7 @@ pub fn build_tx(
         max_coin_denom,
         timeout_height,
         memo,
-    )
-        .wait()
+    ).wait()
 }
 
 pub fn build_query_account(address: &str) -> Result<String, IndyError> {

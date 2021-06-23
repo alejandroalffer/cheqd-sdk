@@ -26,13 +26,8 @@ mod high_cases {
         fn test_add_random() {
             let alias = "some_alias";
             let setup = verim_setup::VerimSetup::new();
-            let config = config(&setup.name);
-            let (wallet_handle, _) = wallet::create_and_open_default_wallet(&config).unwrap();
-            let result = verim_keys::add_random(wallet_handle, alias).unwrap();
+            let result = verim_keys::add_random(setup.wallet_handle, alias).unwrap();
             println!("Data: {:?} ", result);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-            test::cleanup_storage("test_add_random");
         }
     }
 
@@ -45,13 +40,8 @@ mod high_cases {
             let alias = "some_alias_2";
             let mnemonic = "some_mnemonic";
             let setup = verim_setup::VerimSetup::new();
-            let config = config(&setup.name);
-            let (wallet_handle, _) = wallet::create_and_open_default_wallet(&config).unwrap();
-            let result = verim_keys::add_from_mnemonic(wallet_handle, alias, mnemonic).unwrap();
+            let result = verim_keys::add_from_mnemonic(setup.wallet_handle, alias, mnemonic).unwrap();
             println!("Mnemonic: {:?}, Data: {:?}", mnemonic, result);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-            test::cleanup_storage("test_add_from_mnemonic");
         }
     }
 
@@ -62,14 +52,9 @@ mod high_cases {
         fn test_key_info() {
             let alias = "some_alias";
             let setup = verim_setup::VerimSetup::new();
-            let config = config(&setup.name);
-            let (wallet_handle, _) = wallet::create_and_open_default_wallet(&config).unwrap();
-            verim_keys::add_random(wallet_handle, alias).unwrap();
-            let result = verim_keys::get_info(wallet_handle, alias).unwrap();
+            verim_keys::add_random(setup.wallet_handle, alias).unwrap();
+            let result = verim_keys::get_info(setup.wallet_handle, alias).unwrap();
             println!("Data: {:?} ", result);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-            test::cleanup_storage("test_key_info");
         }
     }
 
@@ -80,12 +65,10 @@ mod high_cases {
         fn test_sign() {
             let setup = verim_setup::VerimSetup::new();
 
-            let (account_number, account_sequence) = setup.get_base_account_number_and_sequence(&setup.alice_account_id).unwrap();
-
             // Message
             let msg = verim_ledger::verim::build_msg_create_nym(
                 "test-did",
-                &setup.alice_account_id,
+                &setup.account_id,
                 "test-verkey",
                 "test-alias",
                 "test-role",
@@ -93,19 +76,11 @@ mod high_cases {
 
             // Transaction
             let tx = verim_ledger::auth::build_tx(
-                &setup.pool_alias, &setup.alice_key_alias, &msg, account_number, account_sequence, 300000, 0, "token", 100000, "memo",
+                &setup.pool_alias, &setup.pub_key, &msg, 0, 0, 300000, 0, "token", 100000, "memo",
             ).unwrap();
 
-            let alias = "some_alias";
-            let setup = verim_setup::VerimSetup::new();
-            let config = config(&setup.name);
-            let (wallet_handle, _) = wallet::create_and_open_default_wallet(&config).unwrap();
-            verim_keys::add_random(wallet_handle, alias).unwrap();
-            let result = verim_keys::sign(wallet_handle, alias, &tx).unwrap();
+            let result = verim_keys::sign(setup.wallet_handle, &setup.key_alias, &tx).unwrap();
             println!("Data: {:?} ", result);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-            test::cleanup_storage("test_sign");
         }
     }
 }
