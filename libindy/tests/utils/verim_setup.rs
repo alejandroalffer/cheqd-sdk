@@ -17,7 +17,7 @@ fn tear_down(name: &str, wallet_handle: WalletHandle) {
     test::cleanup_storage(name);
 }
 
-fn config(name: &str) -> String {
+fn wallet_config(name: &str) -> String {
     json!({ "id": name }).to_string()
 }
 
@@ -26,7 +26,6 @@ pub struct VerimSetup {
     pub pool_alias: String,
     pub key_alias: String,
     pub account_id: String,
-    // Base58-encoded SEC1-encoded secp256k1 ECDSA key
     pub pub_key: String,
     pub wallet_handle: WalletHandle,
 }
@@ -34,10 +33,12 @@ pub struct VerimSetup {
 impl VerimSetup {
     pub fn new() -> VerimSetup {
         let name = setup();
-        let config = config(&name);
-        let (wallet_handle, _) = wallet::create_and_open_default_wallet(&config).unwrap();
 
-        // Create account key
+        // Wallet
+        let wallet_config = wallet_config(&name);
+        let (wallet_handle, _) = wallet::create_and_open_default_wallet(&wallet_config).unwrap();
+
+        // Account
         let key_alias = "alice";
         let (account_id, pub_key) = VerimSetup::create_key(wallet_handle, key_alias, "alice").unwrap();
 
