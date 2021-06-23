@@ -11,10 +11,6 @@ use utils::{constants::*, types::ResponseType, test, verim_keys, verim_setup, ve
 
 mod utils;
 
-fn config(name: &str) -> String {
-    json!({ "id": name }).to_string()
-}
-
 mod high_cases {
     use super::*;
 
