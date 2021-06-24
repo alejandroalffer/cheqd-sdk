@@ -23,7 +23,6 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[cfg(feature = "local_nodes_verim_pool")]
         fn test_build_tx() {
             let setup = verim_setup::VerimSetup::new();
 
@@ -38,12 +37,12 @@ mod high_cases {
                 "test-role",
             ).unwrap();
 
-            // Transaction
+            // Tx
             let tx = verim_ledger::auth::build_tx(
                 &setup.pool_alias, &setup.pub_key, &msg, account_number, account_sequence, 300000, 0, "token", 100000, "memo",
             ).unwrap();
 
-            println!("Tx response: {:?}", tx);
+            println!("Tx: {:?}", tx);
             assert_ne!(tx.len(), 0);
         }
     }
@@ -56,11 +55,12 @@ mod high_cases {
         #[cfg(feature = "local_nodes_verim_pool")]
         fn test_query_account() {
             let setup = verim_setup::VerimSetup::new();
-            let tx_resp = verim_ledger::auth::build_query_account(&setup.account_id).unwrap();
-            let result: Value = serde_json::from_str(&tx_resp).unwrap();
-            println!("Tx response: {:?}", tx_resp);
 
-            assert!(result["prove"].as_bool().unwrap());
+            let query = verim_ledger::auth::build_query_account(&setup.account_id).unwrap();
+            let resp = verim_pool::abci_query(&setup.pool_alias, &query).unwrap();
+            let parsed = verim_ledger::auth::parse_query_account_resp(&resp).unwrap();
+
+            println!("Parsed query response: {:?}", parsed);
         }
     }
 }

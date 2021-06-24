@@ -131,7 +131,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_verim_pool")]
         fn test_abci_info() {
-            unimplemented!()
+            // TODO: Implement after verim-sdk#37 is merged
         }
     }
 }
