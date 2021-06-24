@@ -1,104 +1,59 @@
 //! Service to manage Cosmos keys
 
-use crate::domain::verim_keys::KeyInfo;
 use cosmos_sdk::crypto::secp256k1::signing_key::Secp256k1Signer;
 use cosmos_sdk::crypto::secp256k1::SigningKey as CosmosSigningKey;
 use cosmos_sdk::tx::{Raw, SignDoc};
-use futures::lock::Mutex as MutexF;
-use indy_api_types::{
-    errors::{IndyErrorKind, IndyResult},
-    IndyError,
-};
+use indy_api_types::errors::IndyResult;
 use k256::ecdsa::signature::rand_core::OsRng;
 use k256::ecdsa::SigningKey;
 use rand::rngs::StdRng;
 use rand_seeder::Seeder;
 use rust_base58::ToBase58;
-use std::collections::HashMap;
 
-pub(crate) struct VerimKeysService {
-    // TODO: Persistence
-    // key alias -> SEC1-encoded secp256k1 ECDSA private key
-    keys: MutexF<HashMap<String, Vec<u8>>>,
-}
+use crate::domain::verim_keys::{Key, KeyInfo};
+
+pub(crate) struct VerimKeysService {}
 
 impl VerimKeysService {
     pub(crate) fn new() -> Self {
-        Self {
-            keys: MutexF::new(HashMap::new()),
-        }
+        Self {}
     }
 
-    async fn set_signing_key_bytes(&self, alias: &str, bytes: &[u8]) -> IndyResult<()> {
-        let mut keys = self.keys.lock().await;
-
-        if keys.contains_key(alias) {
-            return Err(IndyError::from_msg(
-                IndyErrorKind::InvalidState,
-                "Key already exists",
-            ));
-        }
-
-        keys.insert(alias.to_owned(), bytes.to_vec());
-
-        Ok(())
+    fn bytes_to_signing_key(bytes: &[u8]) -> IndyResult<SigningKey> {
+        Ok(SigningKey::from_bytes(bytes)?)
     }
 
-    async fn get_signing_key_bytes(&self, alias: &str) -> IndyResult<Vec<u8>> {
-        let keys = self.keys.lock().await;
-
-        let bytes = keys.get(alias).ok_or(IndyError::from_msg(
-            IndyErrorKind::InvalidState,
-            "Key not found",
-        ))?;
-
-        Ok(bytes.clone())
-    }
-
-    async fn set_signing_key(&self, alias: &str, key: &SigningKey) -> IndyResult<()> {
-        let bytes = key.to_bytes().to_vec();
-        self.set_signing_key_bytes(alias, &bytes).await?;
-        Ok(())
-    }
-
-    async fn get_signing_key(&self, alias: &str) -> IndyResult<SigningKey> {
-        let bytes = self.get_signing_key_bytes(alias).await?;
-        Ok(SigningKey::from_bytes(&bytes)?)
-    }
-
-    async fn get_cosmos_signing_key(&self, alias: &str) -> IndyResult<CosmosSigningKey> {
-        let key = self.get_signing_key(alias).await?;
+    fn bytes_to_cosmos_signing_key(bytes: &[u8]) -> IndyResult<CosmosSigningKey> {
+        let sig_key = Self::bytes_to_signing_key(bytes)?;
         Ok(CosmosSigningKey::from(
-            Box::new(key) as Box<dyn Secp256k1Signer>
+            Box::new(sig_key) as Box<dyn Secp256k1Signer>
         ))
     }
 
-    pub(crate) async fn add_random(&self, alias: &str) -> IndyResult<KeyInfo> {
-        let key = k256::ecdsa::SigningKey::random(&mut OsRng);
-        self.set_signing_key(alias, &key).await?;
-
-        Ok(self.get_info(alias).await?)
+    pub(crate) fn new_random(&self, alias: &str) -> IndyResult<Key> {
+        let sig_key = k256::ecdsa::SigningKey::random(&mut OsRng);
+        let key = Key::new(alias.to_string(), sig_key.to_bytes().to_vec());
+        Ok(key)
     }
 
-    pub(crate) async fn add_from_mnemonic(
+    pub(crate) fn new_from_mnemonic(
         &self,
         alias: &str,
         mnemonic: &str,
-    ) -> IndyResult<KeyInfo> {
+    ) -> IndyResult<Key> {
         let mut rng: StdRng = Seeder::from(mnemonic).make_rng();
-        let key = k256::ecdsa::SigningKey::random(&mut rng);
-        self.set_signing_key(alias, &key).await?;
-
-        Ok(self.get_info(alias).await?)
+        let sig_key = k256::ecdsa::SigningKey::random(&mut rng);
+        let key = Key::new(alias.to_string(), sig_key.to_bytes().to_vec());
+        Ok(key)
     }
 
-    pub(crate) async fn get_info(&self, alias: &str) -> IndyResult<KeyInfo> {
-        let key = self.get_cosmos_signing_key(alias).await?;
-        let pub_key = key.public_key();
+    pub(crate) fn get_info(&self, key: &Key) -> IndyResult<KeyInfo> {
+        let sig_key = Self::bytes_to_cosmos_signing_key(&key.priv_key)?;
+        let pub_key = sig_key.public_key();
         let account_id = pub_key.account_id("cosmos")?;
 
         let key_info = KeyInfo::new(
-            alias.to_owned(),
+            key.alias.to_owned(),
             account_id.to_string(),
             pub_key.to_bytes().to_base58(),
         );
@@ -106,15 +61,14 @@ impl VerimKeysService {
         Ok(key_info)
     }
 
-    pub(crate) async fn sign(&self, alias: &str, tx: SignDoc) -> IndyResult<Raw> {
-        let key = self.get_cosmos_signing_key(alias).await?;
-        Ok(tx.sign(&key)?)
+    pub(crate) async fn sign(&self, key: &Key, tx: SignDoc) -> IndyResult<Raw> {
+        let sig_key = Self::bytes_to_cosmos_signing_key(&key.priv_key)?;
+        Ok(tx.sign(&sig_key)?)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use cosmos_sdk::crypto::secp256k1::signing_key::{
         Secp256k1Signer, SigningKey as CosmosSigningKey,
     };
@@ -122,13 +76,15 @@ mod test {
     use k256::ecdsa::signature::Signer;
     use k256::elliptic_curve::rand_core::OsRng;
 
+    use super::*;
+
     #[async_std::test]
     async fn test_add_random() {
         let verim_keys_service = VerimKeysService::new();
 
-        let key_info = verim_keys_service.add_random("alice").await.unwrap();
+        let key = verim_keys_service.new_random("alice").unwrap();
 
-        assert_eq!(key_info.alias, "alice")
+        assert_eq!(key.alias, "alice")
     }
 
     #[async_std::test]
@@ -136,16 +92,16 @@ mod test {
         let verim_keys_service = VerimKeysService::new();
 
         let alice = verim_keys_service
-            .add_from_mnemonic("alice", "secret phrase")
-            .await
+            .new_from_mnemonic("alice", "secret phrase")
             .unwrap();
+        let alice_info = verim_keys_service.get_info(&alice).unwrap();
 
         let bob = verim_keys_service
-            .add_from_mnemonic("bob", "secret phrase")
-            .await
+            .new_from_mnemonic("bob", "secret phrase")
             .unwrap();
+        let bob_info = verim_keys_service.get_info(&bob).unwrap();
 
-        assert_eq!(alice.pub_key, bob.pub_key)
+        assert_eq!(alice_info.pub_key, bob_info.pub_key)
     }
 
     #[test]

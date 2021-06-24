@@ -2,7 +2,7 @@ use indyrs::{future::Future, IndyError, verim_ledger};
 
 pub fn build_tx(
     pool_alias: &str,
-    sender_alias: &str,
+    sender_public_key: &str,
     msg: &[u8],
     account_number: u64,
     sequence_number: u64,
@@ -14,7 +14,7 @@ pub fn build_tx(
 ) -> Result<Vec<u8>, IndyError> {
     verim_ledger::auth::build_tx(
         pool_alias,
-        sender_alias,
+        sender_public_key,
         msg,
         account_number,
         sequence_number,
@@ -23,8 +23,7 @@ pub fn build_tx(
         max_coin_denom,
         timeout_height,
         memo,
-    )
-        .wait()
+    ).wait()
 }
 
 pub fn build_query_account(address: &str) -> Result<String, IndyError> {

@@ -18,6 +18,7 @@ default = ["base58_rust_base58", "pair_amcl", "local_nodes_pool", "revocation_te
 base58_rust_base58 = ["rust-base58"]
 pair_amcl = ["ursa"]
 local_nodes_pool = []
+local_nodes_verim_pool = []
 revocation_tests = []
 force_full_interaction_tests = []
 sodium_static = []

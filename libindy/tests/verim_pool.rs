@@ -7,10 +7,8 @@ extern crate serde_json;
 #[macro_use]
 mod utils;
 
-use indyrs::ErrorCode;
-use utils::{constants::*, verim_keys, verim_pool, verim_setup, verim_ledger, test, types::ResponseType};
-use rand::prelude::*;
-use rand::Rng;
+use utils::{verim_keys, verim_pool, verim_setup, verim_ledger, test};
+use serde_json::Value;
 
 mod high_cases {
     use super::*;
@@ -51,12 +49,12 @@ mod high_cases {
         fn test_broadcast_tx_commit() {
             let setup = verim_setup::VerimSetup::new();
 
-            let (account_number, account_sequence) = setup.get_base_account_number_and_sequence(&setup.alice_account_id).unwrap();
+            let (account_number, account_sequence) = setup.get_base_account_number_and_sequence(&setup.account_id).unwrap();
 
             // Message
             let msg = verim_ledger::verim::build_msg_create_nym(
                 "test-did",
-                &setup.alice_account_id,
+                &setup.account_id,
                 "test-verkey",
                 "test-alias",
                 "test-role",
@@ -64,11 +62,11 @@ mod high_cases {
 
             // Transaction
             let tx = verim_ledger::auth::build_tx(
-                &setup.pool_alias, &setup.alice_key_alias, &msg, account_number, account_sequence, 300000, 0, "token", 100000, "memo",
+                &setup.pool_alias, &setup.pub_key, &msg, account_number, account_sequence, 300000, 0, "token", 100000, "memo",
             ).unwrap();
 
             // Sign
-            let signed = verim_keys::sign(&setup.alice_key_alias, &tx).unwrap();
+            let signed = verim_keys::sign(setup.wallet_handle, &setup.key_alias, &tx).unwrap();
 
             // Broadcast
             let resp = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
@@ -84,7 +82,45 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_verim_pool")]
         fn test_abci_query() {
-            unimplemented!()
+            let setup = verim_setup::VerimSetup::new();
+            ///// Transaction sending
+
+            let (account_number, account_sequence) = setup.get_base_account_number_and_sequence(&setup.account_id).unwrap();
+
+            // Message
+            let msg = verim_ledger::verim::build_msg_create_nym(
+                "test-did",
+                &setup.account_id,
+                "test-verkey",
+                "test-alias",
+                "test-role",
+            ).unwrap();
+
+            // Transaction
+            let tx = verim_ledger::auth::build_tx(
+                &setup.pool_alias, &setup.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "token", 39090, "memo",
+            ).unwrap();
+
+            // Signature
+            let signed = verim_keys::sign(setup.wallet_handle, &setup.key_alias, &tx).unwrap();
+
+            // Broadcast
+            let resp = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
+
+            // Parse the response
+            let tx_resp_parsed = verim_ledger::verim::parse_msg_create_nym_resp(&resp).unwrap();
+            println!("Tx response: {:?}", tx_resp_parsed);
+            let tx_resp: Value = serde_json::from_str(&tx_resp_parsed).unwrap();
+
+            ///// Querying
+
+            let query = verim_ledger::verim::build_query_get_nym(tx_resp["id"].as_u64().unwrap()).unwrap();
+
+            let query_resp = verim_pool::abci_query(&setup.pool_alias, &query).unwrap();
+            let query_resp_parsed = verim_ledger::verim::parse_query_get_nym_resp(&query_resp).unwrap();
+            println!("Query response: {:?}", query_resp_parsed);
+
+            assert!(true);
         }
     }
 
@@ -95,7 +131,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_verim_pool")]
         fn test_abci_info() {
-            unimplemented!()
+            // TODO: Implement after verim-sdk#37 is merged
         }
     }
 }

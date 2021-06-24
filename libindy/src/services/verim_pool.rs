@@ -1,28 +1,25 @@
 //! Pool service for Tendermint back-end
 
+use std::fs;
+use std::io::Write;
+
 use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::{Request, Response};
 use cosmos_sdk::rpc::endpoint::broadcast;
 use cosmos_sdk::tendermint::abci;
 use cosmos_sdk::tx::Raw;
-use futures::lock::Mutex as MutexF;
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
-use indy_api_types::IndyError;
-use std::collections::HashMap;
-use std::convert::TryInto;
-use crate::utils::environment;
 use indy_api_types::errors::*;
-use std::io::{Write, Read};
-use std::fs;
-use serde_json::Value;
-use crate::domain::verim_pool::PoolConfig;
+use indy_api_types::IndyError;
 
-pub(crate) struct VerimPoolService {
-}
+use crate::domain::verim_pool::PoolConfig;
+use crate::utils::environment;
+
+pub(crate) struct VerimPoolService {}
 
 impl VerimPoolService {
     pub(crate) fn new() -> Self {
-        Self { }
+        Self {}
     }
 
     pub(crate) async fn add(

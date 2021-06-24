@@ -9,7 +9,7 @@ use libc::c_char;
 pub extern "C" fn indy_verim_ledger_auth_build_tx(
     command_handle: CommandHandle,
     pool_alias: *const c_char,
-    sender_alias: *const c_char,
+    sender_public_key: *const c_char,
     msg_raw: *const u8,
     msg_len: u32,
     account_number: u64,
@@ -29,11 +29,11 @@ pub extern "C" fn indy_verim_ledger_auth_build_tx(
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_verim_ledger_auth_build_tx > pool_alias {:?} sender_alias {:?} msg_raw {:?} \
+        "indy_verim_ledger_auth_build_tx > pool_alias {:?} sender_public_key {:?} msg_raw {:?} \
         msg_len {:?} account_number {:?} sequence_number {:?} max_gas {:?} max_coin_amount \
         {:?} max_coin_denom {:?} timeout_height {:?} memo {:?}",
         pool_alias,
-        sender_alias,
+        sender_public_key,
         msg_raw,
         msg_len,
         account_number,
@@ -46,7 +46,7 @@ pub extern "C" fn indy_verim_ledger_auth_build_tx(
     );
 
     check_useful_c_str!(pool_alias, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(sender_alias, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(sender_public_key, ErrorCode::CommonInvalidParam3);
     check_useful_c_byte_array!(
         msg_raw,
         msg_len,
@@ -58,11 +58,11 @@ pub extern "C" fn indy_verim_ledger_auth_build_tx(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam13);
 
     debug!(
-        "indy_verim_ledger_auth_build_tx > pool_alias {:?} sender_alias {:?} msg_raw {:?} \
+        "indy_verim_ledger_auth_build_tx > pool_alias {:?} sender_public_key {:?} msg_raw {:?} \
         account_number {:?} sequence_number {:?} max_gas {:?} max_coin_amount \
         {:?} max_coin_denom {:?} timeout_height {:?} memo {:?}",
         pool_alias,
-        sender_alias,
+        sender_public_key,
         msg_raw,
         account_number,
         sequence_number,
@@ -80,7 +80,7 @@ pub extern "C" fn indy_verim_ledger_auth_build_tx(
             .verim_ledger_controller
             .auth_build_tx(
                 &pool_alias,
-                &sender_alias,
+                &sender_public_key,
                 &msg_raw,
                 account_number,
                 sequence_number,
