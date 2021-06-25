@@ -131,7 +131,11 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_verim_pool")]
         fn test_abci_info() {
-            unimplemented!()
+            let setup = verim_setup::VerimSetup::new();
+            let query_resp = verim_pool::abci_info(&setup.pool_alias).unwrap();
+            println!("Query response: {:?}", query_resp);
+
+            assert!(true);
         }
     }
 }
