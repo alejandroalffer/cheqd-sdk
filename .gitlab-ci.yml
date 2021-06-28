@@ -48,9 +48,11 @@ variables:
   image:
     name: gcr.io/kaniko-project/executor:debug-v0.16.0
     entrypoint: [""]
+  before_script:
+    - git submodule update --init --remote --merge
+    - git submodule status
+    - git submodule foreach git log -1
   script:
-    - git submodule sync
-    - git submodule update --init
     - if [ "$CI_COMMIT_REF_SLUG" == 'main' ] || [ "$CI_COMMIT_REF_SLUG" == 'async' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
     - echo "${KANIKO_ARGS}"
     - |
