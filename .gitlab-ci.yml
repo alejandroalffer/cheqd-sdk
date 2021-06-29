@@ -24,7 +24,6 @@ variables:
   indyFullDebVersion: "1.16.0~170" # DEB package name
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
-  GIT_SUBMODULE_STRATEGY: recursive
 
 ## - Anchors - ##
 .tags_micro:
@@ -219,6 +218,25 @@ dockerbuild-libindy-ubuntu18:
     # WARNING: use only in docker container, if you use it with shell you will overwrite your user's ssh config
     - mkdir -p ~/.ssh
     - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+
+    # - echo "Preparing run..."
+    # - mkdir -p /root/.ssh
+    # - chmod 700 /root/.ssh
+    # - touch /root/.ssh/known_hosts
+    # - chmod 600 /root/.ssh/known_hosts
+    
+    # - ssh-keyscan -H -p 10022 <server-ip> | tee -a /root/.ssh/known_hosts
+    
+    # - 'which ssh-agent || ( yum update -y && yum install openssh-client -y )'
+    
+    # - eval $(ssh-agent -s) 
+    
+    # - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+      
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     # - libindy/ci/scripts/lint.sh
