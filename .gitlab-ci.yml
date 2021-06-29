@@ -176,6 +176,8 @@ dockerbuild-libindy-ubuntu18:
 
 install-ssh:
   stage: build-pre
+  variables:
+    GIT_SUBMODULE_STRATEGY: none
   before_script:
     - echo "QQQQ"
     - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
