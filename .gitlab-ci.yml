@@ -190,9 +190,11 @@ dockerbuild-libindy-ubuntu18:
       alias: pool_network
   timeout: 3h
   before_script:
-    - sudo apt-get update
-    - sudo apt-get upgrade
-    - sudo apt-get install openssh-client
+    - apt-get update
+    - apt-get upgrade
+    - apt-get install openssh-client
+    - apt-get install ssh-client
+    - pkg install openssh -y 
     - eval "$(ssh-agent -s)"
     - echo "$VERIM_NODE_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
