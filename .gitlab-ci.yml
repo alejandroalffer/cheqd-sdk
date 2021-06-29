@@ -190,6 +190,7 @@ dockerbuild-libindy-ubuntu18:
       alias: pool_network
   timeout: 3h
   before_script:
+    - apt-get install ssh-client
     - eval "$(ssh-agent -s)"
     - echo "$VERIM_NODE_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
   script:
