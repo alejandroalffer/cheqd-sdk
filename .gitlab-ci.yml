@@ -190,6 +190,9 @@ dockerbuild-libindy-ubuntu18:
       alias: pool_network
   timeout: 3h
   pre_clone_script:
+  
+  before_script:
+    - echo "qwerty"
     - apt-get update
     - apt-get upgrade
     - apt-get install openssh-client
