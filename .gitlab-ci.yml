@@ -202,7 +202,7 @@ dockerbuild-libindy-ubuntu18:
       alias: pool_network
   timeout: 3h
   needs:
-    - job: install-ssh
+    - job: .install-ssh
   variables:
     GIT_SUBMODULE_STRATEGY: normal
   script:
