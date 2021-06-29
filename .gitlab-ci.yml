@@ -174,7 +174,7 @@ dockerbuild-libindy-ubuntu18:
       - libindy/ci/ubuntu18.dockerfile
 
 
-.install-ssh:
+install-ssh:
   stage: build-pre
   before_script:
     - echo "QQQQ"
@@ -191,6 +191,7 @@ dockerbuild-libindy-ubuntu18:
 .build-libindy:
   extends: .tags_large
   stage: build
+  needs: ["install-ssh"]
   artifacts:
     expire_in: 1 week
     paths:
@@ -201,7 +202,6 @@ dockerbuild-libindy-ubuntu18:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
   timeout: 3h
-  needs: [".install-ssh"]
   variables:
     GIT_SUBMODULE_STRATEGY: normal
   script:
