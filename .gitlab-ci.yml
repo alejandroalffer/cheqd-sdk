@@ -36,6 +36,8 @@ variables:
   tags:
     - docker-machine
     - large
+  before_script:
+    - echo "qwerty"
 
 .kaniko_large:
   extends: .kaniko_micro
