@@ -24,6 +24,7 @@ variables:
   indyFullDebVersion: "1.16.0~170" # DEB package name
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
+  GIT_SUBMODULE_STRATEGY: recursive
 
 ## - Anchors - ##
 .tags_micro:
@@ -174,27 +175,27 @@ dockerbuild-libindy-ubuntu18:
       - libindy/ci/ubuntu18.dockerfile
 
 
-install-ssh:
-  stage: dockerbuild-pre
-  extends: dockerbuild-libindy
-  variables:
-    GIT_SUBMODULE_STRATEGY: none
-  before_script:
-    - echo "QQQQ"
-    - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
-  script:
-    - ssh
-    - eval "$(ssh-agent -s)"
-    - echo "$VERIM_NODE_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
+# install-ssh:
+#   stage: dockerbuild-pre
+#   extends: dockerbuild-libindy
+#   variables:
+#     GIT_SUBMODULE_STRATEGY: none
+#   before_script:
+#     - echo "QQQQ"
+#     - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
+#   script:
+#     - ssh
+#     - eval "$(ssh-agent -s)"
+#     - echo "$VERIM_NODE_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+#     - mkdir -p ~/.ssh
+#     - chmod 700 ~/.ssh
 
 
 ## - Jobs : Build - ##
 .build-libindy:
   extends: .tags_large
   stage: build
-  needs: ["install-ssh"]
+  # needs: ["install-ssh"]
   artifacts:
     expire_in: 1 week
     paths:
@@ -205,8 +206,19 @@ install-ssh:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
   timeout: 3h
-  variables:
-    GIT_SUBMODULE_STRATEGY: normal
+  # variables:
+    # GIT_SUBMODULE_STRATEGY: normal
+  before_script:
+    # install ssh-agent
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    # run ssh-agent
+    - eval $(ssh-agent -s)
+    # add ssh key stored in SSH_PRIVATE_KEY variable to the agent store
+    - ssh-add <(echo "$VERIM_NODE_SSH_PRIVATE_KEY")
+    # disable host key checking (NOTE: makes you susceptible to man-in-the-middle attacks)
+    # WARNING: use only in docker container, if you use it with shell you will overwrite your user's ssh config
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     # - libindy/ci/scripts/lint.sh
