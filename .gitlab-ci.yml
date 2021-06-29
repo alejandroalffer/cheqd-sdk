@@ -24,7 +24,7 @@ variables:
   indyFullDebVersion: "1.16.0~170" # DEB package name
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
-  GIT_SUBMODULE_STRATEGY: normal
+  # GIT_SUBMODULE_STRATEGY: normal
 
 ## - Anchors - ##
 .tags_micro:
@@ -36,8 +36,6 @@ variables:
   tags:
     - docker-machine
     - large
-  pre_clone_script:
-    - echo "QQQQQ"
 
 .kaniko_large:
   extends: .kaniko_micro
