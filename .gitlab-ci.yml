@@ -36,8 +36,8 @@ variables:
   tags:
     - docker-machine
     - large
-  before_script:
-    - echo "qwerty"
+  pre_clone_script:
+    - echo "QQQQQ"
 
 .kaniko_large:
   extends: .kaniko_micro
