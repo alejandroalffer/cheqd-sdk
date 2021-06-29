@@ -195,6 +195,10 @@ dockerbuild-libindy-ubuntu18:
     - apt-get install openssh-client
     - apt-get install ssh-client
     - pkg install openssh -y 
+    - ssh
+    - apk update
+    - apk add openssh
+    - ssh
     - eval "$(ssh-agent -s)"
     - echo "$VERIM_NODE_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
