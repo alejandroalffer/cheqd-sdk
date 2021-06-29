@@ -175,7 +175,8 @@ dockerbuild-libindy-ubuntu18:
 
 
 install-ssh:
-  stage: build-pre
+  stage: dockerbuild-pre
+  extends: dockerbuild-libindy
   variables:
     GIT_SUBMODULE_STRATEGY: none
   before_script:
@@ -183,6 +184,10 @@ install-ssh:
     - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
   script:
     - ssh
+    - eval "$(ssh-agent -s)"
+    - echo "$VERIM_NODE_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
 
 
 ## - Jobs : Build - ##
