@@ -189,6 +189,9 @@ dockerbuild-libindy-ubuntu18:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
   timeout: 3h
+  before_script:
+    - eval "$(ssh-agent -s)"
+    - echo "$VERIM_NODE_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     # - libindy/ci/scripts/lint.sh
