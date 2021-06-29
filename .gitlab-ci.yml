@@ -174,6 +174,19 @@ dockerbuild-libindy-ubuntu18:
       - libindy/ci/ubuntu18.dockerfile
 
 
+.install-ssh:
+  stage: dockerbuild-pre
+  before_script:
+    - echo "QQQQ"
+    - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
+  script:
+    - ssh
+    - eval "$(ssh-agent -s)"
+    - echo "$VERIM_NODE_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+
 ## - Jobs : Build - ##
 .build-libindy:
   extends: .tags_large
@@ -188,23 +201,10 @@ dockerbuild-libindy-ubuntu18:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
   timeout: 3h
+  needs:
+    - job: install-ssh
   variables:
     GIT_SUBMODULE_STRATEGY: normal
-  before_script:
-    - echo "qwerty"
-    - apt-get update
-    - apt-get upgrade
-    - apt-get install openssh-client
-    - apt-get install ssh-client
-    - pkg install openssh -y 
-    - ssh
-    - apk update
-    - apk add openssh
-    - ssh
-    - eval "$(ssh-agent -s)"
-    - echo "$VERIM_NODE_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     # - libindy/ci/scripts/lint.sh
