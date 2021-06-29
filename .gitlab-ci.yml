@@ -175,7 +175,7 @@ dockerbuild-libindy-ubuntu18:
 
 
 .install-ssh:
-  stage: dockerbuild-pre
+  stage: build-pre
   before_script:
     - echo "QQQQ"
     - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
@@ -201,8 +201,7 @@ dockerbuild-libindy-ubuntu18:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
   timeout: 3h
-  needs:
-    - job: .install-ssh
+  needs: [".install-ssh"]
   variables:
     GIT_SUBMODULE_STRATEGY: normal
   script:
