@@ -24,7 +24,6 @@ variables:
   indyFullDebVersion: "1.16.0~170" # DEB package name
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
-  # GIT_SUBMODULE_STRATEGY: normal
 
 ## - Anchors - ##
 .tags_micro:
@@ -189,6 +188,8 @@ dockerbuild-libindy-ubuntu18:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
   timeout: 3h
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
   before_script:
     - echo "qwerty"
     - apt-get update
