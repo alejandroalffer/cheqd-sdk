@@ -3,7 +3,7 @@
 use indyrs::IndyError;
 use serde_json::Value;
 
-use crate::utils::{verim_keys, verim_ledger, verim_ledger::auth, verim_pool};
+use crate::utils::{verim_keys, verim_ledger, verim_ledger::auth, verim_pool, environment};
 
 use super::{logger, wallet, WalletHandle};
 use super::test;
@@ -45,8 +45,11 @@ impl VerimSetup {
         let key_alias = "alice";
         let (account_id, pub_key) = VerimSetup::create_key(wallet_handle, key_alias, "alice").unwrap();
 
+        //RPC address
+        let verim_test_pool_ip = environment::verim_test_pool_ip();
+
         // Pool
-        verim_pool::add(&name, "http://localhost:26657", "verimnode").unwrap();
+        verim_pool::add(&name, &verim_test_pool_ip, "verimnode").unwrap();
 
         let setup = VerimSetup {
             name: name.clone(),
