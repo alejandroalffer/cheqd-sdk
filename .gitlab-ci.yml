@@ -213,16 +213,16 @@ dockerbuild-libindy-ubuntu18:
     - git submodule update --init --recursive
 
   script:
-#    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     - export VERIM_TEST_POOL_IP=$(getent ahostsv4 verim_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-#     - libindy/ci/scripts/lint.sh
-#     - cli/ci/scripts/lint.sh
+    - libindy/ci/scripts/lint.sh
+    - cli/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
-#    - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+    - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
-#    - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+    - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - cli/ci/scripts/build.sh ${BUILD_TYPE}
-#    - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+    - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
 
 build-libindy-ubuntu16-from-branch:
   extends: .build-libindy
