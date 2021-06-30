@@ -214,8 +214,8 @@ dockerbuild-libindy-ubuntu18:
 
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-    - export VERIM_TEST_POOL_IP $(getent ahostsv4 verim_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-    - export VERIM_TEST_POOL_IP "https://$VERIM_TEST_POOL_IP:26657"
+    - export VERIM_TEST_POOL_IP=$(getent ahostsv4 verim_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - export VERIM_TEST_POOL_IP="https://$VERIM_TEST_POOL_IP:26657"
     - libindy/ci/scripts/lint.sh
     - cli/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
