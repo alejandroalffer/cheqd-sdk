@@ -45,11 +45,10 @@ impl VerimSetup {
         let key_alias = "alice";
         let (account_id, pub_key) = VerimSetup::create_key(wallet_handle, key_alias, "alice").unwrap();
 
-        //RPC address
-        let verim_test_pool_ip = environment::verim_test_pool_ip();
-
         // Pool
-        verim_pool::add(&name, &verim_test_pool_ip, "verimnode").unwrap();
+        let verim_test_pool_ip = environment::verim_test_pool_ip();
+        let verim_test_chain_id = environment::verim_test_chain_id();
+        verim_pool::add(&name, &verim_test_pool_ip, &verim_test_chain_id).unwrap();
 
         let setup = VerimSetup {
             name: name.clone(),
