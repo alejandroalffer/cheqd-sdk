@@ -187,7 +187,7 @@ dockerbuild-libindy-ubuntu18:
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
-    - name: ghcr.io/verim-id/verim-testnet@sha256:cd6498f6b92ec560fb9a62fffee3cbe1dfce4e06f9c487780adabb7ebe83006a
+    - name: ghcr.io/verim-id/verim-testnet@sha256:v0.1.7
       alias: verim_pool_network
   timeout: 3h
   before_script:
@@ -216,8 +216,8 @@ dockerbuild-libindy-ubuntu18:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     - export VERIM_TEST_POOL_IP=$(getent ahostsv4 verim_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     - export VERIM_TEST_POOL_IP="http://$VERIM_TEST_POOL_IP:26657"
-    - libindy/ci/scripts/lint.sh
-    - cli/ci/scripts/lint.sh
+    # - libindy/ci/scripts/lint.sh
+    # - cli/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
     - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
