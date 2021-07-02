@@ -107,12 +107,13 @@ impl VerimSetup {
     }
 
     pub fn get_timeout_height(&self) -> u64 {
+        const ADDITIONAL_HEIGHT_BLOCK: u64 = 20;
         let info: String = verim_pool::abci_info(&self.pool_alias).unwrap();
         let info: Value = serde_json::from_str(&info).unwrap();
         let result = info["response"]["last_block_height"].as_str().unwrap().parse::<u64>().unwrap();
         println!("Verim setup. Last block height: {:?}", result);
 
-        return result + 20;
+        return result + ADDITIONAL_HEIGHT_BLOCK;
     }
 }
 

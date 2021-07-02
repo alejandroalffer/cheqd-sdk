@@ -232,7 +232,7 @@ mod high_cases {
             // Resp
             let resp_1 = verim_ledger::verim::parse_msg_create_nym_resp(&resp_1).unwrap();
             let resp_1: Value = serde_json::from_str(&resp_1).unwrap();
-            println!("Tx 1 resp: {:?}", resp_1);
+            println!("Tx 1 response: {:?}", resp_1);
 
             ///// Create the second nym
 
@@ -251,7 +251,7 @@ mod high_cases {
             // Second parse the response
             let resp_2 = verim_ledger::verim::parse_msg_create_nym_resp(&resp_2).unwrap();
             let resp_2: Value = serde_json::from_str(&resp_2).unwrap();
-            println!("Tx response: {:?}", resp_2);
+            println!("Tx 2 response: {:?}", resp_2);
 
             ///// Query + Assert
 
