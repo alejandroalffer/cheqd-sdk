@@ -72,7 +72,7 @@ mod high_cases {
 
             // Transaction
             let tx = verim_ledger::auth::build_tx(
-                &setup.pool_alias, &setup.pub_key, &msg, 0, 0, 300000, 0, "token", 100000, "memo",
+                &setup.pool_alias, &setup.pub_key, &msg, 0, 0, 300000, 0, "token", setup.get_timeout_height(), "memo",
             ).unwrap();
 
             let result = verim_keys::sign(setup.wallet_handle, &setup.key_alias, &tx).unwrap();
