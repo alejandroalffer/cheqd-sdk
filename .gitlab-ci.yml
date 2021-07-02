@@ -187,11 +187,37 @@ dockerbuild-libindy-ubuntu18:
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
+    - name: ghcr.io/verim-id/verim-testnet@sha256:cd6498f6b92ec560fb9a62fffee3cbe1dfce4e06f9c487780adabb7ebe83006a
+      alias: verim_pool_network
   timeout: 3h
+  before_script:
+    # The only working solution for private submodules fetching via ssh:
+    # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/2075
+
+    # install ssh-agent
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+
+    # run ssh-agent
+    - eval $(ssh-agent -s)
+
+    # add ssh key stored in SSH_PRIVATE_KEY variable to the agent store
+    - echo "$VERIM_GITHUB_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+
+    # disable host key checking (NOTE: makes you susceptible to man-in-the-middle attacks)
+    # WARNING: use only in docker container, if you use it with shell you will overwrite your user's ssh config
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+    # Fetch submodules
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-    # - libindy/ci/scripts/lint.sh
-    # - cli/ci/scripts/lint.sh
+    - export VERIM_TEST_POOL_IP=$(getent ahostsv4 verim_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - export VERIM_TEST_POOL_IP="http://$VERIM_TEST_POOL_IP:26657"
+    - libindy/ci/scripts/lint.sh
+    - cli/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
     - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}

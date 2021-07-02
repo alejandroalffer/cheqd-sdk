@@ -69,7 +69,7 @@ mod high_cases {
             let signed = verim_keys::sign(setup.wallet_handle, &setup.key_alias, &tx).unwrap();
 
             // Broadcast
-            let resp = verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
+            verim_pool::broadcast_tx_commit(&setup.pool_alias, &signed).unwrap();
 
             assert!(true);
         }
