@@ -92,7 +92,7 @@ impl VerimSetup {
         // Tx
         // TODO: Set correct timeout height using abci info query
         let tx = verim_ledger::auth::build_tx(
-            &self.pool_alias, &self.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "token", 39090, "memo",
+            &self.pool_alias, &self.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "token", self.get_timeout_height(), "memo",
         )?;
 
         // Sign
@@ -102,6 +102,15 @@ impl VerimSetup {
         let resp = verim_pool::broadcast_tx_commit(&self.pool_alias, &signed)?;
 
         Ok(resp)
+    }
+
+    pub fn get_timeout_height(&self) -> u64 {
+        let info: String = verim_pool::abci_info(&self.pool_alias).unwrap();
+        let info: Value = serde_json::from_str(&info).unwrap();
+        let result = info["response"]["last_block_height"].as_str().unwrap().parse::<u64>().unwrap();
+        println!("Verim setup. Last block height: {:?}", result);
+
+        return result + 20;
     }
 }
 
