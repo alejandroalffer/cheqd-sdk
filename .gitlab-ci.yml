@@ -289,8 +289,12 @@ build-libindy-ubuntu18-release:
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.9.2_1.0.2
       alias: pool_network
+    - name: ghcr.io/verim-id/verim-testnet:v0.1.7
+      alias: verim_pool_network
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - export VERIM_TEST_POOL_IP=$(getent ahostsv4 verim_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - export VERIM_TEST_POOL_IP="http://$VERIM_TEST_POOL_IP:26657"
     - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
     - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
     - wrappers/java/ci/test.sh ${TEST_POOL_IP}
