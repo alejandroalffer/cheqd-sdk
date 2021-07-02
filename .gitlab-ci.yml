@@ -187,7 +187,7 @@ dockerbuild-libindy-ubuntu18:
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
-    - name: ghcr.io/verim-id/verim-testnet@sha256:0.1.7
+    - name: ghcr.io/verim-id/verim-testnet@sha256:cd6498f6b92ec560fb9a62fffee3cbe1dfce4e06f9c487780adabb7ebe83006a
       alias: verim_pool_network
   timeout: 3h
   before_script:
