@@ -232,7 +232,7 @@ mod high_cases {
             // Resp
             let resp_1 = verim_ledger::verim::parse_msg_create_nym_resp(&resp_1).unwrap();
             let resp_1: Value = serde_json::from_str(&resp_1).unwrap();
-            println!("Tx 1 resp: {:?}", resp_1);
+            println!("Tx 1 response: {:?}", resp_1);
 
             ///// Create the second nym
 
@@ -250,8 +250,8 @@ mod high_cases {
 
             // Second parse the response
             let resp_2 = verim_ledger::verim::parse_msg_create_nym_resp(&resp_2).unwrap();
-            let resp2: Value = serde_json::from_str(&resp_2).unwrap();
-            println!("Tx response: {:?}", resp_2);
+            let resp_2: Value = serde_json::from_str(&resp_2).unwrap();
+            println!("Tx 2 response: {:?}", resp_2);
 
             ///// Query + Assert
 
@@ -274,7 +274,7 @@ mod high_cases {
 
             let expected_nym_2: Value = json!({
                     "creator": setup.account_id,
-                    "id": resp2["id"].as_u64().unwrap(),
+                    "id": resp_2["id"].as_u64().unwrap(),
                     "alias": "test-alias-2",
                     "verkey": "test-verkey-2",
                     "did": "test-did-2",
