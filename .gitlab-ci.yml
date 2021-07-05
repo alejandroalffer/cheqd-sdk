@@ -284,7 +284,7 @@ build-libindy-ubuntu18-release:
 
 ## - Jobs : Test - ##
 .test-libindy-java-wrapper:
-  extends: .tags_micro
+  extends: .tags_large
   stage: test
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.9.2_1.0.2
