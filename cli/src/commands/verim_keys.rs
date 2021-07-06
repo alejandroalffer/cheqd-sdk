@@ -16,7 +16,7 @@ use crate::utils::table::print_list_table;
 pub mod group {
     use super::*;
 
-    command_group!(CommandGroupMetadata::new("verim-key", "Verim key management commands"));
+    command_group!(CommandGroupMetadata::new("verim-keys", "Verim keys management commands"));
 }
 
 pub mod add_random_command {
@@ -24,7 +24,7 @@ pub mod add_random_command {
 
     command!(CommandMetadata::build("add-random", "Add random key to wallet handle.")
                 .add_required_param("alias", "Alias for pool.")
-                .add_example("verim-pool add-random alias=my_pool")
+                .add_example("verim-keys add-random alias=my_pool")
                 .finalize()
     );
 
@@ -56,7 +56,7 @@ pub mod add_from_mnemonic_command {
     command!(CommandMetadata::build("add-from-mnemonic", "Add key by mnemonic to wallet handle.")
                 .add_required_param("alias", "Alias for key.")
                 .add_required_param("mnemonic", "Mnemonic phrase for creation key.")
-                .add_example("verim-pool add-from-mnemonic alias=my_pool mnemonic=my_mnemonic")
+                .add_example("verim-keys add-from-mnemonic alias=my_pool mnemonic=my_mnemonic")
                 .finalize()
     );
 
@@ -88,7 +88,7 @@ pub mod get_info_command {
 
     command!(CommandMetadata::build("get-info", "Get info about key by mnemonic to wallet handle.")
                 .add_required_param("alias", "Alias for key.")
-                .add_example("verim-pool get-info alias=my_pool")
+                .add_example("verim-keys get-info alias=my_pool")
                 .finalize()
     );
 
