@@ -27,7 +27,7 @@ mod libindy;
 
 use crate::command_executor::CommandExecutor;
 
-use crate::commands::{common, did, ledger, pool, wallet, payment_address};
+use crate::commands::{common, did, ledger, pool, wallet, payment_address, verim_pool, verim_keys};
 use crate::utils::history;
 
 use linefeed::{Reader, ReadResult, Terminal, Signal};
@@ -195,6 +195,16 @@ fn build_executor() -> CommandExecutor {
         .add_command(payment_address::list_command::new())
         .add_command(payment_address::sign_command::new())
         .add_command(payment_address::verify_command::new())
+        .finalize_group()
+        .add_group(verim_pool::group::new())
+        .add_command(verim_pool::add_command::new())
+        .add_command(verim_pool::get_config_command::new())
+        .add_command(verim_pool::abci_info_command::new())
+        .finalize_group()
+        .add_group(verim_keys::group::new())
+        .add_command(verim_keys::add_random_command::new())
+        .add_command(verim_keys::add_from_mnemonic_command::new())
+        .add_command(verim_keys::get_info_command::new())
         .finalize_group()
         .finalize()
 }
