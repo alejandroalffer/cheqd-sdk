@@ -22,9 +22,9 @@ pub mod group {
 pub mod add_random_command {
     use super::*;
 
-    command!(CommandMetadata::build("add-random", "Add random key to wallet handle.")
-                .add_required_param("alias", "Alias for pool.")
-                .add_example("verim-keys add-random alias=my_pool")
+    command!(CommandMetadata::build("add-random", "Add random key to wallet.")
+                .add_required_param("alias", "Alias of wallet.")
+                .add_example("verim-keys add-random alias=my_wallet")
                 .finalize()
     );
 
@@ -53,10 +53,10 @@ pub mod add_random_command {
 pub mod add_from_mnemonic_command {
     use super::*;
 
-    command!(CommandMetadata::build("add-from-mnemonic", "Add key by mnemonic to wallet handle.")
-                .add_required_param("alias", "Alias for key.")
+    command!(CommandMetadata::build("add-from-mnemonic", "Add key by mnemonic to wallet.")
+                .add_required_param("alias", "Alias of wallet.")
                 .add_required_param("mnemonic", "Mnemonic phrase for creation key.")
-                .add_example("verim-keys add-from-mnemonic alias=my_pool mnemonic=my_mnemonic")
+                .add_example("verim-keys add-from-mnemonic alias=my_wallet mnemonic=my_mnemonic")
                 .finalize()
     );
 
@@ -86,9 +86,9 @@ pub mod add_from_mnemonic_command {
 pub mod get_info_command {
     use super::*;
 
-    command!(CommandMetadata::build("get-info", "Get info about key by mnemonic to wallet handle.")
-                .add_required_param("alias", "Alias for key.")
-                .add_example("verim-keys get-info alias=my_pool")
+    command!(CommandMetadata::build("get-info", "Get info about wallet.")
+                .add_required_param("alias", "Alias of wallet.")
+                .add_example("verim-keys get-info alias=my_wallet")
                 .finalize()
     );
 
@@ -111,5 +111,69 @@ pub mod get_info_command {
 
         trace!("execute << {:?}", res);
         res
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "nullpay_plugin")]
+pub mod tests {
+    use super::*;
+    use crate::commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
+
+    const POOL: &'static str = "pool";
+    const RPC_ADDRESS: &'static str = "http://127.0.0.1:26657";
+    const CHAIN_ID: &'static str = "verim";
+    const WALLET: &str = "wallet";
+    const MNEMONIC: &str = "mnemonic";
+
+    mod verim_keys {
+        use super::*;
+        use crate::commands::ledger::tests::create_address_and_mint_sources;
+        use crate::commands::pool::tests::create_pool;
+        use crate::commands::verim_ledger::query_account_command;
+        use crate::commands::verim_pool::add_command;
+
+        #[test]
+        pub fn add_random() {
+            let ctx = setup_with_wallet_and_pool();
+            {
+                let cmd = add_random_command::new();
+                let mut params = CommandParams::new();
+                params.insert("alias", WALLET.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn add_from_mnemonic() {
+            let ctx = setup_with_wallet_and_pool();
+            {
+                let cmd = add_from_mnemonic_command::new();
+                let mut params = CommandParams::new();
+                params.insert("alias", WALLET.to_string());
+                params.insert("mnemonic", MNEMONIC.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn get_info() {
+            let ctx = setup_with_wallet_and_pool();
+            {
+                let cmd = get_info_command::new();
+                let mut params = CommandParams::new();
+                params.insert("alias", WALLET.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
     }
 }
