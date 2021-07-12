@@ -2522,7 +2522,7 @@ pub mod tests {
     use crate::commands::pool::tests::disconnect_and_delete_pool;
     use crate::commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3, VERKEY_MY3};
     #[cfg(feature = "nullpay_plugin")]
-    use crate::commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
+    use crate::commands::common::tests::{NULL_PAYMENT_METHOD};
     #[cfg(feature = "nullpay_plugin")]
     use crate::commands::payment_address::tests::create_payment_address;
     use crate::libindy::ledger::Ledger;

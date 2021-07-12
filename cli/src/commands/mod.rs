@@ -10,6 +10,7 @@ pub mod payment_address;
 pub mod verim_ledger;
 pub mod verim_pool;
 pub mod verim_keys;
+pub mod verim_setup;
 
 use self::regex::Regex;
 
@@ -412,6 +413,21 @@ fn setup_with_wallet_and_pool_and_payment_plugin() -> CommandContext {
     let ctx = setup_with_wallet_and_pool();
     common::tests::load_null_payment_plugin(&ctx);
     ctx
+}
+
+#[cfg(test)]
+fn setup_with_wallet_and_verim_pool() -> CommandContext {
+    let ctx = setup();
+    verim_pool::tests::create_pool(&ctx);
+    wallet::tests::create_and_open_wallet(&ctx);
+    verim_keys::tests::add(&ctx);
+    ctx
+}
+
+#[cfg(test)]
+fn tear_down_with_wallet_and_verim_pool(ctx: &CommandContext) {
+    wallet::tests::close_and_delete_wallet(&ctx);
+    tear_down();
 }
 
 #[cfg(test)]
