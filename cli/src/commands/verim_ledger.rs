@@ -159,22 +159,28 @@ pub mod tests {
     use super::*;
 
     const POOL: &'static str = "pool";
+    const DID: &'static str = "did";
+    const VERKEY: &'static str = "verkey";
+    const MAX_COIN: &'static str = "500";
+    const ROLE: &'static str = "TRUSTEE";
 
     mod build {
         use super::*;
-        use crate::commands::ledger::tests::create_address_and_mint_sources;
-        use crate::commands::pool::tests::create_pool;
+        use crate::commands::verim_keys::tests::get_key;
 
         #[test]
         pub fn build_account() {
             let ctx = setup_with_wallet_and_verim_pool();
-            let payment_address = create_address_and_mint_sources(&ctx);
-            create_pool(&ctx);
+            let key = get_key(&ctx);
             {
-                let cmd = query_account_command::new();
+                let cmd = create_nym_command::new();
                 let mut params = CommandParams::new();
-                params.insert("address", payment_address.to_string());
+                params.insert("did", DID.to_string());
+                params.insert("verkey", VERKEY.to_string());
                 params.insert("pool_alias", POOL.to_string());
+                params.insert("key_alias", key.as_object().unwrap()["account_id"].to_string());
+                params.insert("max_coin", MAX_COIN.to_string());
+                params.insert("role", ROLE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             assert!(true);

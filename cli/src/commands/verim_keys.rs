@@ -169,4 +169,10 @@ pub mod tests {
             cmd.execute(&ctx, &params).unwrap();
         }
     }
+
+    pub fn get_key(ctx: &CommandContext) -> serde_json::Value {
+        let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
+        let key = VerimKeys::get_info(wallet_handle, KEY_ALIAS).unwrap();
+        serde_json::from_str(&key).unwrap()
+    }
 }
