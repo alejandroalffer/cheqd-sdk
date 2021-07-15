@@ -79,6 +79,14 @@ pub fn test_pool_ip() -> String {
     env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string())
 }
 
+pub fn verim_test_pool_ip() -> String {
+    env::var("VERIM_TEST_POOL_IP").unwrap_or("http://localhost:26657".to_string())
+}
+
+pub fn verim_test_chain_id() -> String {
+    env::var("VERIM_TEST_CHAIN_ID").unwrap_or("verim".to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
