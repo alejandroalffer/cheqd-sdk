@@ -98,7 +98,7 @@ variables:
     KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
   only:
     refs:
-      - master
+      - main
       - stable
       - /^docker-.*/
 
@@ -133,7 +133,7 @@ dockerbuild-vcx-libindy-centos:
     KANIKO_ARGS: "--build-arg LIBINDY_VER=${indyFullVersion} --build-arg LIBINDY_SIMPLE_VER=${indySimpleVersion} --build-arg LIBINDY_BRANCH=${indyBranch} --build-arg RUST_VER=${rustVersion}"
   only:
     refs:
-      - master
+      - main
       - stable
       - /^docker-.*/
     changes:
