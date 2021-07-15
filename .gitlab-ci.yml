@@ -201,7 +201,7 @@ dockerbuild-libindy-ubuntu18:
     - eval $(ssh-agent -s)
 
     # add ssh key stored in SSH_PRIVATE_KEY variable to the agent store
-    - echo "$VERIM_GITHUB_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - ssh-add $VERIM_GITHUB_SSH_PRIVATE_KEY
 
     # disable host key checking (NOTE: makes you susceptible to man-in-the-middle attacks)
     # WARNING: use only in docker container, if you use it with shell you will overwrite your user's ssh config
