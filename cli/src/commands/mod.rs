@@ -10,7 +10,6 @@ pub mod payment_address;
 pub mod verim_ledger;
 pub mod verim_pool;
 pub mod verim_keys;
-pub mod verim_setup;
 
 use self::regex::Regex;
 
