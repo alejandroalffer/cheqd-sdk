@@ -304,7 +304,7 @@ publish-libindy-java-wrapper:
 publish-libindy:
   extends: .tags_micro
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
   dependencies:
     - package-libindy-ubuntu16
     - package-libindy-ubuntu18
