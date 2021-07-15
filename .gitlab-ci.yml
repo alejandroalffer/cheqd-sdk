@@ -36,6 +36,11 @@ variables:
     - docker-machine
     - large
 
+.tags_compute_xlarge:
+  tags:
+    - docker-machine
+    - compute-xlarge
+
 .kaniko_large:
   extends: .kaniko_micro
   tags:
@@ -126,7 +131,7 @@ dockerbuild-libindy-ubuntu18:
 
 ## - Jobs : Build - ##
 .build-libindy:
-  extends: .tags_large
+  extends: .tags_compute_xlarge
   stage: build
   artifacts:
     expire_in: 1 week
