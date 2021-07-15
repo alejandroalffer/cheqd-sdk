@@ -42,6 +42,9 @@ RUN apt-get install -y nodejs
 
 RUN apt-get install -y wget
 
+COPY ./vcx/ci/scripts/installCert.sh /tmp
+RUN /tmp/installCert.sh
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 

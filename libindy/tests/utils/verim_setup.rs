@@ -3,7 +3,7 @@
 use indyrs::IndyError;
 use serde_json::Value;
 
-use crate::utils::{verim_keys, verim_ledger, verim_ledger::auth, verim_pool};
+use crate::utils::{verim_keys, verim_ledger, verim_ledger::auth, verim_pool, environment};
 
 use super::{logger, wallet, WalletHandle};
 use super::test;
@@ -46,7 +46,9 @@ impl VerimSetup {
         let (account_id, pub_key) = VerimSetup::create_key(wallet_handle, key_alias, "alice").unwrap();
 
         // Pool
-        verim_pool::add(&name, "http://localhost:26657", "verimnode").unwrap();
+        let verim_test_pool_ip = environment::verim_test_pool_ip();
+        let verim_test_chain_id = environment::verim_test_chain_id();
+        verim_pool::add(&name, &verim_test_pool_ip, &verim_test_chain_id).unwrap();
 
         let setup = VerimSetup {
             name: name.clone(),
@@ -92,7 +94,7 @@ impl VerimSetup {
         // Tx
         // TODO: Set correct timeout height using abci info query
         let tx = verim_ledger::auth::build_tx(
-            &self.pool_alias, &self.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "token", 39090, "memo",
+            &self.pool_alias, &self.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "token", self.get_timeout_height(), "memo",
         )?;
 
         // Sign
@@ -102,6 +104,16 @@ impl VerimSetup {
         let resp = verim_pool::broadcast_tx_commit(&self.pool_alias, &signed)?;
 
         Ok(resp)
+    }
+
+    pub fn get_timeout_height(&self) -> u64 {
+        const TIMEOUT: u64 = 20;
+        let info: String = verim_pool::abci_info(&self.pool_alias).unwrap();
+        let info: Value = serde_json::from_str(&info).unwrap();
+        let current_height = info["response"]["last_block_height"].as_str().unwrap().parse::<u64>().unwrap();
+        println!("Verim setup. Last block height: {:?}", current_height);
+
+        return current_height + TIMEOUT;
     }
 }
 
