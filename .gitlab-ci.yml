@@ -36,6 +36,11 @@ variables:
     - docker-machine
     - large
 
+.tags_compute_xlarge:
+  tags:
+    - docker-machine
+    - compute-xlarge
+
 .kaniko_large:
   extends: .kaniko_micro
   tags:
@@ -48,7 +53,7 @@ variables:
     name: gcr.io/kaniko-project/executor:debug-v0.16.0
     entrypoint: [""]
   script:
-    - if [ "$CI_COMMIT_REF_SLUG" == 'main' ] || [ "$CI_COMMIT_REF_SLUG" == 'async' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
+    - if [ "$CI_COMMIT_REF_SLUG" == 'main' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
     - echo "${KANIKO_ARGS}"
     - |
         echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" \
@@ -91,56 +96,6 @@ variables:
 
 
 ## - Jobs : dockerbuild-pre - ##
-# ToDo: it was copy-pasted from the master branch.
-.dockerbuild-vcx-libindy:
-  extends: .kaniko_large
-  variables:
-    KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
-  only:
-    refs:
-      - master
-      - stable
-      - /^docker-.*/
-
-dockerbuild-vcx-libindy-ubuntu16:
-  stage: dockerbuild-pre
-  extends: .dockerbuild-vcx-libindy
-  variables:
-    DOCKERFILE_PATH: vcx/ci/libindy-ubuntu16.dockerfile
-    DOCKER_IMAGE_NAME: vcx-libindy-ubuntu16
-  only:
-    changes:
-      - .gitlab-ci.yml
-      - vcx/ci/libindy-ubuntu16.dockerfile
-
-dockerbuild-vcx-libindy-ubuntu18:
-  stage: dockerbuild-pre
-  extends: .dockerbuild-vcx-libindy
-  variables:
-    DOCKERFILE_PATH: vcx/ci/libindy-ubuntu18.dockerfile
-    DOCKER_IMAGE_NAME: vcx-libindy-ubuntu18
-  only:
-    changes:
-      - .gitlab-ci.yml
-      - vcx/ci/libindy-ubuntu18.dockerfile
-
-dockerbuild-vcx-libindy-centos:
-  stage: dockerbuild-pre
-  extends: .kaniko_micro
-  variables:
-    DOCKERFILE_PATH: vcx/ci/libindy-centos.dockerfile
-    DOCKER_IMAGE_NAME: vcx-libindy-centos
-    KANIKO_ARGS: "--build-arg LIBINDY_VER=${indyFullVersion} --build-arg LIBINDY_SIMPLE_VER=${indySimpleVersion} --build-arg LIBINDY_BRANCH=${indyBranch} --build-arg RUST_VER=${rustVersion}"
-  only:
-    refs:
-      - master
-      - stable
-      - /^docker-.*/
-    changes:
-      - .gitlab-ci.yml
-      - vcx/ci/libindy-centos.dockerfile
-
-
 
 .dockerbuild-libindy:
   extends: .kaniko_large
@@ -148,7 +103,7 @@ dockerbuild-vcx-libindy-centos:
     KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
   only:
     refs:
-      - async@evernym/mobile/indy-sdk
+      - main@evernym/verity/vdr-tools
       - /^docker-.*/
 
 dockerbuild-libindy-ubuntu16:
@@ -176,7 +131,7 @@ dockerbuild-libindy-ubuntu18:
 
 ## - Jobs : Build - ##
 .build-libindy:
-  extends: .tags_large
+  extends: .tags_compute_xlarge
   stage: build
   artifacts:
     expire_in: 1 week
@@ -242,7 +197,7 @@ build-libindy-ubuntu16-from-latest:
   except:
     refs:
       - /^docker-.*/
-      - async@evernym/mobile/indy-sdk
+      - main@evernym/verity/vdr-tools
 
 build-libindy-ubuntu16-release:
   extends: .build-libindy
@@ -251,7 +206,7 @@ build-libindy-ubuntu16-release:
     BUILD_TYPE: 'release'
   only:
     refs:
-      - async@evernym/mobile/indy-sdk
+      - main@evernym/verity/vdr-tools
 
 build-libindy-ubuntu18-from-branch:
   extends: .build-libindy
@@ -270,7 +225,7 @@ build-libindy-ubuntu18-from-latest:
   except:
     refs:
       - /^docker-.*/
-      - async@evernym/mobile/indy-sdk
+      - main@evernym/verity/vdr-tools
 
 build-libindy-ubuntu18-release:
   extends: .build-libindy
@@ -279,7 +234,7 @@ build-libindy-ubuntu18-release:
     BUILD_TYPE: 'release'
   only:
     refs:
-      - async@evernym/mobile/indy-sdk
+      - main@evernym/verity/vdr-tools
 
 
 ## - Jobs : Test - ##
@@ -322,9 +277,8 @@ test-libindy-java-wrapper-from-latest:
   except:
     refs:
       - /^docker-.*/
-      - async@evernym/mobile/indy-sdk
-      - main@evernym/mobile/indy-sdk
-      - stable@evernym/mobile/indy-sdk
+      - main@evernym/verity/vdr-tools
+      - stable@evernym/verity/vdr-tools
 
 test-libindy-java-wrapper-release:
   extends: .test-libindy-java-wrapper
@@ -336,7 +290,7 @@ test-libindy-java-wrapper-release:
     BUILD_TYPE: 'release'
   only:
     refs:
-      - async@evernym/mobile/indy-sdk
+      - main@evernym/verity/vdr-tools
 
 
 ## - Jobs : Package - ##
@@ -351,7 +305,7 @@ test-libindy-java-wrapper-release:
       - cli/target/debian/*.deb
   only:
     refs:
-      - async@evernym/mobile/indy-sdk
+      - main@evernym/verity/vdr-tools
   script:
     - libindy/ci/scripts/package.sh ${CI_PIPELINE_IID}
     - libnullpay/ci/scripts/package.sh ${CI_PIPELINE_IID}
@@ -377,7 +331,7 @@ publish-libindy-java-wrapper:
   extends: .tags_micro
   only:
     refs:
-      - async@evernym/mobile/indy-sdk
+      - main@evernym/verity/vdr-tools
   script:
     - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
     - wrappers/java/ci/publish.sh ${CI_COMMIT_BRANCH} ${CI_PIPELINE_IID}
@@ -385,13 +339,13 @@ publish-libindy-java-wrapper:
 publish-libindy:
   extends: .tags_micro
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
   dependencies:
     - package-libindy-ubuntu16
     - package-libindy-ubuntu18
   only:
     refs:
-      - async@evernym/mobile/indy-sdk
+      - main@evernym/verity/vdr-tools
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output
