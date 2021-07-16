@@ -253,7 +253,12 @@ pub extern "C" fn indy_create_wallet(
 ///                      Defaults to $HOME/.indy_client/wallet.
 ///                      Wallet will be stored in the file {path}/{id}/sqlite.db
 ///           }
-///
+///       "cache": optional<object>, Cache configuration json. If omitted the cache is disabled (default).
+///       {
+///           "size": optional<int>, Number of items in cache,
+///           "entities": List<string>, Types of items being cached. eg. ["Indy::Did", "Indy::Key"]
+///           "algorithm" optional<string>, cache algorithm, defaults to lru, which is the only one supported for now.
+///       }
 ///   }
 /// credentials: Wallet credentials json
 ///   {

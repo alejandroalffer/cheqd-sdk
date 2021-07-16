@@ -146,7 +146,7 @@ impl WalletController {
 
         let res = self
             .wallet_service
-            .open_wallet_continue(wallet_handle, (&key, rekey.as_ref()))
+            .open_wallet_continue(wallet_handle, (&key, rekey.as_ref()), config.cache)
             .await;
 
         trace!("open < res: {:?}", res);

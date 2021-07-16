@@ -1,33 +1,32 @@
-# Indy SDK
-![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
-This is the official SDK for [Hyperledger Indy](https://www.hyperledger.org/projects),
-which provides a distributed-ledger-based foundation for [self-sovereign identity](https://sovrin.org). Indy provides a software ecosystem for private, secure, and powerful identity, and the Indy SDK enables clients for it.
-The major artifact of the SDK is a C-callable
-library; there are also convenience wrappers for various programming languages and Indy CLI tool.
+# Verifiable Data Registry Tools (VDR Tools)
 
-All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa)
-in project IS (note that regular Indy tickets are in the INDY project instead...). Also, make sure to join
-us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss. You will need a Linux Foundation login to get access to these channels
+Evernym VDR Tools is a Rust library that makes it easy to perform SSI related ledger operations across a variety of ledgers. The library implements [Hyperledger Aries](http://github.com/hyperledger/aries-rfcs) in a format suitable for reuse in many scenarios, thus increasing consistency, compatibility, and correctness.
 
-## Understanding Hyperledger Indy
+Key features include:
 
-If you have just started learning about self-sovereign identity, here are some resources to increase your understanding:
+* Support for cryptographic operations to sign credentials with multiple signature types.
+* Key storage in SQLite or an external database.
+* Common functions for Aries protocols such as message packing.
+* A flexible threading model.
+* Payment API for including token based payments as part of exchange.
+* Built for multiple platforms and includes API wrappers in additional languages.
+* Apache licensed.
 
-* This extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
-functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](docs/getting-started/indy-walkthrough.md)
+## Evolution
 
-    * **Please take note** that this tutorial doesn't cover how sides set up a connection and exchange messages.
-    How this communication channel can be built you can find at [Aries](https://github.com/hyperledger/aries) project which describes it in great details.
+Hyperledger Aries is creating a standard way to interact with distributed ledgers as Verifiable Data Registries (VDRs) and a standard approach to key storage. VDR Tools is an evolution of Hyperledger Indy SDK which remains compatible with the Aries ecosystem.
 
-* Hyperledger Indy Working Group calls happen every Thursday at 8amPT, 9amMT, 11amET, 4pmBST. Add to your calendar and join from any device: https://zoom.us/j/232861185
+Evernym was a key maintainer of the [Hyperledger Indy SDK](https://github.com/hyperledger/indy-sdk), but over time our needs diverged from the broader Hyperledger community. We realized that we need a library tailored to the unique requirements of our products which we can iterate quickly without disrupting other members of the ecosystem. We do not expect to replace other Aries libraries. The goal of this project is to provide an alternative specific to the architectural requirements of our products.
 
-* A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
+## Roadmap
 
-* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/display/indy/).
+* Internal renaming from Indy SDK / LibIndy to Evernym VDR Tools.
+* Removal of legacy components: Indy CLI, LibVCX, and unused wrappers.
+* Support for multiple ledgers, including Indy ledgers like Sovrin and IDUnion.
+* Support for additional signature types such as BBS+.
 
-* You may also want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
-that explored the ecosystem via command line. That material is being
-rewritten but still contains some useful ideas.
+
+# VDR Tools SDK
 
 ## Items included in this SDK
 
@@ -44,54 +43,13 @@ Indy SDK provides libindy wrappers for the following programming languages and p
 
 * [Java](wrappers/java/README.md)
 * [Python](wrappers/python/README.md)
-* [iOS](wrappers/ios/README.md)
 * [NodeJS](wrappers/nodejs/README.md)
 * [.Net](wrappers/dotnet/README.md)
 * [Rust](wrappers/rust/README.md)
 
-
-### Indy CLI
-
-[Indy CLI](cli/README.md) is the official command line interface that helps Indy developers and administrators.
-
-
 ### Libnullpay
 
 [Libnullpay](/libnullpay/README.md) is a libindy plugin that can be used for development of applications that use the Payments API of Indy SDK.
-
-### Libvcx
-[Libvcx](/vcx/README.md) is a c-callable library built on top of libindy that provides a high-level
-credential exchange protocol. It simplifies creation of agent applications and provides
-better agent-2-agent interoperability for [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy)
-infrastructure.
-
-This library is currently in an **experimental** state and is not part of official releases.
-
-### Libvcx wrappers
-
-A set of libvcx wrappers for developing vcx-based applications in your favorite programming language.
-
-Indy SDK provides libvcx wrappers for the following programming languages and platforms:
-
-* [Java](/vcx/wrappers/java/README.md)
-* [Python](/vcx/wrappers/python3/README.md)
-* [iOS](vcx/wrappers/ios/README.md)
-* [NodeJS](/vcx/wrappers/node/README.md)
-
-These wrappers are currently in **experimental** state and it is not part of official releases.
-
-##### Example use
-- For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
-- Another libvcx example is available as [VCX NodeJS demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/node#run-demo).
-- For mobile see [iOS Demo project](https://github.com/sktston/vcx-demo-ios) 
-
-### LibVCX Agency
-LibVCX can be used with 
-[mediator agency](https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0046-mediators-and-relays/README.md)
-which enables asynchronous communication between 2 parties. 
-- [Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent.
-The main purpose of this implementation is VCX testing, demos and documentation of VCX protocol.
-- [NodeVCXAgency](https://github.com/AbsaOSS/vcxagencynode) is alternative implementation in NodeJS.
 
 ## How-To Tutorials
 Short, simple tutorials that demonstrate how to accomplish common tasks
@@ -129,10 +87,9 @@ Please See the section "Release channels" above for more details.
 
 ### Windows
 
-1. Go to `https://repo.sovrin.org/windows/{library}/{release-channel}.`
-2. Download last version of library.
-3. Unzip archives to the directory where you want to save working library.
-4. After unzip you will get next structure of files:
+1. Download last version of library.
+2. Unzip archives to the directory where you want to save working library.
+3. After unzip you will get next structure of files:
 
 * `Your working directory for libindy`
     * `include`
@@ -156,68 +113,11 @@ See section "Release channels" for more details.
 
 {library} must be replaced with libindy, libnullpay, libvcx or indy-cli.
 
-### iOS
-
-See [wrapper iOS install documentation](wrappers/ios/README.md "How to install").
-
-### Android
-
-1. Go to `https://repo.sovrin.org/android/{library}/{release-channel}`.
-2. 3 architecture are supported as of now arm,arm64 and x86.
-3. Download latest version of library.
-4. Unzip archives to the directory where you want to save the `.so` files.
-5. After unzip you will get next structure of files:
-
-* `Your working directory for libindy`
-    * `include`
-        * `...`
-    * `lib`
-        * `libindy.so`
-        * `libindy_shared.so`
-        * `libindy.a`
-
-`include` contains c-header files which contains all necessary declarations
-that may be need for your applications.
-
-`lib` contains three types of binaries.
- * `libindy.so` - This is a shared library which is statically linked with all the depenedencies.
- You dont need to sidelaod other dependencies like zmq, sodium and openssl to android app if you use this.
-
- * `libindy_shared.so` - This is pure shared library. It is not dynamically linked to its dependencies.
- You need to sideload the binaries with its dependencies. You can download the needed pre-built dependencies from [here](https://github.com/evernym/indy-android-dependencies/tree/v1.0.2)
-    * Rename this library to `libindy.so` before loading it into the app. This will help you in having the compatibility with existing wrappers.
-
- * `libindy.a` - This is a static library, which is compiled with NDK.
-
-{library} must be replaced with libindy, libnullpay or libvcx.
-
- [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/android-build.md#usage)  
-
-{release channel} must be replaced with rc or stable to define corresponded release channel.
-See section "Release channels" for more details.
-
- **Note** :
-
- - [WARNING] This library should be considered as experimental as currently unit tests are *not* executed in the CI phase.
-
-
-### Centos
-
-1. Go to `https://repo.sovrin.org/rpm/{library}/{release-channel}`.
-2. Download and unzip the last version of library.
-3. Install with `rpm -i library-version.rpm`.
-
-{library} must be replaced with libindy, libnullpay, libvcx, indy-cli to define corresponded library.
-
-{release channel} must be replaced with master, rc or stable to define corresponded release channel.
-See section "Release channels" for more details.
-
 ### MacOS
 
-1. Go to `https://repo.sovrin.org/macos/{library}/{release-channel}`.
-2. Download the latest version of library.
-3. Unzip archives to the directory where you want to save working library.
-4. After unzip you will get next structure of files:
+1. Download the latest version of library.
+2. Unzip archives to the directory where you want to save working library.
+3. After unzip you will get next structure of files:
 
 * `Your working directory`
     * `include` - contains c-header files which contains all necessary declarations that may be need for your applications.
@@ -226,7 +126,7 @@ See section "Release channels" for more details.
         * `library.a`
         * `library.dylib`
     
-5. Install dependent libraries: libsodium, zeromq, openssl. The dependent libraries should match the version with what you can find from ``otool -L libindy.dylib``.
+4. Install dependent libraries: libsodium, zeromq, openssl. The dependent libraries should match the version with what you can find from ``otool -L libindy.dylib``.
 
 You need add the path to lib folder to LIBRARY_PATH environment variable. 
     
@@ -323,37 +223,13 @@ Docker machine needs to be rebooted after these changes.
 
 The following [wrappers](docs/architecture/language-bindings.md) are tested and complete. 
 
-There is also active work on a wrapper for Go; visit
-[#indy-sdk on Rocket.Chat](https://chat.hyperledger.org/channel/indy-sdk) for
-details.
-
-## Indy CLI documentation
-* An explanation of how to install the official command line interface for that provides commands to manage wallets and interactions with the ledger: [Indy CLI](cli/README.md)
-
 ## How to migrate
 The documents that provide necessary information for Libindy migrations.
  
-* [v1.3.0 → v1.4.0](docs/migration-guides/migration-guide-1.3.0-1.4.0.md)
-* [v1.4.0 → v1.5.0](docs/migration-guides/migration-guide-1.4.0-1.5.0.md)
-* [v1.5.0 → v1.6.x](docs/migration-guides/migration-guide-1.5.0-1.6.0.md)
-* [v1.6.0 → v1.7.x](docs/migration-guides/migration-guide-1.6.0-1.7.0.md)
-* [v1.7.0 → v1.8.x](docs/migration-guides/migration-guide-1.7.0-1.8.0.md)
-* [v1.8.0 → v1.9.x](docs/migration-guides/migration-guide-1.8.0-1.9.0.md)
-* [v1.9.0 → v1.10.x](docs/migration-guides/migration-guide-1.9.0-1.10.0.md)
-* [v1.10.0 → v1.11.x](docs/migration-guides/migration-guide-1.10.0-1.11.0.md)
-* [v1.11.0 → v1.12.x](docs/migration-guides/migration-guide-1.11.0-1.12.0.md)
-* [v1.12.0 → v1.13.x](docs/migration-guides/migration-guide-1.12.0-1.13.0.md)
-* [v1.13.0 → v1.14.x](docs/migration-guides/migration-guide-1.13.0-1.14.0.md)
 * [v1.14.0 → v1.15.x](docs/migration-guides/migration-guide-1.14.0-1.15.0.md)
 
 ## How to Contribute
-* We'd love your help; see these [HL Indy Wiki](https://wiki.hyperledger.org/display/indy/How+to+Contribute) and [slides on how to contribute](http://bit.ly/2ugd0bq).
-* If you need to add a new call, read this [instruction](docs/how-tos/how-to-add-a-new-API-call.md).
-* You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
-* We use developer certificate of origin (DCO) in all hyperledger repositories,
-  so to get your pull requests accepted, you must certify your commits by signing off on each commit.
-  More information can be found in [Signing Commits](docs/contributors/signing-commits.md) article.
-
+We love Merge Requests. During the MR review process, you will be asked to agree to the Evernym CLA.
 
 #### Notes
 * Libindy implements multithreading approach based on **mpsc channels**.

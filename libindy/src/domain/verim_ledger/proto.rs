@@ -1,48 +1,24 @@
 use cosmos_sdk::tx::MsgProto;
 
 pub mod verimid {
-    pub mod verimcosmos {
-        pub mod verimcosmos {
+    pub mod verimnode {
+        pub mod verim {
             include!(concat!(
-                env!("OUT_DIR"),
-                "/prost/verimid.verimcosmos.verimcosmos.rs"
+            env!("OUT_DIR"),
+            "/prost/verimid.verimnode.verim.rs"
             ));
         }
     }
 }
 
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNym {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgCreateNym";
+impl MsgProto for verimid::verimnode::verim::MsgCreateNym {
+    const TYPE_URL: &'static str = "/verimid.verimnode.verim.MsgCreateNym";
 }
 
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgCreateNymResponse {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgCreateNymResponse";
+impl MsgProto for verimid::verimnode::verim::MsgUpdateNym {
+    const TYPE_URL: &'static str = "/verimid.verimnode.verim.MsgUpdateNym";
 }
 
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgUpdateNym {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgUpdateNym";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgUpdateNymResponse {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgUpdateNymResponse";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgDeleteNym {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgDeleteNym";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::MsgDeleteNymResponse {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.MsgDeleteNymResponse";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::QueryGetNymRequest {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryGetNymRequest";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::QueryGetNymResponse {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.QueryGetNymResponse";
-}
-
-impl MsgProto for verimid::verimcosmos::verimcosmos::Nym {
-    const TYPE_URL: &'static str = "/verimid.verimcosmos.verimcosmos.Nym";
+impl MsgProto for verimid::verimnode::verim::MsgDeleteNym {
+    const TYPE_URL: &'static str = "/verimid.verimnode.verim.MsgDeleteNym";
 }

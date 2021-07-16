@@ -353,6 +353,7 @@ mod tests {
     use indy_utils::test;
 
     use super::*;
+    use crate::cache::wallet_cache::{WalletCache, WalletCacheHitMetrics};
 
     async fn export(
         wallet: Wallet,
@@ -380,7 +381,7 @@ mod tests {
         {
             let mut output: Vec<u8> = Vec::new();
             {
-                let mut wallet1 = _wallet("export_import_works_for_empty_wallet1").await;
+                let wallet1 = _wallet("export_import_works_for_empty_wallet1").await;
 
                 export(
                     wallet1,
@@ -395,7 +396,7 @@ mod tests {
 
             test::cleanup_wallet("export_import_works_for_empty_wallet1");
 
-            let mut wallet = _wallet("export_import_works_for_empty_wallet2").await;
+            let wallet = _wallet("export_import_works_for_empty_wallet2").await;
             _assert_is_empty(&wallet).await;
 
             import(&wallet, &mut output.as_slice(), _passphrase())
@@ -746,7 +747,7 @@ mod tests {
 
         let storage = storage_type.open_storage(id, None, None).await.unwrap();
 
-        Wallet::new(id.to_string(), storage, Arc::new(keys))
+        Wallet::new(id.to_string(), storage, Arc::new(keys), WalletCache::new(None))
     }
 
     async fn _assert_is_empty(wallet: &Wallet) {
@@ -773,17 +774,21 @@ mod tests {
     }
 
     async fn _assert_has_2_records(wallet: &Wallet) {
-        let record = wallet.get(&_type1(), &_id1(), _options()).await.unwrap();
+        let metrics = WalletCacheHitMetrics::new();
+
+        let record = wallet.get(&_type1(), &_id1(), _options(), &metrics).await.unwrap();
         assert_eq!(record.type_.unwrap(), _type1());
         assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(record.tags.unwrap(), _tags1());
+        assert_eq!(metrics.get_data_for_type(&_type1()).await.unwrap().get_not_cached(), 1);
 
-        let record = wallet.get(&_type2(), &_id2(), _options()).await.unwrap();
+        let record = wallet.get(&_type2(), &_id2(), _options(), &metrics).await.unwrap();
         assert_eq!(record.type_.unwrap(), _type2());
         assert_eq!(record.id, _id2());
         assert_eq!(record.value.unwrap(), _value2());
         assert_eq!(record.tags.unwrap(), _tags2());
+        assert_eq!(metrics.get_data_for_type(&_type2()).await.unwrap().get_not_cached(), 1);
     }
 
     async fn _add_300_records(wallet: Wallet) -> Wallet {
@@ -798,9 +803,11 @@ mod tests {
     }
 
     async fn _assert_has_300_records(wallet: &Wallet) {
+        let metrics = WalletCacheHitMetrics::new();
+
         for i in 0..300 {
             let record = wallet
-                .get(&_type(i % 3), &_id(i), _options())
+                .get(&_type(i % 3), &_id(i), _options(), &metrics)
                 .await
                 .unwrap();
 
@@ -809,6 +816,9 @@ mod tests {
             assert_eq!(record.value.unwrap(), _value(i));
             assert_eq!(record.tags.unwrap(), _tags(i));
         }
+        assert_eq!(metrics.get_data_for_type(&_type(0)).await.unwrap().get_not_cached(), 100);
+        assert_eq!(metrics.get_data_for_type(&_type(1)).await.unwrap().get_not_cached(), 100);
+        assert_eq!(metrics.get_data_for_type(&_type(2)).await.unwrap().get_not_cached(), 100);
     }
 
     fn _master_key() -> chacha20poly1305_ietf::Key {

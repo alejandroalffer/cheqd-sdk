@@ -36,6 +36,11 @@ variables:
     - docker-machine
     - large
 
+.tags_compute_xlarge:
+  tags:
+    - docker-machine
+    - compute-xlarge
+
 .kaniko_large:
   extends: .kaniko_micro
   tags:
@@ -48,7 +53,7 @@ variables:
     name: gcr.io/kaniko-project/executor:debug-v0.16.0
     entrypoint: [""]
   script:
-    - if [ "$CI_COMMIT_REF_SLUG" == 'master' ] || [ "$CI_COMMIT_REF_SLUG" == 'async' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
+    - if [ "$CI_COMMIT_REF_SLUG" == 'main' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
     - echo "${KANIKO_ARGS}"
     - |
         echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" \
@@ -89,14 +94,16 @@ variables:
         --destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:${CI_COMMIT_REF_SLUG}
 
 
+
 ## - Jobs : dockerbuild-pre - ##
+
 .dockerbuild-libindy:
   extends: .kaniko_large
   variables:
     KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - main@evernym/verity/vdr-tools
       - /^docker-.*/
 
 dockerbuild-libindy-ubuntu16:
@@ -124,7 +131,7 @@ dockerbuild-libindy-ubuntu18:
 
 ## - Jobs : Build - ##
 .build-libindy:
-  extends: .tags_large
+  extends: .tags_compute_xlarge
   stage: build
   artifacts:
     expire_in: 1 week
@@ -133,11 +140,37 @@ dockerbuild-libindy-ubuntu18:
       - libnullpay/target/${BUILD_TYPE}/libnullpay.so
       - cli/target/${BUILD_TYPE}/indy-cli
   services:
-    - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.12.3_1.0.8
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
+    - name: ghcr.io/verim-id/verim-testnet:v0.1.7
+      alias: verim_pool_network
   timeout: 3h
+  before_script:
+    # The only working solution for private submodules fetching via ssh:
+    # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/2075
+
+    # install ssh-agent
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+
+    # run ssh-agent
+    - eval $(ssh-agent -s)
+
+    # add ssh key stored in SSH_PRIVATE_KEY variable to the agent store
+    - ssh-add $VERIM_GITHUB_SSH_PRIVATE_KEY
+
+    # disable host key checking (NOTE: makes you susceptible to man-in-the-middle attacks)
+    # WARNING: use only in docker container, if you use it with shell you will overwrite your user's ssh config
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+    # Fetch submodules
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - export VERIM_TEST_POOL_IP=$(getent ahostsv4 verim_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - export VERIM_TEST_POOL_IP="http://$VERIM_TEST_POOL_IP:26657"
     # - libindy/ci/scripts/lint.sh
     # - cli/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
@@ -164,7 +197,7 @@ build-libindy-ubuntu16-from-latest:
   except:
     refs:
       - /^docker-.*/
-      - async@dev/vcx/indy-sdk
+      - main@evernym/verity/vdr-tools
 
 build-libindy-ubuntu16-release:
   extends: .build-libindy
@@ -173,7 +206,7 @@ build-libindy-ubuntu16-release:
     BUILD_TYPE: 'release'
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - main@evernym/verity/vdr-tools
 
 build-libindy-ubuntu18-from-branch:
   extends: .build-libindy
@@ -192,7 +225,7 @@ build-libindy-ubuntu18-from-latest:
   except:
     refs:
       - /^docker-.*/
-      - async@dev/vcx/indy-sdk
+      - main@evernym/verity/vdr-tools
 
 build-libindy-ubuntu18-release:
   extends: .build-libindy
@@ -201,18 +234,22 @@ build-libindy-ubuntu18-release:
     BUILD_TYPE: 'release'
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - main@evernym/verity/vdr-tools
 
 
 ## - Jobs : Test - ##
 .test-libindy-java-wrapper:
-  extends: .tags_micro
+  extends: .tags_large
   stage: test
   services:
-    - name: gitlab.corp.evernym.com:4567/dev/containers/indy-pool:1.9.2_1.0.2
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.9.2_1.0.2
       alias: pool_network
+    - name: ghcr.io/verim-id/verim-testnet:v0.1.7
+      alias: verim_pool_network
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - export VERIM_TEST_POOL_IP=$(getent ahostsv4 verim_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - export VERIM_TEST_POOL_IP="http://$VERIM_TEST_POOL_IP:26657"
     - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
     - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
     - wrappers/java/ci/test.sh ${TEST_POOL_IP}
@@ -240,9 +277,8 @@ test-libindy-java-wrapper-from-latest:
   except:
     refs:
       - /^docker-.*/
-      - async@dev/vcx/indy-sdk
-      - master@dev/vcx/indy-sdk
-      - stable@dev/vcx/indy-sdk
+      - main@evernym/verity/vdr-tools
+      - stable@evernym/verity/vdr-tools
 
 test-libindy-java-wrapper-release:
   extends: .test-libindy-java-wrapper
@@ -254,7 +290,7 @@ test-libindy-java-wrapper-release:
     BUILD_TYPE: 'release'
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - main@evernym/verity/vdr-tools
 
 
 ## - Jobs : Package - ##
@@ -269,7 +305,7 @@ test-libindy-java-wrapper-release:
       - cli/target/debian/*.deb
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - main@evernym/verity/vdr-tools
   script:
     - libindy/ci/scripts/package.sh ${CI_PIPELINE_IID}
     - libnullpay/ci/scripts/package.sh ${CI_PIPELINE_IID}
@@ -291,11 +327,11 @@ package-libindy-ubuntu18:
 # - Jobs : Publish - ##
 publish-libindy-java-wrapper:
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-java:latest
+  image: registry.gitlab.com/evernym/containers/vcx-java/vcx-java:latest
   extends: .tags_micro
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - main@evernym/verity/vdr-tools
   script:
     - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
     - wrappers/java/ci/publish.sh ${CI_COMMIT_BRANCH} ${CI_PIPELINE_IID}
@@ -303,13 +339,13 @@ publish-libindy-java-wrapper:
 publish-libindy:
   extends: .tags_micro
   stage: publish
-  image: ${CI_REGISTRY_IMAGE}/vcx-libindy-ubuntu18:latest
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
   dependencies:
     - package-libindy-ubuntu16
     - package-libindy-ubuntu18
   only:
     refs:
-      - async@dev/vcx/indy-sdk
+      - main@evernym/verity/vdr-tools
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output

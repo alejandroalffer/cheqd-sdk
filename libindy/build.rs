@@ -1,13 +1,9 @@
-use regex::Regex;
 use std::env;
 use std::fs;
-use std::fs::{create_dir_all, remove_dir_all};
 use std::{
-    ffi::OsStr,
-    io,
     path::{Path, PathBuf},
-    process,
 };
+
 use walkdir::WalkDir;
 
 fn main() {
@@ -35,19 +31,10 @@ fn main() {
         println!("cargo:rustc-flags=-L {}\\lib", prebuilt_dir);
         println!("cargo:include={}\\include", prebuilt_dir);
 
-        let files = vec![
-            "libeay32md.dll",
-            "libsodium.dll",
-            "libzmq.dll",
-            "ssleay32md.dll",
-        ];
+        let files = vec!["libeay32md.dll", "libsodium.dll", "libzmq.dll", "ssleay32md.dll"];
         for f in files.iter() {
             if let Ok(_) = fs::copy(&prebuilt_lib.join(f), &dst.join(f)) {
-                println!(
-                    "copy {} -> {}",
-                    &prebuilt_lib.join(f).display(),
-                    &dst.join(f).display()
-                );
+                println!("copy {} -> {}", &prebuilt_lib.join(f).display(), &dst.join(f).display());
             }
         }
     } else if target.find("linux-android").is_some() {
@@ -55,32 +42,22 @@ fn main() {
         let openssl = match env::var("OPENSSL_LIB_DIR") {
             Ok(val) => val,
             Err(..) => match env::var("OPENSSL_DIR") {
-                Ok(dir) => Path::new(&dir[..])
-                    .join("lib")
-                    .to_string_lossy()
-                    .into_owned(),
-                Err(..) => {
-                    panic!("Missing required environment variables OPENSSL_DIR or OPENSSL_LIB_DIR")
-                }
-            },
+                Ok(dir) => Path::new(&dir[..]).join("lib").to_string_lossy().into_owned(),
+                Err(..) => panic!("Missing required environment variables OPENSSL_DIR or OPENSSL_LIB_DIR")
+            }
         };
 
         let sodium = match env::var("SODIUM_LIB_DIR") {
             Ok(val) => val,
-            Err(..) => panic!("Missing required environment variable SODIUM_LIB_DIR"),
+            Err(..) => panic!("Missing required environment variable SODIUM_LIB_DIR")
         };
 
         let zmq = match env::var("LIBZMQ_LIB_DIR") {
             Ok(val) => val,
             Err(..) => match env::var("LIBZMQ_PREFIX") {
-                Ok(dir) => Path::new(&dir[..])
-                    .join("lib")
-                    .to_string_lossy()
-                    .into_owned(),
-                Err(..) => {
-                    panic!("Missing required environment variables LIBZMQ_PREFIX or LIBZMQ_LIB_DIR")
-                }
-            },
+                Ok(dir) => Path::new(&dir[..]).join("lib").to_string_lossy().into_owned(),
+                Err(..) => panic!("Missing required environment variables LIBZMQ_PREFIX or LIBZMQ_LIB_DIR")
+            }
         };
 
         println!("cargo:rustc-link-search=native={}", openssl);
@@ -96,7 +73,7 @@ fn main() {
 /// ------ PROTO ------
 
 const COSMOS_SDK_DIR: &str = "cosmos-sdk-go";
-const VERIMCOSMOS_DIR: &str = "verim-cosmos";
+const VERIMCOSMOS_DIR: &str = "verim-node";
 
 fn build_proto() {
     let out_dir = std::env::var("OUT_DIR").unwrap();
@@ -109,7 +86,6 @@ fn build_proto() {
     fs::create_dir(proto_dir.clone()).unwrap();
 
     compile_protos(&proto_dir);
-    // compile_proto_services(&proto_dir);
 }
 
 fn compile_protos(out_dir: &Path) {
@@ -121,17 +97,9 @@ fn compile_protos(out_dir: &Path) {
         out_dir.display()
     );
 
-    let root = env!("CARGO_MANIFEST_DIR");
-
     // Paths
     let proto_paths = [
-        // format!("{}/../proto/definitions/mock", root),
-        // format!("{}/proto/ibc", sdk_dir.display()),
-        // format!("{}/proto/cosmos/tx", sdk_dir.display()),
-        // format!("{}/proto/cosmos/bank", sdk_dir.display()),
-        // format!("{}/proto/cosmos/base", sdk_dir.display()),
-        // format!("{}/proto/cosmos/staking", sdk_dir.display()),
-        format!("{}/proto/verimcosmos", verimcosmos_dir.display()),
+        format!("{}/proto/verim", verimcosmos_dir.display()),
     ];
 
     let proto_includes_paths = [
@@ -170,51 +138,4 @@ fn compile_protos(out_dir: &Path) {
         eprintln!("[error] couldn't compile protos: {}", e);
         panic!("protoc failed!");
     }
-}
-
-fn compile_proto_services(out_dir: impl AsRef<Path>) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let sdk_dir = PathBuf::from(COSMOS_SDK_DIR);
-    let verimcosmos_dir = PathBuf::from(VERIMCOSMOS_DIR);
-
-    let proto_includes_paths = [
-        sdk_dir.join("proto"),
-        sdk_dir.join("third_party/proto"),
-        verimcosmos_dir.join("proto"),
-    ];
-
-    // List available paths for dependencies
-    let includes = proto_includes_paths
-        .iter()
-        .map(|p| p.as_os_str().to_os_string())
-        .collect::<Vec<_>>();
-
-    let proto_services_path = [
-        // sdk_dir.join("proto/cosmos/auth/v1beta1/query.proto"),
-        // sdk_dir.join("proto/cosmos/staking/v1beta1/query.proto"),
-        // sdk_dir.join("proto/cosmos/bank/v1beta1/query.proto"),
-        // sdk_dir.join("proto/cosmos/bank/v1beta1/tx.proto"),
-        // sdk_dir.join("proto/cosmos/tx/v1beta1/service.proto"),
-        // sdk_dir.join("proto/cosmos/tx/v1beta1/tx.proto"),
-        verimcosmos_dir.join("proto/verimcosmos/tx.proto"),
-        verimcosmos_dir.join("proto/verimcosmos/query.proto"),
-    ];
-
-    // List available paths for dependencies
-    let services = proto_services_path
-        .iter()
-        .map(|p| p.as_os_str().to_os_string())
-        .collect::<Vec<_>>();
-
-    // Compile all proto client for GRPC services
-    println!("[info] Compiling proto clients for GRPC services!");
-    tonic_build::configure()
-        .build_client(true)
-        .build_server(false)
-        .format(true)
-        .out_dir(out_dir)
-        .compile(&services, &includes)
-        .unwrap();
-
-    println!("[info ] => Done!");
 }

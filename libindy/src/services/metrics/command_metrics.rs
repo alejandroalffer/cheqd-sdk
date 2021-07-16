@@ -1,5 +1,5 @@
-use std::fmt;
 use variant_count::VariantCount;
+use std::fmt;
 
 impl fmt::Display for CommandMetric {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -118,21 +118,32 @@ pub enum CommandMetric {
     LedgerCommandBuildGetAcceptanceMechanismsRequest,
     LedgerCommandAppendTxnAuthorAgreementAcceptanceToRequest,
     LedgerCommandAppendRequestEndorser,
-    // VerimLedger
+    // VerimLedger - Verim Module
     VerimLedgerCommandBuildMsgCreateNym,
     VerimLedgerCommandBuildMsgUpdateNym,
     VerimLedgerCommandBuildMsgDeleteNym,
     VerimLedgerCommandBuildQueryGetNym,
+    VerimLedgerCommandBuildQueryAllNym,
     VerimLedgerCommandParseMsgCreateNymResp,
     VerimLedgerCommandParseMsgUpdateNymResp,
     VerimLedgerCommandParseMsgDeleteNymResp,
     VerimLedgerCommandParseQueryGetNymResp,
-    // CosmosPool
-    CosmosPoolAdd,
-    CosmosPoolGetConfig,
-    CosmosPoolBuildTx,
-    CosmosPoolBroadcastTxCommit,
-    CosmosPoolAbciQuery,
+    VerimLedgerCommandParseQueryAllNymResp,
+    // VerimLedger - Auth Module
+    VerimLedgerCommandBuildTx,
+    VerimLedgerCommandBuildQueryCosmosAuthAccount,
+    VerimLedgerCommandParseQueryCosmosAuthAccountResp,
+    // VerimPool
+    VerimPoolCommandAdd,
+    VerimPoolCommandGetConfig,
+    VerimPoolCommandBroadcastTxCommit,
+    VerimPoolCommandAbciQuery,
+    VerimPoolCommandAbciInfo,
+    // VerimKeys
+    VerimKeysAddRandom,
+    VerimKeysAddFromMnemonic,
+    VerimKeysKeyInfo,
+    VerimKeysSign,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,
@@ -161,11 +172,6 @@ pub enum CommandMetric {
     DidCommandGetNymAck,
     DidCommandGetAttribAck,
     DidCommandQualifyDid,
-    // CosmosKeys
-    CosmosKeysAddRandom,
-    CosmosKeysAddFromMnemonic,
-    CosmosKeysKeyInfo,
-    CosmosKeysSign,
     // WalletCommand
     WalletCommandRegisterWalletType,
     WalletCommandCreate,
