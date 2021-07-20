@@ -110,6 +110,19 @@ impl VerimLedgerService {
     }
 
     #[logfn(Info)]
+    pub(crate) fn build_query_verimcosmos_get_nym_with_proof(
+        &self,
+        id: u64,
+    ) -> IndyResult<abci_query::Request> {
+        let mut query_data = "Nym-value-".as_bytes().to_vec();
+        query_data.extend_from_slice(&id.to_be_bytes());
+        let path = format!("/store/verimcosmos/key");
+        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let req = abci_query::Request::new(Some(path), query_data, None, true);
+        Ok(req)
+    }
+
+    #[logfn(Info)]
     pub(crate) fn verim_parse_query_get_nym_resp(
         &self,
         resp: &abci_query::Response,
