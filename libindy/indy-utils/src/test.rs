@@ -33,8 +33,8 @@ pub fn cleanup_pool(name: &str) {
     cleanup_files(&environment::pool_home_path(), name);
 }
 
-pub fn cleanup_verim_pool(name: &str) {
-    cleanup_files(&environment::verim_pool_home_path(), name);
+pub fn cleanup_cheqd_pool(name: &str) {
+    cleanup_files(&environment::cheqd_pool_home_path(), name);
 }
 
 pub fn cleanup_storage(name: &str) {
@@ -42,7 +42,7 @@ pub fn cleanup_storage(name: &str) {
     cleanup_pool(name);
     cleanup_indy_home(name);
     cleanup_temp(name);
-    cleanup_verim_pool(name);
+    cleanup_cheqd_pool(name);
 }
 
 pub fn test_pool_create_poolfile(pool_name: &str) -> File {
