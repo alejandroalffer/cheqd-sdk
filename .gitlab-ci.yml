@@ -142,7 +142,7 @@ dockerbuild-libindy-ubuntu18:
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
-    - name: ghcr.io/cheqd/cheqd-testnet:v0.1.7
+    - name: ghcr.io/cheqd/cheqd-testnet:v0.1.12
       alias: cheqd_pool_network
   timeout: 3h
   before_script:
@@ -244,7 +244,7 @@ build-libindy-ubuntu18-release:
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.9.2_1.0.2
       alias: pool_network
-    - name: ghcr.io/cheqd/cheqd-testnet:v0.1.7
+    - name: ghcr.io/cheqd/cheqd-testnet:v0.1.12
       alias: cheqd_pool_network
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
