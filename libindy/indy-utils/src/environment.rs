@@ -51,14 +51,14 @@ pub fn pool_path(pool_name: &str) -> PathBuf {
     path
 }
 
-pub fn verim_pool_home_path() -> PathBuf {
+pub fn cheqd_pool_home_path() -> PathBuf {
     let mut path = indy_home_path();
-    path.push("verim_pool");
+    path.push("cheqd_pool");
     path
 }
 
-pub fn verim_pool_path(pool_name: &str) -> PathBuf {
-    let mut path = verim_pool_home_path();
+pub fn cheqd_pool_path(pool_name: &str) -> PathBuf {
+    let mut path = cheqd_pool_home_path();
     path.push(pool_name);
     path
 }
@@ -79,12 +79,12 @@ pub fn test_pool_ip() -> String {
     env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string())
 }
 
-pub fn verim_test_pool_ip() -> String {
-    env::var("VERIM_TEST_POOL_IP").unwrap_or("http://localhost:26657".to_string())
+pub fn cheqd_test_pool_ip() -> String {
+    env::var("CHEQD_TEST_POOL_IP").unwrap_or("http://localhost:26657".to_string())
 }
 
-pub fn verim_test_chain_id() -> String {
-    env::var("VERIM_TEST_CHAIN_ID").unwrap_or("verim".to_string())
+pub fn cheqd_test_chain_id() -> String {
+    env::var("CHEQD_TEST_CHAIN_ID").unwrap_or("cheqd".to_string())
 }
 
 #[cfg(test)]
