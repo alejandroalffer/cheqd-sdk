@@ -73,7 +73,7 @@ fn main() {
 /// ------ PROTO ------
 
 const COSMOS_SDK_DIR: &str = "cosmos-sdk-go";
-const VERIMCOSMOS_DIR: &str = "verim-node";
+const CHEQDCOSMOS_DIR: &str = "cheqd-node";
 
 fn build_proto() {
     let out_dir = std::env::var("OUT_DIR").unwrap();
@@ -90,7 +90,7 @@ fn build_proto() {
 
 fn compile_protos(out_dir: &Path) {
     let sdk_dir = Path::new(COSMOS_SDK_DIR);
-    let verimcosmos_dir = Path::new(VERIMCOSMOS_DIR);
+    let cheqdcosmos_dir = Path::new(CHEQDCOSMOS_DIR);
 
     println!(
         "[info] Compiling .proto files to Rust into '{}'...",
@@ -99,12 +99,12 @@ fn compile_protos(out_dir: &Path) {
 
     // Paths
     let proto_paths = [
-        format!("{}/proto/verim", verimcosmos_dir.display()),
+        format!("{}/proto/cheqd", cheqdcosmos_dir.display()),
     ];
 
     let proto_includes_paths = [
         format!("{}/proto", sdk_dir.display()),
-        format!("{}/proto", verimcosmos_dir.display()),
+        format!("{}/proto", cheqdcosmos_dir.display()),
         format!("{}/third_party/proto", sdk_dir.display()),
     ];
 
