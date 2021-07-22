@@ -141,7 +141,7 @@ dockerbuild-libindy-android:
     DOCKER_CONTEXT: "${CI_PROJECT_DIR}/libindy/ci/"
   only:
     refs:
-      - master
+      - main
       - stable
       - /^docker-.*/
     changes:
@@ -234,6 +234,32 @@ build-libindy-ubuntu18-release:
     refs:
       - main@evernym/verity/vdr-tools
 
+.build-libindy-android:
+  extends: .tags_compute_xlarge
+  stage: build  # TODO separate build step
+  services:
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
+      alias: pool_network
+  script:
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - cd libindy && ./android.test.sh x86
+
+build-libindy-android-from-latest:
+  extends: .build-libindy-android
+  image: ${CI_REGISTRY_IMAGE}/libindy-android:latest
+  except:
+    refs:
+      - /^docker-.*/
+      - main
+
+build-libindy-android-from-branch:
+  extends: .build-libindy-android
+  image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
+  only:
+    refs:
+      - /^docker-.*/
+      - main
+
 
 ## - Jobs : Test - ##
 .test-libindy-java-wrapper:
@@ -285,17 +311,6 @@ test-libindy-java-wrapper-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
-
-test-libindy-android:
-  extends: .tags_compute_xlarge
-  stage: build  # TODO separate build step
-  image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
-  services:
-    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
-      alias: pool_network
-  script:
-    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-    - cd libindy && ./android.test.sh x86
 
 
 ## - Jobs : Package - ##
