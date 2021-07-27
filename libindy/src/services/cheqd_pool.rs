@@ -148,18 +148,19 @@ impl CheqdPoolService {
         where
             R: Request,
     {
-        let req_bytes = req.into_json().into_bytes();
+        let req_json = req.into_json();
 
-        let mut resp = surf::post(rpc_address)
-            .body(surf::Body::from_bytes(req_bytes))
+        let client = reqwest::Client::new();
+        let resp = client.post(rpc_address)
+            .body(req_json)
             .header("Content-Type", "application/json")
             .header(
                 "User-Agent",
                 format!("indy-sdk/{}", env!("CARGO_PKG_VERSION")),
             )
+            .send()
             .await?;
-
-        let resp_str = resp.body_string().await?;
+        let resp_str = resp.text().await?;
         let resp = R::Response::from_string(resp_str)?;
 
         Ok(resp)
