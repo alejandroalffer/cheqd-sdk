@@ -1,6 +1,6 @@
 [submodule "libindy/cosmos-sdk-go"]
 	path = libindy/cosmos-sdk-go
 	url = https://github.com/cosmos/cosmos-sdk.git
-[submodule "libindy/verim-node"]
-	path = libindy/verim-node
-	url = git@github.com:verim-id/verim-node.git
+[submodule "libindy/cheqd-node"]
+	path = libindy/cheqd-node
+	url = git@github.com:cheqd/cheqd-node.git
