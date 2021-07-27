@@ -245,10 +245,9 @@ impl From<futures::channel::oneshot::Canceled> for IndyError {
     }
 }
 
-// TODO: Better error conversion
 impl From<log::SetLoggerError> for IndyError {
     fn from(err: log::SetLoggerError) -> IndyError {
-        Self::from_msg(IndyErrorKind::InvalidState, err.to_string())
+        err.context(IndyErrorKind::InvalidState).into()
     }
 }
 
@@ -256,7 +255,7 @@ impl From<log::SetLoggerError> for IndyError {
 // Cosmos SDK error. They don't expose Error interface.
 impl From<eyre::Report> for IndyError {
     fn from(err: eyre::Report) -> IndyError {
-        Self::from_msg(IndyErrorKind::InvalidState, err.to_string())
+        IndyError::from_msg(IndyErrorKind::InvalidState, err.to_string())
     }
 }
 
@@ -286,7 +285,7 @@ impl From<serde_json::Error> for IndyError {
 
 impl From<surf::Error> for IndyError {
     fn from(err: surf::Error) -> Self {
-        Self::from_msg(IndyErrorKind::InvalidState, err.into_inner().to_string())
+        IndyError::from_msg(IndyErrorKind::InvalidState, err.to_string())
     }
 }
 
