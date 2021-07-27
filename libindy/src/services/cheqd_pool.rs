@@ -171,7 +171,7 @@ impl CheqdPoolService {
         &self,
         req: rpc::endpoint::abci_query::Request,
         result: rpc::endpoint::abci_query::Response,
-    ) -> IndyResult<rpc::endpoint::abci_query::Response> {
+    ) -> IndyResult<bool> {
 
         //////////////////////////// 0st proof
 
@@ -226,7 +226,7 @@ impl CheqdPoolService {
             &proof_0_root,
         );
 
-        Ok(resp)
+        Ok()
     }
 
 }

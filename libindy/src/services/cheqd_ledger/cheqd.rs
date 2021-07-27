@@ -110,7 +110,7 @@ impl CheqdLedgerService {
     }
 
     #[logfn(Info)]
-    pub(crate) fn build_query_verimcosmos_get_nym_with_proof(
+    pub(crate) fn build_query_get_nym_with_proof(
         &self,
         id: u64,
     ) -> IndyResult<abci_query::Request> {
