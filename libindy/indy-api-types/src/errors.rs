@@ -18,6 +18,7 @@ use ursa::errors::{UrsaCryptoError, UrsaCryptoErrorKind};
 use libc::c_char;
 
 use crate::ErrorCode;
+use eyre::WrapErr;
 
 
 pub mod prelude {
@@ -254,8 +255,8 @@ impl From<log::SetLoggerError> for IndyError {
 // TODO: Better error conversion
 // Cosmos SDK error. They don't expose Error interface.
 impl From<eyre::Report> for IndyError {
-    fn from(err: eyre::Report) -> IndyError {
-        IndyError::from_msg(IndyErrorKind::InvalidState, err.to_string())
+    fn from(err: eyre::Report) -> Self {
+        err.wrap_err(IndyErrorKind::InvalidState).into()
     }
 }
 
