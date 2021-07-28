@@ -111,8 +111,8 @@ pub mod tests {
     const RPC_ADDRESS: &'static str = "http://127.0.0.1:26657";
     const CHAIN_ID: &'static str = "verimnode";
 
-    // mod cheqd_pool {
-    //     use super::*;
+    mod cheqd_pool {
+        use super::*;
 
     //     #[test]
     //     pub fn add_pool() {
@@ -130,19 +130,19 @@ pub mod tests {
     //         tear_down();
     //     }
 
-    //     #[test]
-    //     pub fn get_config() {
-    //         let ctx = setup_with_wallet_and_verim_pool();
-    //         {
-    //             let cmd = get_config_command::new();
-    //             let mut params = CommandParams::new();
-    //             params.insert("alias", POOL.to_string());
-    //             cmd.execute(&ctx, &params).unwrap();
-    //         }
-    //         assert!(true);
+        #[test]
+        pub fn get_config() {
+            let ctx = setup_with_wallet_and_verim_pool();
+            {
+                let cmd = get_config_command::new();
+                let mut params = CommandParams::new();
+                params.insert("alias", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(true);
 
-    //         tear_down_with_wallet(&ctx);
-    //     }
+            tear_down_with_wallet(&ctx);
+        }
 
     //     #[test]
     //     pub fn abci_info() {
@@ -157,7 +157,7 @@ pub mod tests {
 
     //         tear_down_with_wallet(&ctx);
     //     }
-    // }
+    }
 
     pub fn create_pool(ctx: &CommandContext) {
         {
