@@ -114,52 +114,52 @@ pub mod tests {
     const KEY_ALIAS: &str = "key_alias";
     const MNEMONIC: &str = "mnemonic";
 
-    mod verim_keys {
-        use super::*;
+//     mod verim_keys {
+//         use super::*;
 
-        #[test]
-        pub fn add_random() {
-            let ctx = setup_with_wallet();
-            {
-                let cmd = add_random_command::new();
-                let mut params = CommandParams::new();
-                params.insert("alias", KEY_ALIAS.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            assert!(true);
+//         #[test]
+//         pub fn add_random() {
+//             let ctx = setup_with_wallet();
+//             {
+//                 let cmd = add_random_command::new();
+//                 let mut params = CommandParams::new();
+//                 params.insert("alias", KEY_ALIAS.to_string());
+//                 cmd.execute(&ctx, &params).unwrap();
+//             }
+//             assert!(true);
 
-            tear_down_with_wallet(&ctx);
-        }
+//             tear_down_with_wallet(&ctx);
+//         }
 
-        #[test]
-        pub fn add_from_mnemonic() {
-            let ctx = setup_with_wallet();
-            {
-                let cmd = add_from_mnemonic_command::new();
-                let mut params = CommandParams::new();
-                params.insert("alias", KEY_ALIAS.to_string());
-                params.insert("mnemonic", MNEMONIC.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            assert!(true);
+//         #[test]
+//         pub fn add_from_mnemonic() {
+//             let ctx = setup_with_wallet();
+//             {
+//                 let cmd = add_from_mnemonic_command::new();
+//                 let mut params = CommandParams::new();
+//                 params.insert("alias", KEY_ALIAS.to_string());
+//                 params.insert("mnemonic", MNEMONIC.to_string());
+//                 cmd.execute(&ctx, &params).unwrap();
+//             }
+//             assert!(true);
 
-            tear_down_with_wallet(&ctx);
-        }
+//             tear_down_with_wallet(&ctx);
+//         }
 
-        #[test]
-        pub fn get_info() {
-            let ctx = setup_with_wallet_and_verim_pool();
-            {
-                let cmd = get_info_command::new();
-                let mut params = CommandParams::new();
-                params.insert("alias", KEY_ALIAS.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            assert!(true);
+//         #[test]
+//         pub fn get_info() {
+//             let ctx = setup_with_wallet_and_verim_pool();
+//             {
+//                 let cmd = get_info_command::new();
+//                 let mut params = CommandParams::new();
+//                 params.insert("alias", KEY_ALIAS.to_string());
+//                 cmd.execute(&ctx, &params).unwrap();
+//             }
+//             assert!(true);
 
-            tear_down_with_wallet(&ctx);
-        }
-    }
+//             tear_down_with_wallet(&ctx);
+//         }
+//     }
 
     pub fn add(ctx: &CommandContext) {
         {
