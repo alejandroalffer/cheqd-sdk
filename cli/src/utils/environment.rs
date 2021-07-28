@@ -13,6 +13,13 @@ impl EnvironmentUtils {
         path
     }
 
+    pub fn cheqd_home_path() -> PathBuf {
+        let mut path = dirs::home_dir().unwrap_or(PathBuf::from("/home/indy"));
+        path.push(if cfg!(target_os = "ios") { "Documents/.indy_client" } else { ".indy_client" });
+        path.push("cheqd_pool");
+        path
+    }
+
     pub fn wallet_home_path() -> PathBuf {
         let mut path = EnvironmentUtils::indy_home_path();
         path.push("wallet");
