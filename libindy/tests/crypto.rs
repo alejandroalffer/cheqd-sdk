@@ -947,7 +947,7 @@ mod load {
 
 #[test] // aries-396
 fn crypto_unpack_data_with_and_without_padding_works() {
-    let setup_trustee = Setup::trustee();
+    let setup_trustee = Setup::local_trustee();
 
     let actual_message = "Hello World";
 

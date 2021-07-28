@@ -260,6 +260,44 @@ build-libindy-android-from-branch:
       - /^docker-.*/
       - main
 
+build-libindy-macos:
+  stage: build
+  tags:
+    - macos
+    - bigsur
+    - xcode-12-4
+  script:
+    - which rustup-init || brew install rustup-init
+    - echo | rustup-init --default-toolchain 1.50.0
+    - source $HOME/.cargo/env
+    - brew install libsodium
+    - brew install openssl@1.1
+    - brew install zeromq
+    - rm -rf ~/.indy_client || true
+    - cd libindy
+    - ulimit -n 2048
+    # run libindy test without default feature local_nodes_pool
+    - LIBRARY_PATH=./ cargo build --no-default-features --features fatal_warnings,only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
+    - LIBRARY_PATH=./ cargo test --no-run --no-default-features --features only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
+    - LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test --test did --no-default-features --features only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
+
+build-libindy-ios:
+  stage: build
+  tags:
+    - macos
+    - bigsur
+  script:
+    - which rustup-init || brew install rustup-init
+    - echo | rustup-init --default-toolchain 1.50.0
+    - source $HOME/.cargo/env
+    - cargo install cargo-lipo
+    - rustup target add x86_64-apple-ios
+    - brew install libsodium
+    - brew install openssl@1.1
+    - brew install zeromq
+    - rm -rf ~/.indy_client || true
+    - ci/ios-build.sh libindy x86_64-apple-ios
+
 
 ## - Jobs : Test - ##
 .test-libindy-java-wrapper:

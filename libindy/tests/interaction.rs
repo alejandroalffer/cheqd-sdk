@@ -1,3 +1,4 @@
+#![cfg(feature = "local_nodes_pool")]
 #[macro_use]
 extern crate derivative;
 
