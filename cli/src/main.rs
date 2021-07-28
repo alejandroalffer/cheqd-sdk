@@ -27,7 +27,7 @@ mod libindy;
 
 use crate::command_executor::CommandExecutor;
 
-use crate::commands::{common, did, ledger, pool, wallet, payment_address, verim_pool, verim_keys, verim_ledger};
+use crate::commands::{common, did, ledger, pool, wallet, payment_address, cheqd_pool, cheqd_keys, cheqd_ledger};
 use crate::utils::history;
 
 use linefeed::{Reader, ReadResult, Terminal, Signal};
@@ -196,19 +196,19 @@ fn build_executor() -> CommandExecutor {
         .add_command(payment_address::sign_command::new())
         .add_command(payment_address::verify_command::new())
         .finalize_group()
-        .add_group(verim_ledger::group::new())
-        .add_command(verim_ledger::query_account_command::new())
-        .add_command(verim_ledger::create_nym_command::new())
+        .add_group(cheqd_ledger::group::new())
+        .add_command(cheqd_ledger::query_account_command::new())
+        .add_command(cheqd_ledger::create_nym_command::new())
         .finalize_group()
-        .add_group(verim_pool::group::new())
-        .add_command(verim_pool::add_command::new())
-        .add_command(verim_pool::get_config_command::new())
-        .add_command(verim_pool::abci_info_command::new())
+        .add_group(cheqd_pool::group::new())
+        .add_command(cheqd_pool::add_command::new())
+        .add_command(cheqd_pool::get_config_command::new())
+        .add_command(cheqd_pool::abci_info_command::new())
         .finalize_group()
-        .add_group(verim_keys::group::new())
-        .add_command(verim_keys::add_random_command::new())
-        .add_command(verim_keys::add_from_mnemonic_command::new())
-        .add_command(verim_keys::get_info_command::new())
+        .add_group(cheqd_keys::group::new())
+        .add_command(cheqd_keys::add_random_command::new())
+        .add_command(cheqd_keys::add_from_mnemonic_command::new())
+        .add_command(cheqd_keys::get_info_command::new())
         .finalize_group()
         .finalize()
 }

@@ -4,9 +4,9 @@ extern crate chrono;
 use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use crate::commands::*;
 
-use crate::libindy::verim_ledger::VerimLedger;
-use crate::libindy::verim_pool::VerimPool;
-use crate::libindy::verim_keys::VerimKeys;
+use crate::libindy::cheqd_ledger::CheqdLedger;
+use crate::libindy::cheqd_pool::CheqdPool;
+use crate::libindy::cheqd_keys::CheqdKeys;
 
 use serde_json::{Value};
 
@@ -31,11 +31,11 @@ pub mod query_account_command {
         let address = get_str_param("address", params).map_err(error_err!())?;
         let pool_alias = get_str_param("pool_alias", params).map_err(error_err!())?;
 
-        let query = VerimLedger::build_query_account(address)
+        let query = CheqdLedger::build_query_account(address)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
-        let response = VerimPool::abci_query(pool_alias, &query)
+        let response = CheqdPool::abci_query(pool_alias, &query)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
-        let parsed_response = VerimLedger::parse_query_account_resp(&response)
+        let parsed_response = CheqdLedger::parse_query_account_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         println!("{}",parsed_response);
@@ -69,19 +69,19 @@ pub mod create_nym_command {
         let max_coin = get_str_param("max_coin", params).map_err(error_err!())?;
 
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
-        let key_info = VerimKeys::get_info(wallet_handle, key_alias)
+        let key_info = CheqdKeys::get_info(wallet_handle, key_alias)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let key_info_json: Value = serde_json::from_str(&key_info).unwrap();
         let account_id = key_info_json["account_id"].as_str().unwrap();
         let pubkey = key_info_json["pub_key"].as_str().unwrap();
 
-        let request = VerimLedger::build_msg_create_nym(&did, account_id, verkey, pool_alias, role)
+        let request = CheqdLedger::build_msg_create_nym(&did, account_id, verkey, pool_alias, role)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (account_number, account_sequence) = get_base_account_number_and_sequence(account_id, pool_alias)?;
 
-        let tx = VerimLedger::build_tx(
+        let tx = CheqdLedger::build_tx(
             pool_alias,
             pubkey,
             &request,
@@ -94,11 +94,11 @@ pub mod create_nym_command {
             "memo"
         ).map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let signed_tx = VerimKeys::sign(wallet_handle, key_alias, &tx)
+        let signed_tx = CheqdKeys::sign(wallet_handle, key_alias, &tx)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
-        let response = VerimPool::broadcast_tx_commit(pool_alias, &signed_tx)
+        let response = CheqdPool::broadcast_tx_commit(pool_alias, &signed_tx)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
-        let parsed_response = VerimLedger::parse_msg_create_nym_resp(&response)
+        let parsed_response = CheqdLedger::parse_msg_create_nym_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         println!("{}", parsed_response);
@@ -109,13 +109,13 @@ pub mod create_nym_command {
 }
 
 fn get_base_account_number_and_sequence(address: &str, pool_alias: &str) -> Result<(u64, u64), ()> {
-    let query = VerimLedger::build_query_account(address)
+    let query = CheqdLedger::build_query_account(address)
         .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-    let response = VerimPool::abci_query(pool_alias, &query)
+    let response = CheqdPool::abci_query(pool_alias, &query)
         .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-    let parsed_response = VerimLedger::parse_query_account_resp(&response)
+    let parsed_response = CheqdLedger::parse_query_account_resp(&response)
         .map_err(|err| handle_indy_error(err, None, None, None))?;
 
     let parsed_response: Value = match serde_json::from_str(&parsed_response) {

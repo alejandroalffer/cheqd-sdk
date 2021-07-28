@@ -4,7 +4,7 @@ extern crate chrono;
 use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use crate::commands::*;
 
-use crate::libindy::verim_keys::VerimKeys;
+use crate::libindy::cheqd_keys::CheqdKeys;
 
 pub mod group {
     use super::*;
@@ -27,7 +27,7 @@ pub mod add_random_command {
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
         let alias = get_str_param("alias", params).map_err(error_err!())?;
 
-        let res = match VerimKeys::add_random(wallet_handle, alias) {
+        let res = match CheqdKeys::add_random(wallet_handle, alias) {
             Ok(resp) => {
                 println_succ!("Random key has been added \"{}\".", resp);
                 Ok(())
@@ -60,7 +60,7 @@ pub mod add_from_mnemonic_command {
         let alias = get_str_param("alias", params).map_err(error_err!())?;
         let mnemonic = get_str_param("mnemonic", params).map_err(error_err!())?;
 
-        let res = match VerimKeys::add_from_mnemonic(wallet_handle, alias, mnemonic) {
+        let res = match CheqdKeys::add_from_mnemonic(wallet_handle, alias, mnemonic) {
             Ok(resp) => {
                 println_succ!("The Key has been added by mnemonic \"{}\" .", resp);
                 Ok(())
@@ -91,7 +91,7 @@ pub mod get_info_command {
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
         let alias = get_str_param("alias", params).map_err(error_err!())?;
 
-        let res = match VerimKeys::get_info(wallet_handle, alias) {
+        let res = match CheqdKeys::get_info(wallet_handle, alias) {
             Ok(resp) => {
                 println_succ!("Get follow info \"{}\" ", resp);
                 Ok(())
@@ -172,7 +172,7 @@ pub mod tests {
 
     pub fn get_key(ctx: &CommandContext) -> serde_json::Value {
         let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
-        let key = VerimKeys::get_info(wallet_handle, KEY_ALIAS).unwrap();
+        let key = CheqdKeys::get_info(wallet_handle, KEY_ALIAS).unwrap();
         serde_json::from_str(&key).unwrap()
     }
 }

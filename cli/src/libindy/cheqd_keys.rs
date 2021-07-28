@@ -3,9 +3,9 @@ use indy::future::Future;
 use indy::{WalletHandle};
 use indy::cheqd_keys;
 
-pub struct VerimKeys {}
+pub struct CheqdKeys {}
 
-impl VerimKeys {
+impl CheqdKeys {
     pub fn add_random(wallet_handle: WalletHandle, alias: &str) -> Result<String, IndyError> {
         cheqd_keys::add_random(wallet_handle, alias).wait()
     }

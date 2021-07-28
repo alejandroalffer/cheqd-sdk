@@ -2,13 +2,13 @@ use indy::IndyError;
 use indy::future::Future;
 use indy::cheqd_ledger;
 
-pub struct VerimLedger {}
+pub struct CheqdLedger {}
 
-impl VerimLedger {
+impl CheqdLedger {
     pub fn parse_query_account_resp(query_resp: &str) -> Result<String, IndyError> {
         cheqd_ledger::auth::parse_query_account_resp(query_resp).wait()
     }
-    //
+
     pub fn build_query_account(address: &str) -> Result<String, IndyError> {
         cheqd_ledger::auth::build_query_account(address).wait()
     }

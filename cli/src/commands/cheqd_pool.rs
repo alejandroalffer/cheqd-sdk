@@ -4,7 +4,7 @@ extern crate chrono;
 use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use crate::commands::*;
 
-use crate::libindy::verim_pool::VerimPool;
+use crate::libindy::cheqd_pool::CheqdPool;
 
 pub mod group {
     use super::*;
@@ -29,7 +29,7 @@ pub mod add_command {
         let rpc_address = get_str_param("rpc_address", params).map_err(error_err!())?;
         let chain_id = get_str_param("chain_id", params).map_err(error_err!())?;
 
-        let res = match VerimPool::add(alias, rpc_address, chain_id) {
+        let res = match CheqdPool::add(alias, rpc_address, chain_id) {
             Ok(pool) => {
                 println_succ!("Pool \"{}\" has been created \"{}\"", alias, pool);
                 Ok(())
@@ -58,7 +58,7 @@ pub mod get_config_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
         let alias = get_str_param("alias", params).map_err(error_err!())?;
 
-        let res = match VerimPool::get_config(alias) {
+        let res = match CheqdPool::get_config(alias) {
             Ok(config) => {
                 println_succ!("Pool config has been get \"{}\"", config);
                 Ok(())
@@ -87,7 +87,7 @@ pub mod abci_info_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
         let alias = get_str_param("alias", params).map_err(error_err!())?;
 
-        let res = match VerimPool::abci_info(alias) {
+        let res = match CheqdPool::abci_info(alias) {
             Ok(resp) => {
                 println_succ!("Abci-info request has been do \"{}\"", resp);
                 Ok(())
