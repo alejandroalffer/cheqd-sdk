@@ -2,9 +2,9 @@ use indy::IndyError;
 use indy::future::Future;
 use indy::cheqd_pool;
 
-pub struct VerimPool {}
+pub struct CheqdPool {}
 
-impl VerimPool {
+impl CheqdPool {
     pub fn add(alias: &str, rpc_address: &str, chain_id: &str) -> Result<String, IndyError> {
         cheqd_pool::add(alias, rpc_address, chain_id).wait()
     }

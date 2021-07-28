@@ -13,7 +13,7 @@ impl TestUtils {
     }
 
     pub fn cleanup_cheqd_home() {
-        let path = EnvironmentUtils::cheqd_home_path();
+        let path = EnvironmentUtils::cheqd_pool_home_path();
         if path.exists() {
             fs::remove_dir_all(path).unwrap();
         }
