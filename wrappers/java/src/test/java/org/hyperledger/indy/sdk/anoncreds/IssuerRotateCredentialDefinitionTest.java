@@ -31,7 +31,7 @@ public class IssuerRotateCredentialDefinitionTest extends AnoncredsIntegrationTe
 
 		Anoncreds.issuerRotateCredentialDefApply(localWallet, credDefId).get();
 
-		localWallet.closeWallet();
+		localWallet.closeWallet().get();
 		Wallet.deleteWallet(walletConfig, CREDENTIALS).get();
 	}
 }

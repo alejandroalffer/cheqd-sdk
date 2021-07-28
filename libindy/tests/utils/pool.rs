@@ -189,6 +189,7 @@ fn _dump_genesis_txns_to_cache(pool_name: &str, node_txns: &Vec<String>) -> Resu
     Ok(())
 }
 
+#[cfg(feature = "local_nodes_pool")]
 pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<PoolHandle, IndyError> {
     let txn_file_path = create_genesis_txn_file_for_test_pool(pool_name, None, None);
     let pool_config = pool_config_json(txn_file_path.as_path());
