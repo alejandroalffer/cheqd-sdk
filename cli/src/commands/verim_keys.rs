@@ -146,19 +146,19 @@ pub mod tests {
             tear_down_with_wallet(&ctx);
         }
 
-        #[test]
-        pub fn get_info() {
-            let ctx = setup_with_wallet_and_verim_pool();
-            {
-                let cmd = get_info_command::new();
-                let mut params = CommandParams::new();
-                params.insert("alias", KEY_ALIAS.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            assert!(true);
+        // #[test]
+        // pub fn get_info() {
+        //     let ctx = setup_with_wallet_and_verim_pool();
+        //     {
+        //         let cmd = get_info_command::new();
+        //         let mut params = CommandParams::new();
+        //         params.insert("alias", KEY_ALIAS.to_string());
+        //         cmd.execute(&ctx, &params).unwrap();
+        //     }
+        //     assert!(true);
 
-            tear_down_with_wallet(&ctx);
-        }
+        //     tear_down_with_wallet(&ctx);
+        // }
     }
 
     pub fn add(ctx: &CommandContext) {

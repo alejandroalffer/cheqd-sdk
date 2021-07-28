@@ -130,33 +130,33 @@ pub mod tests {
             tear_down();
         }
 
-        #[test]
-        pub fn get_config() {
-            let ctx = setup_with_wallet_and_verim_pool();
-            {
-                let cmd = get_config_command::new();
-                let mut params = CommandParams::new();
-                params.insert("alias", POOL.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            assert!(true);
+        // #[test]
+        // pub fn get_config() {
+        //     let ctx = setup_with_wallet_and_verim_pool();
+        //     {
+        //         let cmd = get_config_command::new();
+        //         let mut params = CommandParams::new();
+        //         params.insert("alias", POOL.to_string());
+        //         cmd.execute(&ctx, &params).unwrap();
+        //     }
+        //     assert!(true);
 
-            tear_down_with_wallet_and_verim_pool(&ctx);
-        }
+        //     tear_down_with_wallet_and_verim_pool(&ctx);
+        // }
 
-        #[test]
-        pub fn abci_info() {
-            let ctx = setup_with_wallet_and_verim_pool();
-            {
-                let cmd = abci_info_command::new();
-                let mut params = CommandParams::new();
-                params.insert("alias", POOL.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            assert!(true);
+        // #[test]
+        // pub fn abci_info() {
+        //     let ctx = setup_with_wallet_and_verim_pool();
+        //     {
+        //         let cmd = abci_info_command::new();
+        //         let mut params = CommandParams::new();
+        //         params.insert("alias", POOL.to_string());
+        //         cmd.execute(&ctx, &params).unwrap();
+        //     }
+        //     assert!(true);
 
-            tear_down_with_wallet_and_verim_pool(&ctx);
-        }
+        //     tear_down_with_wallet_and_verim_pool(&ctx);
+        // }
     }
 
     pub fn create_pool(ctx: &CommandContext) {
