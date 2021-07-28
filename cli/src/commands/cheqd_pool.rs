@@ -111,53 +111,53 @@ pub mod tests {
     const RPC_ADDRESS: &'static str = "http://127.0.0.1:26657";
     const CHAIN_ID: &'static str = "verimnode";
 
-    mod verim_pool {
-        use super::*;
+    // mod cheqd_pool {
+    //     use super::*;
 
-        #[test]
-        pub fn add_pool() {
-            let ctx = setup();
-            {
-                let cmd = add_command::new();
-                let mut params = CommandParams::new();
-                params.insert("rpc_address", RPC_ADDRESS.to_string());
-                params.insert("alias", POOL.to_string());
-                params.insert("chain_id", CHAIN_ID.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            assert!(true);
+    //     #[test]
+    //     pub fn add_pool() {
+    //         let ctx = setup();
+    //         {
+    //             let cmd = add_command::new();
+    //             let mut params = CommandParams::new();
+    //             params.insert("rpc_address", RPC_ADDRESS.to_string());
+    //             params.insert("alias", POOL.to_string());
+    //             params.insert("chain_id", CHAIN_ID.to_string());
+    //             cmd.execute(&ctx, &params).unwrap();
+    //         }
+    //         assert!(true);
 
-            tear_down();
-        }
+    //         tear_down();
+    //     }
 
-        #[test]
-        pub fn get_config() {
-            let ctx = setup_with_wallet_and_verim_pool();
-            {
-                let cmd = get_config_command::new();
-                let mut params = CommandParams::new();
-                params.insert("alias", POOL.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            assert!(true);
+    //     #[test]
+    //     pub fn get_config() {
+    //         let ctx = setup_with_wallet_and_verim_pool();
+    //         {
+    //             let cmd = get_config_command::new();
+    //             let mut params = CommandParams::new();
+    //             params.insert("alias", POOL.to_string());
+    //             cmd.execute(&ctx, &params).unwrap();
+    //         }
+    //         assert!(true);
 
-            tear_down_with_wallet(&ctx);
-        }
+    //         tear_down_with_wallet(&ctx);
+    //     }
 
-        #[test]
-        pub fn abci_info() {
-            let ctx = setup_with_wallet_and_verim_pool();
-            {
-                let cmd = abci_info_command::new();
-                let mut params = CommandParams::new();
-                params.insert("alias", POOL.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            assert!(true);
+    //     #[test]
+    //     pub fn abci_info() {
+    //         let ctx = setup_with_wallet_and_verim_pool();
+    //         {
+    //             let cmd = abci_info_command::new();
+    //             let mut params = CommandParams::new();
+    //             params.insert("alias", POOL.to_string());
+    //             cmd.execute(&ctx, &params).unwrap();
+    //         }
+    //         assert!(true);
 
-            tear_down_with_wallet(&ctx);
-        }
-    }
+    //         tear_down_with_wallet(&ctx);
+    //     }
+    // }
 
     pub fn create_pool(ctx: &CommandContext) {
         {
