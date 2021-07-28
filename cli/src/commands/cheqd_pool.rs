@@ -114,21 +114,21 @@ pub mod tests {
     mod cheqd_pool {
         use super::*;
 
-    //     #[test]
-    //     pub fn add_pool() {
-    //         let ctx = setup();
-    //         {
-    //             let cmd = add_command::new();
-    //             let mut params = CommandParams::new();
-    //             params.insert("rpc_address", RPC_ADDRESS.to_string());
-    //             params.insert("alias", POOL.to_string());
-    //             params.insert("chain_id", CHAIN_ID.to_string());
-    //             cmd.execute(&ctx, &params).unwrap();
-    //         }
-    //         assert!(true);
+        #[test]
+        pub fn add_pool() {
+            let ctx = setup();
+            {
+                let cmd = add_command::new();
+                let mut params = CommandParams::new();
+                params.insert("rpc_address", RPC_ADDRESS.to_string());
+                params.insert("alias", POOL.to_string());
+                params.insert("chain_id", CHAIN_ID.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(true);
 
-    //         tear_down();
-    //     }
+            tear_down();
+        }
 
         #[test]
         pub fn get_config() {
