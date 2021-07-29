@@ -53,13 +53,13 @@ pub mod create_nym_command {
                 .add_required_param("verkey", "Verification key")
                 .add_required_param("pool_alias", "Alias of pool")
                 .add_required_param("key_alias", "Alias of key")
-                .add_required_param("max_gas", "Max amount gas for transaction")
                 .add_required_param("max_coin", "Max amount coins for transaction")
+                .add_required_param("max_gas", "Max amount gas for transaction")
                 .add_required_param("denom", "Denom is currency for transaction")
                 .add_optional_param("timeout_height", "Height block of blockchain")
                 .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, ENDORSER, NETWORK_MONITOR or associated number, or empty in case of blacklisting NYM")
                 .add_optional_param("memo", "Memo is optional param. It has any arbitrary memo to be added to the transaction")
-                .add_example("cheqd-ledger create-nym did=my_did verkey=my_verkey pool_alias=my_pool max_coin=500 denom=cheq timeout_height=20000 memo=memo role=TRUSTEE")
+                .add_example("cheqd-ledger create-nym did=my_did verkey=my_verkey pool_alias=my_pool key_alias=my_key max_gas=10000000 max_coin=500 denom=cheq timeout_height=20000 role=TRUSTEE memo=memo")
                 .finalize()
     );
 
@@ -69,10 +69,10 @@ pub mod create_nym_command {
         let verkey = get_str_param("verkey", params).map_err(error_err!())?;
         let pool_alias = get_str_param("pool_alias", params).map_err(error_err!())?;
         let key_alias = get_str_param("key_alias", params).map_err(error_err!())?;
-        let max_gas = get_str_param("max_gas", params).map_err(error_err!())?
-            .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: max_gas must be integer"))?;
         let max_coin = get_str_param("max_coin", params).map_err(error_err!())?
             .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: max_coin must be integer"))?;
+        let max_gas = get_str_param("max_gas", params).map_err(error_err!())?
+            .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: max_gas must be integer"))?;
         let denom = get_str_param("denom", params).map_err(error_err!())?;
         let timeout_height = get_str_param("timeout_height", params).map_err(error_err!())?
             .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: timeout_height must be integer"))?;

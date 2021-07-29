@@ -19,7 +19,7 @@ pub mod add_command {
                 .add_required_param("alias", "Alias for pool.")
                 .add_required_param("rpc_address", "RPC address of pool. Nodes need of RPC pool`s address for connection.")
                 .add_required_param("chain_id", "It marks unique id of network where pool will be created.")
-                .add_example("cheqd-pool add alias=my_pool rpc_address=http://127.0.0.1:26657 chain_id=verim")
+                .add_example("cheqd-pool add alias=my_pool rpc_address=http://127.0.0.1:26657 chain_id=cheqdnode")
                 .finalize()
     );
 
@@ -109,7 +109,7 @@ pub mod tests {
     use crate::utils::environment::EnvironmentUtils;
 
     const POOL: &'static str = "pool";
-    const CHAIN_ID: &'static str = "verimnode";
+    const CHAIN_ID: &'static str = "cheqdnode";
 
     mod cheqd_pool {
         use super::*;
