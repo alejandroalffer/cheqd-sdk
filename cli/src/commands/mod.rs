@@ -424,12 +424,6 @@ fn setup_with_wallet_and_cheqd_pool() -> CommandContext {
 }
 
 #[cfg(test)]
-fn tear_down_with_wallet_and_cheqd_pool(ctx: &CommandContext) {
-    wallet::tests::close_and_delete_wallet(&ctx);
-    tear_down();
-}
-
-#[cfg(test)]
 fn tear_down_with_wallet_and_pool(ctx: &CommandContext) {
     wallet::tests::close_and_delete_wallet(&ctx);
     pool::tests::disconnect_and_delete_pool(&ctx);
