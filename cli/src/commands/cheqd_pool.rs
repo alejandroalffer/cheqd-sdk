@@ -132,6 +132,7 @@ pub mod tests {
         }
 
         #[test]
+        #[ignore]
         pub fn get_config() {
             let ctx = setup_with_wallet_and_cheqd_pool();
             {
