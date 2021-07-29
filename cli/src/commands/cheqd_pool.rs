@@ -9,7 +9,7 @@ use crate::libindy::cheqd_pool::CheqdPool;
 pub mod group {
     use super::*;
 
-    command_group!(CommandGroupMetadata::new("verim-pool", "Verim pool management commands"));
+    command_group!(CommandGroupMetadata::new("cheqd-pool", "Cheqd pool management commands"));
 }
 
 pub mod add_command {
@@ -19,7 +19,7 @@ pub mod add_command {
                 .add_required_param("alias", "Alias for pool.")
                 .add_required_param("rpc_address", "RPC address of pool. Nodes need of RPC pool`s address for connection.")
                 .add_required_param("chain_id", "It marks unique id of network where pool will be created.")
-                .add_example("verim-pool add alias=my_pool rpc_address=http://127.0.0.1:26657 chain_id=verim")
+                .add_example("cheqd-pool add alias=my_pool rpc_address=http://127.0.0.1:26657 chain_id=verim")
                 .finalize()
     );
 
@@ -50,7 +50,7 @@ pub mod get_config_command {
 
     command!(CommandMetadata::build("get-config", "Get pool`s config.")
                 .add_required_param("alias", "Alias for pool.")
-                .add_example("verim-pool get-config alias=my_pool")
+                .add_example("cheqd-pool get-config alias=my_pool")
                 .finalize()
     );
 
@@ -79,7 +79,7 @@ pub mod abci_info_command {
 
     command!(CommandMetadata::build("abci-info", "The request return the application's name, version and the hash of the last commit.")
                 .add_required_param("alias", "Alias for pool.")
-                .add_example("verim-pool abci-query alias=my_pool")
+                .add_example("cheqd-pool abci-query alias=my_pool")
                 .finalize()
     );
 
@@ -133,7 +133,7 @@ pub mod tests {
 
         #[test]
         pub fn get_config() {
-            let ctx = setup_with_wallet_and_verim_pool();
+            let ctx = setup_with_wallet_and_cheqd_pool();
             {
                 let cmd = get_config_command::new();
                 let mut params = CommandParams::new();
@@ -147,7 +147,7 @@ pub mod tests {
 
         #[test]
         pub fn abci_info() {
-            let ctx = setup_with_wallet_and_verim_pool();
+            let ctx = setup_with_wallet_and_cheqd_pool();
             {
                 let cmd = abci_info_command::new();
                 let mut params = CommandParams::new();
