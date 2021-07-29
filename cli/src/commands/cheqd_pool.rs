@@ -106,22 +106,21 @@ pub mod abci_info_command {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::utils::environment::EnvironmentUtils;
 
     const POOL: &'static str = "pool";
-    const RPC_ADDRESS: &'static str = "http://127.0.0.1:26657";
     const CHAIN_ID: &'static str = "verimnode";
 
     mod cheqd_pool {
         use super::*;
 
         #[test]
-        #[ignore]
         pub fn add_pool() {
             let ctx = setup();
             {
                 let cmd = add_command::new();
                 let mut params = CommandParams::new();
-                params.insert("rpc_address", RPC_ADDRESS.to_string());
+                params.insert("rpc_address", EnvironmentUtils::cheqd_test_pool_ip());
                 params.insert("alias", POOL.to_string());
                 params.insert("chain_id", CHAIN_ID.to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -132,7 +131,6 @@ pub mod tests {
         }
 
         #[test]
-        #[ignore]
         pub fn get_config() {
             let ctx = setup_with_wallet_and_cheqd_pool();
             {
@@ -165,7 +163,7 @@ pub mod tests {
         {
             let cmd = add_command::new();
             let mut params = CommandParams::new();
-            params.insert("rpc_address", RPC_ADDRESS.to_string());
+            params.insert("rpc_address", EnvironmentUtils::cheqd_test_pool_ip());
             params.insert("alias", POOL.to_string());
             params.insert("chain_id", CHAIN_ID.to_string());
             cmd.execute(&ctx, &params).unwrap();

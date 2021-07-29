@@ -65,6 +65,10 @@ impl EnvironmentUtils {
     pub fn test_pool_ip() -> String {
         env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string())
     }
+
+    pub fn cheqd_test_pool_ip() -> String {
+        env::var("CHEQD_TEST_POOL_IP").unwrap_or("http://localhost:26657".to_string())
+    }
 }
 
 #[cfg(test)]

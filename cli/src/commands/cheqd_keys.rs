@@ -118,7 +118,6 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[ignore]
         pub fn add_random() {
             let ctx = setup_with_wallet();
             {
@@ -133,7 +132,6 @@ pub mod tests {
         }
 
         #[test]
-        #[ignore]
         pub fn add_from_mnemonic() {
             let ctx = setup_with_wallet();
             {
@@ -149,7 +147,6 @@ pub mod tests {
         }
 
         #[test]
-        #[ignore]
         pub fn get_info() {
             let ctx = setup_with_wallet_and_cheqd_pool();
             {
