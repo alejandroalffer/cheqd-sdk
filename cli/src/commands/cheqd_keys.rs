@@ -9,7 +9,7 @@ use crate::libindy::cheqd_keys::CheqdKeys;
 pub mod group {
     use super::*;
 
-    command_group!(CommandGroupMetadata::new("verim-keys", "Verim keys management commands"));
+    command_group!(CommandGroupMetadata::new("cheqd-keys", "Cheqd keys management commands"));
 }
 
 pub mod add_random_command {
@@ -17,7 +17,7 @@ pub mod add_random_command {
 
     command!(CommandMetadata::build("add-random", "Add random key to wallet.")
                 .add_required_param("alias", "Alias of key.")
-                .add_example("verim-keys add-random alias=my_key")
+                .add_example("cheqd-keys add-random alias=my_key")
                 .finalize()
     );
 
@@ -49,7 +49,7 @@ pub mod add_from_mnemonic_command {
     command!(CommandMetadata::build("add-from-mnemonic", "Add key by mnemonic to wallet.")
                 .add_required_param("alias", "Alias of key.")
                 .add_required_param("mnemonic", "Mnemonic phrase for creation key.")
-                .add_example("verim-keys add-from-mnemonic alias=my_key mnemonic=my_mnemonic")
+                .add_example("cheqd-keys add-from-mnemonic alias=my_key mnemonic=my_mnemonic")
                 .finalize()
     );
 
@@ -81,7 +81,7 @@ pub mod get_info_command {
 
     command!(CommandMetadata::build("get-info", "Get info about key.")
                 .add_required_param("alias", "Alias of key.")
-                .add_example("verim-keys get-info alias=my_key")
+                .add_example("cheqd-keys get-info alias=my_key")
                 .finalize()
     );
 
@@ -118,6 +118,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[ignore]
         pub fn add_random() {
             let ctx = setup_with_wallet();
             {
@@ -132,6 +133,7 @@ pub mod tests {
         }
 
         #[test]
+        #[ignore]
         pub fn add_from_mnemonic() {
             let ctx = setup_with_wallet();
             {
@@ -147,8 +149,9 @@ pub mod tests {
         }
 
         #[test]
+        #[ignore]
         pub fn get_info() {
-            let ctx = setup_with_wallet_and_verim_pool();
+            let ctx = setup_with_wallet_and_cheqd_pool();
             {
                 let cmd = get_info_command::new();
                 let mut params = CommandParams::new();

@@ -13,16 +13,16 @@ use serde_json::{Value};
 pub mod group {
     use super::*;
 
-    command_group!(CommandGroupMetadata::new("verim-ledger", "Verim ledger management commands"));
+    command_group!(CommandGroupMetadata::new("cheqd-ledger", "Cheqd ledger management commands"));
 }
 
 pub mod query_account_command {
     use super::*;
 
-    command!(CommandMetadata::build("query-account", "Query account for verim.")
+    command!(CommandMetadata::build("query-account", "Query account for cheqd.")
                 .add_required_param("address", "Address of account")
                 .add_required_param("pool_alias", "Alias of pool")
-                .add_example("verim-ledger query-account address=sov pool_alias=my_pool")
+                .add_example("cheqd-ledger query-account address=sov pool_alias=my_pool")
                 .finalize()
     );
 
