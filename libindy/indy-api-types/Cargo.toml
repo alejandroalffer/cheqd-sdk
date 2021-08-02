@@ -27,7 +27,7 @@ cosmos_sdk = { version = "0.1.1", features = ["rpc"] }
 ursa = { version = "0.3.6", optional = true }
 eyre = { version = "0.6.5" } # Cosmos SDK error interface. SDK doesn't expose it.
 k256 = { version = "0.7", features = ["ecdsa-core", "ecdsa"] }
-surf = "2.2.0"
+reqwest = "0.11.4"
 anyhow = "1.0.40"
 prost = "0.7.0"
 
