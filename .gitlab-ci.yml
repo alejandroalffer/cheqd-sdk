@@ -52,6 +52,8 @@ variables:
   image:
     name: gcr.io/kaniko-project/executor:debug-v0.16.0
     entrypoint: [""]
+  variables:
+    DOCKER_CONTEXT: "${CI_PROJECT_DIR}"
   script:
     - if [ "$CI_COMMIT_REF_SLUG" == 'main' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
     - echo "${KANIKO_ARGS}"
@@ -90,7 +92,7 @@ variables:
         Tw6APXtEnjfD2H8HOpOX/7ef4gWK0O1Q7A==
         -----END CERTIFICATE-----" >> /kaniko/ssl/certs/ca-certificates.crt
     - |
-        /kaniko/executor ${KANIKO_ARGS} --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/${DOCKERFILE_PATH} \
+        /kaniko/executor ${KANIKO_ARGS} --context ${DOCKER_CONTEXT} --dockerfile $CI_PROJECT_DIR/${DOCKERFILE_PATH} \
         --destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:${CI_COMMIT_REF_SLUG}
 
 
@@ -127,6 +129,28 @@ dockerbuild-libindy-ubuntu18:
     changes:
       - .gitlab-ci.yml
       - libindy/ci/ubuntu18.dockerfile
+
+dockerbuild-libindy-android:
+  stage: dockerbuild
+  extends: .kaniko_large
+  dependencies:
+    - dockerbuild-libindy-ubuntu16
+  variables:
+    DOCKERFILE_PATH: libindy/ci/android.dockerfile
+    DOCKER_IMAGE_NAME: libindy-android
+    DOCKER_CONTEXT: "${CI_PROJECT_DIR}/libindy/ci/"
+  only:
+    refs:
+      - main
+      - stable
+      - /^docker-.*/
+    changes:
+      - .gitlab-ci.yml
+      - libindy/ci/ubuntu.dockerfile
+      - libindy/ci/android.dockerfile
+  before_script:
+    - sed -i "s|^FROM.*|FROM ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}|g" libindy/ci/android.dockerfile
+    - grep '^FROM' libindy/ci/android.dockerfile
 
 
 ## - Jobs : Build - ##
@@ -235,6 +259,70 @@ build-libindy-ubuntu18-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
+
+.build-libindy-android:
+  extends: .tags_compute_xlarge
+  stage: build  # TODO separate build step
+  services:
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
+      alias: pool_network
+  script:
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - cd libindy && ./android.test.sh x86
+
+build-libindy-android-from-latest:
+  extends: .build-libindy-android
+  image: ${CI_REGISTRY_IMAGE}/libindy-android:latest
+  except:
+    refs:
+      - /^docker-.*/
+      - main
+
+build-libindy-android-from-branch:
+  extends: .build-libindy-android
+  image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
+  only:
+    refs:
+      - /^docker-.*/
+      - main
+
+build-libindy-macos:
+  stage: build
+  tags:
+    - macos
+    - bigsur
+    - xcode-12-4
+  script:
+    - which rustup-init || brew install rustup-init
+    - echo | rustup-init --default-toolchain 1.50.0
+    - source $HOME/.cargo/env
+    - brew install libsodium
+    - brew install openssl@1.1
+    - brew install zeromq
+    - rm -rf ~/.indy_client || true
+    - cd libindy
+    - ulimit -n 2048
+    # run libindy test without default feature local_nodes_pool
+    - LIBRARY_PATH=./ cargo build --no-default-features --features fatal_warnings,only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
+    - LIBRARY_PATH=./ cargo test --no-run --no-default-features --features only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
+    - LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test --test did --no-default-features --features only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
+
+build-libindy-ios:
+  stage: build
+  tags:
+    - macos
+    - bigsur
+  script:
+    - which rustup-init || brew install rustup-init
+    - echo | rustup-init --default-toolchain 1.50.0
+    - source $HOME/.cargo/env
+    - cargo install cargo-lipo
+    - rustup target add x86_64-apple-ios
+    - brew install libsodium
+    - brew install openssl@1.1
+    - brew install zeromq
+    - rm -rf ~/.indy_client || true
+    - ci/ios-build.sh libindy x86_64-apple-ios
 
 
 ## - Jobs : Test - ##

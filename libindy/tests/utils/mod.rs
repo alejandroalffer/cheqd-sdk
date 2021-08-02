@@ -116,6 +116,7 @@ impl Setup {
         }
     }
 
+    #[cfg(feature = "local_nodes_pool")]
     pub fn pool() -> Setup {
         let name = setup();
         let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
@@ -129,6 +130,7 @@ impl Setup {
         }
     }
 
+    #[cfg(feature = "local_nodes_pool")]
     pub fn wallet_and_pool() -> Setup {
         let name = setup();
         let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
@@ -143,6 +145,7 @@ impl Setup {
         }
     }
 
+    #[cfg(feature = "local_nodes_pool")]
     pub fn trustee() -> Setup {
         let mut setup = Setup::wallet_and_pool();
         let (did, verkey) =
@@ -153,6 +156,7 @@ impl Setup {
         setup
     }
 
+    #[cfg(feature = "local_nodes_pool")]
     pub fn trustee_fully_qualified() -> Setup {
         let mut setup = Setup::wallet_and_pool();
         let (did, verkey) =
@@ -163,6 +167,7 @@ impl Setup {
         setup
     }
 
+    #[cfg(feature = "local_nodes_pool")]
     pub fn steward() -> Setup {
         let mut setup = Setup::wallet_and_pool();
         let (did, verkey) =
@@ -173,6 +178,7 @@ impl Setup {
         setup
     }
 
+    #[cfg(feature = "local_nodes_pool")]
     pub fn endorser() -> Setup {
         let mut setup = Setup::wallet_and_pool();
         let (did, verkey) = did::create_store_and_publish_did(
@@ -187,6 +193,7 @@ impl Setup {
         setup
     }
 
+    #[cfg(feature = "local_nodes_pool")]
     pub fn new_identity() -> Setup {
         let mut setup = Setup::wallet_and_pool();
         let (did, verkey) = did::create_store_and_publish_did(
@@ -205,6 +212,20 @@ impl Setup {
         let name = setup();
         let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
         let (did, verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+        Setup {
+            name,
+            wallet_config,
+            wallet_handle,
+            pool_handle: 0,
+            did,
+            verkey,
+        }
+    }
+
+    pub fn local_trustee() -> Setup {
+        let name = setup();
+        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
+        let (did, verkey) = did::create_and_store_my_did(wallet_handle, Some(constants::TRUSTEE_SEED)).unwrap();
         Setup {
             name,
             wallet_config,
