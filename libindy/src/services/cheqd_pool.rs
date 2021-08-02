@@ -131,7 +131,7 @@ impl CheqdPoolService {
     ) -> IndyResult<rpc::endpoint::abci_query::Response> {
         let pool = self.get_config(pool_alias).await?;
         let resp = self.send_req(req, pool.rpc_address.as_str()).await?;
-        self.check_proofs(req, resp);
+        Ok(self.check_proofs(req.clone(), resp.clone()))
     }
 
     pub(crate) async fn abci_info(
@@ -165,13 +165,11 @@ impl CheqdPoolService {
         Ok(resp)
     }
 
-
-
     async fn check_proofs(
         &self,
         req: rpc::endpoint::abci_query::Request,
         result: rpc::endpoint::abci_query::Response,
-    ) -> IndyResult<bool> {
+    ) -> IndyResult<rpc::endpoint::abci_query::Response> {
 
         //////////////////////////// 0st proof
 
@@ -196,7 +194,13 @@ impl CheqdPoolService {
         {
             ex.value
         } else {
-            panic!()
+            return Err(IndyError::from_msg(
+                IndyErrorKind::InvalidStructure,
+                format!(
+                    "proof_1_data_decoded: error log: {}",
+                    serde_json::to_string(&proof_1_data_decoded.proof)?
+                ),
+            ));
         };
 
         let proof_0_is_ok = ics23::verify_membership(
@@ -215,7 +219,13 @@ impl CheqdPoolService {
         {
             ics23::calculate_existence_root(&ex).unwrap()
         } else {
-            panic!()
+            return Err(IndyError::from_msg(
+                IndyErrorKind::InvalidStructure,
+                format!(
+                    "proof_1_data_decoded: error log: {}",
+                    serde_json::to_string(&proof_1_data_decoded.proof)?
+                ),
+            ));
         };
 
         let proof_1_is_ok = ics23::verify_membership(
@@ -226,7 +236,7 @@ impl CheqdPoolService {
             &proof_0_root,
         );
 
-        Ok()
+        Ok(result)
     }
 
 }
