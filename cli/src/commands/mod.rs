@@ -13,7 +13,7 @@ pub mod cheqd_keys;
 
 use self::regex::Regex;
 
-use crate::command_executor::{CommandContext, CommandParams};
+use crate::command_executor::{CommandContext, CommandParams, ActivePool, IndyPool, CheqdPool};
 use indy::{ErrorCode, IndyError, WalletHandle, PoolHandle};
 
 use std;
@@ -253,46 +253,66 @@ pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(WalletHandle, Stri
     }
 }
 
-pub fn ensure_connected_pool_handle(ctx: &CommandContext) -> Result<PoolHandle, ()> {
-    match ctx.get_int_value("CONNECTED_POOL_HANDLE") {
-        Some(pool_handle) => Ok(pool_handle),
-        None => {
-            println_err!("There is no opened pool now");
-            Err(())
-        }
-    }
-}
-
-pub fn ensure_connected_pool(ctx: &CommandContext) -> Result<(PoolHandle, String), ()> {
-    let handle = ctx.get_int_value("CONNECTED_POOL_HANDLE");
-    let name = ctx.get_string_value("CONNECTED_POOL_NAME");
-
-    match (handle, name) {
-        (Some(handle), Some(name)) => Ok((handle, name)),
-        _ => {
-            println_err!("There is no opened pool now");
-            Err(())
-        }
-    }
-}
-
-pub fn get_connected_pool(ctx: &CommandContext) -> Option<(PoolHandle, String)> {
-    let handle = ctx.get_int_value("CONNECTED_POOL_HANDLE");
-    let name = ctx.get_string_value("CONNECTED_POOL_NAME");
-
-    if let (Some(handle), Some(name)) = (handle, name) {
-        Some((handle, name))
+pub fn get_indy_connected_pool(ctx: &CommandContext) -> Option<(PoolHandle, String)> {
+    if let (Indy(pool)) = ctx.get_active_pool() {
+        Some((pool.handle, pool.name))
     } else {
         None
     }
 }
 
-pub fn set_connected_pool(ctx: &CommandContext, value: Option<(PoolHandle, String)>) {
-    ctx.set_int_value("CONNECTED_POOL_HANDLE", value.as_ref().map(|value| value.0.to_owned()));
-    ctx.set_string_value("CONNECTED_POOL_NAME", value.as_ref().map(|value| value.1.to_owned()));
-    ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
+pub fn ensure_indy_connected_pool(ctx: &CommandContext) -> Result<(PoolHandle, String), ()> {
+    match get_indy_connected_pool(ctx) {
+        Some((handle, name)) => Ok((handle, name)),
+        _ => {
+            println_err!("There is no opened indy pool now");
+            Err(())
+        }
+    }
 }
 
+pub fn ensure_indy_connected_pool_handle(ctx: &CommandContext) -> Result<PoolHandle, ()> {
+    match get_indy_connected_pool(ctx) {
+        Some((handle, _name)) => Ok(handle),
+        _ => {
+            println_err!("There is no opened indy pool now");
+            Err(())
+        }
+    }
+}
+
+pub fn get_cheqd_connected_pool(ctx: &CommandContext) -> Option<(String)> {
+    if let (ActivePool::Cheqd(pool)) = ctx.get_active_pool() {
+        Some(pool.name)
+    } else {
+        None
+    }
+}
+
+pub fn ensure_cheqd_connected_pool(ctx: &CommandContext) -> Result<(String), ()> {
+    match get_cheqd_connected_pool(ctx) {
+        Some(name) => Ok(name),
+        _ => {
+            println_err!("There is no opened cheqd pool now");
+            Err(())
+        }
+    }
+}
+
+pub fn set_indy_active_pool(ctx: &CommandContext, name: String, handle: i32) {
+    ctx.set_active_pool(ActivePool::Indy(IndyPool::new(name.clone(), handle)));
+    ctx.set_sub_prompt(1, Some(format!("indy_pool({})", name)));
+}
+
+pub fn set_cheqd_active_pool(ctx: &CommandContext, name: String) {
+    ctx.set_active_pool(ActivePool::Cheqd(CheqdPool::new(name.clone())));
+    ctx.set_sub_prompt(1, Some(format!("cheqd_pool({})", name)));
+}
+
+pub fn set_none_active_pool(ctx: &CommandContext) {
+    ctx.set_active_pool(ActivePool::None);
+    ctx.set_sub_prompt(1, None);
+}
 
 pub fn set_transaction(ctx: &CommandContext, request: Option<String>) {
     ctx.set_string_value("LEDGER_TRANSACTION", request.clone());
@@ -369,7 +389,7 @@ pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> 
     const SUBMIT_RETRY_CNT: usize = 3;
     const SUBMIT_TIMEOUT_SEC: u64 = 2;
 
-    let pool_handle = ensure_connected_pool_handle(ctx).unwrap();
+    let pool_handle = ensure_indy_connected_pool_handle(ctx).unwrap();
 
     for _ in 0..SUBMIT_RETRY_CNT {
         let response = Ledger::submit_request(pool_handle, request).unwrap();
@@ -384,6 +404,7 @@ pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> 
 
 #[cfg(test)]
 use crate::utils::test::TestUtils;
+use crate::command_executor::ActivePool::Indy;
 
 #[cfg(test)]
 fn setup() -> CommandContext {

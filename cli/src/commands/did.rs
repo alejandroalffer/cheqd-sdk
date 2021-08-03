@@ -239,7 +239,7 @@ pub mod rotate_key_command {
         let resume = get_opt_bool_param("resume", params).map_err(error_err!())?.unwrap_or(false);
 
         let did = ensure_active_did(&ctx)?;
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (pool_handle, pool_name) = ensure_indy_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let (new_verkey, update_ledger) = if resume {
@@ -832,7 +832,7 @@ pub mod tests {
 
             let wallet_handle = create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
-            let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
+            let pool_handle = ensure_indy_connected_pool_handle(&ctx).unwrap();
 
             new_did(&ctx, SEED_TRUSTEE);
 

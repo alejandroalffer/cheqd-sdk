@@ -176,6 +176,36 @@ impl CommandMetadataBuilder {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct IndyPool {
+    pub name: String,
+    pub handle: i32,
+}
+
+impl IndyPool {
+    pub fn new(name: String, handle: i32) -> Self {
+        IndyPool { name, handle }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CheqdPool {
+    pub name: String
+}
+
+impl CheqdPool {
+    pub fn new(name: String) -> Self {
+        CheqdPool { name }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ActivePool {
+    None,
+    Indy(IndyPool),
+    Cheqd(CheqdPool),
+}
+
 #[derive(Debug)]
 pub struct CommandContext {
     main_prompt: RefCell<String>,
@@ -184,6 +214,7 @@ pub struct CommandContext {
     int_values: RefCell<HashMap<&'static str, i32>>,
     uint_values: RefCell<HashMap<&'static str, u64>>,
     string_values: RefCell<HashMap<&'static str, String>>,
+    active_pool: RefCell<ActivePool>,
     plugins: RefCell<HashMap<String, libloading::Library>>,
     taa_acceptance_mechanism: RefCell<String>,
     is_batch_mode: RefCell<bool>,
@@ -198,6 +229,7 @@ impl CommandContext {
             int_values: RefCell::new(HashMap::new()),
             uint_values: RefCell::new(HashMap::new()),
             string_values: RefCell::new(HashMap::new()),
+            active_pool: RefCell::new(ActivePool::None),
             plugins: RefCell::new(HashMap::new()),
             taa_acceptance_mechanism: RefCell::new(String::new()),
             is_batch_mode: RefCell::new(false),
@@ -271,6 +303,14 @@ impl CommandContext {
 
     pub fn get_string_value(&self, key: &'static str) -> Option<String> {
         self.string_values.borrow().get(key).map(String::to_owned)
+    }
+
+    pub fn set_active_pool(&self, value: ActivePool) {
+        *self.active_pool.borrow_mut() = value;
+    }
+
+    pub fn get_active_pool(&self, ) -> ActivePool {
+        self.active_pool.borrow().clone()
     }
 
     pub fn add_plugin(&self, plugin_name: &str, plugin: libloading::Library) {

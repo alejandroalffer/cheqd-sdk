@@ -202,6 +202,8 @@ fn build_executor() -> CommandExecutor {
         .finalize_group()
         .add_group(cheqd_pool::group::new())
         .add_command(cheqd_pool::add_command::new())
+        .add_command(cheqd_pool::open_command::new())
+        .add_command(cheqd_pool::close_command::new())
         .add_command(cheqd_pool::get_config_command::new())
         .add_command(cheqd_pool::abci_info_command::new())
         .finalize_group()

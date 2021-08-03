@@ -4,7 +4,7 @@ extern crate chrono;
 use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use crate::commands::*;
 
-use crate::libindy::cheqd_pool::CheqdPool;
+use crate::libindy::cheqd_pool::CheqdPool as CheqdPoolLibindy;
 
 pub mod group {
     use super::*;
@@ -29,7 +29,7 @@ pub mod add_command {
         let rpc_address = get_str_param("rpc_address", params).map_err(error_err!())?;
         let chain_id = get_str_param("chain_id", params).map_err(error_err!())?;
 
-        let res = match CheqdPool::add(alias, rpc_address, chain_id) {
+        let res = match CheqdPoolLibindy::add(alias, rpc_address, chain_id) {
             Ok(pool) => {
                 println_succ!("Pool \"{}\" has been created \"{}\"", alias, pool);
                 Ok(())
@@ -42,6 +42,79 @@ pub mod add_command {
 
         trace!("execute << {:?}", res);
         res
+    }
+}
+
+pub mod open_command {
+    use super::*;
+    use crate::libindy::pool::Pool;
+
+    command!(CommandMetadata::build("open", "Open pool.")
+                .add_required_param("alias", "Alias for pool.")
+                .add_example("cheqd-pool open alias=my_pool")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let alias = get_str_param("alias", params).map_err(error_err!())?;
+
+        match ctx.get_active_pool() {
+            ActivePool::None | ActivePool::Cheqd(_) => Ok(()),   // We can safely set new pool name
+            _ => {
+                println_err!("Pool of other type is open. Please close it first.");
+                Err(())
+            }
+        }?;
+
+        // Check for existence
+        match CheqdPoolLibindy::get_config(alias) {
+            Ok(_handle) => {
+                set_cheqd_active_pool(ctx, alias.to_string());
+                println_succ!("Pool \"{}\" has been opened", alias);
+                Ok(())
+            }
+            Err(err) => {
+                handle_indy_error(err, None, Some(alias), None);
+                Err(())
+            }
+        };
+
+        trace!("execute <<");
+        Ok(())
+    }
+}
+
+pub mod close_command {
+    use super::*;
+    use crate::libindy::pool::Pool;
+
+    command!(CommandMetadata::build("close", "Close pool.")
+                .add_example("cheqd-pool close")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        match ctx.get_active_pool() {
+            ActivePool::Cheqd(_) => {
+                set_none_active_pool(ctx);
+                Ok(())
+            }
+            ActivePool::None => {
+                println_err!("There is no opened pool.");
+                Err(())
+            },
+            _ => {
+                println_err!("Pool of other type is open. Please close it using corresponding command.");
+                Err(())
+            }
+        }?;
+
+        trace!("execute <<");
+        Ok(())
     }
 }
 
@@ -58,7 +131,7 @@ pub mod get_config_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
         let alias = get_str_param("alias", params).map_err(error_err!())?;
 
-        let res = match CheqdPool::get_config(alias) {
+        let res = match CheqdPoolLibindy::get_config(alias) {
             Ok(config) => {
                 println_succ!("Pool config has been get \"{}\"", config);
                 Ok(())
@@ -87,7 +160,7 @@ pub mod abci_info_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
         let alias = get_str_param("alias", params).map_err(error_err!())?;
 
-        let res = match CheqdPool::abci_info(alias) {
+        let res = match CheqdPoolLibindy::abci_info(alias) {
             Ok(resp) => {
                 println_succ!("Abci-info request has been do \"{}\"", resp);
                 Ok(())
@@ -128,6 +201,20 @@ pub mod tests {
             assert!(true);
 
             tear_down();
+        }
+
+        #[test]
+        pub fn open_pool() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            {
+                let cmd = open_command::new();
+                let mut params = CommandParams::new();
+                params.insert("alias", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
