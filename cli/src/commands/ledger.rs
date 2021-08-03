@@ -74,7 +74,7 @@ macro_rules! send_read_request {
 macro_rules! send_request {
     ($ctx:expr, $params:expr, $request:expr, $wallet_name:expr, $submitter_did:expr, $send:expr) => ({
         if $send {
-            let (pool_handle, pool_name) = ensure_connected_pool($ctx)?;
+            let (pool_handle, pool_name) = ensure_indy_connected_pool($ctx)?;
             let response_json = Ledger::submit_request(pool_handle, $request)
                 .map_err(|err| handle_indy_error(err, $submitter_did, Some(&pool_name), $wallet_name))?;
 
@@ -474,7 +474,7 @@ pub mod get_validator_info_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let pool_handle = ensure_indy_connected_pool_handle(&ctx)?;
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -848,7 +848,7 @@ pub mod pool_restart_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (pool_handle, pool_name) = ensure_indy_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -1017,7 +1017,7 @@ pub mod custom_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (pool_handle, pool_name) = ensure_indy_connected_pool(&ctx)?;
 
         let txn = get_str_param("txn", params).map_err(error_err!())?;
         let sign = get_opt_bool_param("sign", params).map_err(error_err!())?.unwrap_or(false);
@@ -2311,7 +2311,7 @@ struct Output {
 }
 
 fn get_payment_sources(ctx: &CommandContext, payment_address: &str) -> Result<Vec<Source>, ()> {
-    let (pool_handle, pool_name) = ensure_connected_pool(ctx)?;
+    let (pool_handle, pool_name) = ensure_indy_connected_pool(ctx)?;
     let (wallet_handle, wallet_name) = ensure_opened_wallet(ctx)?;
     let submitter_did = get_active_did(&ctx);
 
@@ -5104,7 +5104,7 @@ pub mod tests {
     }
 
     pub fn send_schema(ctx: &CommandContext, did: &str) -> String {
-        let (pool_handle, _) = get_connected_pool(ctx).unwrap();
+        let (pool_handle, _) = get_indy_connected_pool(ctx).unwrap();
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
         let schema_data = r#"{"id":"1", "name":"cli_gvt","version":"1.0","attrNames":["name"],"ver":"1.0"}"#;
         let schema_request = Ledger::build_schema_request(&did, schema_data).unwrap();
