@@ -47,7 +47,6 @@ pub mod add_command {
 
 pub mod open_command {
     use super::*;
-    use crate::libindy::pool::Pool;
 
     command!(CommandMetadata::build("open", "Open pool.")
                 .add_required_param("alias", "Alias for pool.")
@@ -88,7 +87,6 @@ pub mod open_command {
 
 pub mod close_command {
     use super::*;
-    use crate::libindy::pool::Pool;
 
     command!(CommandMetadata::build("close", "Close pool.")
                 .add_example("cheqd-pool close")

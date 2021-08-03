@@ -254,7 +254,7 @@ pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(WalletHandle, Stri
 }
 
 pub fn get_indy_connected_pool(ctx: &CommandContext) -> Option<(PoolHandle, String)> {
-    if let (Indy(pool)) = ctx.get_active_pool() {
+    if let Indy(pool) = ctx.get_active_pool() {
         Some((pool.handle, pool.name))
     } else {
         None
@@ -281,15 +281,15 @@ pub fn ensure_indy_connected_pool_handle(ctx: &CommandContext) -> Result<PoolHan
     }
 }
 
-pub fn get_cheqd_connected_pool(ctx: &CommandContext) -> Option<(String)> {
-    if let (ActivePool::Cheqd(pool)) = ctx.get_active_pool() {
+pub fn get_cheqd_connected_pool(ctx: &CommandContext) -> Option<String> {
+    if let ActivePool::Cheqd(pool) = ctx.get_active_pool() {
         Some(pool.name)
     } else {
         None
     }
 }
 
-pub fn ensure_cheqd_connected_pool(ctx: &CommandContext) -> Result<(String), ()> {
+pub fn ensure_cheqd_connected_pool(ctx: &CommandContext) -> Result<String, ()> {
     match get_cheqd_connected_pool(ctx) {
         Some(name) => Ok(name),
         _ => {
