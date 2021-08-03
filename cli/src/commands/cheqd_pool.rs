@@ -69,7 +69,7 @@ pub mod open_command {
         }?;
 
         // Check for existence
-        match CheqdPoolLibindy::get_config(alias) {
+        let res = match CheqdPoolLibindy::get_config(alias) {
             Ok(_handle) => {
                 set_cheqd_active_pool(ctx, alias.to_string());
                 println_succ!("Pool \"{}\" has been opened", alias);
@@ -82,7 +82,7 @@ pub mod open_command {
         };
 
         trace!("execute <<");
-        Ok(())
+        res
     }
 }
 
@@ -98,7 +98,7 @@ pub mod close_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        match ctx.get_active_pool() {
+        let res = match ctx.get_active_pool() {
             ActivePool::Cheqd(_) => {
                 set_none_active_pool(ctx);
                 Ok(())
@@ -114,7 +114,7 @@ pub mod close_command {
         }?;
 
         trace!("execute <<");
-        Ok(())
+        Ok(res)
     }
 }
 
@@ -162,7 +162,7 @@ pub mod abci_info_command {
 
         let res = match CheqdPoolLibindy::abci_info(alias) {
             Ok(resp) => {
-                println_succ!("Abci-info request has been do \"{}\"", resp);
+                println_succ!("Abci-info request result \"{}\"", resp);
                 Ok(())
             },
             Err(err) => {

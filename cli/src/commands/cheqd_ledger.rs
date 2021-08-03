@@ -19,7 +19,7 @@ pub mod group {
 pub mod query_account_command {
     use super::*;
 
-    command!(CommandMetadata::build("query-account", "Query account for cheqd.")
+    command!(CommandMetadata::build("query-account", "Query cheqd account.")
                 .add_required_param("address", "Address of account")
                 .add_required_param("pool_alias", "Alias of pool")
                 .add_example("cheqd-ledger query-account address=sov pool_alias=my_pool")
