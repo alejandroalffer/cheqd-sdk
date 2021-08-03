@@ -11,6 +11,7 @@ use cosmos_sdk::tx::Raw;
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use indy_api_types::errors::*;
 use indy_api_types::IndyError;
+use prost::Message;
 
 use crate::domain::cheqd_pool::PoolConfig;
 use crate::utils::environment;
