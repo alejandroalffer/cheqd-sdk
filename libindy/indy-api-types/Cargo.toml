@@ -11,10 +11,10 @@ default = ["casting_errors"]
 casting_errors = ["openssl", "rust-base58", "zmq", "ursa", "sqlx"]
 
 [dependencies]
-failure = "0.1.6"
+failure = "0.1.8"
 futures = "0.3.1"
 libc = "0.2.66"
-log = "0.4.8"
+log = { version = "0.4.11", features = ["std"] }
 openssl = {version = "0.10", optional = true}
 rust-base58 = {version = "0.0.4", optional = true}
 serde = "1.0.99"
