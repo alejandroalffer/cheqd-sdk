@@ -137,7 +137,7 @@ pub mod tests {
             {
                 let cmd = get_info_command::new();
                 let mut params = CommandParams::new();
-                params.insert("alias", KEY_ALIAS.to_string());
+                params.insert("alias", KEY_ALIAS_WITH_BALANCE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             assert!(true);
