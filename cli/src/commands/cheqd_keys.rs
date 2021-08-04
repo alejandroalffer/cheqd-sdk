@@ -96,6 +96,8 @@ pub mod tests {
 
     const KEY_ALIAS: &str = "key_alias";
     const MNEMONIC: &str = "mnemonic";
+    const KEY_ALIAS_WITH_BALANCE: &str = "alice";
+    const MNEMONIC_WITH_BALANCE: &str = "alice";
 
     mod cheqd_keys {
         use super::*;
@@ -148,14 +150,15 @@ pub mod tests {
         {
             let cmd = add_command::new();
             let mut params = CommandParams::new();
-            params.insert("alias", KEY_ALIAS.to_string());
+            params.insert("alias", KEY_ALIAS_WITH_BALANCE.to_string());
+            params.insert("mnemonic", MNEMONIC_WITH_BALANCE.to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
     }
 
     pub fn get_key(ctx: &CommandContext) -> serde_json::Value {
         let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
-        let key = CheqdKeys::get_info(wallet_handle, KEY_ALIAS).unwrap();
+        let key = CheqdKeys::get_info(wallet_handle, KEY_ALIAS_WITH_BALANCE).unwrap();
         serde_json::from_str(&key).unwrap()
     }
 }

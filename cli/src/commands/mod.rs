@@ -438,7 +438,7 @@ fn setup_with_wallet_and_pool_and_payment_plugin() -> CommandContext {
 #[cfg(test)]
 fn setup_with_wallet_and_cheqd_pool() -> CommandContext {
     let ctx = setup();
-    cheqd_pool::tests::create_pool(&ctx);
+    cheqd_pool::tests::create_and_open_pool(&ctx);
     wallet::tests::create_and_open_wallet(&ctx);
     cheqd_keys::tests::add(&ctx);
     ctx
