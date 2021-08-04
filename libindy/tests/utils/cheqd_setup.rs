@@ -43,7 +43,8 @@ impl CheqdSetup {
 
         // Account
         let key_alias = "alice";
-        let (account_id, pub_key) = CheqdSetup::create_key(wallet_handle, key_alias, "alice").unwrap();
+        let mnemonic = "alice";
+        let (account_id, pub_key) = CheqdSetup::create_key(wallet_handle, key_alias, mnemonic).unwrap();
 
         // Pool
         let cheqd_test_pool_ip = environment::cheqd_test_pool_ip();

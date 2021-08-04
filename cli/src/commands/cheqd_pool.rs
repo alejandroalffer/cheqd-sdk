@@ -180,7 +180,7 @@ pub mod tests {
     use crate::utils::environment::EnvironmentUtils;
 
     const POOL: &'static str = "pool";
-    const CHAIN_ID: &'static str = "cheqdnode";
+    const CHAIN_ID: &'static str = "cheqd";
 
     mod cheqd_pool {
         use super::*;
@@ -203,9 +203,24 @@ pub mod tests {
 
         #[test]
         pub fn open_pool() {
-            let ctx = setup_with_wallet_and_cheqd_pool();
+            let ctx = setup_with_wallet();
+            create_pool(&ctx);
             {
                 let cmd = open_command::new();
+                let mut params = CommandParams::new();
+                params.insert("alias", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn close_pool() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            {
+                let cmd = close_command::new();
                 let mut params = CommandParams::new();
                 params.insert("alias", POOL.to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -251,6 +266,23 @@ pub mod tests {
             params.insert("rpc_address", EnvironmentUtils::cheqd_test_pool_ip());
             params.insert("alias", POOL.to_string());
             params.insert("chain_id", CHAIN_ID.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
+    }
+
+    pub fn create_and_open_pool(ctx: &CommandContext) {
+        {
+            let cmd = add_command::new();
+            let mut params = CommandParams::new();
+            params.insert("rpc_address", EnvironmentUtils::cheqd_test_pool_ip());
+            params.insert("alias", POOL.to_string());
+            params.insert("chain_id", CHAIN_ID.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
+        {
+            let cmd = open_command::new();
+            let mut params = CommandParams::new();
+            params.insert("alias", POOL.to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
     }

@@ -21,19 +21,18 @@ pub mod query_account_command {
 
     command!(CommandMetadata::build("query-account", "Query cheqd account.")
                 .add_required_param("address", "Address of account")
-                .add_required_param("pool_alias", "Alias of pool")
-                .add_example("cheqd-ledger query-account address=sov pool_alias=my_pool")
+                .add_example("cheqd-ledger query-account address=sov")
                 .finalize()
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
         let address = get_str_param("address", params).map_err(error_err!())?;
-        let pool_alias = get_str_param("pool_alias", params).map_err(error_err!())?;
+        let pool_alias = ensure_cheqd_connected_pool(ctx)?;
 
         let query = CheqdLedger::build_query_account(address)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
-        let response = CheqdPool::abci_query(pool_alias, &query)
+        let response = CheqdPool::abci_query(&pool_alias, &query)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
         let parsed_response = CheqdLedger::parse_query_account_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
@@ -58,7 +57,7 @@ pub mod create_nym_command {
                 .add_optional_param("timeout_height", "Height block of blockchain")
                 .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, ENDORSER, NETWORK_MONITOR or associated number, or empty in case of blacklisting NYM")
                 .add_optional_param("memo", "Memo is optional param. It has any arbitrary memo to be added to the transaction")
-                .add_example("cheqd-ledger create-nym did=my_did verkey=my_verkey pool_alias=my_pool key_alias=my_key max_gas=10000000 max_coin=500 denom=cheq timeout_height=20000 role=TRUSTEE memo=memo")
+                .add_example("cheqd-ledger create-nym did=my_did verkey=my_verkey key_alias=my_key max_coin=500 max_gas=10000000 denom=cheq timeout_height=20000 role=TRUSTEE memo=memo")
                 .finalize()
     );
 
@@ -163,4 +162,63 @@ fn get_base_account_number_and_sequence(address: &str, pool_alias: &str) -> Resu
     let account_sequence = base_account["sequence"].as_u64().unwrap();
 
     Ok((account_number, account_sequence))
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    const DID: &str = "did";
+    const VERKEY: &str = "verkey";
+    const MAX_GAS: &str = "1000000";
+    const MAX_COIN: &str = "100";
+    const DENOM: &str = "cheq";
+    const TIMEOUT_HEIGHT: &str = "1000";
+    const ROLE: &str = "TRUSTEE";
+    const MEMO: &str = "memo";
+    const KEY_ALIAS_WITH_BALANCE: &str = "alice";
+
+    mod cheqd_ledger {
+        use super::*;
+        use crate::commands::cheqd_keys::tests::get_key;
+
+        #[test]
+        pub fn query_account() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            let key_info = get_key(&ctx);
+            {
+                let cmd = query_account_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", key_info.as_object().unwrap()["account_id"].to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn create_nym() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            {
+                let cmd = create_nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID.to_string());
+                params.insert("verkey", VERKEY.to_string());
+                params.insert("key_alias", KEY_ALIAS_WITH_BALANCE.to_string());
+                params.insert("max_gas", MAX_GAS.to_string());
+                params.insert("max_coin", MAX_COIN.to_string());
+                params.insert("denom", DENOM.to_string());
+                params.insert("timeout_height", TIMEOUT_HEIGHT.to_string());
+                params.insert("role", ROLE.to_string());
+                params.insert("memo", MEMO.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+    }
 }
