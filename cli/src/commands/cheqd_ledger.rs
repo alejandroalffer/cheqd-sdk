@@ -51,7 +51,6 @@ pub mod create_nym_command {
     command!(CommandMetadata::build("create-nym", "Create nym.")
                 .add_required_param("did", "DID of identity presented in Ledger")
                 .add_required_param("verkey", "Verification key")
-                .add_required_param("pool_alias", "Alias of pool")
                 .add_required_param("key_alias", "Alias of key")
                 .add_required_param("max_coin", "Max amount coins for transaction")
                 .add_required_param("max_gas", "Max amount gas for transaction")
@@ -67,7 +66,6 @@ pub mod create_nym_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
         let did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_str_param("verkey", params).map_err(error_err!())?;
-        let pool_alias = get_str_param("pool_alias", params).map_err(error_err!())?;
         let key_alias = get_str_param("key_alias", params).map_err(error_err!())?;
         let max_coin = get_str_param("max_coin", params).map_err(error_err!())?
             .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: max_coin must be integer"))?;
@@ -79,22 +77,23 @@ pub mod create_nym_command {
         let role = get_str_param("role", params).map_err(error_err!())?;
         let memo = get_str_param("memo", params).map_err(error_err!())?;
 
+        let pool_alias = ensure_cheqd_connected_pool(ctx)?;
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
         let key_info = CheqdKeys::get_info(wallet_handle, key_alias)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let key_info_json: Value = serde_json::from_str(&key_info)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
-        let account_id = key_info_json["account_id"].as_str().unwrap_or("");
-        let pubkey = key_info_json["pub_key"].as_str().unwrap_or("");
+        let account_id = key_info_json["account_id"].as_str().unwrap();
+        let pubkey = key_info_json["pub_key"].as_str().unwrap();
 
-        let request = CheqdLedger::build_msg_create_nym(&did, account_id, verkey, pool_alias, role)
+        let request = CheqdLedger::build_msg_create_nym(&did, account_id, verkey, &pool_alias, role)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (account_number, account_sequence) = get_base_account_number_and_sequence(account_id, pool_alias)?;
+        let (account_number, account_sequence) = get_base_account_number_and_sequence(account_id, &pool_alias)?;
 
         let tx = CheqdLedger::build_tx(
-            pool_alias,
+            &pool_alias,
             pubkey,
             &request,
             account_number,
@@ -108,7 +107,7 @@ pub mod create_nym_command {
 
         let signed_tx = CheqdKeys::sign(wallet_handle, key_alias, &tx)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
-        let response = CheqdPool::broadcast_tx_commit(pool_alias, &signed_tx)
+        let response = CheqdPool::broadcast_tx_commit(&pool_alias, &signed_tx)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
         let parsed_response = CheqdLedger::parse_msg_create_nym_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
