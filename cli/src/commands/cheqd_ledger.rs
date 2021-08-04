@@ -72,10 +72,11 @@ pub mod create_nym_command {
         let max_gas = get_str_param("max_gas", params).map_err(error_err!())?
             .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: max_gas must be integer"))?;
         let denom = get_str_param("denom", params).map_err(error_err!())?;
-        let timeout_height = get_str_param("timeout_height", params).map_err(error_err!())?
-            .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: timeout_height must be integer"))?;
-        let role = get_str_param("role", params).map_err(error_err!())?;
-        let memo = get_str_param("memo", params).map_err(error_err!())?;
+        let timeout_height = get_opt_str_param("timeout_height", params).map_err(error_err!())?
+            .unwrap_or("").parse::<u64>()
+            .map_err(|_| println_err!("Invalid format of input data: timeout_height must be integer"))?;
+        let role = get_opt_str_param("role", params).map_err(error_err!())?.unwrap_or("");
+        let memo = get_opt_str_param("memo", params).map_err(error_err!())?.unwrap_or("");
 
         let pool_alias = ensure_cheqd_connected_pool(ctx)?;
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;

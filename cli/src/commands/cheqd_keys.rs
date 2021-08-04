@@ -12,12 +12,14 @@ pub mod group {
     command_group!(CommandGroupMetadata::new("cheqd-keys", "Cheqd keys management commands"));
 }
 
-pub mod add_random_command {
+pub mod add_command {
     use super::*;
 
-    command!(CommandMetadata::build("add-random", "Add random key to wallet.")
+    command!(CommandMetadata::build("add", "Add key to wallet.")
                 .add_required_param("alias", "Alias of key.")
+                .add_optional_param("mnemonic", "Mnemonic phrase for creation key.")
                 .add_example("cheqd-keys add-random alias=my_key")
+                .add_example("cheqd-keys add-random alias=my_key mnemonic=my_mnemonic")
                 .finalize()
     );
 
@@ -26,49 +28,30 @@ pub mod add_random_command {
 
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
         let alias = get_str_param("alias", params).map_err(error_err!())?;
+        let mnemonic = get_opt_str_param("mnemonic", params).map_err(error_err!())?;
 
-        let res = match CheqdKeys::add_random(wallet_handle, alias) {
-            Ok(resp) => {
-                println_succ!("Random key has been added \"{}\".", resp);
-                Ok(())
-            },
-            Err(err) => {
-                handle_indy_error(err, None, None, None);
-                Err(())
-            },
-        };
-
-        trace!("execute << {:?}", res);
-        res
-    }
-}
-
-pub mod add_from_mnemonic_command {
-    use super::*;
-
-    command!(CommandMetadata::build("add-from-mnemonic", "Add key by mnemonic to wallet.")
-                .add_required_param("alias", "Alias of key.")
-                .add_required_param("mnemonic", "Mnemonic phrase for creation key.")
-                .add_example("cheqd-keys add-from-mnemonic alias=my_key mnemonic=my_mnemonic")
-                .finalize()
-    );
-
-    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
-        trace!("execute >> ctx {:?} params {:?}", ctx, params);
-
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
-        let alias = get_str_param("alias", params).map_err(error_err!())?;
-        let mnemonic = get_str_param("mnemonic", params).map_err(error_err!())?;
-
-        let res = match CheqdKeys::add_from_mnemonic(wallet_handle, alias, mnemonic) {
-            Ok(resp) => {
-                println_succ!("The Key has been added by mnemonic \"{}\" .", resp);
-                Ok(())
-            },
-            Err(err) => {
-                handle_indy_error(err, None, None, None);
-                Err(())
-            },
+        let res = if let Some(mnemonic)  = mnemonic {
+            match CheqdKeys::add_from_mnemonic(wallet_handle, alias, mnemonic) {
+                Ok(resp) => {
+                    println_succ!("Key has been added from mnemonic \"{}\" .", resp);
+                    Ok(())
+                },
+                Err(err) => {
+                    handle_indy_error(err, None, None, None);
+                    Err(())
+                },
+            }
+        } else {
+            match CheqdKeys::add_random(wallet_handle, alias) {
+                Ok(resp) => {
+                    println_succ!("Random key has been added \"{}\".", resp);
+                    Ok(())
+                },
+                Err(err) => {
+                    handle_indy_error(err, None, None, None);
+                    Err(())
+                },
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -121,7 +104,7 @@ pub mod tests {
         pub fn add_random() {
             let ctx = setup_with_wallet();
             {
-                let cmd = add_random_command::new();
+                let cmd = add_command::new();
                 let mut params = CommandParams::new();
                 params.insert("alias", KEY_ALIAS.to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -135,7 +118,7 @@ pub mod tests {
         pub fn add_from_mnemonic() {
             let ctx = setup_with_wallet();
             {
-                let cmd = add_from_mnemonic_command::new();
+                let cmd = add_command::new();
                 let mut params = CommandParams::new();
                 params.insert("alias", KEY_ALIAS.to_string());
                 params.insert("mnemonic", MNEMONIC.to_string());
@@ -163,7 +146,7 @@ pub mod tests {
 
     pub fn add(ctx: &CommandContext) {
         {
-            let cmd = add_random_command::new();
+            let cmd = add_command::new();
             let mut params = CommandParams::new();
             params.insert("alias", KEY_ALIAS.to_string());
             cmd.execute(&ctx, &params).unwrap();
