@@ -2,6 +2,8 @@
 
 use std::fs;
 use std::io::Write;
+use std::time::Duration;
+use tokio;
 
 use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::{Request, Response};
@@ -16,6 +18,8 @@ use crate::domain::cheqd_pool::PoolConfig;
 use crate::utils::environment;
 
 pub(crate) struct CheqdPoolService {}
+
+const CLIENT_TIMEOUT: u64 = 10;
 
 impl CheqdPoolService {
     pub(crate) fn new() -> Self {
@@ -97,7 +101,7 @@ impl CheqdPoolService {
 
         let tx_bytes = tx.to_bytes()?;
         let req = broadcast::tx_commit::Request::new(tx_bytes.into());
-        let resp = self.send_req(req, &pool.rpc_address).await?;
+        let resp = self.send_req(req, &pool.rpc_address)?;
 
         if let abci::Code::Err(code) = resp.check_tx.code {
             return Err(IndyError::from_msg(
@@ -130,7 +134,7 @@ impl CheqdPoolService {
         req: rpc::endpoint::abci_query::Request,
     ) -> IndyResult<rpc::endpoint::abci_query::Response> {
         let pool = self.get_config(pool_alias).await?;
-        let resp = self.send_req(req, pool.rpc_address.as_str()).await?;
+        let resp = self.send_req(req, pool.rpc_address.as_str())?;
         Ok(resp)
     }
 
@@ -140,17 +144,21 @@ impl CheqdPoolService {
     ) -> IndyResult<rpc::endpoint::abci_info::Response> {
         let pool = self.get_config(pool_alias).await?;
         let req = rpc::endpoint::abci_info::Request {};
-        let resp = self.send_req(req, pool.rpc_address.as_str()).await?;
+        let resp = self.send_req(req, pool.rpc_address.as_str())?;
         Ok(resp)
     }
 
+    #[tokio::main]
     async fn send_req<R>(&self, req: R, rpc_address: &str) -> IndyResult<R::Response>
         where
             R: Request,
     {
+        let timeout = Duration::new(CLIENT_TIMEOUT, 0);
         let req_json = req.into_json();
 
-        let client = reqwest::Client::new();
+        let client = reqwest::Client::builder()
+            .timeout(timeout)
+            .build()?;
         let resp = client.post(rpc_address)
             .body(req_json)
             .header("Content-Type", "application/json")

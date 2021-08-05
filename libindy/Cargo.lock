@@ -2014,6 +2014,7 @@ dependencies = [
  "tempdir",
  "threadpool",
  "time",
+ "tokio",
  "tonic",
  "tonic-build",
  "ursa",
@@ -3940,8 +3941,13 @@ dependencies = [
  "libc",
  "memchr",
  "mio",
+ "num_cpus",
+ "once_cell",
+ "parking_lot",
  "pin-project-lite",
+ "signal-hook-registry",
  "tokio-macros",
+ "winapi",
 ]
 
 [[package]]

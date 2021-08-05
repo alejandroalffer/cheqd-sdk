@@ -255,7 +255,7 @@ impl From<log::SetLoggerError> for IndyError {
 impl From<eyre::Report> for IndyError {
     fn from(err: eyre::Report) -> IndyError {
         let mut context_str = "".to_owned();
-        for error in err.chain() {
+        for _error in err.chain() {
             context_str.push_str(&format!("\nCaused by: {}", err.to_string()));
         }
         IndyError::from_msg(IndyErrorKind::InvalidState, context_str)
