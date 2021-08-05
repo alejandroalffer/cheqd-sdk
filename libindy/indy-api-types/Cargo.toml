@@ -11,7 +11,7 @@ default = ["casting_errors"]
 casting_errors = ["openssl", "rust-base58", "zmq", "ursa", "sqlx"]
 
 [dependencies]
-failure = "0.1.8"
+failure = { version = "0.1.8", features = ["backtrace"] }
 futures = "0.3.1"
 libc = "0.2.66"
 log = { version = "0.4.11", features = ["std"] }
