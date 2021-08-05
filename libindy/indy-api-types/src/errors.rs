@@ -250,12 +250,15 @@ impl From<log::SetLoggerError> for IndyError {
         err.context(IndyErrorKind::InvalidState).into()
     }
 }
-
 // TODO: Better error conversion
-// Cosmos SDK error. They don't expose Error interface.
+// Cosmos SDK error. They don't expose failure::Error interface.
 impl From<eyre::Report> for IndyError {
-    fn from(err: eyre::Report) -> Self {
-        err.wrap_err(IndyErrorKind::InvalidState).into()
+    fn from(err: eyre::Report) -> IndyError {
+        let mut context_str = "".to_owned();
+        for error in err.chain() {
+            context_str.push_str(&format!("\nCaused by: {}", err.to_string()));
+        }
+        IndyError::from_msg(IndyErrorKind::InvalidState, context_str)
     }
 }
 
