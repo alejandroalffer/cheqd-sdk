@@ -95,7 +95,7 @@ impl CheqdSetup {
         // Tx
         // TODO: Set correct timeout height using abci info query
         let tx = cheqd_ledger::auth::build_tx(
-            &self.pool_alias, &self.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "token", self.get_timeout_height(), "memo",
+            &self.pool_alias, &self.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "cheq", self.get_timeout_height(), "memo",
         )?;
 
         // Sign

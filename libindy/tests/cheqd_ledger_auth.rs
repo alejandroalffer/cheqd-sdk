@@ -39,7 +39,7 @@ mod high_cases {
 
             // Tx
             let tx = cheqd_ledger::auth::build_tx(
-                &setup.pool_alias, &setup.pub_key, &msg, account_number, account_sequence, 300000, 0, "token", setup.get_timeout_height(), "memo",
+                &setup.pool_alias, &setup.pub_key, &msg, account_number, account_sequence, 300000, 0, "cheq", setup.get_timeout_height(), "memo",
             ).unwrap();
 
             println!("Tx: {:?}", tx);

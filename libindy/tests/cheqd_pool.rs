@@ -62,7 +62,7 @@ mod high_cases {
 
             // Transaction
             let tx = cheqd_ledger::auth::build_tx(
-                &setup.pool_alias, &setup.pub_key, &msg, account_number, account_sequence, 300000, 0, "token", setup.get_timeout_height(), "memo",
+                &setup.pool_alias, &setup.pub_key, &msg, account_number, account_sequence, 300000, 0, "cheq", setup.get_timeout_height(), "memo",
             ).unwrap();
 
             // Sign
@@ -98,7 +98,7 @@ mod high_cases {
 
             // Transaction
             let tx = cheqd_ledger::auth::build_tx(
-                &setup.pool_alias, &setup.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "token", setup.get_timeout_height(), "memo",
+                &setup.pool_alias, &setup.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "cheq", setup.get_timeout_height(), "memo",
             ).unwrap();
 
             // Signature
