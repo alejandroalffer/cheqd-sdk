@@ -45,19 +45,20 @@ mod high_cases {
             // Query
             let query = cheqd_ledger::cheqd::build_query_get_nym(tx_resp_parsed["id"].as_u64().unwrap()).unwrap();
             let query_resp = cheqd_pool::abci_query(&setup.pool_alias, &query).unwrap();
+            println!("Query response before parse: {:?}", query_resp);
             let query_resp_parsed = cheqd_ledger::cheqd::parse_query_get_nym_resp(&query_resp).unwrap();
             println!("Query response: {:?}", query_resp_parsed);
 
             let result: Value = serde_json::from_str(&query_resp_parsed).unwrap();
             let expected_result: Value = json!({
-                "nym": {
+
                     "creator": setup.account_id,
                     "id": tx_resp_parsed["id"].as_u64().unwrap(),
                     "alias": "test-alias",
                     "verkey": "test-verkey",
                     "did": "test-did",
                     "role": "test-role",
-                }
+
             });
 
             assert_eq!(expected_result, result);
@@ -121,14 +122,12 @@ mod high_cases {
 
             let result: Value = serde_json::from_str(&query_resp).unwrap();
             let expected_result: Value = json!({
-                "nym": {
                     "creator": setup.account_id,
                     "id": resp_create["id"].as_u64().unwrap(),
                     "alias": "test-alias-update",
                     "verkey": "test-verkey-update",
                     "did": "test-did-update",
-                    "role": "test-role-update",
-                }
+                    "role": "test-role-update"
             });
 
             assert_eq!(expected_result, result);
@@ -187,9 +186,7 @@ mod high_cases {
             println!("Query response: {:?}", query_resp);
 
             let result: Value = serde_json::from_str(&query_resp).unwrap();
-            let expected_result: Value = json!({
-                "nym": null
-            });
+            let expected_result: Value = json!(null);
 
             assert_eq!(expected_result, result);
         }

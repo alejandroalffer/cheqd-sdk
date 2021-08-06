@@ -11,7 +11,6 @@ use cosmos_sdk::tx::Raw;
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use indy_api_types::errors::*;
 use indy_api_types::IndyError;
-use prost::Message;
 
 use crate::domain::cheqd_pool::PoolConfig;
 use crate::utils::environment;
@@ -132,7 +131,7 @@ impl CheqdPoolService {
     ) -> IndyResult<rpc::endpoint::abci_query::Response> {
         let pool = self.get_config(pool_alias).await?;
         let resp = self.send_req(req, pool.rpc_address.as_str()).await?;
-        Ok(self.check_proofs(req.clone(), resp.clone()))
+        Ok(resp)
     }
 
     pub(crate) async fn abci_info(
@@ -164,80 +163,6 @@ impl CheqdPoolService {
         let resp = R::Response::from_string(resp_str)?;
 
         Ok(resp)
-    }
-
-    async fn check_proofs(
-        &self,
-        req: rpc::endpoint::abci_query::Request,
-        result: rpc::endpoint::abci_query::Response,
-    ) -> IndyResult<rpc::endpoint::abci_query::Response> {
-
-        //////////////////////////// 0st proof
-
-        println!("verifying iavl proof");
-
-        let proof_op_0 = &result.response.proof.clone().unwrap().ops[0];
-        assert_eq!(&proof_op_0.key, &req.data);
-        assert_eq!(&proof_op_0.field_type, "ics23:iavl");
-
-        let proof_0_data_decoded =
-            ics23::CommitmentProof::decode(proof_op_0.data.as_slice()).unwrap();
-
-        let proof_op_1 = &result.response.proof.unwrap().ops[1];
-        assert_eq!(&proof_op_1.key, "verimcosmos".as_bytes());
-        assert_eq!(&proof_op_1.field_type, "ics23:simple");
-
-        let proof_1_data_decoded =
-            ics23::CommitmentProof::decode(proof_op_1.data.as_slice()).unwrap();
-
-        let proof_0_root = if let Some(ics23::commitment_proof::Proof::Exist(ex)) =
-        proof_1_data_decoded.proof.clone()
-        {
-            ex.value
-        } else {
-            return Err(IndyError::from_msg(
-                IndyErrorKind::InvalidStructure,
-                format!(
-                    "proof_1_data_decoded: error log: {}",
-                    serde_json::to_string(&proof_1_data_decoded.proof)?
-                ),
-            ));
-        };
-
-        let proof_0_is_ok = ics23::verify_membership(
-            &proof_0_data_decoded,
-            &ics23::iavl_spec(),
-            &proof_0_root,
-            &proof_op_0.key,
-            &result.response.value,
-        );
-
-        assert!(proof_0_is_ok);
-
-        // Should be output from light client
-        let proof_1_root = if let Some(ics23::commitment_proof::Proof::Exist(ex)) =
-        proof_1_data_decoded.proof.clone()
-        {
-            ics23::calculate_existence_root(&ex).unwrap()
-        } else {
-            return Err(IndyError::from_msg(
-                IndyErrorKind::InvalidStructure,
-                format!(
-                    "proof_1_data_decoded: error log: {}",
-                    serde_json::to_string(&proof_1_data_decoded.proof)?
-                ),
-            ));
-        };
-
-        let proof_1_is_ok = ics23::verify_membership(
-            &proof_1_data_decoded,
-            &ics23::tendermint_spec(),
-            &proof_1_root,
-            &proof_op_1.key,
-            &proof_0_root,
-        );
-
-        Ok(result)
     }
 
 }
