@@ -8,7 +8,7 @@ use cosmos_sdk::tendermint::block::Height;
 use cosmos_sdk::tx::{AuthInfo, Fee, Msg, SignDoc, SignerInfo};
 use indy_api_types::errors::IndyResult;
 
-use crate::domain::cheqd_ledger::auth::{QueryAccountRequest, QueryAccountResponse};
+use crate::domain::cheqd_ledger::auth::{QueryAccountRequest, QueryAccountResponse, Account};
 use crate::domain::cheqd_ledger::CheqdProto;
 use crate::services::CheqdLedgerService;
 
@@ -67,7 +67,7 @@ impl CheqdLedgerService {
         Ok(signer_info)
     }
 
-    pub(crate) fn auth_build_query_account(
+    pub(crate) fn auth_build_query_account_without_proof(
         &self,
         address: &str,
     ) -> IndyResult<abci_query::Request> {
@@ -79,11 +79,26 @@ impl CheqdLedgerService {
         Ok(req)
     }
 
+    pub(crate) fn auth_build_query_account(
+        &self,
+        address: &str,
+    ) -> IndyResult<abci_query::Request> {
+        // let mut encoded_path = 0x01.to_bytes()?;
+        // encoded_path.push_str(address);
+        let mut query_data = 0x01_i32.to_ne_bytes().to_vec();
+        query_data.append(&mut hex::decode(&address).to_indy(IndyErrorKind::InvalidState, "Can't serialize cheqd pool config")?);
+        let path = format!("/store/acc/key");
+        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let req = abci_query::Request::new(Some(path), query_data, None, true);
+        Ok(req)
+    }
+
     pub(crate) fn auth_parse_query_account_resp(
         &self,
         resp: &abci_query::Response,
-    ) -> IndyResult<QueryAccountResponse> {
-        let result = QueryAccountResponse::from_proto_bytes(&resp.response.value)?;
+    ) -> IndyResult<Account> {
+        println!("auth_parse_query_account_resp {:?}", resp.response.value);
+        let result = Account::from_proto_bytes(&resp.response.value)?;
         return Ok(result);
     }
 }
