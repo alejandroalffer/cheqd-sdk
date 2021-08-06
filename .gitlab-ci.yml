@@ -286,17 +286,26 @@ build-libindy-ios:
   tags:
     - macos
     - bigsur
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - libindy/ios_out/
   script:
     - which rustup-init || brew install rustup-init
     - echo | rustup-init --default-toolchain 1.50.0
     - source $HOME/.cargo/env
     - cargo install cargo-lipo
-    - rustup target add x86_64-apple-ios
+    - rustup target add aarch64-apple-ios x86_64-apple-ios
     - brew install libsodium
     - brew install openssl@1.1
     - brew install zeromq
     - rm -rf ~/.indy_client || true
-    - ci/ios-build.sh libindy x86_64-apple-ios
+    - mkdir libindy/ios_out/
+    - ci/ios-build.sh libindy aarch64-apple-ios
+    - cp libindy/out_pod/libindy.tar.gz libindy/ios_out/libindy-aarch64-armv7.tar.gz
+    - rm -rf libindy/out_pod/
+    - ci/ios-build.sh libindy
+    - cp libindy/out_pod/libindy.tar.gz libindy/ios_out/libindy.tar.gz
 
 
 ## - Jobs : Test - ##
