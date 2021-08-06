@@ -120,22 +120,21 @@ pub mod get_config_command {
     use super::*;
 
     command!(CommandMetadata::build("get-config", "Get pool`s config.")
-                .add_required_param("alias", "Alias for pool.")
-                .add_example("cheqd-pool get-config alias=my_pool")
+                .add_example("cheqd-pool get-config")
                 .finalize()
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
-        let alias = get_str_param("alias", params).map_err(error_err!())?;
+        let pool_alias = ensure_cheqd_connected_pool(ctx)?;
 
-        let res = match CheqdPoolLibindy::get_config(alias) {
+        let res = match CheqdPoolLibindy::get_config(&pool_alias) {
             Ok(config) => {
                 println_succ!("Pool config has been get \"{}\"", config);
                 Ok(())
             },
             Err(err) => {
-                handle_indy_error(err, None, Some(alias), None);
+                handle_indy_error(err, None, Some(&pool_alias), None);
                 Err(())
             },
         };
@@ -149,22 +148,21 @@ pub mod abci_info_command {
     use super::*;
 
     command!(CommandMetadata::build("abci-info", "The request return the application's name, version and the hash of the last commit.")
-                .add_required_param("alias", "Alias for pool.")
-                .add_example("cheqd-pool abci-query alias=my_pool")
+                .add_example("cheqd-pool abci-query")
                 .finalize()
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
-        let alias = get_str_param("alias", params).map_err(error_err!())?;
+        let pool_alias = ensure_cheqd_connected_pool(ctx)?;
 
-        let res = match CheqdPoolLibindy::abci_info(alias) {
+        let res = match CheqdPoolLibindy::abci_info(&pool_alias) {
             Ok(resp) => {
                 println_succ!("Abci-info request result \"{}\"", resp);
                 Ok(())
             },
             Err(err) => {
-                handle_indy_error(err, None, Some(alias), None);
+                handle_indy_error(err, None, Some(&pool_alias), None);
                 Err(())
             },
         };
@@ -235,8 +233,7 @@ pub mod tests {
             let ctx = setup_with_wallet_and_cheqd_pool();
             {
                 let cmd = get_config_command::new();
-                let mut params = CommandParams::new();
-                params.insert("alias", POOL.to_string());
+                let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
             assert!(true);
@@ -249,8 +246,7 @@ pub mod tests {
             let ctx = setup_with_wallet_and_cheqd_pool();
             {
                 let cmd = abci_info_command::new();
-                let mut params = CommandParams::new();
-                params.insert("alias", POOL.to_string());
+                let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
             assert!(true);

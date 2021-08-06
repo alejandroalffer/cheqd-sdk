@@ -55,7 +55,7 @@ pub mod create_nym_command {
                 .add_required_param("max_gas", "Max amount gas for transaction")
                 .add_required_param("denom", "Denom is currency for transaction")
                 .add_optional_param("timeout_height", "Height block of blockchain")
-                .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, ENDORSER, NETWORK_MONITOR or associated number, or empty in case of blacklisting NYM")
+                .add_optional_param("role", "Role of identity.")
                 .add_optional_param("memo", "Memo is optional param. It has any arbitrary memo to be added to the transaction")
                 .add_example("cheqd-ledger create-nym did=my_did verkey=my_verkey key_alias=my_key max_coin=500 max_gas=10000000 denom=cheq timeout_height=20000 role=TRUSTEE memo=memo")
                 .finalize()
@@ -167,6 +167,7 @@ fn get_base_account_number_and_sequence(address: &str, pool_alias: &str) -> Resu
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use super::cheqd_keys::tests::KEY_ALIAS_WITH_BALANCE;
 
     const DID: &str = "did";
     const VERKEY: &str = "verkey";
@@ -176,7 +177,6 @@ pub mod tests {
     const TIMEOUT_HEIGHT: &str = "1000";
     const ROLE: &str = "TRUSTEE";
     const MEMO: &str = "memo";
-    const KEY_ALIAS_WITH_BALANCE: &str = "alice";
 
     mod cheqd_ledger {
         use super::*;

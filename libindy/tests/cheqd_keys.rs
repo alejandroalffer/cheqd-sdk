@@ -58,7 +58,6 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[ignore]
         fn test_sign() {
             let setup = cheqd_setup::CheqdSetup::new();
 
