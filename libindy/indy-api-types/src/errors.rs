@@ -254,11 +254,11 @@ impl From<log::SetLoggerError> for IndyError {
 // Cosmos SDK error. They don't expose failure::Error interface.
 impl From<eyre::Report> for IndyError {
     fn from(err: eyre::Report) -> IndyError {
-        let mut context_str = "".to_owned();
-        for _error in err.chain() {
-            context_str.push_str(&format!("\nCaused by: {}", err.to_string()));
+        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::InvalidState);
+        for err_item in err.chain().rev() {
+            indy_error = indy_error.extend(err_item.to_string());
         }
-        IndyError::from_msg(IndyErrorKind::InvalidState, context_str)
+        indy_error
     }
 }
 
@@ -679,4 +679,27 @@ pub fn get_current_error_c_json() -> *const c_char {
 
 pub fn string_to_cstring(s: String) -> CString {
     CString::new(s).unwrap()
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::IndyError;
+    use failure::Fail;
+    use std::error::Error;
+
+    #[test]
+    fn indy_error_from_eyre_report() {
+        // This string will imulate that there is another error after cosmos_sdk's error
+        // Expected order is:
+        //   - Invalid state
+        //   - <between_str>
+        //   - Cosmos_sdk (Invalid accout ID)
+        let between_str = "Another error";
+        let account = cosmos_sdk::AccountId::new("123user", [0u8; 20]).map_err(|err| {
+            let indy_error = IndyError::from(err.wrap_err(between_str));
+            assert_eq!(Fail::iter_chain(indy_error.inner.as_ref()).count(), 3);
+            assert_eq!(Fail::iter_chain(indy_error.inner.as_ref()).position(|x| x.to_string().contains(between_str)), Some(1))
+        });
+    }
 }
