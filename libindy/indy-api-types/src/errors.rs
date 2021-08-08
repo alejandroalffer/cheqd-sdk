@@ -287,15 +287,13 @@ impl From<serde_json::Error> for IndyError {
     }
 }
 
-impl From<anyhow::Error> for IndyError {
-    fn from(err: anyhow::Error) -> Self {
-        err.context(IndyErrorKind::InvalidState).into()
-    }
-}
-
 impl From<http_client::http_types::Error> for IndyError {
     fn from(err: http_client::http_types::Error) -> Self {
-        err.into_inner().context(IndyErrorKind::InvalidState).into()
+        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::InvalidState);
+        for err_item in err.into_inner().chain().rev() {
+            indy_error = indy_error.extend(err_item.to_string());
+        }
+        indy_error
     }
 }
 
