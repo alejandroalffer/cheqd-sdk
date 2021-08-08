@@ -2,8 +2,13 @@
 
 use std::fs;
 use std::io::Write;
-use std::time::Duration;
-use tokio;
+
+use http_client::HttpClient;
+use http_client::http_types::{Method,
+                              Request as HttpRequest,
+                              Response as HttpResponse,
+                              Body};
+use http_client::h1::H1Client;
 
 use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::{Request, Response};
@@ -19,7 +24,8 @@ use crate::utils::environment;
 
 pub(crate) struct CheqdPoolService {}
 
-const CLIENT_TIMEOUT: u64 = 10;
+// ToDo: it can be used only in "unstable-config".
+// const CLIENT_TIMEOUT: u64 = 10;
 
 impl CheqdPoolService {
     pub(crate) fn new() -> Self {
@@ -101,7 +107,7 @@ impl CheqdPoolService {
 
         let tx_bytes = tx.to_bytes()?;
         let req = broadcast::tx_commit::Request::new(tx_bytes.into());
-        let resp = self.send_req(req, &pool.rpc_address)?;
+        let resp = self.send_req(req, &pool.rpc_address).await?;
 
         if let abci::Code::Err(code) = resp.check_tx.code {
             return Err(IndyError::from_msg(
@@ -134,7 +140,7 @@ impl CheqdPoolService {
         req: rpc::endpoint::abci_query::Request,
     ) -> IndyResult<rpc::endpoint::abci_query::Response> {
         let pool = self.get_config(pool_alias).await?;
-        let resp = self.send_req(req, pool.rpc_address.as_str())?;
+        let resp = self.send_req(req, pool.rpc_address.as_str()).await?;
         Ok(resp)
     }
 
@@ -144,33 +150,47 @@ impl CheqdPoolService {
     ) -> IndyResult<rpc::endpoint::abci_info::Response> {
         let pool = self.get_config(pool_alias).await?;
         let req = rpc::endpoint::abci_info::Request {};
-        let resp = self.send_req(req, pool.rpc_address.as_str())?;
+        let resp = self.send_req(req, pool.rpc_address.as_str()).await?;
         Ok(resp)
     }
 
-    #[tokio::main]
     async fn send_req<R>(&self, req: R, rpc_address: &str) -> IndyResult<R::Response>
         where
             R: Request,
     {
-        let timeout = Duration::new(CLIENT_TIMEOUT, 0);
         let req_json = req.into_json();
+        let mut req = HttpRequest::new( Method::Post,
+                                    rpc_address);
+        req.append_header("Content-Type", "application/json");
+        req.append_header("User-Agent", format!("indy-sdk/{}", env!("CARGO_PKG_VERSION")));
+        req.set_body(Body::from_string(req_json));
 
-        let client = reqwest::Client::builder()
-            .timeout(timeout)
-            .build()?;
-        let resp = client.post(rpc_address)
-            .body(req_json)
-            .header("Content-Type", "application/json")
-            .header(
-                "User-Agent",
-                format!("indy-sdk/{}", env!("CARGO_PKG_VERSION")),
-            )
-            .send()
-            .await?;
-        let resp_str = resp.text().await?;
+        let client = H1Client::new();
+        // ToDo: it can be changed only in "unstable-config".
+        // let config = client.config();
+        // config.timeout(std::time::Duration::from_secs(CLIENT_TIMEOUT));
+        // client.set_config(config);
+        println!("Before sending request");
+
+        let mut resp: HttpResponse = client.send(req).await?;
+        let resp_str = resp.body_string().await?;
         let resp = R::Response::from_string(resp_str)?;
 
         Ok(resp)
+    }
+}
+
+#[cfg(test)]
+mod send_req {
+    use crate::CheqdPoolService;
+    use cosmos_sdk::rpc::endpoint::abci_info::Request;
+
+    #[async_std::test]
+    async fn client_close_if_connection_refused() {
+        let pool_service = CheqdPoolService::new();
+        let req = Request {};
+        pool_service.send_req(req, "http://127.0.0.1:26657").await.map_err(|err| {
+            assert!(err.to_string().contains("Connection refused"))
+        });
     }
 }
