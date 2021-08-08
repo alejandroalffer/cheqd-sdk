@@ -189,7 +189,7 @@ mod send_req {
     async fn client_close_if_connection_refused() {
         let pool_service = CheqdPoolService::new();
         let req = Request {};
-        pool_service.send_req(req, "http://127.0.0.1:26657").await.map_err(|err| {
+        pool_service.send_req(req, "http://127.0.0.2:12345").await.map_err(|err| {
             assert!(err.to_string().contains("Connection refused"))
         });
     }
