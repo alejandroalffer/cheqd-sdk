@@ -8,6 +8,7 @@ use std::{
 
 use failure::{Backtrace, Context, Fail};
 use log;
+use http_client;
 
 #[cfg(feature = "casting_errors")]
 use sqlx;
@@ -286,9 +287,15 @@ impl From<serde_json::Error> for IndyError {
     }
 }
 
-impl From<reqwest::Error> for IndyError {
-    fn from(err: reqwest::Error) -> Self {
+impl From<anyhow::Error> for IndyError {
+    fn from(err: anyhow::Error) -> Self {
         err.context(IndyErrorKind::InvalidState).into()
+    }
+}
+
+impl From<http_client::http_types::Error> for IndyError {
+    fn from(err: http_client::http_types::Error) -> Self {
+        err.into_inner().context(IndyErrorKind::InvalidState).into()
     }
 }
 
