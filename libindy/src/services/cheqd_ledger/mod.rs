@@ -11,6 +11,7 @@ use crate::domain::cheqd_ledger::CheqdProto;
 
 mod auth;
 mod cheqd;
+mod bank;
 
 pub(crate) struct CheqdLedgerService {}
 

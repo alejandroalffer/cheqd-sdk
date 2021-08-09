@@ -8,6 +8,7 @@ pub mod cosmos_ext;
 pub mod prost_ext;
 pub mod proto;
 pub mod cheqd;
+pub mod bank;
 pub mod auth;
 pub mod base;
 pub mod crypto;
