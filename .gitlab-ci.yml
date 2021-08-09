@@ -426,3 +426,18 @@ publish-libindy:
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+
+publish-libindy-ios:
+  extends: .tags_micro
+  stage: publish
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-ios
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+  script:
+    - >
+      find libindy/ios_out/ -name "*.tar.gz" -exec
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file {}
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/vdr-tools-ios/1.95.0-${CI_PIPELINE_IID}/" \;
