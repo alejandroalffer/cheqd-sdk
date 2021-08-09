@@ -96,8 +96,8 @@ pub mod tests {
 
     const KEY_ALIAS: &str = "key_alias";
     const MNEMONIC: &str = "mnemonic";
-    const KEY_ALIAS_WITH_BALANCE: &str = "alice";
-    const MNEMONIC_WITH_BALANCE: &str = "alice";
+    pub(crate) const KEY_ALIAS_WITH_BALANCE: &str = "alice";
+    pub(crate) const MNEMONIC_WITH_BALANCE: &str = "alice";
 
     mod cheqd_keys {
         use super::*;
