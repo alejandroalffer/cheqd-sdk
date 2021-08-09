@@ -472,6 +472,25 @@ publish-libindy:
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
 
+publish-libindy-android:
+  extends: .tags_micro
+  stage: publish
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-android-x86
+    - build-libindy-android-x86_64
+    - build-libindy-android-arm
+    - build-libindy-android-armv7
+    - build-libindy-android-arm64
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+  script:
+    - >
+      find libindy/android_out/ -name "*.zip" -exec
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file {}
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/vdr-tools-android/1.95.0-${CI_PIPELINE_IID}/" \;
+
 publish-libindy-ios:
   extends: .tags_micro
   stage: publish
