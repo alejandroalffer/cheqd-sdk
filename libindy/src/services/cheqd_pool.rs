@@ -170,7 +170,6 @@ impl CheqdPoolService {
         // let config = client.config();
         // config.timeout(std::time::Duration::from_secs(CLIENT_TIMEOUT));
         // client.set_config(config);
-        println!("Before sending request");
 
         let mut resp: HttpResponse = client.send(req).await?;
         let resp_str = resp.body_string().await?;
