@@ -31,7 +31,6 @@ use utils::{
     environment, pool as pool_utils, timeout, Setup,
 };
 
-#[cfg(feature = "local_nodes_pool")]
 use utils::callback;
 
 #[test]

@@ -36,6 +36,7 @@ mod high_cases {
         use super::*;
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_schema_empty_options() {
             let setup = Setup::wallet_and_pool();
 
@@ -56,6 +57,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_schema_empty_options_for_unknown_id() {
             let setup = Setup::wallet_and_pool();
 
@@ -73,6 +75,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_schema_only_cache_no_cached_data() {
             let setup = Setup::wallet_and_pool();
 
@@ -92,6 +95,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_schema_cache_works() {
             let setup = Setup::wallet_and_pool();
 
@@ -124,6 +128,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_schema_no_store_works() {
             let setup = Setup::wallet_and_pool();
 
@@ -153,6 +158,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_schema_no_cache_works() {
             let setup = Setup::wallet_and_pool();
 
@@ -182,6 +188,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_schema_fully_qualified_ids() {
             let setup = Setup::wallet_and_pool();
 
@@ -203,6 +210,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_schema_min_fresh_works() {
             let setup = Setup::wallet_and_pool();
 
@@ -257,6 +265,7 @@ mod high_cases {
         use super::*;
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_cred_def_empty_options() {
             let setup = Setup::wallet_and_pool();
 
@@ -277,6 +286,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_cred_def_only_cache_no_cached_data() {
             let setup = Setup::wallet_and_pool();
 
@@ -296,6 +306,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_cred_def_cache_works() {
             let setup = Setup::wallet_and_pool();
 
@@ -328,6 +339,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_cred_def_no_store_works() {
             let setup = Setup::wallet_and_pool();
 
@@ -357,6 +369,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_cred_def_no_cache_works() {
             let setup = Setup::wallet_and_pool();
 
@@ -386,6 +399,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_cred_def_min_fresh_works() {
             let setup = Setup::wallet_and_pool();
 
@@ -417,6 +431,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_cred_def_fully_qualified_ids() {
             let setup = Setup::wallet_and_pool();
 
