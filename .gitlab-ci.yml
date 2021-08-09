@@ -107,6 +107,7 @@ variables:
     refs:
       - main@evernym/verity/vdr-tools
       - /^docker-.*/
+      - /^android-.*/
 
 dockerbuild-libindy-ubuntu16:
   stage: dockerbuild-pre
@@ -144,6 +145,7 @@ dockerbuild-libindy-android:
       - main
       - stable
       - /^docker-.*/
+      - /^android-.*/
     changes:
       - .gitlab-ci.yml
       - libindy/ci/ubuntu.dockerfile
@@ -234,7 +236,7 @@ build-libindy-ubuntu18-release:
     refs:
       - main@evernym/verity/vdr-tools
 
-.build-libindy-android:
+.build-libindytest-android:
   extends: .tags_compute_xlarge
   stage: build  # TODO separate build step
   services:
@@ -244,21 +246,64 @@ build-libindy-ubuntu18-release:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     - cd libindy && ./android.test.sh x86
 
-build-libindy-android-from-latest:
-  extends: .build-libindy-android
+build-libindytest-android-from-latest:
+  extends: .build-libindytest-android
   image: ${CI_REGISTRY_IMAGE}/libindy-android:latest
   except:
     refs:
       - /^docker-.*/
       - main
 
-build-libindy-android-from-branch:
-  extends: .build-libindy-android
+build-libindytest-android-from-branch:
+  extends: .build-libindytest-android
   image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
   only:
     refs:
       - /^docker-.*/
       - main
+
+.build-libindy-android:
+  extends: .tags_compute_xlarge
+  stage: build
+  image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
+  only:
+    refs:
+      - main
+      - /^android-.*/
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - libindy/android_out/
+  script:
+    - cd libindy
+    - ./android.build.sh -d ${LIBINDY_ANDROID_ARCH}
+    - mkdir android_out/
+    - cp ./libindy_android_${LIBINDY_ANDROID_ARCH}.zip ./android_out/
+
+build-libindy-android-x86:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "x86"
+
+build-libindy-android-x86_64:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "x86_64"
+
+build-libindy-android-arm:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "arm"
+
+build-libindy-android-armv7:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "armv7"
+
+build-libindy-android-arm64:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "arm64"
 
 build-libindy-macos:
   stage: build
