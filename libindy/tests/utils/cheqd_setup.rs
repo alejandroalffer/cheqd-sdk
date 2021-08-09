@@ -43,7 +43,8 @@ impl CheqdSetup {
 
         // Account
         let key_alias = "alice";
-        let (account_id, pub_key) = CheqdSetup::create_key(wallet_handle, key_alias, "alice").unwrap();
+        let mnemonic = "alice";
+        let (account_id, pub_key) = CheqdSetup::create_key(wallet_handle, key_alias, mnemonic).unwrap();
 
         // Pool
         let cheqd_test_pool_ip = environment::cheqd_test_pool_ip();
@@ -92,9 +93,8 @@ impl CheqdSetup {
         let (account_number, account_sequence) = self.get_base_account_number_and_sequence(&self.account_id)?;
 
         // Tx
-        // TODO: Set correct timeout height using abci info query
         let tx = cheqd_ledger::auth::build_tx(
-            &self.pool_alias, &self.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "token", self.get_timeout_height(), "memo",
+            &self.pool_alias, &self.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "cheq", self.get_timeout_height(), "memo",
         )?;
 
         // Sign
