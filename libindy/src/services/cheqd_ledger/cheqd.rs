@@ -136,10 +136,8 @@ impl CheqdLedgerService {
         let result = if !resp.response.value.is_empty() {
             Some(Nym::from_proto_bytes(&resp.response.value)?)
         } else { None };
-        match self.check_proofs(resp.clone()) {
-            Ok(()) => Ok(result),
-            Err(ex) => Err(ex)
-        }
+        self.check_proofs(resp.clone())?;
+        Ok(result)
     }
 
     #[logfn(Info)]
