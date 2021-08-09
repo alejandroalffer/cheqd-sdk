@@ -1,10 +1,10 @@
 use cosmos_sdk::proto::cosmos::bank::v1beta1::MsgSend as ProtoMsgSend;
-use cosmos_sdk::proto::cosmos::base::v1beta1::Coin;
 
 use indy_api_types::errors::IndyResult;
 
 use super::super::crypto::PubKey;
 use super::super::CheqdProto;
+use super::Coin;
 
 // MsgSend represents a message to send coins from one account to another.
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]

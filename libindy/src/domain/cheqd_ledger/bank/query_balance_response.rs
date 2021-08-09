@@ -1,10 +1,10 @@
 use cosmos_sdk::proto::cosmos::bank::v1beta1::QueryBalanceResponse as ProtoQueryBalanceRequest;
-use cosmos_sdk::proto::cosmos::base::v1beta1::Coin;
 
 use indy_api_types::errors::IndyResult;
 
 use super::super::crypto::PubKey;
 use super::super::CheqdProto;
+use super::Coin;
 
 /// QueryBalanceResponse is the response type for the Query/Balance RPC method.
 #[derive(Eq, PartialEq, Debug, Serialize, Deserialize)]
@@ -26,14 +26,20 @@ impl CheqdProto for QueryBalanceResponse {
     type Proto = ProtoMsgSend;
 
     fn to_proto(&self) -> Self::Proto {
-        Self::Proto {
-            balance: self.balance.clone(),
-        }
+        let balance = match &self.balance {
+            Some(p) => Some(p.to_proto()),
+            None => None,
+        };
+        Self::Proto { balance }
     }
 
     fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
-        Ok(Self::new(
-            proto.balance.clone(),
-        ))
+        let balance = proto
+            .pagination
+            .as_ref()
+            .map(|p| Coin::from_proto(p))
+            .transpose()?;
+
+        Ok(Self::new(balance))
     }
 }
