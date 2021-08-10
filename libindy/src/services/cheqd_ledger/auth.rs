@@ -1,16 +1,17 @@
 use std::convert::TryInto;
 use std::str::FromStr;
 
-use cosmos_sdk::{Coin, tx};
+use cosmos_sdk::{Coin, tx, AccountId};
 use cosmos_sdk::crypto::PublicKey;
 use cosmos_sdk::rpc::endpoint::abci_query;
 use cosmos_sdk::tendermint::block::Height;
 use cosmos_sdk::tx::{AuthInfo, Fee, Msg, SignDoc, SignerInfo};
-use indy_api_types::errors::IndyResult;
-
+use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use crate::domain::cheqd_ledger::auth::{QueryAccountRequest, QueryAccountResponse, Account};
 use crate::domain::cheqd_ledger::CheqdProto;
 use crate::services::CheqdLedgerService;
+use prost::bytes::Buf;
+use crate::utils::cheqd_crypto::check_proofs;
 
 impl CheqdLedgerService {
     pub(crate) async fn auth_build_tx(
@@ -85,8 +86,9 @@ impl CheqdLedgerService {
     ) -> IndyResult<abci_query::Request> {
         // let mut encoded_path = 0x01.to_bytes()?;
         // encoded_path.push_str(address);
-        let mut query_data = 0x01_i32.to_ne_bytes().to_vec();
-        query_data.append(&mut hex::decode(&address).to_indy(IndyErrorKind::InvalidState, "Can't serialize cheqd pool config")?);
+        let mut query_data = vec!(0x01_u8);
+        let acc = AccountId::from_str(address)?;
+        query_data.append(acc.to_bytes().to_vec().as_mut());
         let path = format!("/store/acc/key");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
         let req = abci_query::Request::new(Some(path), query_data, None, true);
@@ -96,9 +98,12 @@ impl CheqdLedgerService {
     pub(crate) fn auth_parse_query_account_resp(
         &self,
         resp: &abci_query::Response,
-    ) -> IndyResult<Account> {
+    ) -> IndyResult<Option<Account>> {
         println!("auth_parse_query_account_resp {:?}", resp.response.value);
-        let result = Account::from_proto_bytes(&resp.response.value)?;
-        return Ok(result);
+        let result = if !resp.response.value.is_empty() {
+            Some(Account::from_proto_bytes(&resp.response.value)?)
+        } else { None };
+        check_proofs(resp.clone())?;
+        Ok(result)
     }
 }

@@ -79,8 +79,7 @@ impl CheqdSetup {
         println!("Cheqd setup. Get account: {:?}", resp);
 
         let resp: Value = serde_json::from_str(&resp).unwrap();
-        let account = resp["account"].as_object().unwrap();
-        let base_account = account["base_account"].as_object().unwrap();
+        let base_account = resp["base_account"].as_object().unwrap();
         let account_number = base_account["account_number"].as_u64().unwrap();
         let account_sequence = base_account["sequence"].as_u64().unwrap();
 
