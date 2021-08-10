@@ -3,6 +3,13 @@
 use std::fs;
 use std::io::Write;
 
+use http_client::HttpClient;
+use http_client::http_types::{Method,
+                              Request as HttpRequest,
+                              Response as HttpResponse,
+                              Body};
+use http_client::h1::H1Client;
+
 use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::{Request, Response};
 use cosmos_sdk::rpc::endpoint::broadcast;
@@ -16,6 +23,9 @@ use crate::domain::cheqd_pool::PoolConfig;
 use crate::utils::environment;
 
 pub(crate) struct CheqdPoolService {}
+
+// ToDo: it can be used only in "unstable-config".
+// const CLIENT_TIMEOUT: u64 = 10;
 
 impl CheqdPoolService {
     pub(crate) fn new() -> Self {
@@ -148,21 +158,39 @@ impl CheqdPoolService {
         where
             R: Request,
     {
-        let req_bytes = req.into_json().into_bytes();
+        let req_json = req.into_json();
+        let mut req = HttpRequest::new( Method::Post,
+                                    rpc_address);
+        req.append_header("Content-Type", "application/json");
+        req.append_header("User-Agent", format!("indy-sdk/{}", env!("CARGO_PKG_VERSION")));
+        req.set_body(Body::from_string(req_json));
 
-        let mut resp = surf::post(rpc_address)
-            .body(surf::Body::from_bytes(req_bytes))
-            .header("Content-Type", "application/json")
-            .header(
-                "User-Agent",
-                format!("indy-sdk/{}", env!("CARGO_PKG_VERSION")),
-            )
-            .await?;
+        let client = H1Client::new();
+        // ToDo: it can be changed only in "unstable-config".
+        // let config = client.config();
+        // config.timeout(std::time::Duration::from_secs(CLIENT_TIMEOUT));
+        // client.set_config(config);
 
+        let mut resp: HttpResponse = client.send(req).await?;
         let resp_str = resp.body_string().await?;
         let resp = R::Response::from_string(resp_str)?;
 
         Ok(resp)
     }
 
+}
+
+#[cfg(test)]
+mod send_req {
+    use crate::CheqdPoolService;
+    use cosmos_sdk::rpc::endpoint::abci_info::Request;
+
+    #[async_std::test]
+    async fn client_close_if_connection_refused() {
+        let pool_service = CheqdPoolService::new();
+        let req = Request {};
+        pool_service.send_req(req, "http://127.0.0.2:12345").await.map_err(|err| {
+            assert!(err.to_string().contains("Connection refused"))
+        });
+    }
 }

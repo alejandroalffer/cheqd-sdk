@@ -8,6 +8,7 @@ use std::{
 
 use failure::{Backtrace, Context, Fail};
 use log;
+use http_client;
 
 #[cfg(feature = "casting_errors")]
 use sqlx;
@@ -245,18 +246,20 @@ impl From<futures::channel::oneshot::Canceled> for IndyError {
     }
 }
 
-// TODO: Better error conversion
 impl From<log::SetLoggerError> for IndyError {
     fn from(err: log::SetLoggerError) -> IndyError {
-        Self::from_msg(IndyErrorKind::InvalidState, err.to_string())
+        err.context(IndyErrorKind::InvalidState).into()
     }
 }
-
 // TODO: Better error conversion
-// Cosmos SDK error. They don't expose Error interface.
+// Cosmos SDK error. They don't expose failure::Error interface.
 impl From<eyre::Report> for IndyError {
     fn from(err: eyre::Report) -> IndyError {
-        Self::from_msg(IndyErrorKind::InvalidState, err.to_string())
+        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::InvalidState);
+        for err_item in err.chain().rev() {
+            indy_error = indy_error.extend(err_item.to_string());
+        }
+        indy_error
     }
 }
 
@@ -284,9 +287,13 @@ impl From<serde_json::Error> for IndyError {
     }
 }
 
-impl From<surf::Error> for IndyError {
-    fn from(err: surf::Error) -> Self {
-        Self::from_msg(IndyErrorKind::InvalidState, err.into_inner().to_string())
+impl From<http_client::http_types::Error> for IndyError {
+    fn from(err: http_client::http_types::Error) -> Self {
+        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::InvalidState);
+        for err_item in err.into_inner().chain().rev() {
+            indy_error = indy_error.extend(err_item.to_string());
+        }
+        indy_error
     }
 }
 
@@ -677,4 +684,27 @@ pub fn get_current_error_c_json() -> *const c_char {
 
 pub fn string_to_cstring(s: String) -> CString {
     CString::new(s).unwrap()
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::IndyError;
+    use failure::Fail;
+    use std::error::Error;
+
+    #[test]
+    fn indy_error_from_eyre_report() {
+        // This string will imulate that there is another error after cosmos_sdk's error
+        // Expected order is:
+        //   - Invalid state
+        //   - <between_str>
+        //   - Cosmos_sdk (Invalid accout ID)
+        let between_str = "Another error";
+        let account = cosmos_sdk::AccountId::new("123user", [0u8; 20]).map_err(|err| {
+            let indy_error = IndyError::from(err.wrap_err(between_str));
+            assert_eq!(Fail::iter_chain(indy_error.inner.as_ref()).count(), 3);
+            assert_eq!(Fail::iter_chain(indy_error.inner.as_ref()).position(|x| x.to_string().contains(between_str)), Some(1))
+        });
+    }
 }
