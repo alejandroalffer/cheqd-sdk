@@ -2,7 +2,6 @@ use cosmos_sdk::proto::cosmos::bank::v1beta1::QueryBalanceRequest as ProtoQueryB
 
 use indy_api_types::errors::IndyResult;
 
-use super::super::crypto::PubKey;
 use super::super::CheqdProto;
 
 /// QueryBalanceRequest is the request type for the Query/Balance RPC method.
@@ -25,7 +24,7 @@ impl QueryBalanceRequest {
 }
 
 impl CheqdProto for QueryBalanceRequest {
-    type Proto = ProtoMsgSend;
+    type Proto = ProtoQueryBalanceRequest;
 
     fn to_proto(&self) -> Self::Proto {
         Self::Proto {
@@ -39,5 +38,24 @@ impl CheqdProto for QueryBalanceRequest {
             proto.address.clone(),
             proto.denom.clone(),
         ))
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_query_balance() {
+        let msg = QueryBalanceRequest::new(
+            "cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd".to_string(),
+            "cheq".to_string(),
+        );
+
+        let proto = msg.to_proto();
+        let decoded = QueryBalanceRequest::from_proto(&proto).unwrap();
+
+        assert_eq!(msg, decoded);
     }
 }

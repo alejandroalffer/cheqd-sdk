@@ -122,27 +122,22 @@ pub extern "C" fn indy_cheqd_ledger_bank_parse_msg_send_resp(
 pub extern "C" fn indy_cheqd_ledger_bank_build_query_balance(
     command_handle: CommandHandle,
     address: *const c_char,
-    amount: *const c_char,
+    denom: *const c_char,
     cb: Option<
-        extern "C" fn(
-            command_handle_: CommandHandle,
-            err: ErrorCode,
-            msg_raw: *const u8,
-            msg_len: u32,
-        ),
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, msg_resp: *const c_char),
     >,
 ) -> ErrorCode {
     debug!(
-        "indy_cheqd_ledger_bank_build_query_balance > address {:?} amount {:?}",
-        address, amount
+        "indy_cheqd_ledger_bank_build_query_balance > address {:?} denom {:?}",
+        address, denom
     );
     check_useful_c_str!(address, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(amount, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(denom, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     debug!(
-        "indy_cheqd_ledger_bank_build_query_balance > address {:?} amount {:?}",
-        address, amount
+        "indy_cheqd_ledger_bank_build_query_balance > address {:?} denom {:?}",
+        address, denom
     );
 
     let locator = Locator::instance();
@@ -150,18 +145,18 @@ pub extern "C" fn indy_cheqd_ledger_bank_build_query_balance(
     let action = async move {
         let res = locator
             .cheqd_ledger_controller
-            .bank_build_query_balance(address, amount);
+            .bank_build_query_balance(address, denom);
         res
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, msg) = prepare_result!(res, Vec::new());
+        let (err, msg_resp) = prepare_result!(res, String::new());
         debug!(
             "indy_cheqd_ledger_bank_build_query_balance: signature: {:?}",
-            msg
+            msg_resp
         );
-        let (msg_raw, msg_len) = ctypes::vec_to_pointer(&msg);
-        cb(command_handle, err, msg_raw, msg_len)
+        let msg_resp = ctypes::string_to_cstring(msg_resp);
+        cb(command_handle, err, msg_resp.as_ptr())
     };
 
     locator.executor.spawn_ok_instrumented(

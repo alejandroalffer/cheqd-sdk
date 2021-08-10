@@ -3,7 +3,6 @@ use indy_api_types::errors::IndyResult;
 use crate::domain::cheqd_ledger::cosmos_ext::CosmosMsgExt;
 use cosmos_sdk::rpc::endpoint::abci_query::Response as QueryResponse;
 use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
-use crate::domain::cheqd_ledger::bank::Coin;
 
 impl CheqdLedgerController {
     pub(crate) fn bank_build_msg_send(
@@ -37,9 +36,9 @@ impl CheqdLedgerController {
         Ok(res)
     }
 
-    pub(crate) fn bank_build_query_balance(&self, address: String, amount: String) -> IndyResult<String> {
-        trace!("bank_build_query_balance > address {:?} amount {:?}", address, amount);
-        let query = self.cheqd_ledger_service.bank_build_query_balance(address, amount)?;
+    pub(crate) fn bank_build_query_balance(&self, address: String, denom: String) -> IndyResult<String> {
+        trace!("bank_build_query_balance > address {:?} denom {:?}", address, denom);
+        let query = self.cheqd_ledger_service.bank_build_query_balance(address, denom)?;
         let json = serde_json::to_string(&query)?;
         trace!("bank_build_query_balance < {:?}", query);
         Ok(json)

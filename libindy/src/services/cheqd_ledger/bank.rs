@@ -7,7 +7,6 @@ use cosmos_sdk::tx::MsgType;
 use indy_api_types::errors::IndyResult;
 use log_derive::logfn;
 
-use crate::domain::cheqd_ledger::base::query::PageRequest;
 use crate::domain::cheqd_ledger::prost_ext::ProstMessageExt;
 use crate::domain::cheqd_ledger::CheqdProto;
 use crate::domain::cheqd_ledger::bank::{MsgSend, Coin, MsgSendResponse, QueryBalanceRequest, QueryBalanceResponse};
@@ -15,6 +14,7 @@ use crate::services::CheqdLedgerService;
 
 impl CheqdLedgerService {
     fn get_vector_coins_from_amount_and_denom(
+        &self,
         amount: &str,
         denom: &str
     ) -> IndyResult<Vec<Coin>> {
@@ -33,7 +33,7 @@ impl CheqdLedgerService {
         amount: &str,
         denom: &str
     ) -> IndyResult<Msg> {
-        let coins: Vec<Coin> = self.get_vector_coins_from_amount_and_denom(amount, denom);
+        let coins: Vec<Coin> = self.get_vector_coins_from_amount_and_denom(amount, denom)?;
         let msg_send = MsgSend::new(
             from_address.to_string(),
             to_address.to_string(),

@@ -20,7 +20,7 @@ extern "C" {
     pub fn indy_cheqd_ledger_bank_build_query_balance(
         command_handle: CommandHandle,
         address: CString,
-        amount: CString,
+        denom: CString,
         cb: Option<ResponseSliceCB>,
     ) -> Error;
 

@@ -76,11 +76,11 @@ fn _parse_msg_send_resp(
 
 pub fn bank_build_query_balance(
     address: &str,
-    amount: &str,
+    denom: &str,
 ) -> Box<dyn Future<Item = Vec<u8>, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-    let err = _bank_build_query_balance(command_handle, address, amount, cb);
+    let err = _bank_build_query_balance(command_handle, address, denom, cb);
 
     ResultHandler::slice(command_handle, err, receiver)
 }
@@ -88,17 +88,17 @@ pub fn bank_build_query_balance(
 fn _bank_build_query_balance(
     command_handle: CommandHandle,
     address: &str,
-    amount: &str,
+    denom: &str,
     cb: Option<ResponseSliceCB>,
 ) -> ErrorCode {
     let address = c_str!(address);
-    let amount = c_str!(amount);
+    let denom = c_str!(denom);
 
     ErrorCode::from(unsafe {
         cheqd_ledger::bank::indy_cheqd_ledger_bank_build_query_balance(
             command_handle,
             address.as_ptr(),
-            amount.as_ptr(),
+            denom.as_ptr(),
             cb,
         )
     })
