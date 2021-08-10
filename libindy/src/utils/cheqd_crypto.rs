@@ -32,7 +32,7 @@ pub fn check_proofs(
             ),
         ));
     };
-    let proof_0_root = proof_1_existence.value;
+    let proof_0_root = proof_1_existence.clone().value;
 
     // Check state proofs 0 (inner iavl tree)
     let is_proof_correct = match proof_0_data_decoded.proof {
@@ -58,7 +58,7 @@ pub fn check_proofs(
 
     if !is_proof_correct {
         return Err(IndyError::from_msg(
-            IndyErrorKind::ProofRejected,
+            IndyErrorKind::InvalidStructure,
             format!(
                 "Commitment proof 0 is incorrect {}",
                 serde_json::to_string(proof_op_0)?
@@ -68,11 +68,10 @@ pub fn check_proofs(
 
     // Should be output from light client
     // Calculate a root hash for the outer tree
-    let proof_1_root = ics23::calculate_existence_root(&proof_1_existence)
-        .to_indy(IndyErrorKind::InvalidStructure,format!(
-            "Commitment proof has an incorrect format {}",
-            serde_json::to_string(proof_op_1)?)
-        )?;
+    let proof_1_root = ics23::calculate_existence_root(&proof_1_existence.clone())
+        .map_err(|er | IndyError::from_msg(
+        IndyErrorKind::InvalidStructure,
+        format!("Commitment proof has an incorrect format {}", er)))?;
 
     // Check state proofs 1 (outer `ics23:simple` tendermint tree)
     if !ics23::verify_membership(
@@ -83,7 +82,7 @@ pub fn check_proofs(
         &proof_0_root, // inner tree root hash in the outer tree (should exist)
     ) {
         return Err(IndyError::from_msg(
-            IndyErrorKind::ProofRejected,
+            IndyErrorKind::InvalidStructure,
             format!(
                 "Commitment proof 1 is incorrect {}",
                 serde_json::to_string(proof_op_1)?
