@@ -11,21 +11,33 @@ use crate::domain::cheqd_ledger::base::query::PageRequest;
 use crate::domain::cheqd_ledger::prost_ext::ProstMessageExt;
 use crate::domain::cheqd_ledger::CheqdProto;
 use crate::domain::cheqd_ledger::bank::{MsgSend, Coin, MsgSendResponse, QueryBalanceRequest, QueryBalanceResponse};
+use crate::services::CheqdLedgerService;
 
-pub(crate) struct CheqdBankService {}
+impl CheqdLedgerService {
+    fn get_vector_coins_from_amount_and_denom(
+        amount: &str,
+        denom: &str
+    ) -> IndyResult<Vec<Coin>> {
+        let coin = Coin::new(denom.to_string(), amount.to_string());
+        let mut coins = Vec::new();
+        coins.push(coin);
 
-impl CheqdXferService {
+        Ok(coins)
+    }
+
     #[logfn(Info)]
     pub(crate) fn bank_build_msg_send(
         &self,
         from_address: &str,
         to_address: &str,
-        amount: Vec<Coin>
+        amount: &str,
+        denom: &str
     ) -> IndyResult<Msg> {
+        let coins: Vec<Coin> = self.get_vector_coins_from_amount_and_denom(amount, denom);
         let msg_send = MsgSend::new(
             from_address.to_string(),
             to_address.to_string(),
-            amount
+            coins
         );
 
         Ok(msg_send.to_proto().to_msg()?)
@@ -43,9 +55,9 @@ impl CheqdXferService {
     pub(crate) fn bank_build_query_balance(
         &self,
         address: String,
-        amount: String
+        denom: String
     ) -> IndyResult<abci_query::Request> {
-        let query_data = QueryBalanceRequest::new(address, amount);
+        let query_data = QueryBalanceRequest::new(address, denom);
         let path = format!("/cheqdid.cheqdnode.bank.Query/Balance");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
         let req =
@@ -54,7 +66,7 @@ impl CheqdXferService {
     }
 
     #[logfn(Info)]
-    pub(crate) fn bank_build_query_balance_resp(
+    pub(crate) fn bank_parse_query_balance_resp(
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryBalanceResponse> {

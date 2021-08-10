@@ -6,6 +6,7 @@ use crate::services::{CheqdLedgerService, CheqdPoolService};
 
 mod cheqd;
 mod auth;
+mod bank;
 
 pub(crate) struct CheqdLedgerController {
     cheqd_ledger_service: Arc<CheqdLedgerService>,
