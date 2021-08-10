@@ -204,6 +204,30 @@ dockerbuild-libindy-android:
     - cli/ci/scripts/build.sh ${BUILD_TYPE}
     - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
 
+.cheqd-submodules:
+  before_script:
+    # The only working solution for private submodules fetching via ssh:
+    # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/2075
+
+    # install ssh-agent
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+
+    # run ssh-agent
+    - eval $(ssh-agent -s)
+
+    # add ssh key stored in SSH_PRIVATE_KEY variable to the agent store
+    - chmod 600 $CHEQD_GITHUB_SSH_PRIVATE_KEY || true
+    - ssh-add $CHEQD_GITHUB_SSH_PRIVATE_KEY
+
+    # disable host key checking (NOTE: makes you susceptible to man-in-the-middle attacks)
+    # WARNING: use only in docker container, if you use it with shell you will overwrite your user's ssh config
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+    # Fetch submodules
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+
 build-libindy-ubuntu16-from-branch:
   extends: .build-libindy
   image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
@@ -261,7 +285,9 @@ build-libindy-ubuntu18-release:
       - main@evernym/verity/vdr-tools
 
 .build-libindy-android:
-  extends: .tags_compute_xlarge
+  extends:
+    - .cheqd-submodules 
+    - .tags_compute_xlarge
   stage: build  # TODO separate build step
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
@@ -287,6 +313,7 @@ build-libindy-android-from-branch:
       - main
 
 build-libindy-macos:
+  extends: .cheqd-submodules
   stage: build
   tags:
     - macos
@@ -308,6 +335,7 @@ build-libindy-macos:
     - LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test --test did --no-default-features --features only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
 
 build-libindy-ios:
+  extends: .cheqd-submodules
   stage: build
   tags:
     - macos
