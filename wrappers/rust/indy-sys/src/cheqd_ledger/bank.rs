@@ -21,7 +21,7 @@ extern "C" {
         command_handle: CommandHandle,
         address: CString,
         denom: CString,
-        cb: Option<ResponseSliceCB>,
+        cb: Option<ResponseStringCB>,
     ) -> Error;
 
     pub fn indy_cheqd_ledger_bank_parse_query_balance_resp(

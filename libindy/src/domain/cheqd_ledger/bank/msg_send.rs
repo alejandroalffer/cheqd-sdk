@@ -54,7 +54,6 @@ impl CheqdProto for MsgSend {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::cheqd_ledger::bank::MsgSend;
 
     #[test]
     fn test_msg_send() {

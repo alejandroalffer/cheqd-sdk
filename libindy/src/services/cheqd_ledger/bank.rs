@@ -58,7 +58,7 @@ impl CheqdLedgerService {
         denom: String
     ) -> IndyResult<abci_query::Request> {
         let query_data = QueryBalanceRequest::new(address, denom);
-        let path = format!("/cheqdid.cheqdnode.bank.Query/Balance");
+        let path = format!("/cosmos.bank.v1beta1.Query/Balance");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
         let req =
             abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);

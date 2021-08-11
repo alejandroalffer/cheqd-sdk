@@ -31,6 +31,7 @@ pub struct CheqdSetup {
     pub account_id: String,
     pub pub_key: String,
     pub wallet_handle: WalletHandle,
+    pub denom: String,
 }
 
 impl CheqdSetup {
@@ -50,6 +51,9 @@ impl CheqdSetup {
         let cheqd_test_chain_id = environment::cheqd_test_chain_id();
         cheqd_pool::add(&name, &cheqd_test_pool_ip, &cheqd_test_chain_id).unwrap();
 
+        // Denom
+        let denom = environment::cheqd_denom();
+
         let setup = CheqdSetup {
             name: name.clone(),
             pool_alias: name,
@@ -57,6 +61,7 @@ impl CheqdSetup {
             account_id,
             pub_key,
             wallet_handle,
+            denom,
         };
 
         setup
