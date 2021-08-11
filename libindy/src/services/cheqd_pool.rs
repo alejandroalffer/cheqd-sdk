@@ -177,7 +177,6 @@ impl CheqdPoolService {
 
         Ok(resp)
     }
-
 }
 
 #[cfg(test)]

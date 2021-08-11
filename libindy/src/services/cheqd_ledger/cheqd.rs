@@ -140,6 +140,16 @@ impl CheqdLedgerService {
     }
 
     #[logfn(Info)]
+    pub(crate) fn cheqd_parse_query_get_nym_resp_without_proof(
+        &self,
+        resp: &abci_query::Response,
+
+    ) -> IndyResult<QueryGetNymResponse> {
+        let result = QueryGetNymResponse::from_proto_bytes(&resp.response.value)?;
+        return Ok(result);
+    }
+
+    #[logfn(Info)]
     pub(crate) fn cheqd_build_query_all_nym(
         &self,
         pagination: Option<PageRequest>,
