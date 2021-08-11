@@ -98,12 +98,12 @@ impl CheqdLedgerService {
     pub(crate) fn auth_parse_query_account_resp(
         &self,
         resp: &abci_query::Response,
-    ) -> IndyResult<Option<Account>> {
+    ) -> IndyResult<QueryAccountResponse> {
         let result = if !resp.response.value.is_empty() {
             Some(Account::from_proto_bytes(&resp.response.value)?)
         } else { None };
         check_proofs(resp.clone())?;
-        Ok(result)
+        Ok(QueryAccountResponse::new(result))
     }
 
     pub(crate) fn auth_parse_query_account_resp_without_proof(

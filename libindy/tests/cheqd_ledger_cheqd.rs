@@ -51,13 +51,14 @@ mod high_cases {
 
             let result: Value = serde_json::from_str(&query_resp_parsed).unwrap();
             let expected_result: Value = json!({
-
+                "nym": {
                     "creator": setup.account_id,
                     "id": tx_resp_parsed["id"].as_u64().unwrap(),
                     "alias": "test-alias",
                     "verkey": "test-verkey",
                     "did": "test-did",
                     "role": "test-role",
+                }
 
             });
 
@@ -122,12 +123,14 @@ mod high_cases {
 
             let result: Value = serde_json::from_str(&query_resp).unwrap();
             let expected_result: Value = json!({
+                 "nym": {
                     "creator": setup.account_id,
                     "id": resp_create["id"].as_u64().unwrap(),
                     "alias": "test-alias-update",
                     "verkey": "test-verkey-update",
                     "did": "test-did-update",
                     "role": "test-role-update"
+                }
             });
 
             assert_eq!(expected_result, result);
@@ -186,7 +189,9 @@ mod high_cases {
             println!("Query response: {:?}", query_resp);
 
             let result: Value = serde_json::from_str(&query_resp).unwrap();
-            let expected_result: Value = json!(null);
+            let expected_result: Value = json!({
+                "nym": null
+            });
 
             assert_eq!(expected_result, result);
         }
