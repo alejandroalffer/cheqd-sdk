@@ -131,12 +131,12 @@ impl CheqdLedgerService {
     pub(crate) fn cheqd_parse_query_get_nym_resp(
         &self,
         resp: &abci_query::Response,
-    ) -> IndyResult<Option<Nym>> {
+    ) -> IndyResult<QueryGetNymResponse> {
         let result = if !resp.response.value.is_empty() {
             Some(Nym::from_proto_bytes(&resp.response.value)?)
         } else { None };
         check_proofs(resp.clone())?;
-        Ok(result)
+        Ok(QueryGetNymResponse::new(result))
     }
 
     #[logfn(Info)]
