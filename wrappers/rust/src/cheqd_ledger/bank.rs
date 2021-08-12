@@ -74,18 +74,18 @@ fn _parse_msg_send_resp(
     })
 }
 
-pub fn bank_build_query_balance(
+pub fn build_query_balance(
     address: &str,
     denom: &str,
 ) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _bank_build_query_balance(command_handle, address, denom, cb);
+    let err = _build_query_balance(command_handle, address, denom, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _bank_build_query_balance(
+fn _build_query_balance(
     command_handle: CommandHandle,
     address: &str,
     denom: &str,

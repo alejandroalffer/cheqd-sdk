@@ -199,6 +199,7 @@ fn build_executor() -> CommandExecutor {
         .add_group(cheqd_ledger::group::new())
         .add_command(cheqd_ledger::query_account_command::new())
         .add_command(cheqd_ledger::create_nym_command::new())
+        .add_command(cheqd_ledger::msg_send_command::new())
         .finalize_group()
         .add_group(cheqd_pool::group::new())
         .add_command(cheqd_pool::add_command::new())

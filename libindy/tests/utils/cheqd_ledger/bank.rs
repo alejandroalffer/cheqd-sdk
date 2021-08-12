@@ -17,7 +17,7 @@ pub fn bank_build_query_balance(
     address: &str,
     denom: &str,
 ) -> Result<String, IndyError> {
-    cheqd_ledger::bank::bank_build_query_balance(address, denom).wait()
+    cheqd_ledger::bank::build_query_balance(address, denom).wait()
 }
 
 pub fn parse_query_balance_resp(commit_resp: &str) -> Result<String, IndyError> {
