@@ -54,7 +54,6 @@ pub mod create_nym_command {
                 .add_required_param("max_coin", "Max amount coins for transaction")
                 .add_required_param("max_gas", "Max amount gas for transaction")
                 .add_required_param("denom", "Denom is currency for transaction")
-                .add_optional_param("timeout_height", "Height block of blockchain")
                 .add_optional_param("role", "Role of identity.")
                 .add_optional_param("memo", "Memo is optional param. It has any arbitrary memo to be added to the transaction")
                 .add_example("cheqd-ledger create-nym did=my_did verkey=my_verkey key_alias=my_key max_coin=500 max_gas=10000000 denom=cheq timeout_height=20000 role=role memo=memo")
@@ -71,14 +70,12 @@ pub mod create_nym_command {
         let max_gas = get_str_param("max_gas", params).map_err(error_err!())?
             .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: max_gas must be integer"))?;
         let denom = get_str_param("denom", params).map_err(error_err!())?;
-        let timeout_height = get_opt_str_param("timeout_height", params).map_err(error_err!())?
-            .unwrap_or("").parse::<u64>()
-            .map_err(|_| println_err!("Invalid format of input data: timeout_height must be integer"))?;
         let role = get_opt_str_param("role", params).map_err(error_err!())?.unwrap_or("");
         let memo = get_opt_str_param("memo", params).map_err(error_err!())?.unwrap_or("");
 
         let pool_alias = ensure_cheqd_connected_pool(ctx)?;
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let timeout_height = get_timeout_height(&pool_alias)?;
         let key_info = CheqdKeys::get_info(wallet_handle, key_alias)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
@@ -154,17 +151,16 @@ pub mod get_nym_command {
 pub mod bank_send_command {
     use super::*;
 
-    command!(CommandMetadata::build("bank-send", "Msg send.")
+    command!(CommandMetadata::build("bank-send", "Send coins between accounts.")
                 .add_required_param("from", "Address for sending coins")
                 .add_required_param("to", "Address for getting coins")
                 .add_required_param("amount", "Amount coins for send transaction")
                 .add_required_param("denom", "Denom of coins")
-                .add_required_param("key_alias", "key alias")
+                .add_required_param("key_alias", "Key alias")
                 .add_required_param("max_coin", "Max amount coins for transaction")
                 .add_required_param("max_gas", "Max amount gas for transaction")
                 .add_optional_param("memo", "Memo is optional param. It has any arbitrary memo to be added to the transaction")
-
-                .add_example("cheqd-ledger bank-send from=my_did to=my_verkey amount=my_key denom=cheq")
+                .add_example("cheqd-ledger bank-send from=sender_address to=getter_address amount=100 denom=cheq key_alias=my_key max_coin=100 max_gas=10000000")
                 .finalize()
     );
 
@@ -179,7 +175,7 @@ pub mod bank_send_command {
             .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: max_coin must be integer"))?;
         let max_gas = get_str_param("max_gas", params).map_err(error_err!())?
             .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: max_gas must be integer"))?;
-        let memo = get_str_param("memo", params).map_err(error_err!())?;
+        let memo = get_opt_str_param("memo", params).map_err(error_err!())?.unwrap_or("");
         let pool_alias = ensure_cheqd_connected_pool(ctx)?;
 
         let request = CheqdLedger::build_msg_send(from, to, amount, denom)
@@ -227,8 +223,15 @@ pub mod get_balance_command {
     }
 }
 
-
-pub fn build_and_sign_and_broadcast_tx(ctx: &CommandContext, address: &str, pool_alias: &str, request: &[u8], key_alias: &str, denom: &str, max_gas: u64, max_coin: u64, memo: &str) -> Result<String, ()> {
+pub fn build_and_sign_and_broadcast_tx(ctx: &CommandContext,
+                                       address: &str,
+                                       pool_alias: &str,
+                                       request: &[u8],
+                                       key_alias: &str,
+                                       denom: &str,
+                                       max_gas: u64,
+                                       max_coin: u64,
+                                       memo: &str) -> Result<String, ()> {
     let (account_number, account_sequence) = get_base_account_number_and_sequence(address, pool_alias)?;
     let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
     let timeout_height = get_timeout_height(pool_alias)?;
@@ -331,13 +334,13 @@ pub fn get_timeout_height(pool_alias: &str) -> Result<u64, ()> {
 pub mod tests {
     use super::*;
     use super::cheqd_keys::tests::KEY_ALIAS_WITH_BALANCE;
+    use crate::utils::environment::EnvironmentUtils;
 
     const DID: &str = "did";
     const VERKEY: &str = "verkey";
     const MAX_GAS: &str = "1000000";
     const MAX_COIN: &str = "100";
-    const DENOM: &str = "cheq";
-    const TIMEOUT_HEIGHT: &str = "1000";
+    const AMOUNT: &str = "100";
     const ROLE: &str = "TRUSTEE";
     const MEMO: &str = "memo";
 
@@ -374,8 +377,7 @@ pub mod tests {
                 params.insert("key_alias", KEY_ALIAS_WITH_BALANCE.to_string());
                 params.insert("max_gas", MAX_GAS.to_string());
                 params.insert("max_coin", MAX_COIN.to_string());
-                params.insert("denom", DENOM.to_string());
-                params.insert("timeout_height", TIMEOUT_HEIGHT.to_string());
+                params.insert("denom", EnvironmentUtils::cheqd_denom());
                 params.insert("role", ROLE.to_string());
                 params.insert("memo", MEMO.to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -387,17 +389,17 @@ pub mod tests {
         }
 
         #[test]
-        pub fn msg_send() {
+        pub fn bank_send() {
             let ctx = setup_with_wallet_and_cheqd_pool();
             let key_info = get_key(&ctx);
             {
                 let cmd = bank_send_command::new();
                 let mut params = CommandParams::new();
-                params.insert("to", key_info.as_object().unwrap()["account_id"].to_string());
                 params.insert("from", key_info.as_object().unwrap()["account_id"].to_string());
-                params.insert("amount", "100".to_string());
+                params.insert("to", key_info.as_object().unwrap()["account_id"].to_string());
+                params.insert("amount", AMOUNT.to_string());
                 params.insert("denom", EnvironmentUtils::cheqd_denom());
-                params.insert("key_alias", KEY_ALIAS_WITH_BALANCE.to_string());
+                params.insert("key_alias",  key_info.as_object().unwrap()["alias"].to_string());
                 params.insert("max_gas", MAX_GAS.to_string());
                 params.insert("max_coin", MAX_COIN.to_string());
                 params.insert("memo", MEMO.to_string());
