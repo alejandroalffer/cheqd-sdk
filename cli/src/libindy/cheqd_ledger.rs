@@ -79,13 +79,13 @@ impl CheqdLedger {
     //     cheqd_ledger::cheqd::parse_msg_delete_nym_resp(commit_resp).wait()
     // }
     //
-    // pub fn build_query_get_nym(id: u64) -> Result<String, IndyError> {
-    //     cheqd_ledger::cheqd::build_query_get_nym(id).wait()
-    // }
-    //
-    // pub fn parse_query_get_nym_resp(query_resp: &str) -> Result<String, IndyError> {
-    //     cheqd_ledger::cheqd::parse_query_get_nym_resp(query_resp).wait()
-    // }
+    pub fn build_query_get_nym(id: u64) -> Result<String, IndyError> {
+        cheqd_ledger::cheqd::build_query_get_nym(id).wait()
+    }
+
+    pub fn parse_query_get_nym_resp(query_resp: &str) -> Result<String, IndyError> {
+        cheqd_ledger::cheqd::parse_query_get_nym_resp(query_resp).wait()
+    }
     //
     // pub fn build_query_all_nym() -> Result<String, IndyError> {
     //     cheqd_ledger::cheqd::build_query_all_nym().wait()

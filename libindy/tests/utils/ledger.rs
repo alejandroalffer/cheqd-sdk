@@ -446,6 +446,7 @@ pub fn append_request_endorser(
     ledger::append_request_endorser(request_json, endorser_did).wait()
 }
 
+#[cfg(feature = "local_nodes_pool")]
 pub fn post_entities() -> (&'static str, &'static str, &'static str) {
     lazy_static! {
         static ref COMMON_ENTITIES_INIT: Once = Once::new();
@@ -568,6 +569,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
     }
 }
 
+#[cfg(feature = "local_nodes_pool")]
 pub fn post_qualified_entities() -> (&'static str, &'static str) {
     lazy_static! {
         static ref COMMON_ENTITIES_INIT: Once = Once::new();
