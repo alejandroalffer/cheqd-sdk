@@ -119,6 +119,37 @@ pub mod create_nym_command {
     }
 }
 
+pub mod get_nym_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-nym", "Get nym from Ledger.")
+                .add_required_param("id", "Unique identifier for NYM")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        let id = get_str_param("id", params).map_err(error_err!())?
+            .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: id must be integer"))?;
+        let pool_alias = ensure_cheqd_connected_pool(ctx)?;
+
+        let query = CheqdLedger::build_query_get_nym(id)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+        let response = CheqdPool::abci_query(&pool_alias, &query)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+        let parsed_response = CheqdLedger::parse_query_get_nym_resp(&response)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+
+        println!("{}",parsed_response);
+        trace!("execute << {:?}", parsed_response);
+
+        Ok(())
+    }
+}
+
 fn get_base_account_number_and_sequence(address: &str, pool_alias: &str) -> Result<(u64, u64), ()> {
     let query = CheqdLedger::build_query_account(address)
         .map_err(|err| handle_indy_error(err, None, None, None))?;
@@ -220,5 +251,21 @@ pub mod tests {
 
             tear_down_with_wallet(&ctx);
         }
+
+        #[test]
+        pub fn get_nym() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            {
+                let cmd = get_nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("id", "9999999".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+
     }
 }
