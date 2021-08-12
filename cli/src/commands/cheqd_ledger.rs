@@ -151,10 +151,10 @@ pub mod get_nym_command {
     }
 }
 
-pub mod msg_send_command {
+pub mod bank_send_command {
     use super::*;
 
-    command!(CommandMetadata::build("msg-send", "Msg send.")
+    command!(CommandMetadata::build("bank-send", "Msg send.")
                 .add_required_param("from", "Address for sending coins")
                 .add_required_param("to", "Address for getting coins")
                 .add_required_param("amount", "Amount coins for send transaction")
@@ -164,7 +164,7 @@ pub mod msg_send_command {
                 .add_required_param("max_gas", "Max amount gas for transaction")
                 .add_optional_param("memo", "Memo is optional param. It has any arbitrary memo to be added to the transaction")
 
-                .add_example("cheqd-ledger msg-send from=my_did to=my_verkey amount=my_key denom=cheq")
+                .add_example("cheqd-ledger bank-send from=my_did to=my_verkey amount=my_key denom=cheq")
                 .finalize()
     );
 
@@ -195,6 +195,38 @@ pub mod msg_send_command {
         Ok(())
     }
 }
+
+
+pub mod get_balance_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-balance", "Get balance from Ledger.")
+                .add_required_param("address", "Account identifier.")
+                .add_required_param("denom", "Account balance denom")
+                .add_example("cheqd-ledger get-balance address=cosmos1mhl8w0xvdl3r6xf67utnqna77q0vjqgzenk7yv")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        let address = get_str_param("address", params).map_err(error_err!())?;
+        let denom = get_str_param("denom", params).map_err(error_err!())?;
+        let pool_alias = ensure_cheqd_connected_pool(ctx)?;
+
+        let query = CheqdLedger::build_query_balance(address, denom)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+        let response = CheqdPool::abci_query(&pool_alias, &query)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+        let parsed_response = CheqdLedger::parse_query_balance_resp(&response)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        println!("{}",parsed_response);
+        trace!("execute << {:?}", parsed_response);
+
+        Ok(())
+    }
+}
+
 
 pub fn build_and_sign_and_broadcast_tx(ctx: &CommandContext, address: &str, pool_alias: &str, request: &[u8], key_alias: &str, denom: &str, max_gas: u64, max_coin: u64, memo: &str) -> Result<String, ()> {
     let (account_number, account_sequence) = get_base_account_number_and_sequence(address, pool_alias)?;
@@ -316,7 +348,7 @@ pub mod tests {
         use crate::utils::environment::EnvironmentUtils;
 
         #[test]
-        pub fn query_account() {
+        pub fn get_account() {
             let ctx = setup_with_wallet_and_cheqd_pool();
             let key_info = get_key(&ctx);
             {
@@ -359,7 +391,7 @@ pub mod tests {
             let ctx = setup_with_wallet_and_cheqd_pool();
             let key_info = get_key(&ctx);
             {
-                let cmd = msg_send_command::new();
+                let cmd = bank_send_command::new();
                 let mut params = CommandParams::new();
                 params.insert("to", key_info.as_object().unwrap()["account_id"].to_string());
                 params.insert("from", key_info.as_object().unwrap()["account_id"].to_string());
@@ -384,6 +416,23 @@ pub mod tests {
                 let cmd = get_nym_command::new();
                 let mut params = CommandParams::new();
                 params.insert("id", "9999999".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn get_balance() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            let key_info = get_key(&ctx);
+            {
+                let cmd = get_balance_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", key_info.as_object().unwrap()["account_id"].to_string());
+                params.insert("denom", EnvironmentUtils::cheqd_denom());
                 cmd.execute(&ctx, &params).unwrap();
             }
 
