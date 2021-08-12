@@ -16,12 +16,12 @@ pub mod group {
     command_group!(CommandGroupMetadata::new("cheqd-ledger", "Cheqd ledger management commands"));
 }
 
-pub mod query_account_command {
+pub mod get_account_command {
     use super::*;
 
-    command!(CommandMetadata::build("query-account", "Query cheqd account.")
+    command!(CommandMetadata::build("get-account", "Query cheqd account.")
                 .add_required_param("address", "Address of account")
-                .add_example("cheqd-ledger query-account address=sov")
+                .add_example("cheqd-ledger get-account address=cosmos1mhl8w0xvdl3r6xf67utnqna77q0vjqgzenk7yv")
                 .finalize()
     );
 
@@ -57,7 +57,7 @@ pub mod create_nym_command {
                 .add_optional_param("timeout_height", "Height block of blockchain")
                 .add_optional_param("role", "Role of identity.")
                 .add_optional_param("memo", "Memo is optional param. It has any arbitrary memo to be added to the transaction")
-                .add_example("cheqd-ledger create-nym did=my_did verkey=my_verkey key_alias=my_key max_coin=500 max_gas=10000000 denom=cheq timeout_height=20000 role=TRUSTEE memo=memo")
+                .add_example("cheqd-ledger create-nym did=my_did verkey=my_verkey key_alias=my_key max_coin=500 max_gas=10000000 denom=cheq timeout_height=20000 role=role memo=memo")
                 .finalize()
     );
 
@@ -113,6 +113,38 @@ pub mod create_nym_command {
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         println!("{}", parsed_response);
+        trace!("execute << {:?}", parsed_response);
+
+        Ok(())
+    }
+}
+
+pub mod get_nym_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-nym", "Get nym from Ledger.")
+                .add_required_param("id", "Unique identifier for NYM")
+                .add_example("cheqd-ledger get-nym id=0")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        let id = get_str_param("id", params).map_err(error_err!())?
+            .parse::<u64>().map_err(|_| println_err!("Invalid format of input data: id must be integer"))?;
+        let pool_alias = ensure_cheqd_connected_pool(ctx)?;
+
+        let query = CheqdLedger::build_query_get_nym(id)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+        let response = CheqdPool::abci_query(&pool_alias, &query)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+        let parsed_response = CheqdLedger::parse_query_get_nym_resp(&response)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+
+        println!("{}",parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -187,7 +219,7 @@ pub mod tests {
             let ctx = setup_with_wallet_and_cheqd_pool();
             let key_info = get_key(&ctx);
             {
-                let cmd = query_account_command::new();
+                let cmd = get_account_command::new();
                 let mut params = CommandParams::new();
                 params.insert("address", key_info.as_object().unwrap()["account_id"].to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -220,5 +252,21 @@ pub mod tests {
 
             tear_down_with_wallet(&ctx);
         }
+
+        #[test]
+        pub fn get_nym() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            {
+                let cmd = get_nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("id", "9999999".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+
     }
 }
