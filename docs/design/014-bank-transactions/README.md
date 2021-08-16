@@ -18,6 +18,7 @@ Bank transactions allow exchange coins between accounts and get balance info.
   * `amount` - amount of coins for sending (String)
   * `denom` - denomination of coins (String)
 
+
 * Response fields:
   * `check_tx` - checks the transaction without executing it. When a new transaction is added to the Tendermint Core, it will ask the application to check it (validate the format, signatures, etc.).
     * `check_tx::code` - if Code != 0, it will be rejected from the mempool and hence not broadcasted to other peers and not included in a proposal block.
@@ -25,18 +26,18 @@ Bank transactions allow exchange coins between accounts and get balance info.
     * `check_tx::gas_wanted` - is the maximum amount of gas the sender of a tx is willing to use.
     * `check_tx::gas_used` - is how much it actually used.
     * `check_tx::events` - include any events for the execution, though since the transaction has not been committed yet, they are /effectively ignored by Tendermint.
-    * `check_tx::codespace` - The codespace is a namespace for the Code.
+    * `check_tx::codespace` - the codespace is a namespace for the Code.
   * `deliver_tx` - returns a abci.Result, which includes a Code, Data, and Log. Tendermint sends the DeliverTx requests asynchronously but in order, and relies on the underlying socket protocol (ie. TCP) to ensure they are received by the app in order. They have already been ordered in the global consensus by the Tendermint protocol.
     * `deliver_tx::gas_wanted` - is the maximum amount of gas the sender of a tx is willing to use,
     * `deliver_tx::gas_used` - is how much it actually used,
     * `deliver_tx::data` - contains the result of the CheckTx transaction execution, if any. It is semantically meaningless to Tendermint.
     * `deliver_tx::events` - include any events for the execution, which Tendermint will use to index the transaction by. This allows transactions to be queried according to what events took place during their execution.
     * `deliver_tx::hash:transaction::Hash` - hash of transaction.
-    * `deliver_tx::height` - Height is a monotonically increasing data type that can be compared against another Height for the purposes of updating and freezing clients.
+    * `deliver_tx::height` - height is a monotonically increasing data type that can be compared against another Height for the purposes of updating and freezing clients.
 
 Example response:
 
-```Rust
+```
 Response {
    check_tx: TxResult {
       code: Ok,
@@ -115,6 +116,58 @@ Response {
    },
    hash:transaction::Hash(A04F501BB9A6E82A9254E08265902C410FEED102D02AB13D635C0228B6B85B98),
    height:block::Height(353)
+}
+```
+
+### bank_build_query_balance
+
+* Params:
+  * `address` - address of sender coins (String)
+  * `denom` - denomination of coins (String)
+
+
+* Response fields:
+  * response - query the application for some information. Note that calls to Query are not replicated across nodes, but rather query the local node's state - hence they may return stale reads. For reads that require consensus, use a transaction.
+    * code - if Code != 0, it will be rejected from the mempool and hence not broadcasted to other peers and not included in a proposal block.
+    * proofs - The Tendermint block header includes a number of hashes, each providing an anchor for some type of proof about the blockchain. 
+    * height - height is a monotonically increasing data type that can be compared against another Height for the purposes of updating and freezing clients.
+    * codespace - the codespace is a namespace for the Code.
+    
+Example response:
+
+```
+Response {
+   response: AbciQuery {
+      code: Ok,
+      log: Log(""),
+      info:"",
+      index: 0,
+      key: [],
+      value:[
+         10,
+         17,
+         10,
+         4,
+         99,
+         104,
+         101,
+         113,
+         18,
+         9,
+         49,
+         48,
+         48,
+         48,
+         48,
+         48,
+         52,
+         48,
+         48
+      ],
+      proof: None,
+      height": block::Height(352),
+      codespace: ""
+   }
 }
 ```
 
