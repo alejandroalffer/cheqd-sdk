@@ -185,7 +185,6 @@ pub mod bank_send_command {
         let parsed_response = CheqdLedger::parse_msg_send_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        println!("{}", parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -232,7 +231,6 @@ pub fn build_and_sign_and_broadcast_tx(ctx: &CommandContext,
                                        max_gas: u64,
                                        max_coin: u64,
                                        memo: &str) -> Result<String, ()> {
-    let (account_number, account_sequence) = get_base_account_number_and_sequence(address, pool_alias)?;
     let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
     let timeout_height = get_timeout_height(pool_alias)?;
 
@@ -241,6 +239,10 @@ pub fn build_and_sign_and_broadcast_tx(ctx: &CommandContext,
     let key_info_json: Value = serde_json::from_str(&key_info)
         .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
     let pubkey = key_info_json["pub_key"].as_str().unwrap();
+
+
+    let account_id = key_info_json["account_id"].as_str().unwrap();
+    let (account_number, account_sequence) = get_base_account_number_and_sequence(account_id, pool_alias)?;
 
     let tx = CheqdLedger::build_tx(
         &pool_alias,
@@ -354,15 +356,13 @@ pub mod tests {
         pub fn get_account() {
             let ctx = setup_with_wallet_and_cheqd_pool();
             let key_info = get_key(&ctx);
+            let account_id = key_info["account_id"].as_str().unwrap().to_string();
             {
                 let cmd = get_account_command::new();
                 let mut params = CommandParams::new();
-                params.insert("address", key_info.as_object().unwrap()["account_id"].to_string());
+                params.insert("address", account_id);
                 cmd.execute(&ctx, &params).unwrap();
             }
-
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -382,32 +382,6 @@ pub mod tests {
                 params.insert("memo", MEMO.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-
-            assert!(true);
-
-            tear_down_with_wallet(&ctx);
-        }
-
-        #[test]
-        pub fn bank_send() {
-            let ctx = setup_with_wallet_and_cheqd_pool();
-            let key_info = get_key(&ctx);
-            {
-                let cmd = bank_send_command::new();
-                let mut params = CommandParams::new();
-                params.insert("from", key_info.as_object().unwrap()["account_id"].to_string());
-                params.insert("to", key_info.as_object().unwrap()["account_id"].to_string());
-                params.insert("amount", AMOUNT.to_string());
-                params.insert("denom", EnvironmentUtils::cheqd_denom());
-                params.insert("key_alias",  key_info.as_object().unwrap()["alias"].to_string());
-                params.insert("max_gas", MAX_GAS.to_string());
-                params.insert("max_coin", MAX_COIN.to_string());
-                params.insert("memo", MEMO.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -420,9 +394,28 @@ pub mod tests {
                 params.insert("id", "9999999".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            tear_down_with_wallet(&ctx);
+        }
 
-            assert!(true);
-
+        #[test]
+        pub fn bank_send() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            let key_info: Value = get_key(&ctx);
+            let account_id = key_info["account_id"].as_str().unwrap().to_string();
+            let key_alias = key_info["alias"].as_str().unwrap().to_string();
+            {
+                let cmd = bank_send_command::new();
+                let mut params = CommandParams::new();
+                params.insert("from", account_id.clone());
+                params.insert("to", account_id);
+                params.insert("amount", AMOUNT.to_string());
+                params.insert("denom", EnvironmentUtils::cheqd_denom());
+                params.insert("key_alias",  key_alias);
+                params.insert("max_gas", MAX_GAS.to_string());
+                params.insert("max_coin", MAX_COIN.to_string());
+                params.insert("memo", MEMO.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
             tear_down_with_wallet(&ctx);
         }
 
@@ -430,16 +423,14 @@ pub mod tests {
         pub fn get_balance() {
             let ctx = setup_with_wallet_and_cheqd_pool();
             let key_info = get_key(&ctx);
+            let account_id = key_info["account_id"].as_str().unwrap().to_string();
             {
                 let cmd = get_balance_command::new();
                 let mut params = CommandParams::new();
-                params.insert("address", key_info.as_object().unwrap()["account_id"].to_string());
+                params.insert("address", account_id);
                 params.insert("denom", EnvironmentUtils::cheqd_denom());
                 cmd.execute(&ctx, &params).unwrap();
             }
-
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
