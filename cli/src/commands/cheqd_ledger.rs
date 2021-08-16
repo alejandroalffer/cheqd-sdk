@@ -181,7 +181,7 @@ pub mod bank_send_command {
         let request = CheqdLedger::build_msg_send(from, to, amount, denom)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let response = build_and_sign_and_broadcast_tx(ctx, from, &pool_alias, &request, key_alias, denom, max_gas, max_coin, memo)?;
+        let response = build_and_sign_and_broadcast_tx(ctx, &pool_alias, &request, key_alias, denom, max_gas, max_coin, memo)?;
         let parsed_response = CheqdLedger::parse_msg_send_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
@@ -223,7 +223,6 @@ pub mod get_balance_command {
 }
 
 pub fn build_and_sign_and_broadcast_tx(ctx: &CommandContext,
-                                       address: &str,
                                        pool_alias: &str,
                                        request: &[u8],
                                        key_alias: &str,
