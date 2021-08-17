@@ -31,7 +31,11 @@ Create message for building transaction. *Messages* are module-specific objects 
   * `amount` - amount of coins for sending (`String`)
   * `denom` - denomination of coins (`String`)
 
+<br>
+
 * Response is `MsgSend` after converting to bytes. But for clients using wrappers, the result of the function will be transmitted encrypted to bytes and does not require decryption.
+
+<br>
 
 Structure of `MsgSend`:
 
@@ -72,7 +76,11 @@ Build transaction from a request. `build tx` returns an encoded transaction obje
   * `timeout_height` - block height until which the transaction is valid. (`u64`)
   * `memo` - a note or comment to send with the transaction. Can be empty string. Finally, it is put to a transaction log in a ledger. (`String`)
 
+<br>
+
 * Response is `SignDoc` after converting to bytes.
+
+<br>
 
 Structure of `SignDoc`:
 ```Rust
@@ -119,7 +127,11 @@ This necessary step to sign a transaction by an author for sending it to a ledge
   * key_alias - key alias of a cosmos account (`String`)
   * tx - transaction for signing (`&[u8]`)
 
+<br>
+
 * Response is `TxRaw` converting to bytes. `TxRaw` is a variant of Tx that pins the signer's exact binary representation of body and auth_info. This is used for `signing`, `broadcasting` and `verification`. The binary serialize(tx: TxRaw) is stored in Tendermint and the hash sha256(serialize(tx: TxRaw)) becomes the "txhash", commonly used as the transaction ID.
+
+<br>
 
 Structure of `TxRaw`:
 ```Rust
@@ -170,6 +182,8 @@ Broadcast the signed transaction to the network. This is possible because client
 * Required params:
   * `pool_alias` - alias of pool (`String`)
   * `tx` - signed transaction for broadcasting(`Raw`)
+
+<br>
 
 * Response `TxResult` as String with following fields:
   * `check_tx` - checks the transaction without executing it. When a new transaction is added to the Tendermint Core, it will ask the application to check it (validate the format, signatures, etc.).
@@ -281,6 +295,8 @@ Parse response from `TxResult` and return parsed response.
 * Required params:
   * `resp` - `TxResult` as string (`String`)
 
+<br>
+
 * Response is empty structure `{}` as String or `IndyError`
 
 <br>
@@ -294,7 +310,7 @@ Example response:
 
 ### Get balance account
 
-This operation need 3 steps:
+This operation has 3 steps:
 * *Step 1.* Create query for getting balance. Example: `cheqd_ledger::bank::bank_build_query_balance(account_id, denom)`. [Read more about the step.](#bank_build_query_balance)
 * *Step 2.* Send query from the previous step via ABCI interface. Example: `cheqd_pool::abci_query(pool_alias, &query)`. [Read more about the step.](#abci_query)
 * *Step 3.* Parse query from the previous step. Example: `cheqd_ledger::bank::parse_query_balance_resp(&query)`. [Read more about the step.](#parse_query_balance_resp)
@@ -307,7 +323,11 @@ Create query for send to ABCI. ABCI is the interface between Tendermint (a state
   * `address` - address is the address to query balances for. (`String`)
   * `denom` - denom is the coin denom to query balances for. (`String`)
 
+<br>
+
 * Response `abci_query::Request` as `String`.
+
+<br>
 
 Structure of `abci_query::Request`
 ```Rust
@@ -351,7 +371,11 @@ Process ABCI request and return ABCI response.
   * `pool_alias` - a pool alias there we want to send the transaction. (`String`)
   * `query` - a query from the previous step. It shouldn't be additionally encoded. Just put results of its work here. (`String`)
 
+<br>
+
 * Response `abci_query::Response` as `String`.
+
+<br>
 
 Structure of `abci_query::Response`:
 ```Rust
@@ -360,7 +384,9 @@ pub struct Response {
     pub response: AbciQuery,
 }
 ```
+
 <br>
+
 Example response:
 ```
 {
@@ -388,7 +414,11 @@ Parse ABCI query response and return info about balance.
 * Params:
   * `query_resp` - a query response from the previous step. It shouldn't be additionally encoded. Just put results of its work here. (`String`)
 
+<br>
+
 * Response `QueryBalanceResponse` as `String`.
+
+<br>
 
 Structure of `abci_query::Response`:
 ```Rust
@@ -396,7 +426,9 @@ pub struct QueryBalanceResponse {
     pub balance: Option<Coin>,
 }
 ```
+
 <br>
+
 Example response:
 ```
 {
