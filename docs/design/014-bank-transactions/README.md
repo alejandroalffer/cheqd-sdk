@@ -5,28 +5,33 @@ Bank transactions allow exchange coins between accounts and get balance info.
 ## Goals and ideas
 
 * Bank transactions should provide ability to perform following operations:
-  * Send coins to other account
+  * Send coins to another account
   * Get balance account
   
 ## Methods
 
-As write above, bank transactions include method for *sending coins to other account* (`bank_build_msg_send`) and method for *get balance account* (`bank_build_query_balance`).
+As write above, bank transactions include method for *sending coins to another account* and method for *get balance account*.
 
-### bank_build_msg_send
+### Sending coins between accounts
 
-*bank_build_msg_send* - method for sending coins between accounts. This operation has 5 steps: `create message for sending coins tx -> build tx -> signing -> broadcasting tx -> parse response`.
+This operation has 5 steps:
+* *Step 1.* Build a request for transferring coins. Example: `cheqd_ledger::bank::build_msg_send(account_id, second_account, amount_for_transfer, denom)`. [Read more about the step.](build_msg_send)
+* *Step 2.* Built a transaction with the request from the previous step. Example: `cheqd_ledger::auth::build_tx(pool_alias, pub_key, &msg, account_number, account_sequence, max_gas, max_coin_amount, denom, timeout_height, memo)`. Read more about the step.](build_tx)
+* *Step 3.* Sign a transaction from the previous step. `cheqd_keys::sign(wallet_handle, key_alias, &tx)`. Read more about the step.](sign)
+* *Step 4.* Broadcast a signed transaction from the previous step. `cheqd_pool::broadcast_tx_commit(pool_alias, &signed)`. Read more about the step.](broadcast_tx_commit)
+* *Step 5.* Parse response after broadcasting from the previous step. `cheqd_ledger::bank::parse_msg_send_resp(&resp)`. Read more about the step.](parse_msg_send_resp)
 
-#### Create message for sending coins tx
+#### <a name="build_msg_send">Create message for sending coins tx (cheqd_ledger::bank::bank_build_msg_send)</a>
 
-Create message for building transaction. *Messages* (or sdk.Msgs) are module-specific objects that trigger state transitions within the scope of the module they belong to. Other words  messages contain the information for state transition logic.
+Create message for building transaction. *Messages* are module-specific objects that trigger state transitions within the scope of the module they belong to. Other words messages contain the information for state transition logic.
 
 * Required params:
-  * `from` - address of sender coins (`String`)
-  * `to` - address of getter coins (`String`)
+  * `from` - coin sender address (`String`)
+  * `to` - recipient address (`String`)
   * `amount` - amount of coins for sending (`String`)
   * `denom` - denomination of coins (`String`)
 
-* Response is `MsgSend` after converting to bytes.
+* Response is `MsgSend` after converting to bytes. But for clients using wrappers, the result of the function will be transmitted encrypted to bytes and does not require decryption.
 
 Structure of `MsgSend`:
 
@@ -47,23 +52,23 @@ Example response (before converting to bytes):
 }
 ```
 
-#### Build tx
+#### <a name="build_msg_send">Build tx (cheqd_ledger::auth::build_tx)</a>
 
-Build transaction from message. This operation has inner implementation - it passes params to `TxBuilder`. `TxBuilder` contains data closely related with the generation of transactions, which an end-user can freely set to generate the desired transaction. In short, `build tx` return specific transaction object from incoming specific message.
+Build transaction from a request. `build tx` returns an encoded transaction object that may be broadcasted to a pool.
 
 * Required params:
-  * `pool_alias` - alias of working pool (`String`)
-  * `sender_public_key` - sender pubkey (`String`)
-  * `msg` - the array of messages included in the transaction. (`&[u8]`)
-  * `account_number` - the account number of the account in state. (u64)
-  * `sequence_number` - sequence number of tx (u64)
+  * `pool_alias` - a pool alias there we want to send the transaction (`String`)
+  * `sender_public_key` - sender public key (`String`)
+  * `msg` - encoded request from the previous step. It shouldn't be additionally encoded, request builder returns prepared data. Just put results of its work here. (`&[u8]`)
+  * `account_number` - the account number of the account that want to transfer coins. (u64)
+  * `sequence_number` - sequence number of tx that this account sent (u64)
   * `max_gas` - limits the amount of gas that can be used in a block. The default value is `-1`, meaning no limit, or that the concept of gas is meaningless. (`u64`)
   * `max_coin_amount` - the maximum amount the user is willing to pay in fees. (`u64`)
   * `coin_denom` - denomination for fees. (`String`)
   * `timeout_height` - block height until which the transaction is valid. (`u64`)
-  * `memo` - a note or comment to send with the transaction. Can be empty string. (`String`)
+  * `memo` - a note or comment to send with the transaction. Can be empty string. Finally, it is put to a transaction log in a ledger. (`String`)
 
-* Response is `SignDoc`.
+* Response is `SignDoc` after converting to bytes.
 
 Structure of `SignDoc`:
 ```Rust
@@ -87,7 +92,7 @@ pub struct SignDoc {
 }
 ```
 
-Example response
+Example response (before converting to bytes)
 ```
 SignDoc { 
   body_bytes: [
@@ -98,16 +103,17 @@ SignDoc {
 }
 ```
 
-#### Sign tx
-This necessary step for confirm tx. Notice, tx is passed with converting to bytes.
+#### <a name="sign">Sign tx (cheqd_keys::sign)</a>
+This necessary step to sign a transaction by an author for sending it to a ledger. The function uses transaction for signing in an encoded format. Just use an output from the previous step with building a transaction.
 
 * Required params:
-  * wallet_handle - (`WalletHandle`)
-  * key_alias - key alias of wallet (`String`)
+  * wallet_handle - a wallet identifier for geting keys for signing a transaction (`WalletHandle`)
+  * key_alias - key alias of a cosmos account (`String`)
   * tx - transaction for signing (`&[u8]`)
 
-Response is `TxRaw`. `TxRaw` is a variant of Tx that pins the signer's exact binary representation of body and auth_info. This is used for `signing`, `broadcasting` and `verification`. The binary serialize(tx: TxRaw) is stored in Tendermint and the hash sha256(serialize(tx: TxRaw)) becomes the "txhash", commonly used as the transaction ID.
+* Response is `TxRaw` converting to bytes. `TxRaw` is a variant of Tx that pins the signer's exact binary representation of body and auth_info. This is used for `signing`, `broadcasting` and `verification`. The binary serialize(tx: TxRaw) is stored in Tendermint and the hash sha256(serialize(tx: TxRaw)) becomes the "txhash", commonly used as the transaction ID.
 
+Structure of `TxRaw`:
 ```Rust
 pub struct TxRaw {
     /// body_bytes is a protobuf serialization of a TxBody that matches the
@@ -128,15 +134,15 @@ pub struct TxRaw {
 }
 ```
 
-Example response:
+Example response (before converting to bytes):
 ```
 Raw(TxRaw {
   body_bytes: [
     10, 139, 1, 10, 28, 47, 99, 111, 115, 109, 111, 115, 46, 98, 97, 110, 107, 46, 118, 49, 98, 101, 116, 97, 49, 46, 77, 115, 103, 83, 101, 110, 100, 18, 107, 10, 45, 99, 111, 115, 109, 111, 115, 49, 102, 107, 110, 112, 106, 108, 100, 99, 107, 54, 110, 51, 118, 50, 119, 117, 56, 54, 97, 114, 112, 122, 56, 120, 106, 110, 102, 99, 54, 48, 102, 57, 57, 121, 108, 99, 106, 100, 18, 45, 99, 111, 115, 109, 111, 115, 49, 101, 115, 104, 52, 114, 119, 55, 112, 101, 120, 101, 99, 97, 122, 103, 121, 52, 55, 55, 55, 50, 52, 101, 108, 48, 119, 116, 101, 106, 48, 56, 110, 113, 108, 103, 120, 106, 103, 26, 11, 10, 4, 99, 104, 101, 113, 18, 3, 49, 48, 48, 18, 4, 109, 101, 109, 111, 24, 186, 59
-    ],
+  ],
   auth_info_bytes: [
-      10, 80, 10, 70, 10, 31, 47, 99, 111, 115, 109, 111, 115, 46, 99, 114, 121, 112, 116, 111, 46, 115, 101, 99, 112, 50, 53, 54, 107, 49, 46, 80, 117, 98, 75, 101, 121, 18, 35, 10, 33, 3, 47, 165, 11, 249, 173, 204, 98, 247, 253, 79, 173, 94, 227, 12, 159, 27, 159, 176, 164, 57, 159, 220, 135, 67, 30, 191, 225, 72, 188, 85, 127, 125, 18, 4, 10, 2, 8, 1, 24, 11, 18, 15, 10, 9, 10, 4, 99, 104, 101, 113, 18, 1, 48, 16, 224, 167, 18
-    ],
+    10, 80, 10, 70, 10, 31, 47, 99, 111, 115, 109, 111, 115, 46, 99, 114, 121, 112, 116, 111, 46, 115, 101, 99, 112, 50, 53, 54, 107, 49, 46, 80, 117, 98, 75, 101, 121, 18, 35, 10, 33, 3, 47, 165, 11, 249, 173, 204, 98, 247, 253, 79, 173, 94, 227, 12, 159, 27, 159, 176, 164, 57, 159, 220, 135, 67, 30, 191, 225, 72, 188, 85, 127, 125, 18, 4, 10, 2, 8, 1, 24, 11, 18, 15, 10, 9, 10, 4, 99, 104, 101, 113, 18, 1, 48, 16, 224, 167, 18
+  ],
   signatures: [
     [
       162, 202, 89, 100, 100, 63, 20, 208, 68, 217, 130, 98, 99, 124, 211, 202, 158, 54, 179, 242, 118, 102, 144, 191, 93, 66, 204, 208, 129, 22, 97, 84, 58, 86, 247, 14, 168, 60, 156, 230, 251, 160, 108, 107, 89, 37, 174, 150, 34, 151, 253, 35, 198, 8, 17, 26, 130, 103, 196, 141, 33, 19, 16, 24
@@ -145,13 +151,13 @@ Raw(TxRaw {
 })
 ```
 
-#### Broadcast tx
+#### <a name="broadcast_tx_commit">Broadcast tx (cheqd_pool::broadcast_tx_commit)</a>
 
 Broadcast the signed transaction to the network. This is possible because client connects to the node's RPC endpoint.
 
 * Required params:
-  * pool_alias - alias of pool (`String`)
-  * tx - signed transaction for broadcasting(`Raw`)
+  * `pool_alias` - alias of pool (`String`)
+  * `tx` - signed transaction for broadcasting(`Raw`)
 
 * Response `TxResult` as String with following fields:
   * `check_tx` - checks the transaction without executing it. When a new transaction is added to the Tendermint Core, it will ask the application to check it (validate the format, signatures, etc.).
@@ -169,7 +175,7 @@ Broadcast the signed transaction to the network. This is possible because client
     * `deliver_tx::hash:transaction::Hash` - hash of transaction.
     * `deliver_tx::height` - height is a monotonically increasing data type that can be compared against another Height for the purposes of updating and freezing clients.
 
-Example response:
+Example response (`String`):
 ```
 Response {
    check_tx: TxResult {
@@ -195,7 +201,7 @@ Response {
          110,
          100
       ])),
-      log:Log("[{\"events\":[{\"type\":\"message\",\"attributes\":[{\"key\":\"action\",\"value\":\"send\"},{\"key\":\"sender\",\"value\":\"cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd\"},{\"key\":\"module\",\"value\":\"bank\"}]},{\"type\":\"transfer\",\"attributes\":[{\"key\":\"recipient\",\"value\":\"cosmos1pvnjjy3vz0ga6hexv32gdxydzxth7f86mekcpg\"},{\"key\":\"sender\",\"value\":\"cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd\"},{\"key\":\"amount\",\"value\":\"100cheq\"}]}]}]"),
+      log: "[{\"events\":[{\"type\":\"message\",\"attributes\":[{\"key\":\"action\",\"value\":\"send\"},{\"key\":\"sender\",\"value\":\"cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd\"},{\"key\":\"module\",\"value\":\"bank\"}]},{\"type\":\"transfer\",\"attributes\":[{\"key\":\"recipient\",\"value\":\"cosmos1pvnjjy3vz0ga6hexv32gdxydzxth7f86mekcpg\"},{\"key\":\"sender\",\"value\":\"cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd\"},{\"key\":\"amount\",\"value\":\"100cheq\"}]}]}]",
       info: "",
       gas_wanted: 0,
       gas_used: 0,
@@ -204,8 +210,8 @@ Response {
             type_str: "message",
             attributes:[
                Tag {
-                  key: Key("action"),
-                  value: Value("send")
+                  key: "action",
+                  value: "send"
                }
             ]
          },
@@ -213,16 +219,16 @@ Response {
             type_str: "transfer",
             attributes: [
                Tag {
-                  key:Key("recipient"),
-                  value:Value("cosmos1pvnjjy3vz0ga6hexv32gdxydzxth7f86mekcpg")
+                  key: "recipient",
+                  value: "cosmos1pvnjjy3vz0ga6hexv32gdxydzxth7f86mekcpg"
                },
                Tag {
-                  key:Key("sender"),
-                  value:Value("cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd")
+                  key: "sender",
+                  value: "cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd"
                },
                Tag {
-                  key: Key("amount"),
-                  value: Value("100cheq")
+                  key: "amount",
+                  value: "100cheq"
                }
             ]
          },
@@ -230,8 +236,8 @@ Response {
             type_str: "message",
             attributes:[
                Tag {
-                  key: Key("sender"),
-                  value: Value("cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd")
+                  key: "sender",
+                  value: "cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd"
                }
             ]
          },
@@ -239,8 +245,8 @@ Response {
             type_str: "message",
             attributes: [
                Tag {
-                  key: Key("module"),
-                  value: Value("bank")
+                  key: "module",
+                  value: "bank"
                }
             ]
          }
@@ -252,7 +258,7 @@ Response {
 }
 ```
 
-#### Parse response
+#### <a name="parse_msg_send_resp">Parse response (cheqd_ledger::bank::parse_msg_send_resp)</a>
 
 Parse response from `TxResult` and return parsed response.
 
