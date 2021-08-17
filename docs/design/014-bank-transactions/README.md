@@ -43,6 +43,8 @@ pub struct MsgSend {
 }
 ```
 
+<br>
+
 Example response (before converting to bytes):
 ```
 {
@@ -51,6 +53,8 @@ Example response (before converting to bytes):
   amount: [Coin { denom: "cheq", amount: "100" }]
 }
 ```
+
+---
 
 #### <a name="build_tx">Build tx (cheqd_ledger::auth::build_tx)</a>
 
@@ -92,6 +96,8 @@ pub struct SignDoc {
 }
 ```
 
+<br>
+
 Example response (before converting to bytes)
 ```
 SignDoc { 
@@ -102,6 +108,8 @@ SignDoc {
   account_number: 2
 }
 ```
+
+---
 
 #### <a name="sign">Sign tx (cheqd_keys::sign)</a>
 This necessary step to sign a transaction by an author for sending it to a ledger. The function uses transaction for signing in an encoded format. Just use an output from the previous step with building a transaction.
@@ -134,6 +142,8 @@ pub struct TxRaw {
 }
 ```
 
+<br>
+
 Example response (before converting to bytes):
 ```
 Raw(TxRaw {
@@ -150,6 +160,8 @@ Raw(TxRaw {
   ]
 })
 ```
+
+---
 
 #### <a name="broadcast_tx_commit">Broadcast tx (cheqd_pool::broadcast_tx_commit)</a>
 
@@ -174,6 +186,8 @@ Broadcast the signed transaction to the network. This is possible because client
     * `deliver_tx::events` - include any events for the execution, which Tendermint will use to index the transaction by. This allows transactions to be queried according to what events took place during their execution.
     * `deliver_tx::hash:transaction::Hash` - hash of transaction.
     * `deliver_tx::height` - height is a monotonically increasing data type that can be compared against another Height for the purposes of updating and freezing clients.
+
+<br>
 
 Example response (`String`):
 ```
@@ -258,6 +272,8 @@ Response {
 }
 ```
 
+---
+
 #### <a name="parse_msg_send_resp">Parse response (cheqd_ledger::bank::parse_msg_send_resp)</a>
 
 Parse response from `TxResult` and return parsed response.
@@ -267,10 +283,14 @@ Parse response from `TxResult` and return parsed response.
 
 * Response is empty structure `{}` as String or `IndyError`
 
+<br>
+
 Example response:
 ```
 {}
 ```
+
+---
 
 ### Get balance account
 
@@ -310,6 +330,8 @@ pub struct Request {
 }
 ```
 
+<br>
+
 Example response:
 ```
 {
@@ -318,6 +340,8 @@ Example response:
   "prove": true
 }
 ```
+
+---
 
 #### <a name="abci_query">ABCI Query (cheqd_pool::abci_query)</a>
 
@@ -336,7 +360,7 @@ pub struct Response {
     pub response: AbciQuery,
 }
 ```
-
+<br>
 Example response:
 ```
 {
@@ -355,6 +379,8 @@ Example response:
 }
 ```
 
+---
+
 #### <a name="parse_query_balance_resp">Parse query response (cheqd_ledger::bank::parse_query_balance_resp)</a>
 
 Parse ABCI query response and return info about balance.
@@ -370,7 +396,7 @@ pub struct QueryBalanceResponse {
     pub balance: Option<Coin>,
 }
 ```
-
+<br>
 Example response:
 ```
 {
@@ -382,6 +408,8 @@ Example response:
   }
 }
 ```
+
+---
 
 ## Public API
 
