@@ -52,7 +52,7 @@ Example response (before converting to bytes):
 }
 ```
 
-#### <a name="build_msg_send">Build tx (cheqd_ledger::auth::build_tx)</a>
+#### <a name="build_tx">Build tx (cheqd_ledger::auth::build_tx)</a>
 
 Build transaction from a request. `build tx` returns an encoded transaction object that may be broadcasted to a pool.
 
@@ -272,57 +272,114 @@ Example response:
 {}
 ```
 
-### bank_build_query_balance
+### Get balance account
 
- Create query for sending to AbciQuery.
+This operation need 3 steps:
+* *Step 1.* Create query for getting balance. Example: `cheqd_ledger::bank::bank_build_query_balance(account_id, denom)`. [Read more about the step.](#bank_build_query_balance)
+* *Step 2.* Send query from the previous step via ABCI interface. Example: `cheqd_pool::abci_query(pool_alias, &query)`. [Read more about the step.](#abci_query)
+* *Step 3.* Parse query from the previous step. Example: `cheqd_ledger::bank::parse_query_balance_resp(&query)`. [Read more about the step.](#parse_query_balance_resp)
+
+#### <a name="bank_build_query_balance">bank_build_query_balance (cheqd_ledger::bank::bank_build_query_balance)</a>
+
+Create query for send to ABCI. ABCI is the interface between Tendermint (a state-machine replication engine) and application (the actual state machine). It consists of a set of methods, where each method has a corresponding Request and Response message type.
 
 * Params:
-  * `address` - address of sender coins (String)
-  * `denom` - denomination of coins (String)
+  * `address` - address is the address to query balances for. (`String`)
+  * `denom` - denom is the coin denom to query balances for. (`String`)
 
+* Response `abci_query::Request` as `String`.
 
-* Response fields:
-  * `response` - query the application for some information. Note that calls to Query are not replicated across nodes, but rather query the local node's state - hence they may return stale reads. For reads that require consensus, use a transaction.
-    * `code` - if Code != 0, it will be rejected from the mempool and hence not broadcasted to other peers and not included in a proposal block.
-    * `proofs` - The Tendermint block header includes a number of hashes, each providing an anchor for some type of proof about the blockchain. 
-    * `height` - height is a monotonically increasing data type that can be compared against another Height for the purposes of updating and freezing clients.
-    * `codespace` - the codespace is a namespace for the Code.
+Structure of `abci_query::Request`
+```Rust
+pub struct Request {
+    /// Path to the data
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<Path>,
+
+    /// Data to query
+    #[serde(with = "serializers::bytes::hexstring")]
+    pub data: Vec<u8>,
+
+    /// Block height
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub height: Option<block::Height>,
+
+    /// Include proof in response
+    #[serde(default)]
+    pub prove: bool,
+}
+```
 
 Example response:
-
 ```
-Response {
-   response: AbciQuery {
-      code: Ok,
-      log: Log(""),
-      info:"",
-      index: 0,
-      key: [],
-      value:[
-         10,
-         17,
-         10,
-         4,
-         99,
-         104,
-         101,
-         113,
-         18,
-         9,
-         49,
-         48,
-         48,
-         48,
-         48,
-         48,
-         52,
-         48,
-         48
-      ],
-      proof: None,
-      height": block::Height(352),
-      codespace: ""
-   }
+{
+  "path": "/cosmos.bank.v1beta1.Query/Balance",
+  "data": "0A2D636F736D6F7331666B6E706A6C64636B366E337632777538366172707A38786A6E66633630663939796C636A64120463686571",
+  "prove": true
+}
+```
+
+#### <a name="abci_query">ABCI Query (cheqd_pool::abci_query)</a>
+
+Process ABCI request and return ABCI response.
+
+* Params:
+  * `pool_alias` - a pool alias there we want to send the transaction. (`String`)
+  * `query` - a query from the previous step. It shouldn't be additionally encoded. Just put results of its work here. (`String`)
+
+* Response `abci_query::Response` as `String`.
+
+Structure of `abci_query::Response`:
+```Rust
+pub struct Response {
+    /// ABCI query results
+    pub response: AbciQuery,
+}
+```
+
+Example response:
+```
+{
+  "response":
+  {
+    "code": 0
+    "log": "",
+    "info": "",
+    "index": "0",
+    "key": "",
+    "value": "ChAKBGNoZXESCDk5OTk4NDAw",
+    "proof": null,
+    "height": "12899",
+    "codespace": ""
+  }
+}
+```
+
+#### <a name="parse_query_balance_resp">Parse query response (cheqd_ledger::bank::parse_query_balance_resp)</a>
+
+Parse ABCI query response and return info about balance.
+
+* Params:
+  * `query_resp` - a query response from the previous step. It shouldn't be additionally encoded. Just put results of its work here. (`String`)
+
+* Response `QueryBalanceResponse` as `String`.
+
+Structure of `abci_query::Response`:
+```Rust
+pub struct QueryBalanceResponse {
+    pub balance: Option<Coin>,
+}
+```
+
+Example response:
+```
+{
+  "balance": {
+    "denom":
+    "cheq",
+    "amount":
+    "99998400"
+  }
 }
 ```
 
