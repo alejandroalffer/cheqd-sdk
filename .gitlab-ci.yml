@@ -58,42 +58,42 @@ variables:
     - if [ "$CI_COMMIT_REF_SLUG" == 'main' ] || [ "$CI_COMMIT_REF_SLUG" == 'cheqd-tokens-vcx' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
     - echo "${KANIKO_ARGS}"
     - |
-        echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" \
-        > /kaniko/.docker/config.json
+      echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" \
+      > /kaniko/.docker/config.json
     - |
-        echo "-----BEGIN CERTIFICATE-----
-        MIIFJTCCAw2gAwIBAgIUMI0Z8YSLeRq8pZks40O3Dq2m8TIwDQYJKoZIhvcNAQEL
-        BQAwGjEYMBYGA1UEAxMPRXZlcm55bSBSb290IENBMB4XDTE3MTAxMTIwMTAxMFoX
-        DTQ3MTAwNDIwMTAzOVowGjEYMBYGA1UEAxMPRXZlcm55bSBSb290IENBMIICIjAN
-        BgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA1kjmtmMfLJfsqUNaco44N3brW8Vu
-        b02lAeEwbxc65mwfAG8kAjW7kYhI/fDXFOYXUvoa3Dg7bFeEatdIjHOahZssGM27
-        HsQZ4PfRhPE6HtXFszmDwXWuEekVxoyueTqL7ExnNZ+BRTXvPfm5nw1E7L3o3xHF
-        GSOtWFCyHfKd1LwMKzAVSjxlawEZnfk3WK3NxrC4UYMlQaDme7m3rCMfO+KBQk69
-        bFXsgn6/EihVeQ8T1+T8gogofzh5b4Z7kS6e6GMqotbGFg4agejkRVsIglSpaQLk
-        2Ztn/MP1dwgyvO4uvplB4sxZSC2FhhovlwPETmbKsnpj020+m0+YU4FPKwjroMiH
-        tP//YqiNKsLxtjhffW7XFToyy0qQttW5RMWnyx4MXs9Hwcy29gY1izeGMSzz3zV5
-        HG8JSJikuYbYiGJRVS0egovkVjja6lrVk0Q4Hm5pbw4l7LYCd6bkDLMsRaS1QnWs
-        9iz6XEf5SpIu1FuqHmlhj1ABehUyGIg5oC6egML3q78yk0mCW523qMFa9Kjnk871
-        mmXSCn3p/3DCrwWYfpcibxtVaKyJj6ISYIcl+Zu65Uzmhf+nj56x3gkNgEOva7JS
-        Xge+FxPxsaXBGyeSH09nNIoNmh/UucuzpNY2UyCpJuqXHtR5jaACSdsqNxG8tcDg
-        K9v98D/DFiShghECAwEAAaNjMGEwDgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQF
-        MAMBAf8wHQYDVR0OBBYEFOrH4oUpB94gNDNqdGG92kdVZ3qkMB8GA1UdIwQYMBaA
-        FOrH4oUpB94gNDNqdGG92kdVZ3qkMA0GCSqGSIb3DQEBCwUAA4ICAQCwjN3ggZ98
-        BXT39fKkCX3FHb0++aFcIyMKWrcZIpYrl3GoZsNKZK4QNQ+uJOP8xmqgyrCoMfch
-        VIGPQ0RDN/IzqCLhc/U3pDmk2hXa3xTxD3gpCQZ6Bz04KlcLfZd5jzbI741bVDyF
-        a1n46bEyuqV4SsNJWI/FGokJCNcZH66njBQBaQAccZ7xB9vWU9yjIYtGQDDvSm6J
-        SC2knrQri0vv4QLUSc1LS6AlWWSQxcCpcdO+OzIFGsf5bVmYN6J4R3COY5NyQ+yn
-        pOSN2NOh5h3ZrYAxm3i4Il0orVLveVcTVDGeAgZUII4YLJi/01RHGqit3aCuApSh
-        bzFTZ5FldFss+JX9iAhqpFDbHLgae0F3QmYEnGilt/PzO4j23QJo3FZKeruQLH7P
-        L9aOgN6S2+Akbbm9YTc59yzU5TZMxANwTdaYFWFqk/8nKgZiBR1l8jnWTlWnm86A
-        qVssH3DLKwiYrWSOHRzGuN5BmPXxxtKQJlwAXt0wJE3puUkaJSRo7CJQ3QNMoKDe
-        OjzXc9WvkFIXr3Eui8UTiHB/WT7N4o8hmVN404akGfWE0YNwRVfWpjGdew6g0tZi
-        lFnjUUk49av67um43JHcinT5NFPuleZzkjaL/D8ueOrjXQDy05rwVdgmw9pXog4B
-        Tw6APXtEnjfD2H8HOpOX/7ef4gWK0O1Q7A==
-        -----END CERTIFICATE-----" >> /kaniko/ssl/certs/ca-certificates.crt
+      echo "-----BEGIN CERTIFICATE-----
+      MIIFJTCCAw2gAwIBAgIUMI0Z8YSLeRq8pZks40O3Dq2m8TIwDQYJKoZIhvcNAQEL
+      BQAwGjEYMBYGA1UEAxMPRXZlcm55bSBSb290IENBMB4XDTE3MTAxMTIwMTAxMFoX
+      DTQ3MTAwNDIwMTAzOVowGjEYMBYGA1UEAxMPRXZlcm55bSBSb290IENBMIICIjAN
+      BgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA1kjmtmMfLJfsqUNaco44N3brW8Vu
+      b02lAeEwbxc65mwfAG8kAjW7kYhI/fDXFOYXUvoa3Dg7bFeEatdIjHOahZssGM27
+      HsQZ4PfRhPE6HtXFszmDwXWuEekVxoyueTqL7ExnNZ+BRTXvPfm5nw1E7L3o3xHF
+      GSOtWFCyHfKd1LwMKzAVSjxlawEZnfk3WK3NxrC4UYMlQaDme7m3rCMfO+KBQk69
+      bFXsgn6/EihVeQ8T1+T8gogofzh5b4Z7kS6e6GMqotbGFg4agejkRVsIglSpaQLk
+      2Ztn/MP1dwgyvO4uvplB4sxZSC2FhhovlwPETmbKsnpj020+m0+YU4FPKwjroMiH
+      tP//YqiNKsLxtjhffW7XFToyy0qQttW5RMWnyx4MXs9Hwcy29gY1izeGMSzz3zV5
+      HG8JSJikuYbYiGJRVS0egovkVjja6lrVk0Q4Hm5pbw4l7LYCd6bkDLMsRaS1QnWs
+      9iz6XEf5SpIu1FuqHmlhj1ABehUyGIg5oC6egML3q78yk0mCW523qMFa9Kjnk871
+      mmXSCn3p/3DCrwWYfpcibxtVaKyJj6ISYIcl+Zu65Uzmhf+nj56x3gkNgEOva7JS
+      Xge+FxPxsaXBGyeSH09nNIoNmh/UucuzpNY2UyCpJuqXHtR5jaACSdsqNxG8tcDg
+      K9v98D/DFiShghECAwEAAaNjMGEwDgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQF
+      MAMBAf8wHQYDVR0OBBYEFOrH4oUpB94gNDNqdGG92kdVZ3qkMB8GA1UdIwQYMBaA
+      FOrH4oUpB94gNDNqdGG92kdVZ3qkMA0GCSqGSIb3DQEBCwUAA4ICAQCwjN3ggZ98
+      BXT39fKkCX3FHb0++aFcIyMKWrcZIpYrl3GoZsNKZK4QNQ+uJOP8xmqgyrCoMfch
+      VIGPQ0RDN/IzqCLhc/U3pDmk2hXa3xTxD3gpCQZ6Bz04KlcLfZd5jzbI741bVDyF
+      a1n46bEyuqV4SsNJWI/FGokJCNcZH66njBQBaQAccZ7xB9vWU9yjIYtGQDDvSm6J
+      SC2knrQri0vv4QLUSc1LS6AlWWSQxcCpcdO+OzIFGsf5bVmYN6J4R3COY5NyQ+yn
+      pOSN2NOh5h3ZrYAxm3i4Il0orVLveVcTVDGeAgZUII4YLJi/01RHGqit3aCuApSh
+      bzFTZ5FldFss+JX9iAhqpFDbHLgae0F3QmYEnGilt/PzO4j23QJo3FZKeruQLH7P
+      L9aOgN6S2+Akbbm9YTc59yzU5TZMxANwTdaYFWFqk/8nKgZiBR1l8jnWTlWnm86A
+      qVssH3DLKwiYrWSOHRzGuN5BmPXxxtKQJlwAXt0wJE3puUkaJSRo7CJQ3QNMoKDe
+      OjzXc9WvkFIXr3Eui8UTiHB/WT7N4o8hmVN404akGfWE0YNwRVfWpjGdew6g0tZi
+      lFnjUUk49av67um43JHcinT5NFPuleZzkjaL/D8ueOrjXQDy05rwVdgmw9pXog4B
+      Tw6APXtEnjfD2H8HOpOX/7ef4gWK0O1Q7A==
+      -----END CERTIFICATE-----" >> /kaniko/ssl/certs/ca-certificates.crt
     - |
-        /kaniko/executor ${KANIKO_ARGS} --context ${DOCKER_CONTEXT} --dockerfile $CI_PROJECT_DIR/${DOCKERFILE_PATH} \
-        --destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:${CI_COMMIT_REF_SLUG}
+      /kaniko/executor ${KANIKO_ARGS} --context ${DOCKER_CONTEXT} --dockerfile $CI_PROJECT_DIR/${DOCKERFILE_PATH} \
+      --destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:${CI_COMMIT_REF_SLUG}
 
 
 
@@ -108,6 +108,7 @@ variables:
       - main@evernym/verity/vdr-tools
       - cheqd-tokens-vcx@evernym/verity/vdr-tools
       - /^docker-.*/
+      - /^android-.*/
 
 dockerbuild-libindy-ubuntu16:
   stage: dockerbuild-pre
@@ -146,6 +147,7 @@ dockerbuild-libindy-android:
       - cheqd-tokens-vcx
       - stable
       - /^docker-.*/
+      - /^android-.*/
     changes:
       - .gitlab-ci.yml
       - libindy/ci/ubuntu.dockerfile
@@ -195,16 +197,16 @@ dockerbuild-libindy-android:
 
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-    - export CHEQD_TEST_POOL_IP=$(getent ahostsv4 cheqd_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-    - export CHEQD_TEST_POOL_IP="http://$CHEQD_TEST_POOL_IP:26657"
+#    - export CHEQD_TEST_POOL_IP=$(getent ahostsv4 cheqd_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+#    - export CHEQD_TEST_POOL_IP="http://$CHEQD_TEST_POOL_IP:26657"
     # - libindy/ci/scripts/lint.sh
     # - cli/ci/scripts/lint.sh
     - libindy/ci/scripts/build.sh ${BUILD_TYPE}
-    - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+#    - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
-    - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+#    - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - cli/ci/scripts/build.sh ${BUILD_TYPE}
-    - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+#    - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
 
 .cheqd-submodules:
   before_script:
@@ -290,7 +292,7 @@ build-libindy-ubuntu18-release:
       - main@evernym/verity/vdr-tools
       - cheqd-tokens-vcx@evernym/verity/vdr-tools
 
-.build-libindy-android:
+.build-libindytest-android:
   extends:
     - .cheqd-submodules
     - .tags_compute_xlarge
@@ -300,10 +302,12 @@ build-libindy-ubuntu18-release:
       alias: pool_network
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-    - cd libindy && ./android.test.sh x86
+#    - cd libindy && ./android.test.sh x86
 
-build-libindy-android-from-latest:
-  extends: .build-libindy-android
+build-libindytest-android-from-latest:
+  extends:
+    - .cheqd-submodules
+    - .build-libindytest-android
   image: ${CI_REGISTRY_IMAGE}/libindy-android:latest
   except:
     refs:
@@ -311,14 +315,62 @@ build-libindy-android-from-latest:
       - main
       - cheqd-tokens-vcx
 
-build-libindy-android-from-branch:
-  extends: .build-libindy-android
+build-libindytest-android-from-branch:
+  extends:
+    - .cheqd-submodules
+    - .build-libindytest-android
   image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
   only:
     refs:
       - /^docker-.*/
       - main
       - cheqd-tokens-vcx
+
+.build-libindy-android:
+  extends:
+    - .cheqd-submodules
+    - .tags_compute_xlarge
+  stage: build
+  image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
+  only:
+    refs:
+      - main
+      - cheqd-tokens-vcx
+      - /^android-.*/
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - libindy/android_out/
+  script:
+    - cd libindy
+    - ./android.build.sh -d ${LIBINDY_ANDROID_ARCH}
+    - mkdir android_out/
+    - cp ./libindy_android_${LIBINDY_ANDROID_ARCH}.zip ./android_out/
+
+build-libindy-android-x86:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "x86"
+
+build-libindy-android-x86_64:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "x86_64"
+
+build-libindy-android-arm:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "arm"
+
+build-libindy-android-armv7:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "armv7"
+
+build-libindy-android-arm64:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "arm64"
 
 build-libindy-macos:
   extends: .cheqd-submodules
@@ -339,8 +391,8 @@ build-libindy-macos:
     - ulimit -n 2048
     # run libindy test without default feature local_nodes_pool
     - LIBRARY_PATH=./ cargo build --no-default-features --features fatal_warnings,only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
-    - LIBRARY_PATH=./ cargo test --no-run --no-default-features --features only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
-    - LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test --test did --no-default-features --features only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
+#    - LIBRARY_PATH=./ cargo test --no-run --no-default-features --features only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
+#    - LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test --test did --no-default-features --features only_high_cases,base58_rust_base58,pair_amcl,revocation_tests
 
 build-libindy-ios:
   extends: .cheqd-submodules
@@ -348,31 +400,42 @@ build-libindy-ios:
   tags:
     - macos
     - bigsur
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - libindy/ios_out/
   script:
     - which rustup-init || brew install rustup-init
     - echo | rustup-init --default-toolchain 1.50.0
     - source $HOME/.cargo/env
     - cargo install cargo-lipo
-    - rustup target add x86_64-apple-ios
+    - rustup target add aarch64-apple-ios x86_64-apple-ios
     - brew install libsodium
     - brew install openssl@1.1
     - brew install zeromq
     - rm -rf ~/.indy_client || true
-    - ci/ios-build.sh libindy x86_64-apple-ios
+    - mkdir libindy/ios_out/
+    - ci/ios-build.sh libindy aarch64-apple-ios
+    - cp libindy/out_pod/libindy.tar.gz libindy/ios_out/libindy-aarch64-armv7.tar.gz
+    - rm -rf libindy/out_pod/
+    - ci/ios-build.sh libindy
+    - cp libindy/out_pod/libindy.tar.gz libindy/ios_out/libindy.tar.gz
 
 
 ## - Jobs : Test - ##
 .test-libindy-java-wrapper:
-  extends: .tags_large
+  extends:
+    - .cheqd-submodules
+    - .tags_micro
   stage: test
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.9.2_1.0.2
       alias: pool_network
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-    - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
-    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
-    - wrappers/java/ci/test.sh ${TEST_POOL_IP}
+#    - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
+#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
+#    - wrappers/java/ci/test.sh ${TEST_POOL_IP}
 
 test-libindy-java-wrapper-from-branch:
   extends: .test-libindy-java-wrapper
@@ -480,9 +543,43 @@ publish-libindy:
     - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
-    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*xenial*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload
-    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libindy*bionic*.deb https://kraken.corp.evernym.com/repo/portal_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
     - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+
+publish-libindy-android:
+  extends: .tags_micro
+  stage: publish
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-android-x86
+    - build-libindy-android-x86_64
+    - build-libindy-android-arm
+    - build-libindy-android-armv7
+    - build-libindy-android-arm64
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+      - cheqd-tokens-vcx@evernym/verity/vdr-tools
+  script:
+    - >
+      find libindy/android_out/ -name "*.zip" -exec
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file {}
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/vdr-tools-android/1.95.0-${CI_PIPELINE_IID}/" \;
+
+publish-libindy-ios:
+  extends: .tags_micro
+  stage: publish
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-ios
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+      - cheqd-tokens-vcx@evernym/verity/vdr-tools
+  script:
+    - >
+      find libindy/ios_out/ -name "*.tar.gz" -exec
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file {}
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/vdr-tools-ios/1.95.0-${CI_PIPELINE_IID}/" \;
