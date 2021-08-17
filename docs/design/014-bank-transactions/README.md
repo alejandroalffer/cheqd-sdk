@@ -15,11 +15,11 @@ As write above, bank transactions include method for *sending coins to another a
 ### Sending coins between accounts
 
 This operation has 5 steps:
-* *Step 1.* Build a request for transferring coins. Example: `cheqd_ledger::bank::build_msg_send(account_id, second_account, amount_for_transfer, denom)`. [Read more about the step.](build_msg_send)
-* *Step 2.* Built a transaction with the request from the previous step. Example: `cheqd_ledger::auth::build_tx(pool_alias, pub_key, &msg, account_number, account_sequence, max_gas, max_coin_amount, denom, timeout_height, memo)`. Read more about the step.](build_tx)
-* *Step 3.* Sign a transaction from the previous step. `cheqd_keys::sign(wallet_handle, key_alias, &tx)`. Read more about the step.](sign)
-* *Step 4.* Broadcast a signed transaction from the previous step. `cheqd_pool::broadcast_tx_commit(pool_alias, &signed)`. Read more about the step.](broadcast_tx_commit)
-* *Step 5.* Parse response after broadcasting from the previous step. `cheqd_ledger::bank::parse_msg_send_resp(&resp)`. Read more about the step.](parse_msg_send_resp)
+* *Step 1.* Build a request for transferring coins. Example: `cheqd_ledger::bank::build_msg_send(account_id, second_account, amount_for_transfer, denom)`. [Read more about the step.](#build_msg_send)
+* *Step 2.* Built a transaction with the request from the previous step. Example: `cheqd_ledger::auth::build_tx(pool_alias, pub_key, &msg, account_number, account_sequence, max_gas, max_coin_amount, denom, timeout_height, memo)`. Read more about the step.](#build_tx)
+* *Step 3.* Sign a transaction from the previous step. `cheqd_keys::sign(wallet_handle, key_alias, &tx)`. Read more about the step.](#sign)
+* *Step 4.* Broadcast a signed transaction from the previous step. `cheqd_pool::broadcast_tx_commit(pool_alias, &signed)`. Read more about the step.](#broadcast_tx_commit)
+* *Step 5.* Parse response after broadcasting from the previous step. `cheqd_ledger::bank::parse_msg_send_resp(&resp)`. Read more about the step.](#parse_msg_send_resp)
 
 #### <a name="build_msg_send">Create message for sending coins tx (cheqd_ledger::bank::bank_build_msg_send)</a>
 
