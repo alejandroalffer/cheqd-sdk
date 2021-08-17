@@ -1,5 +1,3 @@
-#![cfg_attr(feature = "fatal_warnings", deny(warnings))]
-
 extern crate atty;
 extern crate ansi_term;
 extern crate unescape;
