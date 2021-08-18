@@ -45,12 +45,13 @@ impl CheqdProto for QueryBalanceRequest {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::utils::environment;
 
     #[test]
     fn test_query_balance() {
         let msg = QueryBalanceRequest::new(
             "cosmos1fknpjldck6n3v2wu86arpz8xjnfc60f99ylcjd".to_string(),
-            "cheq".to_string(),
+            environment::cheqd_denom(),
         );
 
         let proto = msg.to_proto();

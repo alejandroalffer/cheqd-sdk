@@ -10,6 +10,9 @@ use crate::libindy::cheqd_keys::CheqdKeys;
 
 use serde_json::{Value};
 
+const RESPONSE: &str = "response";
+const LAST_BLOCK_HEIGHT: &str = "last_block_height";
+
 pub mod group {
     use super::*;
 
@@ -37,7 +40,7 @@ pub mod get_account_command {
         let parsed_response = CheqdLedger::parse_query_account_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        println!("{}",parsed_response);
+        println!("Account info: {}",parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -56,7 +59,7 @@ pub mod create_nym_command {
                 .add_required_param("denom", "Denom is currency for transaction")
                 .add_optional_param("role", "Role of identity.")
                 .add_optional_param("memo", "Memo is optional param. It has any arbitrary memo to be added to the transaction")
-                .add_example("cheqd-ledger create-nym did=my_did verkey=my_verkey key_alias=my_key max_coin=500 max_gas=10000000 denom=cheq timeout_height=20000 role=role memo=memo")
+                .add_example("cheqd-ledger create-nym did=my_did verkey=my_verkey key_alias=my_key max_coin=500 max_gas=10000000 denom=cheq role=role memo=memo")
                 .finalize()
     );
 
@@ -141,7 +144,7 @@ pub mod get_nym_command {
             .map_err(|err| handle_indy_error(err, None,
                                              Some(pool_alias.as_str()), None))?;
 
-        println!("{}",parsed_response);
+        println!("NYM info: {}",parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -215,7 +218,7 @@ pub mod get_balance_command {
         let parsed_response = CheqdLedger::parse_query_balance_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        println!("{}",parsed_response);
+        println!("Balance info: {}",parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -322,9 +325,9 @@ pub fn get_timeout_height(pool_alias: &str) -> Result<u64, ()> {
         },
     };
     let info: Value = serde_json::from_str(&info?)
-        .map_err(|_| println_err!("Wrong data has been received"))?;
+        .map_err(|_| println_err!("Wrong data of Abci-info has been received"))?;
 
-    let current_height = info["response"]["last_block_height"].as_str().unwrap().parse::<u64>().unwrap();
+    let current_height = info[RESPONSE][LAST_BLOCK_HEIGHT].as_str().unwrap().parse::<u64>().unwrap();
 
     const TIMEOUT: u64 = 20;
 

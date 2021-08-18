@@ -54,10 +54,11 @@ impl CheqdProto for MsgSend {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::utils::environment;
 
     #[test]
     fn test_msg_send() {
-        let coins = Coin::new("cheq".to_string(), "100".to_string());
+        let coins = Coin::new(environment::cheqd_denom(), "100".to_string());
         let mut amount: Vec<Coin> = Vec::new();
         amount.push(coins);
 
