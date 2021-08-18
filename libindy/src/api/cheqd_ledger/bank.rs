@@ -5,6 +5,18 @@ use libc::c_char;
 use crate::Locator;
 use crate::services::CommandMetric;
 
+/// Send coins to other account.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// from: address of sender coins
+/// to: address of getter coins
+/// amount: Amount of coins for sending
+/// denom: Denomination of coins
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_bank_build_msg_send(
     command_handle: CommandHandle,
@@ -67,6 +79,15 @@ pub extern "C" fn indy_cheqd_ledger_bank_build_msg_send(
     res
 }
 
+/// Parse response for send coins tx.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// commit_resp: response for send coins tx.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_bank_parse_msg_send_resp(
     command_handle: CommandHandle,
@@ -118,6 +139,16 @@ pub extern "C" fn indy_cheqd_ledger_bank_parse_msg_send_resp(
     res
 }
 
+/// Get balance of account.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// address: address of account which need to get.
+/// denom: currency of balance for getting.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_bank_build_query_balance(
     command_handle: CommandHandle,
@@ -170,6 +201,15 @@ pub extern "C" fn indy_cheqd_ledger_bank_build_query_balance(
     res
 }
 
+/// Parse response for get balance tx.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// commit_resp: response for get balance tx.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_bank_parse_query_balance_resp(
     command_handle: CommandHandle,
