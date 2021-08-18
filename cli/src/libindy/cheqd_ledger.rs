@@ -86,12 +86,12 @@ impl CheqdLedger {
     pub fn parse_query_get_nym_resp(query_resp: &str) -> Result<String, IndyError> {
         cheqd_ledger::cheqd::parse_query_get_nym_resp(query_resp).wait()
     }
-    //
-    // pub fn build_query_all_nym() -> Result<String, IndyError> {
-    //     cheqd_ledger::cheqd::build_query_all_nym().wait()
-    // }
-    //
-    // pub fn parse_query_all_nym_resp(query_resp: &str) -> Result<String, IndyError> {
-    //     cheqd_ledger::cheqd::parse_query_all_nym_resp(query_resp).wait()
-    // }
+    
+    pub fn build_query_all_nym() -> Result<String, IndyError> {
+        cheqd_ledger::cheqd::build_query_all_nym().wait()
+    }
+    
+    pub fn parse_query_all_nym_resp(query_resp: &str) -> Result<String, IndyError> {
+        cheqd_ledger::cheqd::parse_query_all_nym_resp(query_resp).wait()
+    }
 }

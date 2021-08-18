@@ -268,6 +268,35 @@ pub fn build_and_sign_and_broadcast_tx(ctx: &CommandContext,
     Ok(resp)
 }
 
+pub mod get_all_nym_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-all-nym", "Get list of NYM transactions")
+                .add_example("cheqd-ledger get-all-nym")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        let pool_alias = ensure_cheqd_connected_pool(ctx)?;
+
+        let query = CheqdLedger::build_query_all_nym()
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+        let response = CheqdPool::abci_query(&pool_alias, &query)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+        let parsed_response = CheqdLedger::parse_query_all_nym_resp(&response)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+
+        println!("{}", parsed_response);
+        trace!("execute << {:?}", parsed_response);
+
+        Ok(())
+    }
+}
+
 fn get_base_account_number_and_sequence(address: &str, pool_alias: &str) -> Result<(u64, u64), ()> {
     let query = CheqdLedger::build_query_account(address)
         .map_err(|err| handle_indy_error(err, None, None, None))?;
@@ -344,6 +373,8 @@ pub mod tests {
     const VERKEY: &str = "verkey";
     const MAX_GAS: &str = "1000000";
     const MAX_COIN: &str = "100";
+    const DENOM: &str = "cheq";
+    const TIMEOUT_HEIGHT: &str = "5000";
     const AMOUNT: &str = "100";
     const ROLE: &str = "TRUSTEE";
     const MEMO: &str = "memo";
@@ -436,5 +467,37 @@ pub mod tests {
             tear_down_with_wallet(&ctx);
         }
 
+        #[test]
+        pub fn get_all_nym() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            create_new_nym(&ctx);
+            {
+                let cmd = get_all_nym_command::new();
+                let mut params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+    }
+
+    pub fn create_new_nym(ctx: &CommandContext) {
+        {
+            let cmd = create_nym_command::new();
+            let mut params = CommandParams::new();
+            params.insert("did", DID.to_string());
+            params.insert("verkey", VERKEY.to_string());
+            params.insert("key_alias", KEY_ALIAS_WITH_BALANCE.to_string());
+            params.insert("max_gas", MAX_GAS.to_string());
+            params.insert("max_coin", MAX_COIN.to_string());
+            params.insert("denom", DENOM.to_string());
+            params.insert("role", ROLE.to_string());
+            params.insert("memo", MEMO.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
+
+        assert!(true);
     }
 }
