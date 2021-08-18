@@ -7,8 +7,8 @@ import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
 
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-import org.bitcoinj.core.Base58;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -19,8 +19,8 @@ public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 	public void testCreateMyDidWorksForEmptyJson() throws Exception {
 		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, "{}").get();
 
-		assertEquals(16, Base58.decode(result.getDid()).length);
-		assertEquals(32, Base58.decode(result.getVerkey()).length);
+		assertNotNull(result.getDid());
+		assertNotNull(result.getVerkey());
 	}
 
 	@Test

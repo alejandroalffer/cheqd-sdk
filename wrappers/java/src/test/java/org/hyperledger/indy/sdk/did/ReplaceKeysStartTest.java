@@ -1,6 +1,5 @@
 package org.hyperledger.indy.sdk.did;
 
-import org.bitcoinj.core.Base58;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
@@ -8,6 +7,7 @@ import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -29,7 +29,7 @@ public class ReplaceKeysStartTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testReplaceKeysStartWorksForEmptyJson() throws Exception {
 		String verkey = Did.replaceKeysStart(wallet, did, "{}").get();
-		assertEquals(32, Base58.decode(verkey).length);
+		assertNotNull(verkey);
 	}
 
 	@Test
