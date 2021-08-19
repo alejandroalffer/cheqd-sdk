@@ -31,6 +31,7 @@ pub struct CheqdSetup {
     pub account_id: String,
     pub pub_key: String,
     pub wallet_handle: WalletHandle,
+    pub denom: String,
 }
 
 impl CheqdSetup {
@@ -51,6 +52,9 @@ impl CheqdSetup {
         let cheqd_test_chain_id = environment::cheqd_test_chain_id();
         cheqd_pool::add(&name, &cheqd_test_pool_ip, &cheqd_test_chain_id).unwrap();
 
+        // Denom
+        let denom = environment::cheqd_denom();
+
         let setup = CheqdSetup {
             name: name.clone(),
             pool_alias: name,
@@ -58,6 +62,7 @@ impl CheqdSetup {
             account_id,
             pub_key,
             wallet_handle,
+            denom,
         };
 
         setup
@@ -94,7 +99,7 @@ impl CheqdSetup {
 
         // Tx
         let tx = cheqd_ledger::auth::build_tx(
-            &self.pool_alias, &self.pub_key, &msg, account_number, account_sequence, 300000, 0u64, "cheq", self.get_timeout_height(), "memo",
+            &self.pool_alias, &self.pub_key, &msg, account_number, account_sequence, 300000, 0u64, &self.denom, self.get_timeout_height(), "memo",
         )?;
 
         // Sign

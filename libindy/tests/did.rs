@@ -59,6 +59,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_key_for_did_works_for_get_key_from_ledger() {
             let setup = Setup::wallet_and_pool();
 
@@ -68,6 +69,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_key_for_did_works_for_unknown_did() {
             let setup = Setup::wallet_and_pool();
 
@@ -176,6 +178,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_endpoint_for_did_works_from_ledger() {
             let setup = Setup::new_identity();
 
@@ -207,6 +210,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_endpoint_for_did_works_from_ledger_for_address_only() {
             let setup = Setup::new_identity();
 
@@ -237,6 +241,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_get_endpoint_for_did_works_for_unknown_did() {
             let setup = Setup::wallet_and_pool();
 
@@ -679,6 +684,7 @@ mod high_cases {
         use super::*;
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_replace_keys_demo() {
             // 1. Create and open pool
             // 2. Create and open wallet
@@ -769,6 +775,7 @@ mod high_cases {
         const CUSTOM_METHOD: &str = "peer";
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn qualify_did_for_appending_prefix() {
             let setup = Setup::new_identity();
 
@@ -796,6 +803,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn qualify_did_for_keeping_related_entities() {
             let setup = Setup::new_identity();
 

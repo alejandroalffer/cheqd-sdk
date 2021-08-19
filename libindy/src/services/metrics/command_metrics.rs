@@ -133,6 +133,11 @@ pub enum CommandMetric {
     CheqdLedgerCommandBuildTx,
     CheqdLedgerCommandBuildQueryCosmosAuthAccount,
     CheqdLedgerCommandParseQueryCosmosAuthAccountResp,
+    // CheqdLedger - Bank Module
+    CheqdLedgerCommandBuildMsgSend,
+    CheqdLedgerCommandParseMsgSendResp,
+    CheqdLedgerCommandBuildQueryBalance,
+    CheqdLedgerCommandParseQueryBalanceResp,
     // CheqdPool
     CheqdPoolCommandAdd,
     CheqdPoolCommandGetConfig,

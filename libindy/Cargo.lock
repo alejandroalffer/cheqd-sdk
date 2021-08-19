@@ -306,6 +306,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-rustls"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f38092e8f467f47aadaff680903c7cbfeee7926b058d7f40af2dd4c878fbdee"
+dependencies = [
+ "futures-lite",
+ "rustls 0.18.1",
+ "webpki",
+]
+
+[[package]]
 name = "async-std"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -447,6 +458,12 @@ checksum = "0b25d992356d2eb0ed82172f5248873db5560c4721f564b13cb5193bda5e668e"
 dependencies = [
  "byteorder",
 ]
+
+[[package]]
+name = "base64"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
 name = "base64"
@@ -1868,7 +1885,7 @@ dependencies = [
  "futures-util",
  "hyper",
  "log",
- "rustls",
+ "rustls 0.19.1",
  "rustls-native-certs",
  "tokio",
  "tokio-rustls",
@@ -1886,6 +1903,21 @@ dependencies = [
  "native-tls",
  "tokio",
  "tokio-native-tls",
+]
+
+[[package]]
+name = "ics23"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a575acddcafc39b28ccc3c685a0029b58e4741af99cd6c9fa11406ad4c4085d6"
+dependencies = [
+ "anyhow",
+ "bytes 1.0.1",
+ "hex",
+ "prost",
+ "ripemd160",
+ "sha2 0.9.5",
+ "sha3 0.9.1",
 ]
 
 [[package]]
@@ -1959,6 +1991,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "ursa",
+ "zeroize",
  "zmq",
 ]
 
@@ -2145,6 +2178,7 @@ dependencies = [
  "futures 0.3.16",
  "hex",
  "http-client",
+ "ics23",
  "indy",
  "indy-api-types",
  "indy-sys",
@@ -3293,6 +3327,19 @@ dependencies = [
 
 [[package]]
 name = "rustls"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d1126dcf58e93cee7d098dbda643b5f92ed724f1f6a63007c1116eed6700c81"
+dependencies = [
+ "base64 0.12.3",
+ "log",
+ "ring",
+ "sct",
+ "webpki",
+]
+
+[[package]]
+name = "rustls"
 version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35edb675feee39aec9c99fa5ff985081995a06d594114ae14cbe797ad7b7a6d7"
@@ -3311,7 +3358,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a07b7c1885bd8ed3831c289b7870b13ef46fe0e856d288c30d9cc17d75a2092"
 dependencies = [
  "openssl-probe",
- "rustls",
+ "rustls 0.19.1",
  "schannel",
  "security-framework",
 ]
@@ -3729,6 +3776,7 @@ dependencies = [
  "percent-encoding",
  "rand 0.7.3",
  "rsa",
+ "rustls 0.18.1",
  "serde",
  "serde_json",
  "sha-1",
@@ -3739,6 +3787,8 @@ dependencies = [
  "stringprep",
  "thiserror",
  "url",
+ "webpki",
+ "webpki-roots",
  "whoami",
 ]
 
@@ -3768,9 +3818,8 @@ name = "sqlx-rt"
 version = "0.2.0"
 source = "git+https://github.com/jovfer/sqlx?branch=feature/json_no_preserve_order#0f58bd756ecdd2e683c6e866a322ce22c5719561"
 dependencies = [
- "async-native-tls",
+ "async-rustls",
  "async-std",
- "native-tls",
 ]
 
 [[package]]
@@ -4192,7 +4241,7 @@ version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc6844de72e57df1980054b38be3a9f4702aba4858be64dd700181a8a6d0e1b6"
 dependencies = [
- "rustls",
+ "rustls 0.19.1",
  "tokio",
  "webpki",
 ]
@@ -4666,6 +4715,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "webpki-roots"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aabe153544e473b775453675851ecc86863d2a81d786d741f6b76778f2a48940"
+dependencies = [
+ "webpki",
+]
+
+[[package]]
 name = "wepoll-ffi"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4785,3 +4843,4 @@ dependencies = [
  "libc",
  "metadeps",
 ]
+

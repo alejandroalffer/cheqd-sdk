@@ -84,7 +84,11 @@ pub fn cheqd_test_pool_ip() -> String {
 }
 
 pub fn cheqd_test_chain_id() -> String {
-    env::var("CHEQD_TEST_CHAIN_ID").unwrap_or("cheqdnode".to_string())
+    env::var("CHEQD_TEST_CHAIN_ID").unwrap_or("cheqd".to_string())
+}
+
+pub fn cheqd_denom() -> String {
+    env::var("CHEQD_DENOM").unwrap_or("cheq".to_string())
 }
 
 #[cfg(test)]
