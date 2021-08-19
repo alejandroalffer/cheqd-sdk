@@ -12,6 +12,10 @@ pub fn get_info(wallet_handle: WalletHandle, alias: &str) -> Result<String, Indy
     cheqd_keys::get_info(wallet_handle, alias).wait()
 }
 
+pub fn get_list_keys(wallet_handle: WalletHandle) -> Result<String, IndyError> {
+    cheqd_keys::get_list_keys(wallet_handle).wait()
+}
+
 pub fn sign(wallet_handle: WalletHandle, alias: &str, tx: &[u8]) -> Result<Vec<u8>, IndyError> {
     cheqd_keys::sign(wallet_handle, alias, tx).wait()
 }

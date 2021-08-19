@@ -198,6 +198,51 @@ pub extern "C" fn indy_cheqd_keys_get_info(
     res
 }
 
+#[no_mangle]
+pub extern "C" fn indy_cheqd_keys_get_list_keys(
+    command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, key_info: *const c_char),
+    >,
+) -> ErrorCode {
+    debug!(
+        "indy_cheqd_keys_get_list_keys > wallet_handle {:?}",
+        wallet_handle
+    );
+
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    debug!(
+        "indy_cheqd_keys_get_list_keys ? wallet_handle {:?}",
+        wallet_handle
+    );
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator
+            .cheqd_keys_controller
+            .get_list_keys(wallet_handle)
+            .await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, res) = prepare_result!(res, String::new());
+        debug!("indy_cheqd_keys_get_list_keys ? err {:?} res {:?}", err, res);
+
+        let res = ctypes::string_to_cstring(res);
+        cb(command_handle, err, res.as_ptr())
+    };
+
+    locator.executor.spawn_ok_instrumented(CommandMetric::CheqdKeysGetListKeys, action, cb);
+
+    let res = ErrorCode::Success;
+    debug!("indy_cheqd_keys_get_all_keys < {:?}", res);
+    res
+}
+
 /// Sign
 /// #Params
 /// alias: account alias for getting its keys

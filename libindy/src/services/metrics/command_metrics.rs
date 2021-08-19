@@ -141,6 +141,7 @@ pub enum CommandMetric {
     // CheqdPool
     CheqdPoolCommandAdd,
     CheqdPoolCommandGetConfig,
+    CheqdPoolCommandGetAllConfig,
     CheqdPoolCommandBroadcastTxCommit,
     CheqdPoolCommandAbciQuery,
     CheqdPoolCommandAbciInfo,
@@ -149,6 +150,7 @@ pub enum CommandMetric {
     CheqdKeysAddFromMnemonic,
     CheqdKeysKeyInfo,
     CheqdKeysSign,
+    CheqdKeysGetListKeys,
     // PoolCommand
     PoolCommandCreate,
     PoolCommandDelete,

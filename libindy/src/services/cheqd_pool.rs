@@ -97,6 +97,40 @@ impl CheqdPoolService {
         Ok(result)
     }
 
+    pub(crate) async fn get_all_config(&self) -> IndyResult<Vec<PoolConfig>> {
+        let mut path = environment::cheqd_pool_home_path();
+
+        if !path.exists() {
+            return Err(IndyError::from_msg(IndyErrorKind::IOError, format!("Can't find cheqd pool config file")));
+        }
+
+        let paths = fs::read_dir(path.clone())?;
+
+        let mut result = Vec::<PoolConfig>::new();
+        for dir in paths {
+            let mut path = match dir {
+                Ok(t) => t.path(),
+                Err(error) => continue,
+            };
+
+            path.push("config");
+            path.set_extension("json");
+
+            let config = match fs::read_to_string(path){
+                Ok(conf) => conf,
+                Err(error) => continue,
+            };
+
+            let pool_config : PoolConfig = match serde_json::from_str(&config){
+                Ok(pool_conf) => pool_conf,
+                Err(error) => continue,
+            };
+            result.push(pool_config);
+        }
+
+        Ok(result)
+    }
+
     // Send and wait for commit
     pub(crate) async fn broadcast_tx_commit(
         &self,

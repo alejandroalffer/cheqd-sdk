@@ -85,6 +85,25 @@ fn _get_info(
     })
 }
 
+pub fn get_list_keys(wallet_handle: WalletHandle) -> Box<dyn Future<Item = String, Error = IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _get_list_keys(command_handle, wallet_handle, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _get_list_keys(
+    command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+
+    ErrorCode::from(unsafe {
+        cheqd_keys::indy_cheqd_keys_get_list_keys(command_handle, wallet_handle, cb)
+    })
+}
+
 pub fn sign(wallet_handle: WalletHandle, alias: &str, tx: &[u8]) -> Box<dyn Future<Item = Vec<u8>, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 

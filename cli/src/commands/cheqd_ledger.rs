@@ -225,6 +225,35 @@ pub mod get_balance_command {
     }
 }
 
+pub mod get_all_nym_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-all-nym", "Get list of NYM transactions")
+                .add_example("cheqd-ledger get-all-nym")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        let pool_alias = ensure_cheqd_connected_pool(ctx)?;
+
+        let query = CheqdLedger::build_query_all_nym()
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+        let response = CheqdPool::abci_query(&pool_alias, &query)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+        let parsed_response = CheqdLedger::parse_query_all_nym_resp(&response)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+
+        println!("{}", parsed_response);
+        trace!("execute << {:?}", parsed_response);
+
+        Ok(())
+    }
+}
+
 pub fn build_and_sign_and_broadcast_tx(ctx: &CommandContext,
                                        pool_alias: &str,
                                        request: &[u8],
@@ -492,7 +521,7 @@ pub mod tests {
             params.insert("key_alias", KEY_ALIAS_WITH_BALANCE.to_string());
             params.insert("max_gas", MAX_GAS.to_string());
             params.insert("max_coin", MAX_COIN.to_string());
-            params.insert("denom", DENOM.to_string());
+            params.insert("denom", EnvironmentUtils::cheqd_denom());
             params.insert("role", ROLE.to_string());
             params.insert("memo", MEMO.to_string());
             cmd.execute(&ctx, &params).unwrap();

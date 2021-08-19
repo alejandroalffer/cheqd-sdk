@@ -49,6 +49,14 @@ impl CheqdPoolController {
         Ok(json)
     }
 
+    pub(crate) async fn get_all_config(&self) -> IndyResult<String> {
+        trace!("get_config >");
+        let config = self.cheqd_pool_service.get_all_config().await?;
+        let json = serde_json::to_string(&config)?;
+        trace!("get_config < {:?}", json);
+        Ok(json)
+    }
+
     pub(crate) async fn broadcast_tx_commit(
         &self,
         pool_alias: &str,

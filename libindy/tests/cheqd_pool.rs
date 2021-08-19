@@ -29,14 +29,53 @@ mod high_cases {
     #[cfg(test)]
     mod get_config {
         use super::*;
+        use indy_utils::test::cleanup_files;
+        use indy_utils::environment;
 
         #[test]
         fn test_get_config() {
             let pool_name = "test_pool";
+            test::cleanup_storage(&pool_name);
+
             cheqd_pool::add(&pool_name, "rpc_address", "chain_id").unwrap();
             let result = cheqd_pool::get_config(&pool_name).unwrap();
             test::cleanup_storage(&pool_name);
+
             println!("Data: {:?} ", result);
+        }
+
+        #[test]
+        fn get_all_config() {
+            let pool_name_1 = "test_pool_1";
+            let pool_name_2 = "test_pool_2";
+            const RPC_ADDRESS: &str = "rpc_address";
+            const CHAIN_ID: &str = "chain_id";
+
+            test::cleanup_storage(&pool_name_1);
+            test::cleanup_storage(&pool_name_2);
+
+            cheqd_pool::add(&pool_name_1, RPC_ADDRESS, CHAIN_ID).unwrap();
+            cheqd_pool::add(&pool_name_2, RPC_ADDRESS, CHAIN_ID).unwrap();
+
+            let result = cheqd_pool::get_all_config().unwrap();
+            let result: Value = serde_json::from_str(&result).unwrap();
+
+            let pool_1 = result.as_array().unwrap().get(0).unwrap();
+            let pool_2 = result.as_array().unwrap().get(1).unwrap();
+
+            let expect_pool_1 = &("{\"alias\": \"".to_string() + pool_name_1 + "\", \"rpc_address\": \"" + RPC_ADDRESS + "\", \"chain_id\": \"" + CHAIN_ID + "\"}");
+            let expect_pool_2 = &("{\"alias\": \"".to_string() + pool_name_2 + "\", \"rpc_address\": \"" + RPC_ADDRESS + "\", \"chain_id\": \"" + CHAIN_ID + "\"}");
+
+            let expect_pool_1: Value = serde_json::from_str(expect_pool_1).unwrap();
+            let expect_pool_2: Value = serde_json::from_str(expect_pool_2).unwrap();
+
+            println!("Data: {:?} ", result);
+
+            test::cleanup_storage(&pool_name_1);
+            test::cleanup_storage(&pool_name_2);
+
+            assert_eq!(&expect_pool_1, pool_1);
+            assert_eq!(&expect_pool_2, pool_2);
         }
     }
 

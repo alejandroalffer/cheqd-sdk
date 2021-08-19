@@ -103,6 +103,46 @@ pub extern "C" fn indy_cheqd_pool_get_config(
 }
 
 #[no_mangle]
+pub extern "C" fn indy_cheqd_pool_get_all_config(
+    command_handle: CommandHandle,
+    cb: Option<
+        extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, pool_info: *const c_char),
+    >,
+) -> ErrorCode {
+    debug!("indy_cheqd_pool_get_all_config >");
+
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    debug!("indy_cheqd_pool_get_all_config >");
+
+    let locator = Locator::instance();
+
+    let action = async move {
+        let res = locator.cheqd_pool_controller.get_all_config().await;
+        res
+    };
+
+    let cb = move |res: IndyResult<_>| {
+        let (err, pool_info) = prepare_result!(res, String::new());
+        debug!(
+            "indy_cheqd_pool_get_all_config ? err {:?} pool_info {:?}",
+            err, pool_info
+        );
+
+        let pool_info = ctypes::string_to_cstring(pool_info);
+        cb(command_handle, err, pool_info.as_ptr())
+    };
+
+    locator
+        .executor
+        .spawn_ok_instrumented(CommandMetric::CheqdPoolCommandGetAllConfig, action, cb);
+
+    let res = ErrorCode::Success;
+    debug!("indy_cheqd_pool_get_all_config < {:?}", res);
+    res
+}
+
+#[no_mangle]
 pub extern "C" fn indy_cheqd_pool_broadcast_tx_commit(
     command_handle: CommandHandle,
     pool_alias: *const c_char,

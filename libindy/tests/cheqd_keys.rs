@@ -8,6 +8,7 @@ extern crate serde_json;
 use indyrs::ErrorCode;
 
 use utils::{constants::*, types::ResponseType, test, cheqd_keys, cheqd_setup, cheqd_ledger, wallet};
+use serde_json::Value;
 
 mod utils;
 
@@ -50,6 +51,21 @@ mod high_cases {
             let setup = cheqd_setup::CheqdSetup::new();
             cheqd_keys::add_random(setup.wallet_handle, alias).unwrap();
             let result = cheqd_keys::get_info(setup.wallet_handle, alias).unwrap();
+            println!("Data: {:?} ", result);
+        }
+
+        #[test]
+        fn test_get_list_keys() {
+            let alias_1 = "some_alias_1";
+            let alias_2 = "some_alias_2";
+
+            let setup = cheqd_setup::CheqdSetup::new();
+
+            cheqd_keys::add_random(setup.wallet_handle, alias_1).unwrap();
+            cheqd_keys::add_random(setup.wallet_handle, alias_2).unwrap();
+
+            let result = cheqd_keys::get_list_keys(setup.wallet_handle).unwrap();
+
             println!("Data: {:?} ", result);
         }
     }
