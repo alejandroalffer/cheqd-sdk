@@ -1,16 +1,17 @@
 use std::convert::TryInto;
 use std::str::FromStr;
 
-use cosmos_sdk::{Coin, tx};
+use cosmos_sdk::{Coin, tx, AccountId};
 use cosmos_sdk::crypto::PublicKey;
 use cosmos_sdk::rpc::endpoint::abci_query;
 use cosmos_sdk::tendermint::block::Height;
 use cosmos_sdk::tx::{AuthInfo, Fee, Msg, SignDoc, SignerInfo};
-use indy_api_types::errors::IndyResult;
-
-use crate::domain::cheqd_ledger::auth::{QueryAccountRequest, QueryAccountResponse};
+use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
+use crate::domain::cheqd_ledger::auth::{QueryAccountRequest, QueryAccountResponse, Account};
 use crate::domain::cheqd_ledger::CheqdProto;
 use crate::services::CheqdLedgerService;
+use prost::bytes::Buf;
+use crate::utils::cheqd_crypto::check_proofs;
 
 impl CheqdLedgerService {
     pub(crate) async fn auth_build_tx(
@@ -67,7 +68,7 @@ impl CheqdLedgerService {
         Ok(signer_info)
     }
 
-    pub(crate) fn auth_build_query_account(
+    pub(crate) fn auth_build_query_account_without_proof(
         &self,
         address: &str,
     ) -> IndyResult<abci_query::Request> {
@@ -79,7 +80,33 @@ impl CheqdLedgerService {
         Ok(req)
     }
 
+    pub(crate) fn auth_build_query_account(
+        &self,
+        address: &str,
+    ) -> IndyResult<abci_query::Request> {
+        // let mut encoded_path = 0x01.to_bytes()?;
+        // encoded_path.push_str(address);
+        let mut query_data = vec!(0x01_u8);
+        let acc = AccountId::from_str(address)?;
+        query_data.append(acc.to_bytes().to_vec().as_mut());
+        let path = format!("/store/acc/key");
+        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let req = abci_query::Request::new(Some(path), query_data, None, true);
+        Ok(req)
+    }
+
     pub(crate) fn auth_parse_query_account_resp(
+        &self,
+        resp: &abci_query::Response,
+    ) -> IndyResult<QueryAccountResponse> {
+        let result = if !resp.response.value.is_empty() {
+            Some(Account::from_proto_bytes(&resp.response.value)?)
+        } else { None };
+        check_proofs(resp.clone())?;
+        Ok(QueryAccountResponse::new(result))
+    }
+
+    pub(crate) fn auth_parse_query_account_resp_without_proof(
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryAccountResponse> {

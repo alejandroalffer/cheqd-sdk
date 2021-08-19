@@ -1,11 +1,14 @@
 use std::str::FromStr;
 
+use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::endpoint::abci_query;
 use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
 use cosmos_sdk::tx::Msg;
 use cosmos_sdk::tx::MsgType;
-use indy_api_types::errors::IndyResult;
+use indy_api_types::IndyError;
+use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use log_derive::logfn;
+use prost::Message;
 
 use crate::domain::cheqd_ledger::base::query::PageRequest;
 use crate::domain::cheqd_ledger::prost_ext::ProstMessageExt;
@@ -21,6 +24,8 @@ use crate::domain::cheqd_ledger::cheqd::queries::QueryGetNymRequest;
 use crate::domain::cheqd_ledger::cheqd::queries::QueryGetNymResponse;
 use crate::domain::cheqd_ledger::CheqdProto;
 use crate::services::CheqdLedgerService;
+use crate::domain::cheqd_ledger::cheqd::models::Nym;
+use crate::utils::cheqd_crypto::check_proofs;
 
 impl CheqdLedgerService {
     #[logfn(Info)]
@@ -100,7 +105,7 @@ impl CheqdLedgerService {
     }
 
     #[logfn(Info)]
-    pub(crate) fn build_query_get_nym(&self, id: u64) -> IndyResult<abci_query::Request> {
+    pub(crate) fn build_query_get_nym_without_proof(&self, id: u64) -> IndyResult<abci_query::Request> {
         let query_data = QueryGetNymRequest::new(id);
         let path = format!("/cheqdid.cheqdnode.cheqd.Query/Nym");
         let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
@@ -110,9 +115,35 @@ impl CheqdLedgerService {
     }
 
     #[logfn(Info)]
+    pub(crate) fn build_query_get_nym(
+        &self,
+        id: u64,
+    ) -> IndyResult<abci_query::Request> {
+        let mut query_data = "Nym-value-".as_bytes().to_vec();
+        query_data.extend_from_slice(&id.to_be_bytes());
+        let path = format!("/store/cheqd/key");
+        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let req = abci_query::Request::new(Some(path), query_data, None, true);
+        Ok(req)
+    }
+
+    #[logfn(Info)]
     pub(crate) fn cheqd_parse_query_get_nym_resp(
         &self,
         resp: &abci_query::Response,
+    ) -> IndyResult<QueryGetNymResponse> {
+        let result = if !resp.response.value.is_empty() {
+            Some(Nym::from_proto_bytes(&resp.response.value)?)
+        } else { None };
+        check_proofs(resp.clone())?;
+        Ok(QueryGetNymResponse::new(result))
+    }
+
+    #[logfn(Info)]
+    pub(crate) fn cheqd_parse_query_get_nym_resp_without_proof(
+        &self,
+        resp: &abci_query::Response,
+
     ) -> IndyResult<QueryGetNymResponse> {
         let result = QueryGetNymResponse::from_proto_bytes(&resp.response.value)?;
         return Ok(result);
