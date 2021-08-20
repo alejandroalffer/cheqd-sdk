@@ -73,6 +73,7 @@ impl EnvironmentUtils {
     pub fn cheqd_denom() -> String {
         env::var("CHEQD_DENOM").unwrap_or("cheq".to_string())
     }
+}
 
 #[cfg(test)]
 mod tests {

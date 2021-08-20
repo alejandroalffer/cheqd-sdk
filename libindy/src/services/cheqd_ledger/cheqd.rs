@@ -115,9 +115,6 @@ impl CheqdLedgerService {
     }
 
     #[logfn(Info)]
-<<<<<<< HEAD:libindy/src/services/cheqd_ledger/cheqd.rs
-    pub(crate) fn cheqd_parse_query_get_nym_resp(
-=======
     pub(crate) fn build_query_get_nym(
         &self,
         id: u64,
@@ -144,7 +141,6 @@ impl CheqdLedgerService {
 
     #[logfn(Info)]
     pub(crate) fn cheqd_parse_query_get_nym_resp_without_proof(
->>>>>>> origin/cheqd:libindy/src/services/verim_ledger/verim.rs
         &self,
         resp: &abci_query::Response,
 
