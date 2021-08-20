@@ -58,24 +58,26 @@ mod high_cases {
             cheqd_pool::add(&pool_name_2, RPC_ADDRESS, CHAIN_ID).unwrap();
 
             let result = cheqd_pool::get_all_config().unwrap();
-            let result: Value = serde_json::from_str(&result).unwrap();
+            let result: Vec<Value> = serde_json::from_str(&result).unwrap();
 
-            let pool_1 = result.as_array().unwrap().get(0).unwrap();
-            let pool_2 = result.as_array().unwrap().get(1).unwrap();
-
-            let expect_pool_1 = &("{\"alias\": \"".to_string() + pool_name_1 + "\", \"rpc_address\": \"" + RPC_ADDRESS + "\", \"chain_id\": \"" + CHAIN_ID + "\"}");
-            let expect_pool_2 = &("{\"alias\": \"".to_string() + pool_name_2 + "\", \"rpc_address\": \"" + RPC_ADDRESS + "\", \"chain_id\": \"" + CHAIN_ID + "\"}");
-
-            let expect_pool_1: Value = serde_json::from_str(expect_pool_1).unwrap();
-            let expect_pool_2: Value = serde_json::from_str(expect_pool_2).unwrap();
+            let expect_pool_1 = &json!({
+                "alias": pool_name_1.to_string(),
+                "rpc_address": RPC_ADDRESS.to_string(),
+                "chain_id": CHAIN_ID.to_string()
+            });
+            let expect_pool_2 = &json!({
+                "alias": pool_name_2.to_string(),
+                "rpc_address": RPC_ADDRESS.to_string(),
+                "chain_id": CHAIN_ID.to_string()
+            });
 
             println!("Data: {:?} ", result);
 
             test::cleanup_storage(&pool_name_1);
             test::cleanup_storage(&pool_name_2);
 
-            assert_eq!(&expect_pool_1, pool_1);
-            assert_eq!(&expect_pool_2, pool_2);
+            assert!(result.contains(expect_pool_1));
+            assert!(result.contains(expect_pool_2));
         }
     }
 

@@ -61,10 +61,17 @@ mod high_cases {
 
             let setup = cheqd_setup::CheqdSetup::new();
 
-            cheqd_keys::add_random(setup.wallet_handle, alias_1).unwrap();
-            cheqd_keys::add_random(setup.wallet_handle, alias_2).unwrap();
+            let key_1 = cheqd_keys::add_random(setup.wallet_handle, alias_1).unwrap();
+            let key_2 = cheqd_keys::add_random(setup.wallet_handle, alias_2).unwrap();
 
             let result = cheqd_keys::get_list_keys(setup.wallet_handle).unwrap();
+            let result: Vec<Value> = serde_json::from_str(&result).unwrap();
+
+            let expect_key_1: Value = serde_json::from_str(&key_1).unwrap();
+            let expect_key_2: Value = serde_json::from_str(&key_2).unwrap();
+
+            assert!(result.contains(&expect_key_1));
+            assert!(result.contains(&expect_key_2));
 
             println!("Data: {:?} ", result);
         }

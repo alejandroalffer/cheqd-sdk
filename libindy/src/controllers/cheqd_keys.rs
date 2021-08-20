@@ -8,7 +8,7 @@ use indy_api_types::errors::{IndyErrorKind, err_msg, IndyResult, IndyResultExt};
 use indy_api_types::WalletHandle;
 use indy_wallet::{RecordOptions, SearchOptions};
 
-use crate::domain::cheqd_keys::Key;
+use crate::domain::cheqd_keys::{Key, KeyInfo};
 use crate::domain::cheqd_ledger::cosmos_ext::CosmosSignDocExt;
 use crate::services::{CheqdKeysService, WalletService};
 
@@ -87,7 +87,7 @@ impl CheqdKeysController {
             .search_indy_records::<Key>(wallet_handle, "{}", &SearchOptions::id_value())
             .await?;
 
-        let mut keys: Vec<Key> = Vec::new();
+        let mut keys: Vec<KeyInfo> = Vec::new();
 
         while let Some(key_record) = key_search.fetch_next_record().await? {
             let key_id = key_record.get_id();
@@ -102,7 +102,8 @@ impl CheqdKeysController {
                     )
                 })?;
 
-            keys.push(key);
+            let key_info = self.cheqd_keys_service.get_info(&key)?;
+            keys.push(key_info);
         }
 
         let result = serde_json::to_string(&keys)?;
