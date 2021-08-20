@@ -13,6 +13,10 @@ impl CheqdPool {
         cheqd_pool::get_config(alias).wait()
     }
 
+    pub fn get_all_config() -> Result<String, IndyError> {
+        cheqd_pool::get_all_config().wait()
+    }
+
     pub fn broadcast_tx_commit(pool_alias: &str, signed_tx: &[u8]) -> Result<String, IndyError> {
         cheqd_pool::broadcast_tx_commit(pool_alias, signed_tx).wait()
     }

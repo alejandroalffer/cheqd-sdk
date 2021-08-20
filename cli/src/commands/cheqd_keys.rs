@@ -90,6 +90,35 @@ pub mod get_info_command {
     }
 }
 
+pub mod get_list_keys_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-list-keys", "Get list keys of current wallet.")
+                .add_example("cheqd-keys get-list-keys")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let res = match CheqdKeys::get_list_keys(wallet_handle) {
+            Ok(resp) => {
+                println_succ!("Get follow list keys \"{}\" ", resp);
+                Ok(())
+            },
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            },
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -138,6 +167,19 @@ pub mod tests {
                 let cmd = get_info_command::new();
                 let mut params = CommandParams::new();
                 params.insert("alias", KEY_ALIAS_WITH_BALANCE.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn get_list_keys() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            {
+                let cmd = get_list_keys_command::new();
+                let mut params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
             assert!(true);

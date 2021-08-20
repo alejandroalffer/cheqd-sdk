@@ -144,6 +144,33 @@ pub mod get_config_command {
     }
 }
 
+pub mod get_all_config_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-all-config", "Get list configs of pools.")
+                .add_example("cheqd-pool get-all-config")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let res = match CheqdPoolLibindy::get_all_config() {
+            Ok(config) => {
+                println_succ!("Pool config has been get \"{}\"", config);
+                Ok(())
+            },
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            },
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod abci_info_command {
     use super::*;
 
@@ -233,6 +260,19 @@ pub mod tests {
             let ctx = setup_with_wallet_and_cheqd_pool();
             {
                 let cmd = get_config_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(true);
+
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn get_all_config() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            {
+                let cmd = get_all_config_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
