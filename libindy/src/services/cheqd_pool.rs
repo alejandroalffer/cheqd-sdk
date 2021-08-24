@@ -47,12 +47,11 @@ impl CheqdPoolService {
         let mut path = environment::cheqd_pool_path(alias);
 
         if path.as_path().exists() {
+            let error_msg = format!("Cheqd pool ledger config file with alias \"{}\" already exists", alias);
+            warn!("{}", error_msg);
             return Err(err_msg(
                 IndyErrorKind::PoolConfigAlreadyExists,
-                format!(
-                    "Cheqd pool ledger config file with alias \"{}\" already exists",
-                    alias
-                ),
+                error_msg,
             ));
         }
 
@@ -82,7 +81,9 @@ impl CheqdPoolService {
         let mut path = environment::cheqd_pool_path(alias);
 
         if !path.exists() {
-            return Err(IndyError::from_msg(IndyErrorKind::IOError, format!("Can't find cheqd pool config file: {}", alias)));
+            let error_msg = format!("Can't find cheqd pool config file: {}", alias);
+            warn!("{}", error_msg);
+            return Err(IndyError::from_msg(IndyErrorKind::IOError, error_msg));
         }
 
         path.push("config");
@@ -101,7 +102,9 @@ impl CheqdPoolService {
         let mut path = environment::cheqd_pool_home_path();
 
         if !path.exists() {
-            return Err(IndyError::from_msg(IndyErrorKind::IOError, format!("Can't find cheqd pool config file")));
+            let error_msg = "Can't find cheqd pool config file";
+            warn!("{}", error_msg);
+            return Err(IndyError::from_msg(IndyErrorKind::IOError, error_msg));
         }
 
         let paths = fs::read_dir(path.clone())?;
@@ -144,24 +147,32 @@ impl CheqdPoolService {
         let resp = self.send_req(req, &pool.rpc_address).await?;
 
         if let abci::Code::Err(code) = resp.check_tx.code {
+            let error_msg = format!(
+                "check_tx: error code: {}, log: {}",
+                code,
+                serde_json::to_string(&resp.check_tx)?
+            );
+
+            warn!("{}", error_msg);
+
             return Err(IndyError::from_msg(
                 IndyErrorKind::InvalidState,
-                format!(
-                    "check_tx: error code: {}, log: {}",
-                    code,
-                    serde_json::to_string(&resp.check_tx)?
-                ),
+                error_msg,
             ));
         }
 
         if let abci::Code::Err(code) = resp.deliver_tx.code {
+            let error_msg = format!(
+                "deliver_tx: error code: {}, log: {}",
+                code,
+                serde_json::to_string(&resp.deliver_tx)?
+            );
+
+            warn!("{}", error_msg);
+
             return Err(IndyError::from_msg(
                 IndyErrorKind::InvalidState,
-                format!(
-                    "deliver_tx: error code: {}, log: {}",
-                    code,
-                    serde_json::to_string(&resp.deliver_tx)?
-                ),
+                error_msg,
             ));
         }
 

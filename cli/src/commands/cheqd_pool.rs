@@ -130,7 +130,7 @@ pub mod get_config_command {
 
         let res = match CheqdPoolLibindy::get_config(&pool_alias) {
             Ok(config) => {
-                println_succ!("Pool config has been get \"{}\"", config);
+                println_succ!("Available pools: \"{}\"", config);
                 Ok(())
             },
             Err(err) => {
@@ -221,8 +221,6 @@ pub mod tests {
                 params.insert("chain_id", CHAIN_ID.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down();
         }
 
@@ -236,8 +234,6 @@ pub mod tests {
                 params.insert("alias", POOL.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -250,8 +246,6 @@ pub mod tests {
                 params.insert("alias", POOL.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -263,8 +257,6 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -276,8 +268,6 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -289,8 +279,6 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
     }

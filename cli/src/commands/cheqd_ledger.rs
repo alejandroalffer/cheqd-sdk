@@ -144,7 +144,7 @@ pub mod get_nym_command {
             .map_err(|err| handle_indy_error(err, None,
                                              Some(pool_alias.as_str()), None))?;
 
-        println!("NYM info: {}",parsed_response);
+        println_succ!("NYM info: {}",parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -218,7 +218,7 @@ pub mod get_balance_command {
         let parsed_response = CheqdLedger::parse_query_balance_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        println!("Balance info: {}",parsed_response);
+        println_succ!("Balance info: {}",parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -247,7 +247,7 @@ pub mod get_all_nym_command {
             .map_err(|err| handle_indy_error(err, None,
                                              Some(pool_alias.as_str()), None))?;
 
-        println!("{}", parsed_response);
+        println_succ!("List NYM info: {}", parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -505,9 +505,6 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
     }
@@ -526,7 +523,5 @@ pub mod tests {
             params.insert("memo", MEMO.to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
-
-        assert!(true);
     }
 }

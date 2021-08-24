@@ -140,8 +140,6 @@ pub mod tests {
                 params.insert("alias", KEY_ALIAS.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -155,8 +153,6 @@ pub mod tests {
                 params.insert("mnemonic", MNEMONIC.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -169,8 +165,6 @@ pub mod tests {
                 params.insert("alias", KEY_ALIAS_WITH_BALANCE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -182,8 +176,6 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
     }
