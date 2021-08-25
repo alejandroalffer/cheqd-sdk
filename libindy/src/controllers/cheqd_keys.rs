@@ -29,7 +29,7 @@ impl CheqdKeysController {
         self.wallet_service
             .add_indy_object(wallet_handle, &key.alias, &key, &HashMap::new())
             .await
-            .to_indy(IndyErrorKind::IOError, "Can't write cheqd key")?;
+            .to_indy(IndyErrorKind::WalletItemAlreadyExists, "Can't write cheqd key")?;
 
         Ok(())
     }
@@ -38,7 +38,7 @@ impl CheqdKeysController {
         let key = self.wallet_service
             .get_indy_object(wallet_handle, &alias, &RecordOptions::id_value())
             .await
-            .to_indy(IndyErrorKind::IOError, "Can't read cheqd key")?;
+            .to_indy(IndyErrorKind::WalletItemNotFound, "Can't read cheqd key")?;
 
         Ok(key)
     }
@@ -91,5 +91,108 @@ impl CheqdKeysController {
         trace!("sign < signed {:?}", signed);
 
         Ok(signed)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use indy_api_types::errors::IndyErrorKind;
+    use crate::controllers::{CheqdKeysController, WalletController};
+    use crate::services::{CheqdKeysService, WalletService, CryptoService};
+    use rand::{distributions::Alphanumeric, Rng};
+    use crate::domain::cheqd_keys::Key;
+    use async_std::sync::Arc;
+    use indy_api_types::{
+        domain::wallet::{Config, Credentials, KeyDerivationMethod}
+    };
+    use failure::AsFail;
+
+    #[async_std::test]
+    async fn wallet_item_not_found() {
+        let cheqd_keys_service = CheqdKeysService::new();
+        let wallet_service = WalletService::new();
+        let cheqd_controller = CheqdKeysController::new(Arc::from(cheqd_keys_service),
+                                                        Arc::from(wallet_service));
+        let wallet_controller = WalletController::new(Arc::from(WalletService::new()), Arc::new(CryptoService::new()));
+
+        let mut wallet_config = Config {
+            id: rand::thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(7)
+                .map(char::from)
+                .collect(),
+            storage_type: None,
+            storage_config: None,
+            cache: None
+        };
+        let mut wallet_cred = Credentials {
+            key: "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::RAW,
+            rekey_derivation_method: KeyDerivationMethod::RAW
+        };
+        wallet_controller.create(
+            wallet_config.clone(),
+            wallet_cred.clone())
+            .await
+            .unwrap();
+
+        let wallet_handle = wallet_controller.open(wallet_config, wallet_cred)
+            .await
+            .unwrap();
+
+        cheqd_controller.load_key(
+            wallet_handle,
+        "test_key_which_is_absent")
+            .await
+            .map_err(|err| assert!(err.to_string().contains(IndyErrorKind::WalletItemNotFound.as_fail().to_string().as_str())));
+    }
+
+    #[async_std::test]
+    async fn wallet_already_exists_on_store_key() {
+        let cheqd_keys_service = CheqdKeysService::new();
+        let wallet_service = WalletService::new();
+        let cheqd_controller = CheqdKeysController::new(Arc::from(cheqd_keys_service),
+                                                        Arc::from(wallet_service));
+        let wallet_controller = WalletController::new(Arc::from(WalletService::new()), Arc::new(CryptoService::new()));
+
+        let mut wallet_config = Config {
+            id: rand::thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(7)
+                .map(char::from)
+                .collect(),
+            storage_type: None,
+            storage_config: None,
+            cache: None
+        };
+        let mut wallet_cred = Credentials {
+            key: "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::RAW,
+            rekey_derivation_method: KeyDerivationMethod::RAW
+        };
+        wallet_controller.create(
+            wallet_config.clone(),
+            wallet_cred.clone())
+            .await
+            .unwrap();
+
+        let wallet_handle = wallet_controller.open(wallet_config, wallet_cred)
+            .await
+            .unwrap();
+
+        let key = Key::new(
+            "test_alias".to_string(),
+            "3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4".to_string().into_bytes());
+        let res = cheqd_controller.store_key(wallet_handle,
+                                             &key)
+            .await;
+        cheqd_controller.store_key(wallet_handle,
+                                   &key)
+            .await
+            .map_err(|err| assert!(err.to_string().contains(IndyErrorKind::WalletItemAlreadyExists.as_fail().to_string().as_str())));
     }
 }

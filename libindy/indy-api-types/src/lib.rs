@@ -265,6 +265,9 @@ pub enum ErrorCode
     // The transaction is not allowed to a requester
     TransactionNotAllowedError = 706,
 
+    // ABCI error from tendermint endpoint
+    ABCIError = 800,
+
 }
 
 pub mod wallet {
