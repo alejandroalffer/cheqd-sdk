@@ -268,6 +268,27 @@ pub enum ErrorCode
     // ABCI error from tendermint endpoint
     ABCIError = 800,
 
+    // Cosmos RPC error
+    CosmosRPCError = 801,
+
+    // Error from eyre Report
+    EyreError = 802,
+
+    // Signature error from k256
+    K256SignatureError = 803,
+
+    // Error while using serde module
+    SerdeJSONError = 804,
+
+    // Error from https client
+    HTTPClientError = 805,
+
+    // Protobuf encode error
+    ProstEncodeError = 806,
+
+    // Protobuf decode error
+    ProstDecodeError = 807,
+
 }
 
 pub mod wallet {
