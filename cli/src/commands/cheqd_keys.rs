@@ -92,6 +92,7 @@ pub mod get_info_command {
 
 pub mod get_list_keys_command {
     use super::*;
+    use crate::utils::table::print_list_table;
 
     command!(CommandMetadata::build("get-list-keys", "Get list keys of current wallet.")
                 .add_example("cheqd-keys get-list-keys")
@@ -105,7 +106,14 @@ pub mod get_list_keys_command {
 
         let res = match CheqdKeys::get_list_keys(wallet_handle) {
             Ok(resp) => {
-                println_succ!("Get follow list keys \"{}\" ", resp);
+                let mut resp: Vec<serde_json::Value> = serde_json::from_str(&resp)
+                    .map_err(|_| println_err!("Wrong data has been received"))?;
+
+                print_list_table(&resp,
+                                 &[("account_id", "Account id"),
+                                     ("alias", "Alias"),
+                                     ("pub_key", "Public key")],
+                                 "There are no configs");
                 Ok(())
             },
             Err(err) => {

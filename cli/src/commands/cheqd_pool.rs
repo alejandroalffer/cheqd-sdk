@@ -146,6 +146,7 @@ pub mod get_config_command {
 
 pub mod get_all_config_command {
     use super::*;
+    use crate::utils::table::print_list_table;
 
     command!(CommandMetadata::build("get-all-config", "Get list configs of pools.")
                 .add_example("cheqd-pool get-all-config")
@@ -157,7 +158,14 @@ pub mod get_all_config_command {
 
         let res = match CheqdPoolLibindy::get_all_config() {
             Ok(config) => {
-                println_succ!("Pool config has been get \"{}\"", config);
+                let mut config: Vec<serde_json::Value> = serde_json::from_str(&config)
+                    .map_err(|_| println_err!("Wrong data has been received"))?;
+
+                print_list_table(&config,
+                                 &[("alias", "Alias"),
+                                     ("chain_id", "Chain id"),
+                                     ("rpc_address", "RPC address")],
+                                 "There are no configs");
                 Ok(())
             },
             Err(err) => {
