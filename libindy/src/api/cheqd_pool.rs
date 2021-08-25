@@ -102,6 +102,19 @@ pub extern "C" fn indy_cheqd_pool_get_config(
     res
 }
 
+/// Get all pool configs
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - err: Error code.
+///   List of pool configs as string json.
+///
+/// #Errors
+/// Common*
 #[no_mangle]
 pub extern "C" fn indy_cheqd_pool_get_all_config(
     command_handle: CommandHandle,

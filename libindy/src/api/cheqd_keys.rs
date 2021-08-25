@@ -198,6 +198,20 @@ pub extern "C" fn indy_cheqd_keys_get_info(
     res
 }
 
+/// Get all keys of specific wallet
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// wallet_handle: specific wallet
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - err: Error code.
+///   List of keys as string json.
+///
+/// #Errors
+/// Common*
 #[no_mangle]
 pub extern "C" fn indy_cheqd_keys_get_list_keys(
     command_handle: CommandHandle,

@@ -230,7 +230,7 @@ pub mod get_all_nym_command {
     use crate::utils::table::print_list_table;
     use indy::future::Future;
 
-    #[derive(Clone, Debug, Serialize, Deserialize)]
+    #[derive(Debug, Serialize, Deserialize)]
     struct AllNymResponse {
         nym: Vec<Value>
     }
