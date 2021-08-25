@@ -158,7 +158,7 @@ pub mod get_all_config_command {
 
         let res = match CheqdPoolLibindy::get_all_config() {
             Ok(config) => {
-                let mut config: Vec<serde_json::Value> = serde_json::from_str(&config)
+                let config: Vec<serde_json::Value> = serde_json::from_str(&config)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&config,

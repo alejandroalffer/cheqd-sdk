@@ -106,7 +106,7 @@ pub mod get_list_keys_command {
 
         let res = match CheqdKeys::get_list_keys(wallet_handle) {
             Ok(resp) => {
-                let mut resp: Vec<serde_json::Value> = serde_json::from_str(&resp)
+                let resp: Vec<serde_json::Value> = serde_json::from_str(&resp)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&resp,

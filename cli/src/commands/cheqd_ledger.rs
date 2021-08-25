@@ -228,7 +228,6 @@ pub mod get_balance_command {
 pub mod get_all_nym_command {
     use super::*;
     use crate::utils::table::print_list_table;
-    use indy::future::Future;
 
     #[derive(Debug, Serialize, Deserialize)]
     struct AllNymResponse {
