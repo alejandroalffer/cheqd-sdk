@@ -1,14 +1,11 @@
 use std::str::FromStr;
 
-use cosmos_sdk::rpc;
 use cosmos_sdk::rpc::endpoint::abci_query;
 use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
 use cosmos_sdk::tx::Msg;
 use cosmos_sdk::tx::MsgType;
-use indy_api_types::IndyError;
-use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
+use indy_api_types::errors::IndyResult;
 use log_derive::logfn;
-use prost::Message;
 
 use crate::domain::cheqd_ledger::base::query::PageRequest;
 use crate::domain::cheqd_ledger::prost_ext::ProstMessageExt;

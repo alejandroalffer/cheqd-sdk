@@ -23,7 +23,7 @@ impl CheqdProto for MsgSendResponse {
         Self::Proto {}
     }
 
-    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+    fn from_proto(_proto: &Self::Proto) -> IndyResult<Self> {
         Ok(Self::new())
     }
 }

@@ -24,7 +24,7 @@ force_full_interaction_tests = []
 sodium_static = []
 only_high_cases = []
 mysql_storage = []
-cheqd = []
+cheqd = ["indy-api-types/cheqd"]
 
 # Causes the build to fail on all warnings
 fatal_warnings = []

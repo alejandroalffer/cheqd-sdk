@@ -9,6 +9,7 @@ edition = "2018"
 [features]
 default = ["casting_errors"]
 casting_errors = ["openssl", "rust-base58", "zmq", "ursa", "sqlx"]
+cheqd = []
 
 [dependencies]
 failure = "0.1.8"

@@ -6,11 +6,10 @@ use cosmos_sdk::crypto::PublicKey;
 use cosmos_sdk::rpc::endpoint::abci_query;
 use cosmos_sdk::tendermint::block::Height;
 use cosmos_sdk::tx::{AuthInfo, Fee, Msg, SignDoc, SignerInfo};
-use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
+use indy_api_types::errors::IndyResult;
 use crate::domain::cheqd_ledger::auth::{QueryAccountRequest, QueryAccountResponse, Account};
 use crate::domain::cheqd_ledger::CheqdProto;
 use crate::services::CheqdLedgerService;
-use prost::bytes::Buf;
 use crate::utils::cheqd_crypto::check_proofs;
 
 impl CheqdLedgerService {
