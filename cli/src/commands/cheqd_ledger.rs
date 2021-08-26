@@ -112,7 +112,7 @@ pub mod create_nym_command {
         let parsed_response = CheqdLedger::parse_msg_create_nym_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        println!("{}", parsed_response);
+        println!("Created NYM: {}", parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -252,7 +252,7 @@ pub mod get_all_nym_command {
         let parsed_response = match CheqdLedger::parse_query_all_nym_resp(&response) {
                 Ok(resp) => {
                     let resp: AllNymResponse = serde_json::from_str(&resp)
-                        .map_err(|_| println_err!("Wrong data has been received"))?;
+                        .map_err(|_| println_err!(format!("Wrong data has been received from the ledger: {}", resp)))?;
                     
                     print_list_table(resp.nym.as_slice(),
                                       &[("creator", "creator"),
