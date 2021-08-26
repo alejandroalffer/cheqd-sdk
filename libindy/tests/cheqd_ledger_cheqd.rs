@@ -10,6 +10,7 @@ extern crate serde_json;
 #[macro_use]
 mod utils;
 
+#[cfg(feature = "cheqd")]
 use utils::{cheqd_ledger, cheqd_pool, cheqd_setup};
 use serde_json::Value;
 

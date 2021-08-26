@@ -12,7 +12,9 @@ mod utils;
 
 use indyrs::ErrorCode;
 
-use utils::{constants::*, cheqd_keys, cheqd_pool, cheqd_setup, cheqd_ledger, types::ResponseType};
+#[cfg(feature = "cheqd")]
+use utils::{cheqd_keys, cheqd_pool, cheqd_setup, cheqd_ledger};
+use utils::{constants::*, types::ResponseType};
 use serde_json::Value;
 
 

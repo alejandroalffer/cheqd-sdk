@@ -7,7 +7,9 @@ extern crate serde_json;
 
 use indyrs::ErrorCode;
 
-use utils::{constants::*, types::ResponseType, test, cheqd_keys, cheqd_setup, cheqd_ledger, wallet};
+#[cfg(feature = "cheqd")]
+use utils::{cheqd_keys, cheqd_setup, cheqd_ledger};
+use utils::{constants::*, types::ResponseType, test, wallet};
 
 mod utils;
 
