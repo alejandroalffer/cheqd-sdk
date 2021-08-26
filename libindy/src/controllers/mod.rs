@@ -10,8 +10,11 @@ mod non_secrets;
 pub mod payments;
 mod pairwise;
 mod pool;
+#[cfg(feature = "cheqd")]
 mod cheqd_ledger;
+#[cfg(feature = "cheqd")]
 mod cheqd_keys;
+#[cfg(feature = "cheqd")]
 mod cheqd_pool;
 mod wallet;
 

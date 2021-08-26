@@ -11,6 +11,7 @@ use utils::{constants::*, types::ResponseType, test, cheqd_keys, cheqd_setup, ch
 
 mod utils;
 
+#[cfg(feature = "cheqd")]
 mod high_cases {
     use super::*;
 

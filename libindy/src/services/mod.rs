@@ -5,8 +5,11 @@ mod ledger;
 mod metrics;
 mod payments;
 mod pool;
+#[cfg(feature = "cheqd")]
 mod cheqd_keys;
+#[cfg(feature = "cheqd")]
 mod cheqd_pool;
+#[cfg(feature = "cheqd")]
 mod cheqd_ledger;
 mod wallet;
 

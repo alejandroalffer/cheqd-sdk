@@ -10,6 +10,7 @@ mod utils;
 use utils::{cheqd_keys, cheqd_pool, cheqd_setup, cheqd_ledger, test};
 use serde_json::Value;
 
+#[cfg(feature = "cheqd")]
 mod high_cases {
     use super::*;
 

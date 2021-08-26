@@ -29,8 +29,11 @@ pub mod logger;
 pub mod payments;
 pub mod pairwise;
 pub mod pool;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_ledger;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_keys;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_pool;
 pub mod wallet;
 pub mod cache;

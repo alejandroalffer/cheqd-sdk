@@ -24,9 +24,13 @@ pub mod cache;
 pub mod logger;
 pub mod rand_utils;
 pub mod metrics;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_keys;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_ledger;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_setup;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_pool;
 
 #[macro_use]

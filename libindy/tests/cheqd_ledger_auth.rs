@@ -15,6 +15,8 @@ use indyrs::ErrorCode;
 use utils::{constants::*, cheqd_keys, cheqd_pool, cheqd_setup, cheqd_ledger, types::ResponseType};
 use serde_json::Value;
 
+
+#[cfg(feature = "cheqd")]
 mod high_cases {
     use super::*;
 

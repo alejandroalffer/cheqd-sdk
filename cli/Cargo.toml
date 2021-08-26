@@ -10,6 +10,7 @@ identity."""
 edition = "2018"
 
 [features]
+cheqd = []
 nullpay_plugin = []
 
 # Causes the build to fail on all warnings
