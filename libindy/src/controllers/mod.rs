@@ -30,6 +30,9 @@ pub(crate) use non_secrets::NonSecretsController;
 pub(crate) use pairwise::PairwiseController;
 pub(crate) use pool::PoolController;
 pub(crate) use wallet::WalletController;
+#[cfg(feature = "cheqd")]
 pub(crate) use cheqd_ledger::CheqdLedgerController;
+#[cfg(feature = "cheqd")]
 pub(crate) use cheqd_keys::CheqdKeysController;
+#[cfg(feature = "cheqd")]
 pub(crate) use cheqd_pool::CheqdPoolController;

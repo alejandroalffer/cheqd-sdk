@@ -24,7 +24,10 @@ pub(crate) use metrics::MetricsService;
 pub(crate) use metrics::command_metrics::CommandMetric;
 pub(crate) use payments::{PaymentsService, PaymentsMethodCBs, RequesterInfo, Fees};
 pub(crate) use pool::PoolService;
+#[cfg(feature = "cheqd")]
 pub(crate) use cheqd_keys::CheqdKeysService;
+#[cfg(feature = "cheqd")]
 pub(crate) use cheqd_ledger::CheqdLedgerService;
+#[cfg(feature = "cheqd")]
 pub(crate) use cheqd_pool::CheqdPoolService;
 pub(crate) use wallet::WalletService;
