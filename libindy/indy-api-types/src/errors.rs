@@ -8,6 +8,7 @@ use std::{
 
 use failure::{Backtrace, Context, Fail};
 use log;
+#[cfg(feature = "cheqd")]
 use http_client;
 
 #[cfg(feature = "casting_errors")]
@@ -253,6 +254,7 @@ impl From<log::SetLoggerError> for IndyError {
 }
 // TODO: Better error conversion
 // Cosmos SDK error. They don't expose failure::Error interface.
+#[cfg(feature = "cheqd")]
 impl From<eyre::Report> for IndyError {
     fn from(err: eyre::Report) -> IndyError {
         let mut indy_error: IndyError = IndyError::from(IndyErrorKind::InvalidState);
@@ -263,30 +265,35 @@ impl From<eyre::Report> for IndyError {
     }
 }
 
+#[cfg(feature = "cheqd")]
 impl From<cosmos_sdk::rpc::Error> for IndyError {
     fn from(err: cosmos_sdk::rpc::Error) -> Self {
         err.context(IndyErrorKind::InvalidState).into()
     }
 }
 
+#[cfg(feature = "cheqd")]
 impl From<cosmos_sdk::tendermint::Error> for IndyError {
     fn from(err: cosmos_sdk::tendermint::Error) -> Self {
         err.into()
     }
 }
 
+#[cfg(feature = "cheqd")]
 impl From<k256::ecdsa::Error> for IndyError {
     fn from(err: k256::ecdsa::Error) -> Self {
         err.context(IndyErrorKind::InvalidState).into()
     }
 }
 
+#[cfg(feature = "cheqd")]
 impl From<serde_json::Error> for IndyError {
     fn from(err: serde_json::Error) -> Self {
         err.context(IndyErrorKind::InvalidState).into()
     }
 }
 
+#[cfg(feature = "cheqd")]
 impl From<http_client::http_types::Error> for IndyError {
     fn from(err: http_client::http_types::Error) -> Self {
         let mut indy_error: IndyError = IndyError::from(IndyErrorKind::InvalidState);
@@ -297,12 +304,14 @@ impl From<http_client::http_types::Error> for IndyError {
     }
 }
 
+#[cfg(feature = "cheqd")]
 impl From<prost::EncodeError> for IndyError {
     fn from(err: prost::EncodeError) -> Self {
         err.context(IndyErrorKind::InvalidState).into()
     }
 }
 
+#[cfg(feature = "cheqd")]
 impl From<prost::DecodeError> for IndyError {
     fn from(err: prost::DecodeError) -> Self {
         err.context(IndyErrorKind::InvalidState).into()
@@ -687,6 +696,7 @@ pub fn string_to_cstring(s: String) -> CString {
 }
 
 
+#[cfg(feature = "cheqd")]
 #[cfg(test)]
 mod tests {
     use crate::IndyError;
