@@ -80,13 +80,12 @@ mod high_cases {
         use super::*;
 
         #[test]
-        // #[cfg(feature = "local_nodes_cheqd_pool")]
+        #[cfg(feature = "local_nodes_cheqd_pool")]
         fn test_abci_query() {
             let setup = cheqd_setup::CheqdSetup::new();
             ///// Transaction sending
 
-            let (new_account_id, new_pub_key) = cheqd_setup::CheqdSetup::create_key(setup.wallet_handle, "Bobby", "Bobby").unwrap();
-            let (account_number, account_sequence) = setup.get_base_account_number_and_sequence(&new_account_id).unwrap();
+            let (account_number, account_sequence) = setup.get_base_account_number_and_sequence(&setup.account_id).unwrap();
 
             // Message
             let msg = cheqd_ledger::cheqd::build_msg_create_nym(
