@@ -252,7 +252,7 @@ pub mod get_all_nym_command {
         let parsed_response = match CheqdLedger::parse_query_all_nym_resp(&response) {
                 Ok(resp) => {
                     let resp: AllNymResponse = serde_json::from_str(&resp)
-                        .map_err(|_| println_err!(format!("Wrong data has been received from the ledger: {}", resp)))?;
+                        .map_err(|_| println_err!("{}", format!("Wrong data has been received from the ledger: {}", resp)))?;
                     
                     print_list_table(resp.nym.as_slice(),
                                       &[("creator", "creator"),
@@ -378,7 +378,8 @@ pub fn get_timeout_height(pool_alias: &str) -> Result<u64, ()> {
     let info: Value = serde_json::from_str(&info?)
         .map_err(|_| println_err!("Wrong data of Abci-info has been received"))?;
 
-    let current_height = info[RESPONSE][LAST_BLOCK_HEIGHT].as_str().unwrap().parse::<u64>().unwrap();
+    let current_height = info[RESPONSE][LAST_BLOCK_HEIGHT].as_str().unwrap_or_default()
+        .parse::<u64>().map_err(|_| println_err!("Invalid getting abci-info response. Height must be integer."))?;
 
     const TIMEOUT: u64 = 20;
 
@@ -395,8 +396,6 @@ pub mod tests {
     const VERKEY: &str = "verkey";
     const MAX_GAS: &str = "1000000";
     const MAX_COIN: &str = "100";
-    const DENOM: &str = "cheq";
-    const TIMEOUT_HEIGHT: &str = "5000";
     const AMOUNT: &str = "100";
     const ROLE: &str = "TRUSTEE";
     const MEMO: &str = "memo";
@@ -404,7 +403,6 @@ pub mod tests {
     mod cheqd_ledger {
         use super::*;
         use crate::commands::cheqd_keys::tests::get_key;
-        use std::env;
         use crate::utils::environment::EnvironmentUtils;
 
         #[test]
@@ -495,7 +493,7 @@ pub mod tests {
             create_new_nym(&ctx);
             {
                 let cmd = get_all_nym_command::new();
-                let mut params = CommandParams::new();
+                let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet(&ctx);

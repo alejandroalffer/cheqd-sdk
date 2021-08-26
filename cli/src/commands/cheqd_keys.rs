@@ -107,7 +107,7 @@ pub mod get_list_keys_command {
         let res = match CheqdKeys::get_list_keys(wallet_handle) {
             Ok(resp) => {
                 let resp: Vec<serde_json::Value> = serde_json::from_str(&resp)
-                    .map_err(|_| println_err!("Wrong data has been received"))?;
+                    .map_err(|_| println_err!("{}", format!("Wrong data has been received: {}", resp)))?;
 
                 print_list_table(&resp,
                                  &[("account_id", "Account id"),
@@ -181,7 +181,7 @@ pub mod tests {
             let ctx = setup_with_wallet_and_cheqd_pool();
             {
                 let cmd = get_list_keys_command::new();
-                let mut params = CommandParams::new();
+                let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet(&ctx);

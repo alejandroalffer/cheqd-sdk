@@ -157,11 +157,11 @@ pub mod get_all_config_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let res = match CheqdPoolLibindy::get_all_config() {
-            Ok(config) => {
-                let config: Vec<serde_json::Value> = serde_json::from_str(&config)
-                    .map_err(|_| println_err!("Wrong data has been received"))?;
+            Ok(resp) => {
+                let resp: Vec<serde_json::Value> = serde_json::from_str(&resp)
+                    .map_err(|_| println_err!("{}", format!("Wrong data has been received: {}", resp)))?;
 
-                print_list_table(&config,
+                print_list_table(&resp,
                                  &[("alias", "Alias"),
                                      ("chain_id", "Chain id"),
                                      ("rpc_address", "RPC address")],
