@@ -136,6 +136,8 @@ pub enum IndyErrorKind {
     ProstEncodeError,
     #[fail(display = "Protobuf decode error")]
     ProstDecodeError,
+    #[fail(display = "Query account does not exist")]
+    QueryAccountDoesNotexist,
 }
 
 #[derive(Debug, Clone)]
@@ -548,6 +550,7 @@ impl From<IndyErrorKind> for ErrorCode {
             IndyErrorKind::HTTPClientError => ErrorCode::HTTPClientError,
             IndyErrorKind::ProstEncodeError => ErrorCode::ProstEncodeError,
             IndyErrorKind::ProstDecodeError => ErrorCode::ProstDecodeError,
+            IndyErrorKind::QueryAccountDoesNotexist => ErrorCode::QueryAccountDoesNotexistError,
         }
     }
 }

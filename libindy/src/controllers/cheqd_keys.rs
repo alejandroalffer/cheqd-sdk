@@ -142,11 +142,12 @@ mod tests {
             .await
             .unwrap();
 
-        cheqd_controller.load_key(
+        let err =cheqd_controller.load_key(
             wallet_handle,
         "test_key_which_is_absent")
             .await
-            .map_err(|err| assert!(err.to_string().contains(IndyErrorKind::WalletItemNotFound.as_fail().to_string().as_str())));
+            .unwrap_err();
+        assert!(err.to_string().contains(IndyErrorKind::WalletItemNotFound.as_fail().to_string().as_str()));
     }
 
     #[async_std::test]
@@ -190,9 +191,10 @@ mod tests {
         let res = cheqd_controller.store_key(wallet_handle,
                                              &key)
             .await;
-        cheqd_controller.store_key(wallet_handle,
+        let err = cheqd_controller.store_key(wallet_handle,
                                    &key)
             .await
-            .map_err(|err| assert!(err.to_string().contains(IndyErrorKind::WalletItemAlreadyExists.as_fail().to_string().as_str())));
+            .unwrap_err();
+        assert!(err.to_string().contains(IndyErrorKind::WalletItemAlreadyExists.as_fail().to_string().as_str()));
     }
 }
