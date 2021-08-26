@@ -289,6 +289,9 @@ pub enum ErrorCode
     // Protobuf decode error
     ProstDecodeError = 807,
 
+    // Query Account does not exist in the pool
+    QueryAccountDoesNotexistError = 808,
+
 }
 
 pub mod wallet {
