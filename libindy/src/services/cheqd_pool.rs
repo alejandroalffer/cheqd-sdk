@@ -113,7 +113,12 @@ impl CheqdPoolService {
         for dir in paths {
             let mut path = match dir {
                 Ok(t) => t.path(),
-                Err(error) => continue,
+                Err(error) => {
+                    warn!("Can't find directory with cheqd pool config: {:?}", dir);
+                    warn!("{}", error);
+
+                    continue;
+                },
             };
 
             path.push("config");
@@ -121,12 +126,22 @@ impl CheqdPoolService {
 
             let config = match fs::read_to_string(path){
                 Ok(conf) => conf,
-                Err(error) => continue,
+                Err(error) => {
+                    warn!("Can't find cheqd pool config file in directory: {:?}", path);
+                    warn!("{}", error);
+
+                    continue;
+                },
             };
 
             let pool_config : PoolConfig = match serde_json::from_str(&config){
                 Ok(pool_conf) => pool_conf,
-                Err(error) => continue,
+                Err(error) => {
+                    warn!("Invalid cheqd pool config file in directory: {:?}", path);
+                    warn!("{}", error);
+
+                    continue;
+                },
             };
             result.push(pool_config);
         }
