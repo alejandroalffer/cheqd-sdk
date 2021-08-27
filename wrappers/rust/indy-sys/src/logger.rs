@@ -1,4 +1,4 @@
-use {CString, CVoid, Error};
+use crate::{CString, CVoid, Error};
 
 extern "C" {
 
