@@ -1,7 +1,7 @@
 #![warn(dead_code)]
 
-use ::{ErrorCode, IndyError};
-use ffi::{WalletHandle, CommandHandle};
+use crate::{ErrorCode, IndyError};
+use crate::ffi::{WalletHandle, CommandHandle};
 
 use libc::c_char;
 
@@ -51,7 +51,7 @@ macro_rules! cb_ec {
 
         let (rx, command_handle) = {
             let (tx, rx) = oneshot::channel();
-            let command_handle : CommandHandle = ::utils::sequence::SequenceUtils::get_next_id();
+            let command_handle : CommandHandle = crate::utils::sequence::SequenceUtils::get_next_id();
             let mut callbacks = $cbs.lock().unwrap();
             callbacks.insert(command_handle, tx);
             (rx, command_handle)
