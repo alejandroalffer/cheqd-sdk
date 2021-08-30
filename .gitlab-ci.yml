@@ -325,7 +325,8 @@ build-libindy-macos:
     - source $HOME/.cargo/env
     - brew update
     - brew install libsodium
-    - brew install openssl@1.1
+# For now it fails while compiling latest openssl 1.1.1l, stay on 1.1.1k
+#    - brew install openssl@1.1
     - brew install zeromq
     - rm -rf ~/.indy_client || true
     - cd libindy
@@ -349,7 +350,7 @@ build-libindy-ios:
     - rustup target add x86_64-apple-ios
     - brew install libsodium
 # For now it fails while compiling latest openssl 1.1.1l, stay on 1.1.1k
-#    - brew install openssl@1.1.1k
+#    - brew install openssl@1.1
     - brew install zeromq
     - rm -rf ~/.indy_client || true
     - ci/ios-build.sh libindy x86_64-apple-ios
