@@ -323,6 +323,7 @@ build-libindy-macos:
     - which rustup-init || brew install rustup-init
     - echo | rustup-init --default-toolchain 1.50.0
     - source $HOME/.cargo/env
+    - brew update
     - brew install libsodium
     - brew install openssl@1.1
     - brew install zeromq
@@ -346,6 +347,7 @@ build-libindy-ios:
     - source $HOME/.cargo/env
     - cargo install cargo-lipo
     - rustup target add x86_64-apple-ios
+    - brew update
     - brew install libsodium
     - brew install openssl@1.1
     - brew install zeromq
