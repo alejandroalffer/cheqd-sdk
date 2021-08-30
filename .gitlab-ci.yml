@@ -347,9 +347,8 @@ build-libindy-ios:
     - source $HOME/.cargo/env
     - cargo install cargo-lipo
     - rustup target add x86_64-apple-ios
-    - brew update
     - brew install libsodium
-    - brew install openssl@1.1
+    - brew install openssl@1.1.1k
     - brew install zeromq
     - rm -rf ~/.indy_client || true
     - ci/ios-build.sh libindy x86_64-apple-ios
