@@ -105,7 +105,6 @@ variables:
     KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
   only:
     refs:
-      - bump_cosmos_sdk
       - main@evernym/verity/vdr-tools
       - /^docker-.*/
 
@@ -191,6 +190,7 @@ dockerbuild-libindy-android:
     # Fetch submodules
     - git submodule sync --recursive
     - git submodule update --init --recursive
+    - cargo version && rustc --version
 
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
