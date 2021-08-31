@@ -55,7 +55,7 @@ variables:
   variables:
     DOCKER_CONTEXT: "${CI_PROJECT_DIR}"
   script:
-    - if [ "$CI_COMMIT_REF_SLUG" == 'bump-cosmos-sdk' ] || [ "$CI_COMMIT_REF_SLUG" == 'main' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
+    - if [ "$CI_COMMIT_REF_SLUG" == 'main' ] || [ "$CI_COMMIT_REF_SLUG" == 'stable' ]; then KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE/${DOCKER_IMAGE_NAME}:latest $KANIKO_ARGS"; fi
     - echo "${KANIKO_ARGS}"
     - |
         echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" \
@@ -144,7 +144,6 @@ dockerbuild-libindy-android:
       - main
       - stable
       - /^docker-.*/
-      - bump_cosmos_sdk
     changes:
       - .gitlab-ci.yml
       - libindy/ci/ubuntu.dockerfile
@@ -167,7 +166,7 @@ dockerbuild-libindy-android:
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
-    - name: ghcr.io/cheqd/cheqd-testnet:v0.1.15
+    - name: ghcr.io/cheqd/cheqd-testnet:v0.1.19
       alias: cheqd_pool_network
   timeout: 3h
   before_script:
