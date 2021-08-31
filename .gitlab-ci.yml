@@ -15,7 +15,7 @@ cache:
 
 variables:
   staticLibVersion: "20190607"
-  rustVersion: "1.45.0"
+  rustVersion: "1.52.0"
   libsovtokenVersion: "1.0.5"
   libsovtokenVersionExtra: "15"
   indyBranch: 'rc' # RPM stream
@@ -321,7 +321,7 @@ build-libindy-macos:
     - xcode-12-4
   script:
     - which rustup-init || brew install rustup-init
-    - echo | rustup-init --default-toolchain 1.50.0
+    - echo | rustup-init --default-toolchain 1.52.0
     - source $HOME/.cargo/env
     - brew install libsodium
     - brew install openssl@1.1
@@ -342,7 +342,7 @@ build-libindy-ios:
     - bigsur
   script:
     - which rustup-init || brew install rustup-init
-    - echo | rustup-init --default-toolchain 1.50.0
+    - echo | rustup-init --default-toolchain 1.52.0
     - source $HOME/.cargo/env
     - cargo install cargo-lipo
     - rustup target add x86_64-apple-ios
