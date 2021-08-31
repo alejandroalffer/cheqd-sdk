@@ -145,12 +145,13 @@ dockerbuild-libindy-android:
       - main
       - stable
       - /^docker-.*/
+      - bump_cosmos_sdk
     changes:
       - .gitlab-ci.yml
       - libindy/ci/ubuntu.dockerfile
       - libindy/ci/android.dockerfile
   before_script:
-    - sed -i "s|^FROM.*|FROM ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}|g" libindy/ci/android.dockerfile
+    - sed -i "s|^FROM.*|FROM ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest|g" libindy/ci/android.dockerfile
     - grep '^FROM' libindy/ci/android.dockerfile
 
 
