@@ -1,8 +1,8 @@
 use crate::controllers::CheqdLedgerController;
 use indy_api_types::errors::IndyResult;
 use crate::domain::cheqd_ledger::cosmos_ext::CosmosMsgExt;
-use cosmos_sdk::rpc::endpoint::abci_query::Response as QueryResponse;
-use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
+use cosmrs::rpc::endpoint::abci_query::Response as QueryResponse;
+use cosmrs::rpc::endpoint::broadcast::tx_commit::Response;
 
 impl CheqdLedgerController {
     pub(crate) fn cheqd_build_msg_create_nym(

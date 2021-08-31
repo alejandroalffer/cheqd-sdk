@@ -1,4 +1,4 @@
-use cosmos_sdk::proto::cosmos::base::v1beta1::Coin as ProtoCoin;
+use cosmrs::proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use indy_api_types::errors::IndyResult;
 
 use super::super::CheqdProto;

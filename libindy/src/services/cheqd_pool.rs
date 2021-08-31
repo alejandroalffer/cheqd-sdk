@@ -10,11 +10,11 @@ use http_client::http_types::{Method,
                               Body};
 use http_client::h1::H1Client;
 
-use cosmos_sdk::rpc;
-use cosmos_sdk::rpc::{Request, Response};
-use cosmos_sdk::rpc::endpoint::broadcast;
-use cosmos_sdk::tendermint::abci;
-use cosmos_sdk::tx::Raw;
+use cosmrs::rpc;
+use cosmrs::rpc::{Request, Response};
+use cosmrs::rpc::endpoint::broadcast;
+use cosmrs::tendermint::abci;
+use cosmrs::tx::Raw;
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use indy_api_types::errors::*;
 use indy_api_types::IndyError;
@@ -182,7 +182,7 @@ impl CheqdPoolService {
 #[cfg(test)]
 mod send_req {
     use crate::CheqdPoolService;
-    use cosmos_sdk::rpc::endpoint::abci_info::Request;
+    use cosmrs::rpc::endpoint::abci_info::Request;
 
     #[async_std::test]
     async fn client_close_if_connection_refused() {

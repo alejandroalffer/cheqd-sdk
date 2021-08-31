@@ -1,7 +1,7 @@
 //! Ledger service for Cheqd back-end
 
-use cosmos_sdk::proto::cosmos::base::abci::v1beta1::TxMsgData;
-use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
+use cosmrs::proto::cosmos::base::abci::v1beta1::TxMsgData;
+use cosmrs::rpc::endpoint::broadcast::tx_commit::Response;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
 use indy_api_types::IndyError;
 use log_derive::logfn;

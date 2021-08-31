@@ -263,14 +263,14 @@ impl From<eyre::Report> for IndyError {
     }
 }
 
-impl From<cosmos_sdk::rpc::Error> for IndyError {
-    fn from(err: cosmos_sdk::rpc::Error) -> Self {
+impl From<cosmrs::rpc::Error> for IndyError {
+    fn from(err: cosmrs::rpc::Error) -> Self {
         err.context(IndyErrorKind::InvalidState).into()
     }
 }
 
-impl From<cosmos_sdk::tendermint::Error> for IndyError {
-    fn from(err: cosmos_sdk::tendermint::Error) -> Self {
+impl From<cosmrs::tendermint::Error> for IndyError {
+    fn from(err: cosmrs::tendermint::Error) -> Self {
         err.into()
     }
 }
@@ -695,13 +695,13 @@ mod tests {
 
     #[test]
     fn indy_error_from_eyre_report() {
-        // This string will imulate that there is another error after cosmos_sdk's error
+        // This string will imulate that there is another error after cosmrs's error
         // Expected order is:
         //   - Invalid state
         //   - <between_str>
         //   - Cosmos_sdk (Invalid accout ID)
         let between_str = "Another error";
-        let account = cosmos_sdk::AccountId::new("123user", [0u8; 20]).map_err(|err| {
+        let account = cosmrs::AccountId::new("123user", [0u8; 20]).map_err(|err| {
             let indy_error = IndyError::from(err.wrap_err(between_str));
             assert_eq!(Fail::iter_chain(indy_error.inner.as_ref()).count(), 3);
             assert_eq!(Fail::iter_chain(indy_error.inner.as_ref()).position(|x| x.to_string().contains(between_str)), Some(1))

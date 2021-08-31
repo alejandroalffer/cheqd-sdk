@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use async_std::sync::Arc;
-use cosmos_sdk::tx::SignDoc;
+use cosmrs::tx::SignDoc;
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use indy_api_types::WalletHandle;
 use indy_wallet::RecordOptions;

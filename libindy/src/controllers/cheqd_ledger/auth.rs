@@ -1,8 +1,8 @@
 use crate::controllers::CheqdLedgerController;
 use indy_api_types::errors::IndyResult;
 use crate::domain::cheqd_ledger::cosmos_ext::{CosmosSignDocExt, CosmosMsgExt};
-use cosmos_sdk::tx::Msg;
-use cosmos_sdk::rpc::endpoint::abci_query::Response as QueryResponse;
+use cosmrs::tx::Msg;
+use cosmrs::rpc::endpoint::abci_query::Response as QueryResponse;
 
 impl CheqdLedgerController {
     pub(crate) async fn auth_build_tx(

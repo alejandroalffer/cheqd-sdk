@@ -1,4 +1,4 @@
-use cosmos_sdk::proto::cosmos::base::query::v1beta1::PageRequest as ProtoPageRequest;
+use cosmrs::proto::cosmos::base::query::v1beta1::PageRequest as ProtoPageRequest;
 use indy_api_types::errors::IndyResult;
 
 use super::super::super::CheqdProto;
