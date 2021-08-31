@@ -703,7 +703,7 @@ mod tests {
         let between_str = "Another error";
         let account = cosmrs::AccountId::new("123user", [0u8; 20]).map_err(|err| {
             let indy_error = IndyError::from(err.wrap_err(between_str));
-            assert_eq!(Fail::iter_chain(indy_error.inner.as_ref()).count(), 3);
+            assert_eq!(Fail::iter_chain(indy_error.inner.as_ref()).count(), 4);
             assert_eq!(Fail::iter_chain(indy_error.inner.as_ref()).position(|x| x.to_string().contains(between_str)), Some(1))
         });
     }
