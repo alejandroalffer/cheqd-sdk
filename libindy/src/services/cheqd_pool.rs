@@ -110,25 +110,11 @@ impl CheqdPoolService {
         let resp = self.send_req(req, &pool.rpc_address).await?;
 
         if let abci::Code::Err(code) = resp.check_tx.code {
-            return Err(IndyError::from_msg(
-                IndyErrorKind::InvalidState,
-                format!(
-                    "check_tx: error code: {}, log: {}",
-                    code,
-                    serde_json::to_string(&resp.check_tx)?
-                ),
-            ));
+            return Err(IndyError::from(resp.check_tx));
         }
 
         if let abci::Code::Err(code) = resp.deliver_tx.code {
-            return Err(IndyError::from_msg(
-                IndyErrorKind::InvalidState,
-                format!(
-                    "deliver_tx: error code: {}, log: {}",
-                    code,
-                    serde_json::to_string(&resp.deliver_tx)?
-                ),
-            ));
+            return Err(IndyError::from(resp.deliver_tx));
         }
 
         Ok(resp)

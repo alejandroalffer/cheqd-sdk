@@ -120,6 +120,24 @@ pub enum IndyErrorKind {
     PaymentExtraFunds,
     #[fail(display = "The transaction is not allowed to a requester")]
     TransactionNotAllowed,
+    #[fail(display = "ABCI error from tendermint endpoint")]
+    ABCIError,
+    #[fail(display = "Cosmos RPC error")]
+    CosmosRPCError,
+    #[fail(display = "Error from eyre Report")]
+    EyreError,
+    #[fail(display = "Signature error from k256")]
+    K256SignatureError,
+    #[fail(display = "Error while using serde module")]
+    SerdeJSONError,
+    #[fail(display = "Error from https client")]
+    HTTPClientError,
+    #[fail(display = "Protobuf encode error")]
+    ProstEncodeError,
+    #[fail(display = "Protobuf decode error")]
+    ProstDecodeError,
+    #[fail(display = "Query account does not exist")]
+    QueryAccountDoesNotexist,
 }
 
 #[derive(Debug, Clone)]
@@ -255,7 +273,7 @@ impl From<log::SetLoggerError> for IndyError {
 // Cosmos SDK error. They don't expose failure::Error interface.
 impl From<eyre::Report> for IndyError {
     fn from(err: eyre::Report) -> IndyError {
-        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::InvalidState);
+        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::EyreError);
         for err_item in err.chain().rev() {
             indy_error = indy_error.extend(err_item.to_string());
         }
@@ -263,9 +281,9 @@ impl From<eyre::Report> for IndyError {
     }
 }
 
-impl From<cosmrs::rpc::Error> for IndyError {
-    fn from(err: cosmrs::rpc::Error) -> Self {
-        err.context(IndyErrorKind::InvalidState).into()
+impl From<cosmos_sdk::rpc::Error> for IndyError {
+    fn from(err: cosmos_sdk::rpc::Error) -> Self {
+        err.context(IndyErrorKind::CosmosRPCError).into()
     }
 }
 
@@ -277,19 +295,19 @@ impl From<cosmrs::tendermint::Error> for IndyError {
 
 impl From<k256::ecdsa::Error> for IndyError {
     fn from(err: k256::ecdsa::Error) -> Self {
-        err.context(IndyErrorKind::InvalidState).into()
+        err.context(IndyErrorKind::K256SignatureError).into()
     }
 }
 
 impl From<serde_json::Error> for IndyError {
     fn from(err: serde_json::Error) -> Self {
-        err.context(IndyErrorKind::InvalidState).into()
+        err.context(IndyErrorKind::SerdeJSONError).into()
     }
 }
 
 impl From<http_client::http_types::Error> for IndyError {
     fn from(err: http_client::http_types::Error) -> Self {
-        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::InvalidState);
+        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::HTTPClientError);
         for err_item in err.into_inner().chain().rev() {
             indy_error = indy_error.extend(err_item.to_string());
         }
@@ -299,13 +317,13 @@ impl From<http_client::http_types::Error> for IndyError {
 
 impl From<prost::EncodeError> for IndyError {
     fn from(err: prost::EncodeError) -> Self {
-        err.context(IndyErrorKind::InvalidState).into()
+        err.context(IndyErrorKind::ProstEncodeError).into()
     }
 }
 
 impl From<prost::DecodeError> for IndyError {
     fn from(err: prost::DecodeError) -> Self {
-        err.context(IndyErrorKind::InvalidState).into()
+        err.context(IndyErrorKind::ProstDecodeError).into()
     }
 }
 
@@ -397,6 +415,22 @@ impl From<sqlx::Error> for IndyError {
             ),
             _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected database error"),
         }
+    }
+}
+
+// ToDo: For now we don't have any specified ABCI errors from tendermin endpoint and from cosmos too
+// That's why we use this general approach.
+// But in the future, in case of adding special ABCI codes it has to be mapped into ErrorCodes.
+impl From<cosmos_sdk::rpc::endpoint::broadcast::tx_commit::TxResult> for IndyError {
+    fn from(result: cosmos_sdk::rpc::endpoint::broadcast::tx_commit::TxResult) -> IndyError {
+        IndyError::from_msg(
+            IndyErrorKind::ABCIError,
+            format!(
+                    "check_tx: error code: {}, log: {}",
+                    result.code.value(),
+                    serde_json::to_string_pretty(&result).unwrap()
+                ),
+        )
     }
 }
 
@@ -508,6 +542,15 @@ impl From<IndyErrorKind> for ErrorCode {
             }
             IndyErrorKind::PaymentExtraFunds => ErrorCode::PaymentExtraFundsError,
             IndyErrorKind::TransactionNotAllowed => ErrorCode::TransactionNotAllowedError,
+            IndyErrorKind::ABCIError => ErrorCode::ABCIError,
+            IndyErrorKind::CosmosRPCError => ErrorCode::CosmosRPCError,
+            IndyErrorKind::EyreError => ErrorCode::EyreError,
+            IndyErrorKind::K256SignatureError => ErrorCode::K256SignatureError,
+            IndyErrorKind::SerdeJSONError => ErrorCode::SerdeJSONError,
+            IndyErrorKind::HTTPClientError => ErrorCode::HTTPClientError,
+            IndyErrorKind::ProstEncodeError => ErrorCode::ProstEncodeError,
+            IndyErrorKind::ProstDecodeError => ErrorCode::ProstDecodeError,
+            IndyErrorKind::QueryAccountDoesNotexist => ErrorCode::QueryAccountDoesNotexistError,
         }
     }
 }
