@@ -1,11 +1,11 @@
 use std::convert::TryInto;
 use std::str::FromStr;
 
-use cosmos_sdk::{Coin, tx, AccountId};
-use cosmos_sdk::crypto::PublicKey;
-use cosmos_sdk::rpc::endpoint::abci_query;
-use cosmos_sdk::tendermint::block::Height;
-use cosmos_sdk::tx::{AuthInfo, Fee, Msg, SignDoc, SignerInfo};
+use cosmrs::{Coin, tx, AccountId};
+use cosmrs::crypto::PublicKey;
+use cosmrs::rpc::endpoint::abci_query;
+use cosmrs::tendermint::block::Height;
+use cosmrs::tx::{AuthInfo, Fee, Msg, SignDoc, SignerInfo};
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt, IndyError};
 use crate::domain::cheqd_ledger::auth::{QueryAccountRequest, QueryAccountResponse, Account};
 use crate::domain::cheqd_ledger::CheqdProto;
@@ -74,7 +74,7 @@ impl CheqdLedgerService {
     ) -> IndyResult<abci_query::Request> {
         let query_data = QueryAccountRequest::new(address.to_string());
         let path = format!("/cosmos.auth.v1beta1.Query/Account");
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let path = cosmrs::tendermint::abci::Path::from_str(&path)?;
         let req =
             abci_query::Request::new(Some(path), query_data.to_proto_bytes()?, None, true);
         Ok(req)
@@ -90,7 +90,7 @@ impl CheqdLedgerService {
         let acc = AccountId::from_str(address)?;
         query_data.append(acc.to_bytes().to_vec().as_mut());
         let path = format!("/store/acc/key");
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let path = cosmrs::tendermint::abci::Path::from_str(&path)?;
         let req = abci_query::Request::new(Some(path), query_data, None, true);
         Ok(req)
     }
@@ -124,7 +124,7 @@ impl CheqdLedgerService {
 mod tests {
     use indy_api_types::errors::IndyErrorKind;
     use crate::services::CheqdLedgerService;
-    use cosmos_sdk::rpc::endpoint::abci_query;
+    use cosmrs::rpc::endpoint::abci_query;
     use failure::AsFail;
 
     #[async_std::test]

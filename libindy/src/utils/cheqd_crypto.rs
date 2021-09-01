@@ -1,6 +1,6 @@
 use indy_api_types::IndyError;
 use indy_api_types::errors::{IndyErrorKind, IndyResult};
-use cosmos_sdk::rpc;
+use cosmrs::rpc;
 use prost::Message;
 
 pub fn check_proofs(

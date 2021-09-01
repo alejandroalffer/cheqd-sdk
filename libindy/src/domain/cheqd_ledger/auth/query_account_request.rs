@@ -1,4 +1,4 @@
-use cosmos_sdk::proto::cosmos::auth::v1beta1::QueryAccountRequest as ProtoQueryAccountRequest;
+use cosmrs::proto::cosmos::auth::v1beta1::QueryAccountRequest as ProtoQueryAccountRequest;
 use indy_api_types::errors::IndyResult;
 
 use super::super::CheqdProto;

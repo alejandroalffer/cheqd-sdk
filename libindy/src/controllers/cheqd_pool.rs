@@ -1,8 +1,8 @@
 //! Cosmos pool management service
 
 use async_std::sync::Arc;
-use cosmos_sdk::rpc;
-use cosmos_sdk::tx::Raw;
+use cosmrs::rpc;
+use cosmrs::tx::Raw;
 use indy_api_types::errors::IndyResult;
 
 use crate::services::CheqdPoolService;

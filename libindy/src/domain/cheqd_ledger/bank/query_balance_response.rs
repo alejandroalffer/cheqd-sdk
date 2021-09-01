@@ -1,4 +1,4 @@
-use cosmos_sdk::proto::cosmos::bank::v1beta1::QueryBalanceResponse as ProtoQueryBalanceResponse;
+use cosmrs::proto::cosmos::bank::v1beta1::QueryBalanceResponse as ProtoQueryBalanceResponse;
 
 use indy_api_types::errors::IndyResult;
 

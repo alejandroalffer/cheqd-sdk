@@ -1,4 +1,4 @@
-use cosmos_sdk::tx::MsgProto;
+use cosmrs::tx::MsgProto;
 
 pub mod cheqdid {
     pub mod cheqdnode {

@@ -15,7 +15,7 @@ cache:
 
 variables:
   staticLibVersion: "20190607"
-  rustVersion: "1.45.0"
+  rustVersion: "1.54.0"
   libsovtokenVersion: "1.0.5"
   libsovtokenVersionExtra: "15"
   indyBranch: 'rc' # RPM stream
@@ -166,7 +166,7 @@ dockerbuild-libindy-android:
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
-    - name: ghcr.io/cheqd/cheqd-testnet:v0.1.15
+    - name: ghcr.io/cheqd/cheqd-testnet:v0.1.19
       alias: cheqd_pool_network
   timeout: 3h
   before_script:
@@ -321,7 +321,7 @@ build-libindy-macos:
     - xcode-12-4
   script:
     - which rustup-init || brew install rustup-init
-    - echo | rustup-init --default-toolchain 1.50.0
+    - echo | rustup-init --default-toolchain 1.54.0
     - source $HOME/.cargo/env
     - brew update
     - brew install libsodium
@@ -344,7 +344,7 @@ build-libindy-ios:
     - bigsur
   script:
     - which rustup-init || brew install rustup-init
-    - echo | rustup-init --default-toolchain 1.50.0
+    - echo | rustup-init --default-toolchain 1.54.0
     - source $HOME/.cargo/env
     - cargo install cargo-lipo
     - rustup target add x86_64-apple-ios

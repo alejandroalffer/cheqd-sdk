@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
-use cosmos_sdk::rpc::endpoint::abci_query;
-use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
-use cosmos_sdk::tx::Msg;
-use cosmos_sdk::tx::MsgType;
+use cosmrs::rpc::endpoint::abci_query;
+use cosmrs::rpc::endpoint::broadcast::tx_commit::Response;
+use cosmrs::tx::Msg;
+use cosmrs::tx::MsgType;
 use indy_api_types::errors::IndyResult;
 use log_derive::logfn;
 
@@ -59,7 +59,7 @@ impl CheqdLedgerService {
     ) -> IndyResult<abci_query::Request> {
         let query_data = QueryBalanceRequest::new(address, denom);
         let path = format!("/cosmos.bank.v1beta1.Query/Balance");
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let path = cosmrs::tendermint::abci::Path::from_str(&path)?;
         let req =
             abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
         Ok(req)
