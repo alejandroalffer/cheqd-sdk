@@ -124,7 +124,7 @@ impl CheqdLedgerService {
 mod tests {
     use indy_api_types::errors::IndyErrorKind;
     use crate::services::CheqdLedgerService;
-    use cosmos_sdk::rpc::endpoint::abci_query;
+    use cosmrs::rpc::endpoint::abci_query;
     use failure::AsFail;
 
     #[async_std::test]
