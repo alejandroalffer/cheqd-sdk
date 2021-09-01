@@ -5,6 +5,26 @@ use crate::Locator;
 use indy_utils::ctypes;
 use libc::c_char;
 
+
+/// Build txn before sending
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// pool_alias: string alias of a pool
+/// sender_public_key: public key of sender
+/// msg_raw: message in raw format,
+/// msg_len: length of message,
+/// account_number: number of accounts,
+/// sequence_number: how many txns are already written,
+/// max_gas: how much gas user is ready to pay.,
+/// max_coin_amount: how many coins user can pay,
+/// max_coin_denom: which kink of coins user is ready to pay,
+/// timeout_height: block height until which the transaction is valid,
+/// memo: a note or comment to send with the transaction,
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_auth_build_tx(
     command_handle: CommandHandle,
@@ -111,6 +131,17 @@ pub extern "C" fn indy_cheqd_ledger_auth_build_tx(
     res
 }
 
+
+/// Build query for getting info about account.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// address: address of queried account
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
+
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_auth_build_query_account(
     command_handle: CommandHandle,
@@ -164,6 +195,15 @@ pub extern "C" fn indy_cheqd_ledger_auth_build_query_account(
     res
 }
 
+/// Parse response from query account.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// query_resp: string representation of response from ledger
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_auth_parse_query_account_resp(
     command_handle: CommandHandle,
