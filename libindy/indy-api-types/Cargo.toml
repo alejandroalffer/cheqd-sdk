@@ -26,7 +26,7 @@ zmq = {version = "0.9.1", optional = true}
 http-client = { version ="6.4.1", features = ["default"] }
 
 cosmrs = { version = "0.1.0", features = ["rpc"] }
-ursa = { version = "0.3.6", optional = true, git = "https://github.com/cheqd/ursa.git", branch = "cargo-naming-patch" }
+ursa = { version = "0.3.6", optional = true, git = "https://github.com/cheqd/ursa.git", rev = "24670e6"}
 eyre = { version = "0.6.5" } # Cosmos SDK error interface. SDK doesn't expose it.
 k256 = { version = "0.9.6", features = ["ecdsa-core", "ecdsa"] }
 anyhow = "1.0.40"
