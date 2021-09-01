@@ -4555,7 +4555,7 @@ dependencies = [
 [[package]]
 name = "ursa"
 version = "0.3.6"
-source = "git+https://github.com/cheqd/ursa.git?branch=cargo-naming-patch#e7e7d12e93fc400712b009d3a4db815fe2903462"
+source = "git+https://github.com/cheqd/ursa.git?rev=24670e6#24670e6a9a68de42823ce38faac7f909df10b0ca"
 dependencies = [
  "aead",
  "aes 0.6.0",

@@ -281,8 +281,8 @@ impl From<eyre::Report> for IndyError {
     }
 }
 
-impl From<cosmos_sdk::rpc::Error> for IndyError {
-    fn from(err: cosmos_sdk::rpc::Error) -> Self {
+impl From<cosmrs::rpc::Error> for IndyError {
+    fn from(err: cosmrs::rpc::Error) -> Self {
         err.context(IndyErrorKind::CosmosRPCError).into()
     }
 }
@@ -421,8 +421,8 @@ impl From<sqlx::Error> for IndyError {
 // ToDo: For now we don't have any specified ABCI errors from tendermin endpoint and from cosmos too
 // That's why we use this general approach.
 // But in the future, in case of adding special ABCI codes it has to be mapped into ErrorCodes.
-impl From<cosmos_sdk::rpc::endpoint::broadcast::tx_commit::TxResult> for IndyError {
-    fn from(result: cosmos_sdk::rpc::endpoint::broadcast::tx_commit::TxResult) -> IndyError {
+impl From<cosmrs::rpc::endpoint::broadcast::tx_commit::TxResult> for IndyError {
+    fn from(result: cosmrs::rpc::endpoint::broadcast::tx_commit::TxResult) -> IndyError {
         IndyError::from_msg(
             IndyErrorKind::ABCIError,
             format!(
