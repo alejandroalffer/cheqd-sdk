@@ -149,7 +149,7 @@ dockerbuild-libindy-android:
       - libindy/ci/ubuntu.dockerfile
       - libindy/ci/android.dockerfile
   before_script:
-    - sed -i "s|^FROM.*|FROM ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest|g" libindy/ci/android.dockerfile
+    - sed -i "s|^FROM.*|FROM ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}|g" libindy/ci/android.dockerfile
     - grep '^FROM' libindy/ci/android.dockerfile
 
 
@@ -190,7 +190,6 @@ dockerbuild-libindy-android:
     # Fetch submodules
     - git submodule sync --recursive
     - git submodule update --init --recursive
-    - cargo version && rustc --version
 
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
