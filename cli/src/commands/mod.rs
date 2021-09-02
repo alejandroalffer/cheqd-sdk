@@ -7,13 +7,19 @@ pub mod pool;
 pub mod wallet;
 pub mod ledger;
 pub mod payment_address;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_ledger;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_pool;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_keys;
 
 use self::regex::Regex;
 
-use crate::command_executor::{CommandContext, CommandParams, ActivePool, IndyPool, CheqdPool};
+#[cfg(feature = "cheqd")]
+use crate::command_executor::{CheqdPool};
+
+use crate::command_executor::{CommandContext, CommandParams, ActivePool, IndyPool};
 use indy::{ErrorCode, IndyError, WalletHandle, PoolHandle};
 
 use std;
@@ -280,7 +286,7 @@ pub fn ensure_indy_connected_pool_handle(ctx: &CommandContext) -> Result<PoolHan
         }
     }
 }
-
+#[cfg(feature = "cheqd")]
 pub fn get_cheqd_connected_pool(ctx: &CommandContext) -> Option<String> {
     if let ActivePool::Cheqd(pool) = ctx.get_active_pool() {
         Some(pool.name)
@@ -288,7 +294,7 @@ pub fn get_cheqd_connected_pool(ctx: &CommandContext) -> Option<String> {
         None
     }
 }
-
+#[cfg(feature = "cheqd")]
 pub fn ensure_cheqd_connected_pool(ctx: &CommandContext) -> Result<String, ()> {
     match get_cheqd_connected_pool(ctx) {
         Some(name) => Ok(name),
@@ -304,6 +310,7 @@ pub fn set_indy_active_pool(ctx: &CommandContext, name: String, handle: i32) {
     ctx.set_sub_prompt(1, Some(format!("indy_pool({})", name)));
 }
 
+#[cfg(feature = "cheqd")]
 pub fn set_cheqd_active_pool(ctx: &CommandContext, name: String) {
     ctx.set_active_pool(ActivePool::Cheqd(CheqdPool::new(name.clone())));
     ctx.set_sub_prompt(1, Some(format!("cheqd_pool({})", name)));
@@ -436,6 +443,7 @@ fn setup_with_wallet_and_pool_and_payment_plugin() -> CommandContext {
 }
 
 #[cfg(test)]
+#[cfg(feature = "cheqd")]
 fn setup_with_wallet_and_cheqd_pool() -> CommandContext {
     let ctx = setup();
     cheqd_pool::tests::create_and_open_pool(&ctx);

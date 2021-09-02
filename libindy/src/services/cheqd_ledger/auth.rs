@@ -10,7 +10,6 @@ use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt, IndyError
 use crate::domain::cheqd_ledger::auth::{QueryAccountRequest, QueryAccountResponse, Account};
 use crate::domain::cheqd_ledger::CheqdProto;
 use crate::services::CheqdLedgerService;
-use prost::bytes::Buf;
 use crate::utils::cheqd_crypto::check_proofs;
 
 impl CheqdLedgerService {

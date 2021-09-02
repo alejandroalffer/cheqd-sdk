@@ -2238,6 +2238,7 @@ dependencies = [
  "async-trait",
  "backtrace",
  "byteorder",
+ "cfg-if 1.0.0",
  "convert_case",
  "cosmrs",
  "criterion",

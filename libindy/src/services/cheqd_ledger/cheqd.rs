@@ -8,7 +8,6 @@ use cosmrs::tx::MsgType;
 use indy_api_types::IndyError;
 use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use log_derive::logfn;
-use prost::Message;
 
 use crate::domain::cheqd_ledger::base::query::PageRequest;
 use crate::domain::cheqd_ledger::prost_ext::ProstMessageExt;

@@ -188,11 +188,13 @@ impl IndyPool {
     }
 }
 
+#[cfg(feature = "cheqd")]
 #[derive(Debug, Clone)]
 pub struct CheqdPool {
     pub name: String
 }
 
+#[cfg(feature = "cheqd")]
 impl CheqdPool {
     pub fn new(name: String) -> Self {
         CheqdPool { name }
@@ -203,6 +205,7 @@ impl CheqdPool {
 pub enum ActivePool {
     None,
     Indy(IndyPool),
+    #[cfg(feature = "cheqd")]
     Cheqd(CheqdPool),
 }
 

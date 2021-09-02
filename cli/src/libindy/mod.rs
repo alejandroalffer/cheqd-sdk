@@ -3,6 +3,9 @@ pub mod pool;
 pub mod wallet;
 pub mod ledger;
 pub mod payment;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_ledger;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_pool;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_keys;

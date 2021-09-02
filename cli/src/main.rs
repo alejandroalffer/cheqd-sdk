@@ -27,7 +27,9 @@ mod libindy;
 
 use crate::command_executor::CommandExecutor;
 
-use crate::commands::{common, did, ledger, pool, wallet, payment_address, cheqd_pool, cheqd_keys, cheqd_ledger};
+#[cfg(feature = "cheqd")]
+use crate::commands::{cheqd_pool, cheqd_keys, cheqd_ledger};
+use crate::commands::{common, did, ledger, pool, wallet, payment_address};
 use crate::utils::history;
 
 use linefeed::{Reader, ReadResult, Terminal, Signal};
@@ -120,6 +122,8 @@ impl CliConfig {
 }
 
 fn build_executor() -> CommandExecutor {
+cfg_if::cfg_if! {
+   if #[cfg(feature = "cheqd")] {
     CommandExecutor::build()
         .add_command(common::about_command::new())
         .add_command(common::exit_command::new())
@@ -215,6 +219,86 @@ fn build_executor() -> CommandExecutor {
         .add_command(cheqd_keys::get_info_command::new())
         .finalize_group()
         .finalize()
+   } else {
+        CommandExecutor::build()
+            .add_command(common::about_command::new())
+            .add_command(common::exit_command::new())
+            .add_command(common::prompt_command::new())
+            .add_command(common::show_command::new())
+            .add_command(common::load_plugin_command::new())
+            .add_command(common::init_logger_command::new())
+            .add_group(did::group::new())
+            .add_command(did::new_command::new())
+            .add_command(did::import_command::new())
+            .add_command(did::use_command::new())
+            .add_command(did::rotate_key_command::new())
+            .add_command(did::list_command::new())
+            .add_command(did::qualify_command::new())
+            .finalize_group()
+            .add_group(pool::group::new())
+            .add_command(pool::create_command::new())
+            .add_command(pool::connect_command::new())
+            .add_command(pool::refresh_command::new())
+            .add_command(pool::list_command::new())
+            .add_command(pool::disconnect_command::new())
+            .add_command(pool::delete_command::new())
+            .add_command(pool::show_taa_command::new())
+            .add_command(pool::set_protocol_version_command::new())
+            .finalize_group()
+            .add_group(wallet::group::new())
+            .add_command(wallet::create_command::new())
+            .add_command(wallet::attach_command::new())
+            .add_command(wallet::open_command::new())
+            .add_command(wallet::list_command::new())
+            .add_command(wallet::close_command::new())
+            .add_command(wallet::delete_command::new())
+            .add_command(wallet::detach_command::new())
+            .add_command(wallet::export_command::new())
+            .add_command(wallet::import_command::new())
+            .finalize_group()
+            .add_group(ledger::group::new())
+            .add_command(ledger::nym_command::new())
+            .add_command(ledger::get_nym_command::new())
+            .add_command(ledger::attrib_command::new())
+            .add_command(ledger::get_attrib_command::new())
+            .add_command(ledger::schema_command::new())
+            .add_command(ledger::get_schema_command::new())
+            .add_command(ledger::get_validator_info_command::new())
+            .add_command(ledger::cred_def_command::new())
+            .add_command(ledger::get_cred_def_command::new())
+            .add_command(ledger::node_command::new())
+            .add_command(ledger::pool_config_command::new())
+            .add_command(ledger::pool_restart_command::new())
+            .add_command(ledger::pool_upgrade_command::new())
+            .add_command(ledger::custom_command::new())
+            .add_command(ledger::get_payment_sources_command::new())
+            .add_command(ledger::payment_command::new())
+            .add_command(ledger::get_fees_command::new())
+            .add_command(ledger::mint_prepare_command::new())
+            .add_command(ledger::set_fees_prepare_command::new())
+            .add_command(ledger::verify_payment_receipt_command::new())
+            .add_command(ledger::sign_multi_command::new())
+            .add_command(ledger::auth_rule_command::new())
+            .add_command(ledger::auth_rules_command::new())
+            .add_command(ledger::get_auth_rule_command::new())
+            .add_command(ledger::save_transaction_command::new())
+            .add_command(ledger::load_transaction_command::new())
+            .add_command(ledger::taa_command::new())
+            .add_command(ledger::aml_command::new())
+            .add_command(ledger::get_acceptance_mechanisms_command::new())
+            .add_command(ledger::endorse_transaction_command::new())
+            .add_command(ledger::taa_disable_all_command::new())
+            .finalize_group()
+            .add_group(payment_address::group::new())
+            .add_command(payment_address::new_command::new())
+            .add_command(payment_address::create_command::new())
+            .add_command(payment_address::list_command::new())
+            .add_command(payment_address::sign_command::new())
+            .add_command(payment_address::verify_command::new())
+            .finalize_group()
+            .finalize()
+    }
+}
 }
 
 fn execute_stdin(command_executor: CommandExecutor) {

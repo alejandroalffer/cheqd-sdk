@@ -24,6 +24,7 @@ force_full_interaction_tests = []
 sodium_static = []
 only_high_cases = []
 mysql_storage = []
+cheqd = ["indy-api-types/cheqd", "indy-sys/cheqd", "indy/cheqd"]
 
 # Causes the build to fail on all warnings
 fatal_warnings = []
@@ -31,6 +32,7 @@ fatal_warnings = []
 [dependencies]
 async-std = "1.8.0"
 async-trait = "0.1.42"
+cfg-if = "1.0.0"
 env_logger = "0.7"
 etcommon-rlp = "0.2.4"
 failure = { version = "0.1.8", features = ["backtrace"] }
