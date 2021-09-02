@@ -1,12 +1,12 @@
 use std::convert::TryInto;
 use std::str::FromStr;
 
-use cosmos_sdk::{Coin, tx, AccountId};
-use cosmos_sdk::crypto::PublicKey;
-use cosmos_sdk::rpc::endpoint::abci_query;
-use cosmos_sdk::tendermint::block::Height;
-use cosmos_sdk::tx::{AuthInfo, Fee, Msg, SignDoc, SignerInfo};
-use indy_api_types::errors::IndyResult;
+use cosmrs::{Coin, tx, AccountId};
+use cosmrs::crypto::PublicKey;
+use cosmrs::rpc::endpoint::abci_query;
+use cosmrs::tendermint::block::Height;
+use cosmrs::tx::{AuthInfo, Fee, Msg, SignDoc, SignerInfo};
+use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt, IndyError};
 use crate::domain::cheqd_ledger::auth::{QueryAccountRequest, QueryAccountResponse, Account};
 use crate::domain::cheqd_ledger::CheqdProto;
 use crate::services::CheqdLedgerService;
@@ -73,7 +73,7 @@ impl CheqdLedgerService {
     ) -> IndyResult<abci_query::Request> {
         let query_data = QueryAccountRequest::new(address.to_string());
         let path = format!("/cosmos.auth.v1beta1.Query/Account");
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let path = cosmrs::tendermint::abci::Path::from_str(&path)?;
         let req =
             abci_query::Request::new(Some(path), query_data.to_proto_bytes()?, None, true);
         Ok(req)
@@ -89,7 +89,7 @@ impl CheqdLedgerService {
         let acc = AccountId::from_str(address)?;
         query_data.append(acc.to_bytes().to_vec().as_mut());
         let path = format!("/store/acc/key");
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let path = cosmrs::tendermint::abci::Path::from_str(&path)?;
         let req = abci_query::Request::new(Some(path), query_data, None, true);
         Ok(req)
     }
@@ -98,11 +98,15 @@ impl CheqdLedgerService {
         &self,
         resp: &abci_query::Response,
     ) -> IndyResult<QueryAccountResponse> {
-        let result = if !resp.response.value.is_empty() {
-            Some(Account::from_proto_bytes(&resp.response.value)?)
-        } else { None };
         check_proofs(resp.clone())?;
-        Ok(QueryAccountResponse::new(result))
+        if !resp.response.value.is_empty() {
+            Ok(QueryAccountResponse::new(Some(Account::from_proto_bytes(&resp.response.value)?)))
+        } else {
+            // ToDo: after adding method for decoding key to account_id in response,
+            // info about absent account should be added here.
+            return Err(IndyError::from(
+                IndyErrorKind::QueryAccountDoesNotexist))
+        }
     }
 
     pub(crate) fn auth_parse_query_account_resp_without_proof(
@@ -111,5 +115,26 @@ impl CheqdLedgerService {
     ) -> IndyResult<QueryAccountResponse> {
         let result = QueryAccountResponse::from_proto_bytes(&resp.response.value)?;
         return Ok(result);
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use indy_api_types::errors::IndyErrorKind;
+    use crate::services::CheqdLedgerService;
+    use cosmrs::rpc::endpoint::abci_query;
+    use failure::AsFail;
+
+    #[async_std::test]
+    async fn error_on_absent_account() {
+        // Response with account_id which is placed in the ledger
+        // let response_str = "{\"response\":{\"code\":0,\"log\":\"\",\"info\":\"\",\"index\":\"0\",\"key\":\"AU2mGX24tqcWKdw+ujCI5pTTjT0l\",\"value\":\"CiAvY29zbW9zLmF1dGgudjFiZXRhMS5CYXNlQWNjb3VudBIxCi1jb3Ntb3MxZmtucGpsZGNrNm4zdjJ3dTg2YXJwejh4am5mYzYwZjk5eWxjamQYAg==\",\"proof\":{\"ops\":[{\"field_type\":\"ics23:iavl\",\"key\":\"AU2mGX24tqcWKdw+ujCI5pTTjT0l\",\"data\":\"CoACChUBTaYZfbi2pxYp3D66MIjmlNONPSUSVQogL2Nvc21vcy5hdXRoLnYxYmV0YTEuQmFzZUFjY291bnQSMQotY29zbW9zMWZrbnBqbGRjazZuM3Yyd3U4NmFycHo4eGpuZmM2MGY5OXlsY2pkGAIaCwgBGAEgASoDAAICIikIARIlAgQCIJCiEpLGLTw3oUwhxhLthrSQgH6/ZWP6WCaD+4qaDiRRICIrCAESBAQIAiAaISB3lwHIMjW/jzRIbQtbBI894/yjTANfmdB8A/cY4CCMqSIrCAESBAgWAiAaISBplxd9W1qx9qgRrM7bBI1H8s4T2ZmHpmZRiXZPazKFsQ==\"},{\"field_type\":\"ics23:simple\",\"key\":\"YWNj\",\"data\":\"CtYBCgNhY2MSIOJakBCYIkbqTRCoAEDpSTnl7rGgNzzDLb0XscS55bKAGgkIARgBIAEqAQAiJwgBEgEBGiC2zBYtOhm67NjRq5Mao2OvPk9gAiNWUXnktEnJw48zhCInCAESAQEaILoD6gZnAzBWw9ZVknNCj3v/RqlcvuUEtfjTDMdO1ewlIicIARIBARogYHfOqhT4vz6WOZvqYQji+PZzn+iOMbO8URuv4ZMg6NUiJwgBEgEBGiAszcJa5DrW2vA27Uwywvi1WcHxukHGa8l13mgEA1Y8yw==\"}]},\"height\":\"5\",\"codespace\":\"\"}}";
+        let response_str = "{\"response\":{\"code\":0,\"log\":\"\",\"info\":\"\",\"index\":\"0\",\"key\":\"AeGz6G1y6H1v1Kg8e2cGSgvz7NL4\",\"value\":\"\",\"proof\":{\"ops\":[{\"field_type\":\"ics23:iavl\",\"key\":\"AeGz6G1y6H1v1Kg8e2cGSgvz7NL4\",\"data\":\"EqAFChUB4bPobXLofW/UqDx7ZwZKC/Ps0vgSxwIKFQHfXrVYyt+ZUbcIz0mayQRjwlAdIRKdAQogL2Nvc21vcy5hdXRoLnYxYmV0YTEuQmFzZUFjY291bnQSeQotY29zbW9zMW1hMHQya3gybTd2NHJkY2dlYXllNGpneXYwcDlxOGZwZDhndnljEkYKHy9jb3Ntb3MuY3J5cHRvLnNlY3AyNTZrMS5QdWJLZXkSIwohApKTNiVduW3xZNSn+zQxxqnslZV/DhKWAXHpv7GfqPsGIAEaCwgBGAEgASoDAAICIisIARIEBAYCIBohIExK/7/GpCerk6tIH6neH5AxHxcYLqDzmeaC8f2tLCWrIikIARIlBg4CIAU6A3QFxXxGs2M3p4yFRb+v2C6iprxnccrKmpiJOKWRICIpCAESJQgWDiB1REtS2G7xNbVTz4I85WkugzFAJOmfArSt506sW7M2+iAavAIKFQHxgpZ221d2gulE/DST1FG2f/PinxJoCiIvY29zbW9zLmF1dGgudjFiZXRhMS5Nb2R1bGVBY2NvdW50EkIKMQotY29zbW9zMTd4cGZ2YWttMmFtZzk2MnlsczZmODR6M2tlbGw4YzVsc2VycXRhGAMSDWZlZV9jb2xsZWN0b3IaCwgBGAEgASoDAAICIisIARIEAgQCIBohIGZiNESsZqBLS4kNK4AqKKCga2VCRSIbT2/P6uarCh8wIikIARIlBAYCIOL0iWbzfbuUuHo6kY/RDEJzcBTvYiryMbh3+NhJvGuGICIpCAESJQYOAiAFOgN0BcV8RrNjN6eMhUW/r9guoqa8Z3HKypqYiTilkSAiKQgBEiUIFg4gdURLUthu8TW1U8+CPOVpLoMxQCTpnwK0redOrFuzNvog\"},{\"field_type\":\"ics23:simple\",\"key\":\"YWNj\",\"data\":\"CtYBCgNhY2MSIOBYamvCdoQNeiyk2JXOKH2Gp4xJ5NDxgtk2SUObRJWyGgkIARgBIAEqAQAiJwgBEgEBGiC/ElSJKxQ2ZQSGI8P4TAzAxkZYOjRw/0CWfqlsLBypRSInCAESAQEaIFh3Vqa4j1sJB+YGnconZJyneXHLvYRyA0SQdoF8mXsbIicIARIBARogXQMnB5H/NO2xg2mJEkcBbLxXKiXoTXef3Sp432W6O6siJwgBEgEBGiA9D80z3WD6/zCy5HDjilVuHtqnFSdhy/9JKVFUDYhBHg==\"}]},\"height\":\"863\",\"codespace\":\"\"}}";
+        let response: abci_query::Response = serde_json::from_str::<abci_query::Response>(response_str).unwrap();
+        let cheqd_ledger_service = CheqdLedgerService::new();
+        let err = cheqd_ledger_service.auth_parse_query_account_resp(&response).unwrap_err();
+        assert!(err.to_string().contains(IndyErrorKind::QueryAccountDoesNotexist.as_fail().to_string().as_str()));
+
     }
 }

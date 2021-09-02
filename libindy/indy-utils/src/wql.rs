@@ -273,7 +273,7 @@ mod tests {
     use rand::distributions::Alphanumeric;
 
     fn _random_string(len: usize) -> String {
-        thread_rng().sample_iter(&Alphanumeric).take(len).collect()
+        thread_rng().sample_iter(&Alphanumeric).take(len).map(char::from).collect()
     }
 
     /// parse

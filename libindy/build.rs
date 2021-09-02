@@ -132,7 +132,7 @@ fn compile_protos(out_dir: &Path) {
     let mut config = prost_build::Config::default();
     config.out_dir(out_dir);
     config.extern_path(".tendermint", "::tendermint_proto");
-    config.extern_path(".cosmos", "cosmos_sdk::proto::cosmos");
+    config.extern_path(".cosmos", "cosmrs::proto::cosmos");
 
     if let Err(e) = config.compile_protos(&protos, &includes) {
         eprintln!("[error] couldn't compile protos: {}", e);

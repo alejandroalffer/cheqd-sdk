@@ -1,10 +1,12 @@
 use std::str::FromStr;
 
-use cosmos_sdk::rpc::endpoint::abci_query;
-use cosmos_sdk::rpc::endpoint::broadcast::tx_commit::Response;
-use cosmos_sdk::tx::Msg;
-use cosmos_sdk::tx::MsgType;
-use indy_api_types::errors::IndyResult;
+use cosmrs::rpc;
+use cosmrs::rpc::endpoint::abci_query;
+use cosmrs::rpc::endpoint::broadcast::tx_commit::Response;
+use cosmrs::tx::Msg;
+use cosmrs::tx::MsgType;
+use indy_api_types::IndyError;
+use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use log_derive::logfn;
 
 use crate::domain::cheqd_ledger::base::query::PageRequest;
@@ -105,7 +107,7 @@ impl CheqdLedgerService {
     pub(crate) fn build_query_get_nym_without_proof(&self, id: u64) -> IndyResult<abci_query::Request> {
         let query_data = QueryGetNymRequest::new(id);
         let path = format!("/cheqdid.cheqdnode.cheqd.Query/Nym");
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let path = cosmrs::tendermint::abci::Path::from_str(&path)?;
         let req =
             abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
         Ok(req)
@@ -119,7 +121,7 @@ impl CheqdLedgerService {
         let mut query_data = "Nym-value-".as_bytes().to_vec();
         query_data.extend_from_slice(&id.to_be_bytes());
         let path = format!("/store/cheqd/key");
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let path = cosmrs::tendermint::abci::Path::from_str(&path)?;
         let req = abci_query::Request::new(Some(path), query_data, None, true);
         Ok(req)
     }
@@ -153,7 +155,7 @@ impl CheqdLedgerService {
     ) -> IndyResult<abci_query::Request> {
         let query_data = QueryAllNymRequest::new(pagination);
         let path = format!("/cheqdid.cheqdnode.cheqd.Query/NymAll");
-        let path = cosmos_sdk::tendermint::abci::Path::from_str(&path)?;
+        let path = cosmrs::tendermint::abci::Path::from_str(&path)?;
         let req =
             abci_query::Request::new(Some(path), query_data.to_proto().to_bytes()?, None, true);
         Ok(req)

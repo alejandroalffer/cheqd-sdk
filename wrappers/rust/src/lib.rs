@@ -315,6 +315,42 @@ pub enum ErrorCode
     #[fail(display = "PaymentExtraFundsError")]
     PaymentExtraFundsError = 705,
 
+    // ABCI error from tendermint endpoint
+    #[fail(display = "ABCIError")]
+    ABCIError = 800,
+
+    // Cosmos RPC error
+    #[fail(display = "CosmosRPCError")]
+    CosmosRPCError = 801,
+
+    // Error from eyre Report
+    #[fail(display = "EyreError")]
+    EyreError = 802,
+
+    // Signature error from k256
+    #[fail(display = "K256SignatureError")]
+    K256SignatureError = 803,
+
+    // Error while using serde module
+    #[fail(display = "SerdeJSONError")]
+    SerdeJSONError = 804,
+
+    // Error from https client
+    #[fail(display = "HTTPClientError")]
+    HTTPClientError = 805,
+
+    // Protobuf encode error
+    #[fail(display = "ProstEncodeError")]
+    ProstEncodeError = 806,
+
+    // Protobuf decode error
+    #[fail(display = "ProstDecodeError")]
+    ProstDecodeError = 807,
+
+    // Query Account does not exist in the pool
+    #[fail(display = "QueryAccountDoesNotexistError")]
+    QueryAccountDoesNotexistError = 808,
+
     // The transaction is not allowed to a requester
     #[fail(display = "The transaction is not allowed to a requester")]
     TransactionNotAllowed,

@@ -1,5 +1,5 @@
-use cosmos_sdk::proto::cosmos::tx::v1beta1::{SignDoc as ProtoSignDoc, TxRaw};
-use cosmos_sdk::tx::{Msg, Raw, SignDoc};
+use cosmrs::proto::cosmos::tx::v1beta1::{SignDoc as ProtoSignDoc, TxRaw};
+use cosmrs::tx::{Msg, Raw, SignDoc};
 use indy_api_types::errors::IndyResult;
 use prost_types::Any;
 
@@ -73,7 +73,7 @@ impl CosmosRawExt for Raw {
 
 #[cfg(test)]
 mod test {
-    use cosmos_sdk::tx::{Msg, MsgType};
+    use cosmrs::tx::{Msg, MsgType};
 
     use super::super::cosmos_ext::CosmosMsgExt;
     use super::super::super::cheqd_ledger::cheqd::messages::MsgCreateNym;
