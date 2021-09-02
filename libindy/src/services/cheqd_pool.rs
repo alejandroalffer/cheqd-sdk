@@ -100,9 +100,10 @@ impl CheqdPoolService {
 
     pub(crate) async fn get_all_config(&self) -> IndyResult<Vec<PoolConfig>> {
         let mut path = environment::cheqd_pool_home_path();
+        let mut path_name = path.to_str();
 
         if !path.exists() {
-            let error_msg = "Can't find cheqd pool config file";
+            let error_msg = "Can't find cheqd pool config files";
             warn!("{}", error_msg);
             return Err(IndyError::from_msg(IndyErrorKind::IOError, error_msg));
         }
@@ -114,7 +115,7 @@ impl CheqdPoolService {
             let mut path = match dir {
                 Ok(t) => t.path(),
                 Err(error) => {
-                    warn!("Can't find directory with cheqd pool config: {:?}", dir);
+                    warn!("While iterating over {:?} directory the next error was caught:", path_name);
                     warn!("{}", error);
 
                     continue;
@@ -124,10 +125,10 @@ impl CheqdPoolService {
             path.push("config");
             path.set_extension("json");
 
-            let config = match fs::read_to_string(path){
+            let config = match fs::read_to_string(path.clone()){
                 Ok(conf) => conf,
                 Err(error) => {
-                    warn!("Can't find cheqd pool config file in directory: {:?}", path);
+                    warn!("Can't find cheqd pool config file in directory: {:?}", path.clone());
                     warn!("{}", error);
 
                     continue;
