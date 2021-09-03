@@ -48,7 +48,7 @@ RUN /tmp/installCert.sh
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.50.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.54.0
 ENV PATH /home/indy/.cargo/bin:$PATH
 
 RUN cargo install cargo-deb
