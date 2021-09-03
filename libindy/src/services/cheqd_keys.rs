@@ -1,16 +1,17 @@
 //! Service to manage Cosmos keys
 
-use cosmos_sdk::crypto::secp256k1::signing_key::Secp256k1Signer;
-use cosmos_sdk::crypto::secp256k1::SigningKey as CosmosSigningKey;
-use cosmos_sdk::tx::{Raw, SignDoc};
+use cosmrs::crypto::secp256k1::EcdsaSigner;
+use cosmrs::crypto::secp256k1::SigningKey as CosmosSigningKey;
+use cosmrs::tx::{Raw, SignDoc};
 use indy_api_types::errors::IndyResult;
 use k256::ecdsa::signature::rand_core::OsRng;
 use k256::ecdsa::SigningKey;
 use rand::rngs::StdRng;
-use rand_seeder::Seeder;
 use rust_base58::ToBase58;
 
 use crate::domain::cheqd_keys::{Key, KeyInfo};
+use sha3::Digest;
+use rand::SeedableRng;
 
 pub(crate) struct CheqdKeysService {}
 
@@ -26,7 +27,7 @@ impl CheqdKeysService {
     fn bytes_to_cosmos_signing_key(bytes: &[u8]) -> IndyResult<CosmosSigningKey> {
         let sig_key = Self::bytes_to_signing_key(bytes)?;
         Ok(CosmosSigningKey::from(
-            Box::new(sig_key) as Box<dyn Secp256k1Signer>
+            Box::new(sig_key) as Box<dyn EcdsaSigner>
         ))
     }
 
@@ -41,7 +42,8 @@ impl CheqdKeysService {
         alias: &str,
         mnemonic: &str,
     ) -> IndyResult<Key> {
-        let mut rng: StdRng = Seeder::from(mnemonic).make_rng();
+        let seed = sha3::Sha3_256::digest(&mnemonic.as_bytes());
+        let mut rng = StdRng::from_seed(seed.into());
         let sig_key = k256::ecdsa::SigningKey::random(&mut rng);
         let key = Key::new(alias.to_string(), sig_key.to_bytes().to_vec());
         Ok(key)
@@ -69,8 +71,8 @@ impl CheqdKeysService {
 
 #[cfg(test)]
 mod test {
-    use cosmos_sdk::crypto::secp256k1::signing_key::{
-        Secp256k1Signer, SigningKey as CosmosSigningKey,
+    use cosmrs::crypto::secp256k1::{
+        EcdsaSigner, SigningKey as CosmosSigningKey,
     };
     use k256::ecdsa::signature::Signature;
     use k256::ecdsa::signature::Signer;
@@ -126,7 +128,7 @@ mod test {
         let s1: k256::ecdsa::Signature = key.sign(&msg);
         let s1 = s1.as_ref().to_vec();
 
-        let cosmos_key = CosmosSigningKey::from(Box::new(key) as Box<dyn Secp256k1Signer>);
+        let cosmos_key = CosmosSigningKey::from(Box::new(key) as Box<dyn EcdsaSigner>);
         let s2 = cosmos_key.sign(&msg).unwrap().as_bytes().to_vec();
 
         assert_eq!(s1, s2);
@@ -137,7 +139,7 @@ mod test {
         let key = k256::ecdsa::SigningKey::random(&mut OsRng);
         let pub_key = key.verify_key().to_bytes().to_vec();
 
-        let cosmos_key = CosmosSigningKey::from(Box::new(key) as Box<dyn Secp256k1Signer>);
+        let cosmos_key = CosmosSigningKey::from(Box::new(key) as Box<dyn EcdsaSigner>);
         let cosmos_pub_key = cosmos_key.public_key().to_bytes();
 
         assert_eq!(pub_key, cosmos_pub_key);

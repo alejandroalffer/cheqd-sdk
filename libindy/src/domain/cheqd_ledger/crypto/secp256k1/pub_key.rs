@@ -1,4 +1,4 @@
-use cosmos_sdk::proto::cosmos::crypto::secp256k1::PubKey as ProtoPubKey;
+use cosmrs::proto::cosmos::crypto::secp256k1::PubKey as ProtoPubKey;
 use indy_api_types::errors::IndyResult;
 
 use super::super::super::CheqdProto;

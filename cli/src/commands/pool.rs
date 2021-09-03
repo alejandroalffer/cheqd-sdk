@@ -107,6 +107,7 @@ pub mod connect_command {
             JSONValue::from(json).to_string()
         };
 
+        #[cfg(feature = "cheqd")]
         match ctx.get_active_pool() {
             ActivePool::None | ActivePool::Indy(_) => Ok(()),   // We can safely set new pool name
             _ => {

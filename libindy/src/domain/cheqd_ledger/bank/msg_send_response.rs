@@ -1,4 +1,4 @@
-use cosmos_sdk::proto::cosmos::bank::v1beta1::MsgSendResponse as ProtoMsgSendResponse;
+use cosmrs::proto::cosmos::bank::v1beta1::MsgSendResponse as ProtoMsgSendResponse;
 
 use indy_api_types::errors::IndyResult;
 
@@ -23,7 +23,7 @@ impl CheqdProto for MsgSendResponse {
         Self::Proto {}
     }
 
-    fn from_proto(proto: &Self::Proto) -> IndyResult<Self> {
+    fn from_proto(_proto: &Self::Proto) -> IndyResult<Self> {
         Ok(Self::new())
     }
 }

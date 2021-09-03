@@ -7,11 +7,13 @@ extern crate serde_json;
 
 use indyrs::ErrorCode;
 
+#[cfg(feature = "cheqd")]
 use utils::{constants::*, types::ResponseType, test, cheqd_keys, cheqd_setup, cheqd_ledger, wallet};
 use serde_json::Value;
 
 mod utils;
 
+#[cfg(feature = "cheqd")]
 mod high_cases {
     use super::*;
 

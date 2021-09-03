@@ -20,5 +20,5 @@ fi
 set -eux
 
 pushd libindy
-cargo build $CARGO_FLAGS --features "fatal_warnings sodium_static"
+cargo build $CARGO_FLAGS --features "fatal_warnings sodium_static cheqd"
 popd

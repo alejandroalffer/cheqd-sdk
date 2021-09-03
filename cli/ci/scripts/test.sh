@@ -22,6 +22,6 @@ set -eux
 
 pushd cli
 sed -i -E -e "s/10\.0\.0\.2/${TEST_POOL_IP}/g" docker_pool_transactions_genesis
-LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test ${CARGO_FLAGS} --features "nullpay_plugin" --no-run
-LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 cargo test ${CARGO_FLAGS} --features "nullpay_plugin"
+LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test ${CARGO_FLAGS} --features "nullpay_plugin cheqd" --no-run
+LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 cargo test ${CARGO_FLAGS} --features "nullpay_plugin cheqd"
 popd

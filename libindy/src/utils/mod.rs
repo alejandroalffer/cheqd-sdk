@@ -4,6 +4,7 @@ pub use indy_utils::environment;
 pub mod ccallback;
 
 pub mod crypto;
+#[cfg(feature = "cheqd")]
 pub mod cheqd_crypto;
 #[macro_use]
 pub mod logger;
