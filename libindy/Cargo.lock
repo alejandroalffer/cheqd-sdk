@@ -1502,6 +1502,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "ursa",
+ "zeroize",
  "zmq",
 ]
 
