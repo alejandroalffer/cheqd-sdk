@@ -25,6 +25,13 @@ variables:
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
 
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+
 ## - Anchors - ##
 .tags_micro:
   tags:
@@ -103,11 +110,11 @@ variables:
   extends: .kaniko_large
   variables:
     KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
-  only:
-    refs:
-      - main@evernym/verity/vdr-tools
-      - /^docker-.*/
-      - /^android-.*/
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
+    - if: $CI_COMMIT_REF_NAME == "docker-.*" || $CI_COMMIT_REF_NAME == "android-.*"
+      when: always
 
 dockerbuild-libindy-ubuntu16:
   stage: dockerbuild-pre
@@ -115,8 +122,8 @@ dockerbuild-libindy-ubuntu16:
   variables:
     DOCKERFILE_PATH: libindy/ci/ubuntu.dockerfile
     DOCKER_IMAGE_NAME: libindy-ubuntu16
-  only:
-    changes:
+  rules:
+    - changes:
       - .gitlab-ci.yml
       - libindy/ci/ubuntu.dockerfile
 
@@ -126,8 +133,8 @@ dockerbuild-libindy-ubuntu18:
   variables:
     DOCKERFILE_PATH: libindy/ci/ubuntu18.dockerfile
     DOCKER_IMAGE_NAME: libindy-ubuntu18
-  only:
-    changes:
+  rules:
+    - changes:
       - .gitlab-ci.yml
       - libindy/ci/ubuntu18.dockerfile
 
@@ -140,13 +147,10 @@ dockerbuild-libindy-android:
     DOCKERFILE_PATH: libindy/ci/android.dockerfile
     DOCKER_IMAGE_NAME: libindy-android
     DOCKER_CONTEXT: "${CI_PROJECT_DIR}/libindy/ci/"
-  only:
-    refs:
-      - main
-      - stable
-      - /^docker-.*/
-      - /^android-.*/
-    changes:
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "stable" || $CI_COMMIT_REF_NAME == "docker-.*" || $CI_COMMIT_REF_NAME == "android-.*"
+      when: always
+    - changes:
       - .gitlab-ci.yml
       - libindy/ci/ubuntu.dockerfile
       - libindy/ci/android.dockerfile
@@ -419,9 +423,9 @@ test-libindy-java-wrapper-release:
       - libindy/target/debian/*.deb
       - libnullpay/target/debian/*.deb
       - cli/target/debian/*.deb
-  only:
-    refs:
-      - main@evernym/verity/vdr-tools
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
   script:
     - libindy/ci/scripts/package.sh ${CI_PIPELINE_IID}
     - libnullpay/ci/scripts/package.sh ${CI_PIPELINE_IID}
@@ -445,9 +449,9 @@ publish-libindy-java-wrapper:
   stage: publish
   image: registry.gitlab.com/evernym/containers/vcx-java/vcx-java:latest
   extends: .tags_micro
-  only:
-    refs:
-      - main@evernym/verity/vdr-tools
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
   script:
     - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
     - wrappers/java/ci/publish.sh ${CI_COMMIT_BRANCH} ${CI_PIPELINE_IID}
@@ -459,9 +463,9 @@ publish-libindy:
   dependencies:
     - package-libindy-ubuntu16
     - package-libindy-ubuntu18
-  only:
-    refs:
-      - main@evernym/verity/vdr-tools
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output
@@ -486,9 +490,9 @@ publish-libindy-android:
     - build-libindy-android-arm
     - build-libindy-android-armv7
     - build-libindy-android-arm64
-  only:
-    refs:
-      - main@evernym/verity/vdr-tools
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
   script:
     - >
       find libindy/android_out/ -name "*.zip" -exec
@@ -501,9 +505,9 @@ publish-libindy-ios:
   image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
   dependencies:
     - build-libindy-ios
-  only:
-    refs:
-      - main@evernym/verity/vdr-tools
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
   script:
     - >
       find libindy/ios_out/ -name "*.tar.gz" -exec
