@@ -23,5 +23,7 @@ cp libindy/target/${BUILD_TYPE}/libindy.so cli
 cp libnullpay/target/${BUILD_TYPE}/libnullpay.so cli
 
 pushd cli
+# Build cli without cheqd feature first just for check
+LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build ${CARGO_FLAGS} --features "fatal_warnings"
 LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build ${CARGO_FLAGS} --features "fatal_warnings cheqd"
 popd
