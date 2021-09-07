@@ -453,7 +453,6 @@ publish-libindy-java-wrapper:
     - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
       when: always
   script:
-    - cp ${CLOUDREPO_SETTINGS_XML} ./settings.xml
     - wrappers/java/ci/publish.sh ${CI_COMMIT_BRANCH} ${CI_PIPELINE_IID}
 
 publish-libindy:
