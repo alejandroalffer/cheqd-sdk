@@ -25,6 +25,12 @@ extern "C" {
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
+    pub fn indy_cheqd_keys_get_list_keys(
+        command_handle: CommandHandle,
+        wallet_handle: WalletHandle,
+        cb: Option<ResponseStringCB>,
+    ) -> Error;
+
     pub fn indy_cheqd_keys_sign(
         command_handle: CommandHandle,
         wallet_handle: WalletHandle,

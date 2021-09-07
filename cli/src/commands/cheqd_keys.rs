@@ -90,6 +90,43 @@ pub mod get_info_command {
     }
 }
 
+pub mod get_list_keys_command {
+    use super::*;
+    use crate::utils::table::print_list_table;
+
+    command!(CommandMetadata::build("get-list-keys", "Get list keys of current wallet.")
+                .add_example("cheqd-keys get-list-keys")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let res = match CheqdKeys::get_list_keys(wallet_handle) {
+            Ok(resp) => {
+                let resp: Vec<serde_json::Value> = serde_json::from_str(&resp)
+                    .map_err(|_| println_err!("{}", format!("Wrong data has been received: {}", resp)))?;
+
+                print_list_table(&resp,
+                                 &[("account_id", "Account id"),
+                                     ("alias", "Alias"),
+                                     ("pub_key", "Public key")],
+                                 "There are no configs");
+                Ok(())
+            },
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            },
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -111,8 +148,6 @@ pub mod tests {
                 params.insert("alias", KEY_ALIAS.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -126,8 +161,6 @@ pub mod tests {
                 params.insert("mnemonic", MNEMONIC.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -140,8 +173,17 @@ pub mod tests {
                 params.insert("alias", KEY_ALIAS_WITH_BALANCE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
+            tear_down_with_wallet(&ctx);
+        }
 
+        #[test]
+        pub fn get_list_keys() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            {
+                let cmd = get_list_keys_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
             tear_down_with_wallet(&ctx);
         }
     }

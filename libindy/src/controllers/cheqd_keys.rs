@@ -4,11 +4,11 @@ use std::collections::HashMap;
 
 use async_std::sync::Arc;
 use cosmrs::tx::SignDoc;
-use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
+use indy_api_types::errors::{IndyErrorKind, err_msg, IndyResult, IndyResultExt};
 use indy_api_types::WalletHandle;
-use indy_wallet::RecordOptions;
+use indy_wallet::{RecordOptions, SearchOptions};
 
-use crate::domain::cheqd_keys::Key;
+use crate::domain::cheqd_keys::{Key, KeyInfo};
 use crate::domain::cheqd_ledger::cosmos_ext::CosmosSignDocExt;
 use crate::services::{CheqdKeysService, WalletService};
 
@@ -77,6 +77,40 @@ impl CheqdKeysController {
         let key_info = serde_json::to_string(&key_info)?;
         trace!("get_info < {:?}", key_info);
         Ok(key_info)
+    }
+
+    pub(crate) async fn get_list_keys(&self, wallet_handle: WalletHandle) -> IndyResult<String> {
+        trace!("get_list_keys >");
+
+        let mut key_search = self
+            .wallet_service
+            .search_indy_records::<Key>(wallet_handle, "{}", &SearchOptions::id_value())
+            .await?;
+
+        let mut keys: Vec<KeyInfo> = Vec::new();
+
+        while let Some(key_record) = key_search.fetch_next_record().await? {
+            let key_id = key_record.get_id();
+
+            let key: Key = key_record
+                .get_value()
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "No value for Key record"))
+                .and_then(|tags_json| {
+                    serde_json::from_str(&tags_json).to_indy(
+                        IndyErrorKind::InvalidState,
+                        format!("Cannot deserialize Key {:?}", key_id),
+                    )
+                })?;
+
+            let key_info = self.cheqd_keys_service.get_info(&key)?;
+            keys.push(key_info);
+        }
+
+        let result = serde_json::to_string(&keys)?;
+
+        trace!("get_list_keys < {:?}", result);
+
+        Ok(result)
     }
 
     pub(crate) async fn sign(&self, wallet_handle: WalletHandle, alias: &str, tx: &[u8]) -> IndyResult<Vec<u8>> {

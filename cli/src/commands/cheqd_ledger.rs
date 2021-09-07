@@ -112,7 +112,7 @@ pub mod create_nym_command {
         let parsed_response = CheqdLedger::parse_msg_create_nym_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        println!("{}", parsed_response);
+        println!("Created NYM: {}", parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -144,7 +144,7 @@ pub mod get_nym_command {
             .map_err(|err| handle_indy_error(err, None,
                                              Some(pool_alias.as_str()), None))?;
 
-        println!("NYM info: {}",parsed_response);
+        println_succ!("NYM info: {}",parsed_response);
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -218,7 +218,59 @@ pub mod get_balance_command {
         let parsed_response = CheqdLedger::parse_query_balance_resp(&response)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        println!("Balance info: {}",parsed_response);
+        println_succ!("Balance info: {}",parsed_response);
+        trace!("execute << {:?}", parsed_response);
+
+        Ok(())
+    }
+}
+
+pub mod get_all_nym_command {
+    use super::*;
+    use crate::utils::table::print_list_table;
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct AllNymResponse {
+        nym: Vec<Value>
+    }
+
+    command!(CommandMetadata::build("get-all-nym", "Get list of NYM transactions")
+                .add_example("cheqd-ledger get-all-nym")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        let pool_alias = ensure_cheqd_connected_pool(ctx)?;
+
+        let query = CheqdLedger::build_query_all_nym()
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+        let response = CheqdPool::abci_query(&pool_alias, &query)
+            .map_err(|err| handle_indy_error(err, None,
+                                             Some(pool_alias.as_str()), None))?;
+        let parsed_response = match CheqdLedger::parse_query_all_nym_resp(&response) {
+                Ok(resp) => {
+                    let resp: AllNymResponse = serde_json::from_str(&resp)
+                        .map_err(|_| println_err!("{}", format!("Wrong data has been received from the ledger: {}", resp)))?;
+                    
+                    print_list_table(resp.nym.as_slice(),
+                                      &[("creator", "creator"),
+                                          ("id", "id"),
+                                          ("alias", "alias"),
+                                          ("verkey", "verkey"),
+                                          ("did", "did"),
+                                          ("role", "role"),],
+                                      "There are no nyms");
+
+                Ok(())
+            },
+                Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            },
+        };
+
         trace!("execute << {:?}", parsed_response);
 
         Ok(())
@@ -241,7 +293,6 @@ pub fn build_and_sign_and_broadcast_tx(ctx: &CommandContext,
     let key_info_json: Value = serde_json::from_str(&key_info)
         .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
     let pubkey = key_info_json["pub_key"].as_str().unwrap();
-
 
     let account_id = key_info_json["account_id"].as_str().unwrap();
     let (account_number, account_sequence) = get_base_account_number_and_sequence(account_id, pool_alias)?;
@@ -327,7 +378,8 @@ pub fn get_timeout_height(pool_alias: &str) -> Result<u64, ()> {
     let info: Value = serde_json::from_str(&info?)
         .map_err(|_| println_err!("Wrong data of Abci-info has been received"))?;
 
-    let current_height = info[RESPONSE][LAST_BLOCK_HEIGHT].as_str().unwrap().parse::<u64>().unwrap();
+    let current_height = info[RESPONSE][LAST_BLOCK_HEIGHT].as_str().unwrap_or_default()
+        .parse::<u64>().map_err(|_| println_err!("Invalid getting abci-info response. Height must be integer."))?;
 
     const TIMEOUT: u64 = 20;
 
@@ -351,7 +403,6 @@ pub mod tests {
     mod cheqd_ledger {
         use super::*;
         use crate::commands::cheqd_keys::tests::get_key;
-        use std::env;
         use crate::utils::environment::EnvironmentUtils;
 
         #[test]
@@ -436,5 +487,32 @@ pub mod tests {
             tear_down_with_wallet(&ctx);
         }
 
+        #[test]
+        pub fn get_all_nym() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            create_new_nym(&ctx);
+            {
+                let cmd = get_all_nym_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+    }
+
+    pub fn create_new_nym(ctx: &CommandContext) {
+        {
+            let cmd = create_nym_command::new();
+            let mut params = CommandParams::new();
+            params.insert("did", DID.to_string());
+            params.insert("verkey", VERKEY.to_string());
+            params.insert("key_alias", KEY_ALIAS_WITH_BALANCE.to_string());
+            params.insert("max_gas", MAX_GAS.to_string());
+            params.insert("max_coin", MAX_COIN.to_string());
+            params.insert("denom", EnvironmentUtils::cheqd_denom());
+            params.insert("role", ROLE.to_string());
+            params.insert("memo", MEMO.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
     }
 }

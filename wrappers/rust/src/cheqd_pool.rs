@@ -62,6 +62,23 @@ fn _get_config(
     })
 }
 
+pub fn get_all_config() -> Box<dyn Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _get_all_config(command_handle, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _get_all_config(
+    command_handle: CommandHandle,
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+    ErrorCode::from(unsafe {
+        cheqd_pool::indy_cheqd_pool_get_all_config(command_handle,cb)
+    })
+}
+
 pub fn broadcast_tx_commit(
     pool_alias: &str,
     signed_tx: &[u8],

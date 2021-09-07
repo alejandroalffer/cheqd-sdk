@@ -8,8 +8,8 @@ extern crate serde_json;
 use indyrs::ErrorCode;
 
 #[cfg(feature = "cheqd")]
-use utils::{cheqd_keys, cheqd_setup, cheqd_ledger};
-use utils::{constants::*, types::ResponseType, test, wallet};
+use utils::{constants::*, types::ResponseType, test, cheqd_keys, cheqd_setup, cheqd_ledger, wallet};
+use serde_json::Value;
 
 mod utils;
 
@@ -53,6 +53,28 @@ mod high_cases {
             let setup = cheqd_setup::CheqdSetup::new();
             cheqd_keys::add_random(setup.wallet_handle, alias).unwrap();
             let result = cheqd_keys::get_info(setup.wallet_handle, alias).unwrap();
+            println!("Data: {:?} ", result);
+        }
+
+        #[test]
+        fn test_get_list_keys() {
+            let alias_1 = "some_alias_1";
+            let alias_2 = "some_alias_2";
+
+            let setup = cheqd_setup::CheqdSetup::new();
+
+            let key_1 = cheqd_keys::add_random(setup.wallet_handle, alias_1).unwrap();
+            let key_2 = cheqd_keys::add_random(setup.wallet_handle, alias_2).unwrap();
+
+            let result = cheqd_keys::get_list_keys(setup.wallet_handle).unwrap();
+            let result: Vec<Value> = serde_json::from_str(&result).unwrap();
+
+            let expect_key_1: Value = serde_json::from_str(&key_1).unwrap();
+            let expect_key_2: Value = serde_json::from_str(&key_2).unwrap();
+
+            assert!(result.contains(&expect_key_1));
+            assert!(result.contains(&expect_key_2));
+
             println!("Data: {:?} ", result);
         }
     }

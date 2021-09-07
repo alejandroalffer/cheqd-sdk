@@ -17,6 +17,11 @@ extern "C" {
         cb: Option<ResponseStringCB>,
     ) -> Error;
 
+    pub fn indy_cheqd_pool_get_all_config(
+        command_handle: CommandHandle,
+        cb: Option<ResponseStringCB>,
+    ) -> Error;
+
     pub fn indy_cheqd_pool_broadcast_tx_commit(
         command_handle: CommandHandle,
         pool_alias: CString,
