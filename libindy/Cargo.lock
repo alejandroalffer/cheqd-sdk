@@ -4556,7 +4556,7 @@ dependencies = [
 [[package]]
 name = "ursa"
 version = "0.3.6"
-source = "git+https://github.com/cheqd/ursa.git?rev=24670e6#24670e6a9a68de42823ce38faac7f909df10b0ca"
+source = "git+https://github.com/hyperledger/ursa.git?branch=main#bec7727ab78e670e50a160a487aa3c739f99b4a2"
 dependencies = [
  "aead",
  "aes 0.6.0",
