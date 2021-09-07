@@ -44,8 +44,8 @@
 
 	<distributionManagement>
 		<repository>
-			<id>io.cloudrepo</id>
-			<url>https://evernym.mycloudrepo.io/repositories/libvcx-android</url>
+			<id>gitlab-maven</id>
+			<url>${env.CI_SERVER_URL}/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
 		</repository>
 	</distributionManagement>
 
