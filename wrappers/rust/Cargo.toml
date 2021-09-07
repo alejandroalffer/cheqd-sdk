@@ -8,6 +8,7 @@ repository = "https://github.com/hyperledger/indy-sdk"
 categories = ["api-bindings", "development-tools"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
+edition = "2018"
 exclude = [
     "tests/*",
     ]

@@ -1,6 +1,6 @@
 use super::*;
 
-use {CString, Error, CommandHandle, WalletHandle};
+use crate::{CString, Error, CommandHandle, WalletHandle};
 
 extern {
     pub fn indy_register_payment_method(command_handle: CommandHandle,

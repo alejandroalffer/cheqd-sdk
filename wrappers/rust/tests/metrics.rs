@@ -5,9 +5,9 @@ extern crate byteorder;
 extern crate futures;
 extern crate indyrs as indy;
 #[macro_use]
-use indy::metrics;
+use crate::indy::metrics;
 
-use indy::ErrorCode;
+
 
 mod utils;
 #[allow(unused_imports)]

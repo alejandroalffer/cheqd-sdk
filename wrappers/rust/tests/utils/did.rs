@@ -4,8 +4,8 @@ use self::futures::Future;
 
 use super::indy;
 
-use indy::IndyError;
-use indy::{WalletHandle, PoolHandle};
+use crate::indy::IndyError;
+use crate::indy::{WalletHandle, PoolHandle};
 
 type DidAndVerKey = (String, String);
 

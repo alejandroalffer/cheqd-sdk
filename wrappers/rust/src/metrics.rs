@@ -1,13 +1,13 @@
 use futures::Future;
 
-use {ErrorCode, IndyError};
+use crate::{ErrorCode, IndyError};
 
-use ffi::metrics;
+use crate::ffi::metrics;
 
-use utils::callbacks::{ClosureHandler, ResultHandler};
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
 
-use ffi::ResponseStringCB;
-use CommandHandle;
+use crate::ffi::ResponseStringCB;
+use crate::CommandHandle;
 
 /// Collect metrics from libindy.
 ///

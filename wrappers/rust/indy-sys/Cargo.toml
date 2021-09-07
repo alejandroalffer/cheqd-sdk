@@ -6,6 +6,7 @@ authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.or
 build = "build.rs"
 links = "indy"
 license = "MIT/Apache-2.0"
+edition = "2018"
 
 [dependencies]
 serde = "1.0.99"
