@@ -130,11 +130,46 @@ pub mod get_config_command {
 
         let res = match CheqdPoolLibindy::get_config(&pool_alias) {
             Ok(config) => {
-                println_succ!("Pool config has been get \"{}\"", config);
+                println_succ!("Available pools: \"{}\"", config);
                 Ok(())
             },
             Err(err) => {
                 handle_indy_error(err, None, Some(&pool_alias), None);
+                Err(())
+            },
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod get_all_config_command {
+    use super::*;
+    use crate::utils::table::print_list_table;
+
+    command!(CommandMetadata::build("get-all-config", "Get list configs of pools.")
+                .add_example("cheqd-pool get-all-config")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let res = match CheqdPoolLibindy::get_all_config() {
+            Ok(resp) => {
+                let resp: Vec<serde_json::Value> = serde_json::from_str(&resp)
+                    .map_err(|_| println_err!("{}", format!("Wrong data has been received: {}", resp)))?;
+
+                print_list_table(&resp,
+                                 &[("alias", "Alias"),
+                                     ("chain_id", "Chain id"),
+                                     ("rpc_address", "RPC address")],
+                                 "There are no configs");
+                Ok(())
+            },
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
                 Err(())
             },
         };
@@ -194,8 +229,6 @@ pub mod tests {
                 params.insert("chain_id", CHAIN_ID.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down();
         }
 
@@ -209,8 +242,6 @@ pub mod tests {
                 params.insert("alias", POOL.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -223,8 +254,6 @@ pub mod tests {
                 params.insert("alias", POOL.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
 
@@ -236,8 +265,17 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
+            tear_down_with_wallet(&ctx);
+        }
 
+        #[test]
+        pub fn get_all_config() {
+            let ctx = setup_with_wallet_and_cheqd_pool();
+            {
+                let cmd = get_all_config_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
             tear_down_with_wallet(&ctx);
         }
 
@@ -249,8 +287,6 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            assert!(true);
-
             tear_down_with_wallet(&ctx);
         }
     }

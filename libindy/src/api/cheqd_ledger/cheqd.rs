@@ -426,7 +426,17 @@ pub extern "C" fn indy_cheqd_ledger_cheqd_parse_query_get_nym_resp(
     debug!("indy_cheqd_ledger_cheqd_parse_query_get_nym_resp < {:?}", res);
     res
 }
-
+/// Builds a GET_ALL_NYM request.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_cheqd_build_query_all_nym(
     command_handle: CommandHandle,
@@ -464,6 +474,32 @@ pub extern "C" fn indy_cheqd_ledger_cheqd_build_query_all_nym(
     res
 }
 
+/// Get all nyms
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// query_resp: response of GET_ALL_NYM request.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - err: Error code.
+///   List of nyms as string json in following format:
+///   {
+///     nym: [
+///         {
+///             alias: string - Alias of did,
+///             creator: string - Creator of NYM,
+///             did: string - Distributed id,
+///             id: number - Unique identifier for NYM,
+///             role: string - Role did ledger,
+///             verkey: string - Verification key,
+///         }
+///     ]
+///   }
+///
+/// #Errors
+/// Common*
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_cheqd_parse_query_all_nym_resp(
     command_handle: CommandHandle,

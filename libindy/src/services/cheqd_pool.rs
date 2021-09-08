@@ -47,12 +47,11 @@ impl CheqdPoolService {
         let mut path = environment::cheqd_pool_path(alias);
 
         if path.as_path().exists() {
+            let error_msg = format!("Cheqd pool ledger config file with alias \"{}\" already exists", alias);
+            warn!("{}", error_msg);
             return Err(err_msg(
                 IndyErrorKind::PoolConfigAlreadyExists,
-                format!(
-                    "Cheqd pool ledger config file with alias \"{}\" already exists",
-                    alias
-                ),
+                error_msg,
             ));
         }
 
@@ -82,7 +81,9 @@ impl CheqdPoolService {
         let mut path = environment::cheqd_pool_path(alias);
 
         if !path.exists() {
-            return Err(IndyError::from_msg(IndyErrorKind::IOError, format!("Can't find cheqd pool config file: {}", alias)));
+            let error_msg = format!("Can't find cheqd pool config file: {}", alias);
+            warn!("{}", error_msg);
+            return Err(IndyError::from_msg(IndyErrorKind::IOError, error_msg));
         }
 
         path.push("config");
@@ -93,6 +94,58 @@ impl CheqdPoolService {
 
         let result: PoolConfig = serde_json::from_str(&config)
             .to_indy(IndyErrorKind::IOError, "Invalid data of cheqd pool config file")?;
+
+        Ok(result)
+    }
+
+    pub(crate) async fn get_all_config(&self) -> IndyResult<Vec<PoolConfig>> {
+        let mut path = environment::cheqd_pool_home_path();
+        let mut path_name = path.to_str();
+
+        if !path.exists() {
+            let error_msg = "Can't find cheqd pool config files";
+            warn!("{}", error_msg);
+            return Err(IndyError::from_msg(IndyErrorKind::IOError, error_msg));
+        }
+
+        let paths = fs::read_dir(path.clone())?;
+
+        let mut result = Vec::<PoolConfig>::new();
+        for dir in paths {
+            let mut path = match dir {
+                Ok(t) => t.path(),
+                Err(error) => {
+                    warn!("While iterating over {:?} directory the next error was caught:", path_name);
+                    warn!("{}", error);
+
+                    continue;
+                },
+            };
+
+            path.push("config");
+            path.set_extension("json");
+
+            let config = match fs::read_to_string(path.clone()){
+                Ok(conf) => conf,
+                Err(error) => {
+                    warn!("Can't find cheqd pool config file in directory: {:?}", path.clone());
+                    warn!("{}", error);
+
+                    continue;
+                },
+            };
+
+            let pool_config : PoolConfig = match serde_json::from_str(&config){
+                Ok(pool_conf) => pool_conf,
+                Err(error) => {
+                    warn!("Invalid cheqd pool config file in directory: {:?}", path);
+                    warn!("{}", error);
+
+                    continue;
+                },
+            };
+            result.push(pool_config);
+        }
 
         Ok(result)
     }
