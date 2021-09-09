@@ -56,7 +56,7 @@ Cocoapod will search for spec files in the root Specs folder.
    export PKG_CONFIG_ALLOW_CROSS=1
    export CARGO_INCREMENTAL=1
    ```
-1. Edit script ci/ios-build.sh: set the following variables to fit your environment:
+1. Edit script ci/scripts/ios-build.sh: set the following variables to fit your environment:
    
    ```
    export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2q
