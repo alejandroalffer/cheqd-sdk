@@ -158,10 +158,17 @@ dockerbuild-libindy-android:
     - sed -i "s|^FROM.*|FROM ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}|g" libindy/ci/android.dockerfile
     - grep '^FROM' libindy/ci/android.dockerfile
 
+.cheqd-submodules:
+  before_script:
+    # Fetch submodules
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
 
 ## - Jobs : Build - ##
 .build-libindy:
-  extends: .tags_compute_xlarge
+  extends:
+      - .tags_compute_xlarge
+      - .cheqd-submodules
   stage: build
   artifacts:
     expire_in: 1 week
@@ -175,27 +182,6 @@ dockerbuild-libindy-android:
     - name: ghcr.io/cheqd/cheqd-testnet:v0.1.19
       alias: cheqd_pool_network
   timeout: 3h
-  before_script:
-    # The only working solution for private submodules fetching via ssh:
-    # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/2075
-
-    # install ssh-agent
-    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-
-    # run ssh-agent
-    - eval $(ssh-agent -s)
-
-    # add ssh key stored in SSH_PRIVATE_KEY variable to the agent store
-    - ssh-add $CHEQD_GITHUB_SSH_PRIVATE_KEY
-
-    # disable host key checking (NOTE: makes you susceptible to man-in-the-middle attacks)
-    # WARNING: use only in docker container, if you use it with shell you will overwrite your user's ssh config
-    - mkdir -p ~/.ssh
-    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-
-    # Fetch submodules
-    - git submodule sync --recursive
-    - git submodule update --init --recursive
 
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
@@ -209,12 +195,6 @@ dockerbuild-libindy-android:
     - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
     - cli/ci/scripts/build.sh ${BUILD_TYPE}
     - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
-
-.cheqd-submodules:
-  before_script:  
-    # Fetch submodules
-    - git submodule sync --recursive
-    - git submodule update --init --recursive
 
 build-libindy-ubuntu16-from-branch:
   extends: .build-libindy
