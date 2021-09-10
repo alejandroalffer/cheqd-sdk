@@ -1,14 +1,14 @@
-use {ErrorCode, IndyError};
+use crate::{ErrorCode, IndyError};
 
 use std::ffi::CString;
 
 use futures::Future;
 
-use ffi::cheqd_ledger;
-use ffi::{ResponseSliceCB, ResponseStringCB};
+use crate::ffi::cheqd_ledger;
+use crate::ffi::{ResponseSliceCB, ResponseStringCB};
 
-use utils::callbacks::{ClosureHandler, ResultHandler};
-use CommandHandle;
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
+use crate::CommandHandle;
 
 pub fn build_msg_send(
     from: &str,

@@ -1,5 +1,5 @@
-use ffi::crypto;
-use ffi::{ResponseEmptyCB,
+use crate::ffi::crypto;
+use crate::ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseSliceCB,
           ResponseBoolCB,
@@ -10,9 +10,9 @@ use futures::Future;
 use std::ffi::CString;
 use std::ptr::null;
 
-use {ErrorCode, IndyError};
-use utils::callbacks::{ClosureHandler, ResultHandler};
-use {WalletHandle, CommandHandle};
+use crate::{ErrorCode, IndyError};
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
+use crate::{WalletHandle, CommandHandle};
 
 /// Creates key pair in wallet
 /// # Arguments

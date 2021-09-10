@@ -1,5 +1,5 @@
-use {CString, CommandHandle, Error};
-use ::{ResponseSliceCB, ResponseStringCB};
+use crate::{CString, CommandHandle, Error};
+use crate::{ResponseSliceCB, ResponseStringCB};
 
 extern "C" {
     pub fn indy_cheqd_ledger_cheqd_build_msg_create_nym(

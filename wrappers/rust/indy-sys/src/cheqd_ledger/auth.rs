@@ -1,6 +1,6 @@
-use ::{ResponseSliceCB, ResponseStringCB};
+use crate::{ResponseSliceCB, ResponseStringCB};
 
-use {BString, CommandHandle, CString, Error};
+use crate::{BString, CommandHandle, CString, Error};
 
 extern "C" {
     pub fn indy_cheqd_ledger_auth_build_tx(

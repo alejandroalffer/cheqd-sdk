@@ -6,18 +6,18 @@ extern crate byteorder;
 extern crate futures;
 extern crate indy_sys;
 
-use indy::did;
-use indy::wallet;
+use crate::indy::did;
+use crate::indy::wallet;
 
-use indy::ErrorCode;
+use crate::indy::ErrorCode;
 
 use std::path::{Path, PathBuf};
 
 mod utils;
 
-use utils::constants::{DEFAULT_CREDENTIALS, METADATA};
-use utils::file::{TempDir, TempFile};
-use utils::rand;
+use crate::utils::constants::{DEFAULT_CREDENTIALS, METADATA};
+use crate::utils::file::{TempDir, TempFile};
+use crate::utils::rand;
 #[allow(unused_imports)]
 use futures::Future;
 
@@ -386,7 +386,7 @@ mod test_wallet_open {
 #[cfg(test)]
 mod test_wallet_close {
     use super::*;
-    use indy::INVALID_WALLET_HANDLE;
+    use crate::indy::INVALID_WALLET_HANDLE;
 
     #[test]
     fn close_wallet() {
@@ -430,7 +430,7 @@ mod test_wallet_close {
 #[cfg(test)]
 mod test_wallet_export {
     use super::*;
-    use indy::INVALID_WALLET_HANDLE;
+    use crate::indy::INVALID_WALLET_HANDLE;
 
     #[test]
     fn export_wallet() {
