@@ -1,14 +1,14 @@
-use {ErrorCode, IndyError};
+use crate::{ErrorCode, IndyError};
 
 use std::ffi::CString;
 
 use futures::Future;
 
-use ffi::cheqd_keys;
-use ffi::{ResponseSliceCB, ResponseStringCB};
+use crate::ffi::cheqd_keys;
+use crate::ffi::{ResponseSliceCB, ResponseStringCB};
 
-use utils::callbacks::{ClosureHandler, ResultHandler};
-use {CommandHandle, WalletHandle};
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
+use crate::{CommandHandle, WalletHandle};
 
 pub fn add_random(wallet_handle: WalletHandle, alias: &str) -> Box<dyn Future<Item = String, Error = IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();

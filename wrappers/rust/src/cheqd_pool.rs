@@ -1,12 +1,12 @@
 use std::ffi::CString;
 
-use CommandHandle;
-use ffi::ResponseStringCB;
-use ffi::cheqd_pool;
+use crate::CommandHandle;
+use crate::ffi::ResponseStringCB;
+use crate::ffi::cheqd_pool;
 use futures::Future;
-use utils::callbacks::{ClosureHandler, ResultHandler};
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
 
-use {ErrorCode, IndyError};
+use crate::{ErrorCode, IndyError};
 
 pub fn add(
     alias: &str,
