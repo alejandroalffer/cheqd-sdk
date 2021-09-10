@@ -1,14 +1,14 @@
 use futures::Future;
 
-use {ErrorCode, IndyError};
+use crate::{ErrorCode, IndyError};
 
 use std::ffi::CString;
 
-use ffi::blob_storage;
-use ffi::ResponseI32CB;
+use crate::ffi::blob_storage;
+use crate::ffi::ResponseI32CB;
 
-use utils::callbacks::{ClosureHandler, ResultHandler};
-use {IndyHandle, CommandHandle};
+use crate::utils::callbacks::{ClosureHandler, ResultHandler};
+use crate::{IndyHandle, CommandHandle};
 
 pub fn open_reader(xtype: &str, config_json: &str) -> Box<dyn Future<Item=IndyHandle, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
