@@ -1,5 +1,7 @@
 .build-libindytest-android:
-  extends: .tags_compute_xlarge
+  extends:
+    - .cheqd-submodules
+    - .tags_compute_xlarge
   stage: build  # TODO separate build step
   services:
     - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
@@ -25,7 +27,9 @@ build-libindytest-android-from-branch:
       - main
 
 .build-libindy-android:
-  extends: .tags_compute_xlarge
+  extends:
+    - .cheqd-submodules
+    - .tags_compute_xlarge
   stage: build
   image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
   only:

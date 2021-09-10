@@ -61,3 +61,9 @@
   tags:
     - docker-machine
     - large
+
+.cheqd-submodules:
+  before_script:
+    # Fetch submodules
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
