@@ -71,6 +71,7 @@ futures = "0.3.1"
 lru = "0.6.5"
 http-client = "6.4.1"
 ics23 = "0.6.5"
+lexical-core = "0.7.6"
 
 cosmrs = { version = "0.1.0", features = ["rpc"] }
 k256 = { version = "0.9.6", features = ["ecdsa-core", "ecdsa"] }

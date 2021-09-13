@@ -1,0 +1,112 @@
+.build-libindytest-android:
+  extends:
+    - .cheqd-submodules
+    - .tags_compute_xlarge
+  stage: build  # TODO separate build step
+  services:
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
+      alias: pool_network
+  script:
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - cd libindy && ./android.test.sh x86
+
+build-libindytest-android-from-latest:
+  extends: .build-libindytest-android
+  image: ${CI_REGISTRY_IMAGE}/libindy-android:latest
+  except:
+    refs:
+      - /^docker-.*/
+      - main
+
+build-libindytest-android-from-branch:
+  extends: .build-libindytest-android
+  image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
+  only:
+    refs:
+      - /^docker-.*/
+      - main
+
+.build-libindy-android:
+  extends:
+    - .cheqd-submodules
+    - .tags_compute_xlarge
+  stage: build
+  image: ${CI_REGISTRY_IMAGE}/libindy-android:${CI_COMMIT_REF_SLUG}
+  only:
+    refs:
+      - main
+      - /^android-.*/
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - libindy/android_out/
+  script:
+    - cd libindy
+    - ./android.build.sh -d ${LIBINDY_ANDROID_ARCH}
+    - mkdir android_out/
+    - cp ./libindy_android_${LIBINDY_ANDROID_ARCH}.zip ./android_out/
+
+build-libindy-android-x86:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "x86"
+
+build-libindy-android-x86_64:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "x86_64"
+
+build-libindy-android-arm:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "arm"
+
+build-libindy-android-armv7:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "armv7"
+
+build-libindy-android-arm64:
+  extends: .build-libindy-android
+  variables:
+    LIBINDY_ANDROID_ARCH: "arm64"
+
+dockerbuild-libindy-android:
+  stage: dockerbuild
+  extends: .kaniko_large
+  dependencies:
+    - dockerbuild-libindy-ubuntu16
+  variables:
+    DOCKERFILE_PATH: libindy/ci/android.dockerfile
+    DOCKER_IMAGE_NAME: libindy-android
+    DOCKER_CONTEXT: "${CI_PROJECT_DIR}/libindy/ci/"
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "stable" || $CI_COMMIT_REF_NAME == "docker-.*" || $CI_COMMIT_REF_NAME == "android-.*"
+      when: always
+    - changes:
+        - .gitlab-ci.yml
+        - libindy/ci/ubuntu.dockerfile
+        - libindy/ci/android.dockerfile
+  before_script:
+    - sed -i "s|^FROM.*|FROM ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}|g" libindy/ci/android.dockerfile
+    - grep '^FROM' libindy/ci/android.dockerfile
+
+# - Jobs : Publish - ##
+publish-libindy-android:
+  extends: .tags_micro
+  stage: publish
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-android-x86
+    - build-libindy-android-x86_64
+    - build-libindy-android-arm
+    - build-libindy-android-armv7
+    - build-libindy-android-arm64
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
+  script:
+    - >
+      find libindy/android_out/ -name "*.zip" -exec
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file {}
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/vdr-tools-android/1.95.0-${CI_PIPELINE_IID}/" \;

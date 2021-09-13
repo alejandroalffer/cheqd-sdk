@@ -1,0 +1,46 @@
+## - Jobs : Build - ##
+build-libindy-ios:
+  stage: build
+  extends: .cheqd-submodules
+  tags:
+    - macos
+    - bigsur
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - libindy/ios_out/
+  script:
+    - which rustup-init || brew install rustup-init
+    - echo | rustup-init --default-toolchain 1.54.0
+    - source $HOME/.cargo/env
+    - cargo install cargo-lipo
+    - rustup target add aarch64-apple-ios x86_64-apple-ios
+    - brew update
+    - brew install libsodium
+    # For now it fails while compiling latest openssl 1.1.1l, stay on 1.1.1k
+    # - brew install openssl@1.1
+    - brew install zeromq
+    - rm -rf ~/.indy_client || true
+    - mkdir libindy/ios_out/
+    - ci/scripts/ios-build.sh libindy aarch64-apple-ios
+    - cp libindy/out_pod/libindy.tar.gz libindy/ios_out/libindy-aarch64-armv7.tar.gz
+    - rm -rf libindy/out_pod/
+    - ci/scripts/ios-build.sh libindy
+    - cp libindy/out_pod/libindy.tar.gz libindy/ios_out/libindy.tar.gz
+
+# - Jobs : Publish - ##
+
+publish-libindy-ios:
+  extends: .tags_micro
+  stage: publish
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-ios
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
+  script:
+    - >
+      find libindy/ios_out/ -name "*.tar.gz" -exec
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file {}
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/vdr-tools-ios/1.95.0-${CI_PIPELINE_IID}/" \;
