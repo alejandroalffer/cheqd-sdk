@@ -2,9 +2,9 @@ extern crate futures;
 
 use self::futures::Future;
 use super::indy;
-use indy::IndyError;
-use utils::rand::random_string;
-use indy::{WalletHandle, INVALID_WALLET_HANDLE};
+use crate::indy::IndyError;
+use crate::utils::rand::random_string;
+use crate::indy::{WalletHandle, INVALID_WALLET_HANDLE};
 
 static USEFUL_CREDENTIALS : &'static str =  r#"{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method":"RAW"}"#;
 

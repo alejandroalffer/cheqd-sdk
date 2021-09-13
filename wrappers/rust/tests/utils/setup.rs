@@ -6,10 +6,10 @@ use super::indy;
 
 use std::ops::{Index, IndexMut};
 use std::iter::FromIterator;
-use utils::constants::PROTOCOL_VERSION;
-use utils::wallet::Wallet;
-use utils::pool;
-use utils::did;
+use crate::utils::constants::PROTOCOL_VERSION;
+use crate::utils::wallet::Wallet;
+use crate::utils::pool;
+use crate::utils::did;
 
 
 pub struct SetupConfig
