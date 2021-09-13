@@ -1,14 +1,14 @@
-use crate::{ErrorCode, IndyError};
+use {ErrorCode, IndyError};
 
 use std::ffi::CString;
 
-use crate::ffi::{logger, CVoid, CString as IndyCString};
+use ffi::{logger, CVoid, CString as IndyCString};
 
 use log::{Log, Record, Metadata, Level};
 
 use std::ptr::null;
 
-use crate::utils::ctypes::c_str_to_string;
+use utils::ctypes::c_str_to_string;
 
 static mut LOGGER: Option<Box<&'static dyn Log>> = None;
 

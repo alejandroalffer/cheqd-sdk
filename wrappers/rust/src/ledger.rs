@@ -1,17 +1,17 @@
-use crate::{ErrorCode, IndyError};
+use {ErrorCode, IndyError};
 
 use std::ffi::CString;
 use std::ptr::null;
 
 use futures::Future;
 
-use crate::ffi::ledger;
-use crate::ffi::{ResponseStringCB,
+use ffi::ledger;
+use ffi::{ResponseStringCB,
           ResponseStringStringCB,
           ResponseStringStringU64CB};
 
-use crate::utils::callbacks::{ClosureHandler, ResultHandler};
-use crate::{WalletHandle, CommandHandle, PoolHandle};
+use utils::callbacks::{ClosureHandler, ResultHandler};
+use {WalletHandle, CommandHandle, PoolHandle};
 
 /// Signs and submits request message to validator pool.
 ///

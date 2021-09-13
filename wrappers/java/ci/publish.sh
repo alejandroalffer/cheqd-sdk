@@ -12,6 +12,8 @@ fi
 function publish() {
   MODULE_DIR=$1
 
+  cp settings.xml $MODULE_DIR
+
   pushd $MODULE_DIR
   mvn clean deploy -DskipTests -Dmaven.javadoc.skip=true --settings settings.xml
   popd

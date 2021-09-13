@@ -22,21 +22,22 @@ fi
 
 echo "Build IOS POD started..."
 
-TYPE="release"
+TYPE="debug"
 
 cd ${package}
 
 if [[ $# -eq 2 ]]; then # build for single platform
   echo "... for target $2 ..."
-  TARGETS="--targets $2"
+  cargo lipo --targets $2
 elif [[ $# -eq 3 ]]; then # build for two platforms
   echo "... for targets $2,$3 ..."
-  TARGETS="--targets $2,$3"
+  TYPE="release"
+  cargo lipo --$TYPE --targets $2,$3
 else  # build for all platforms
   echo "... for all default targets ..."
-  TARGETS=""
+  TYPE="release"
+  cargo lipo --$TYPE
 fi
-cargo lipo --$TYPE $TARGETS
 echo 'Build completed successfully.'
 
 WORK_DIR="out_pod"

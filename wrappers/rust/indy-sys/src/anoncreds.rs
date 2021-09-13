@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::{CString, Error};
+use {CString, Error};
 
 extern "C" {
     pub fn indy_issuer_create_schema(

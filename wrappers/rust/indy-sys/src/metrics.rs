@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::{Error, CommandHandle};
+use {Error, CommandHandle};
 
 extern {
     pub fn indy_collect_metrics(command_handle: CommandHandle,

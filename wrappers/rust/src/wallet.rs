@@ -1,18 +1,18 @@
 use futures::Future;
 
-use crate::{ErrorCode, IndyError};
+use {ErrorCode, IndyError};
 
 use std::ffi::CString;
 use std::ptr::null;
 
-use crate::utils::callbacks::{ClosureHandler, ResultHandler};
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
-use crate::ffi::{wallet, non_secrets};
-use crate::ffi::{ResponseEmptyCB,
+use ffi::{wallet, non_secrets};
+use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseI32CB,
           ResponseWalletHandleCB};
-use crate::{CommandHandle, WalletHandle, SearchHandle};
+use {CommandHandle, WalletHandle, SearchHandle};
 
 /// Registers custom wallet implementation.
 ///

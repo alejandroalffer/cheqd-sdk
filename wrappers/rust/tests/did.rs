@@ -9,20 +9,20 @@ extern crate indy_sys;
 #[macro_use]
 mod utils;
 
-use crate::indy::did;
-use crate::indy::ErrorCode;
-use crate::utils::b58::{FromBase58};
-use crate::utils::constants::{
+use indy::did;
+use indy::ErrorCode;
+use utils::b58::{FromBase58};
+use utils::constants::{
     DID_1,
     SEED_1,
     VERKEY_1,
     METADATA,
     VERKEY_ABV_1
 };
-use crate::utils::setup::{Setup, SetupConfig};
-use crate::utils::wallet::Wallet;
+use utils::setup::{Setup, SetupConfig};
+use utils::wallet::Wallet;
 
-use crate::indy::{INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
+use indy::{INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
 
 #[allow(unused_imports)]
 use futures::Future;
@@ -511,7 +511,7 @@ mod test_get_verkey_ledger {
 #[cfg(test)]
 mod test_set_metadata {
     use super::*;
-    use crate::indy::INVALID_WALLET_HANDLE;
+    use indy::INVALID_WALLET_HANDLE;
 
     #[inline]
     fn setup() -> (Wallet, String) {
@@ -813,7 +813,7 @@ mod test_abbreviate_verkey {
 #[cfg(test)]
 mod test_list_with_metadata {
     use super::*;
-    use crate::indy::INVALID_WALLET_HANDLE;
+    use indy::INVALID_WALLET_HANDLE;
 
     fn setup_multiple(wallet: &Wallet) -> Vec<serde_json::Value> {
         let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();

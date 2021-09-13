@@ -13,12 +13,12 @@ extern crate futures;
 #[macro_use]
 pub mod utils;
 
-use crate::indy::did;
-use crate::indy::ledger;
-use crate::indy::pool;
-use crate::utils::constants::PROTOCOL_VERSION;
-use crate::utils::setup::{Setup, SetupConfig};
-use crate::utils::wallet::Wallet;
+use indy::did;
+use indy::ledger;
+use indy::pool;
+use utils::constants::PROTOCOL_VERSION;
+use utils::setup::{Setup, SetupConfig};
+use utils::wallet::Wallet;
 #[allow(unused_imports)]
 use futures::Future;
 
@@ -265,7 +265,7 @@ mod test_multi_sign_request {
 mod test_build_nym_request {
     use super::*;
 
-    use crate::utils::did::NymRole;
+    use utils::did::NymRole;
 
     #[test]
     pub fn build_nym_request_success() {

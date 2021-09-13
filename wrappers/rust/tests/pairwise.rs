@@ -13,13 +13,13 @@ mod utils;
 #[allow(unused_imports)]
 use futures::Future;
 
-use crate::utils::wallet::Wallet;
-use crate::utils::constants::{DID_TRUSTEE, VERKEY_TRUSTEE, METADATA, DID};
+use utils::wallet::Wallet;
+use utils::constants::{DID_TRUSTEE, VERKEY_TRUSTEE, METADATA, DID};
 
 extern crate failure;
 
-use crate::indy::ErrorCode;
-use crate::indy::INVALID_WALLET_HANDLE;
+use indy::ErrorCode;
+use indy::INVALID_WALLET_HANDLE;
 
 mod create_pairwise {
     use super::*;

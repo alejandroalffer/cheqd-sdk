@@ -1,14 +1,14 @@
 use futures::Future;
 
-use crate::{ErrorCode, IndyError};
+use {ErrorCode, IndyError};
 
 use std::ffi::CString;
 
-use crate::utils::callbacks::{ClosureHandler, ResultHandler};
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
-use crate::ffi::cache;
-use crate::ffi::{ResponseEmptyCB, ResponseStringCB};
-use crate::{WalletHandle, CommandHandle, PoolHandle};
+use ffi::cache;
+use ffi::{ResponseEmptyCB, ResponseStringCB};
+use {WalletHandle, CommandHandle, PoolHandle};
 
 /// Get schema json data for specified schema id.
 /// If data is present inside of cache, cached data is returned.

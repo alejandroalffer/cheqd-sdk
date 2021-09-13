@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::{BString, CString, CommandHandle, Error, WalletHandle};
+use {BString, CString, CommandHandle, Error, WalletHandle};
 
 extern "C" {
 

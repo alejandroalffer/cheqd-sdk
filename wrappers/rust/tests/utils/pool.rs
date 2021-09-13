@@ -4,14 +4,14 @@ use super::environment;
 use self::futures::Future;
 
 use byteorder::{LittleEndian, WriteBytesExt};
-use crate::indy::ErrorCode;
-use crate::indy::pool;
+use indy::ErrorCode;
+use indy::pool;
 use rmp_serde;
 use serde_json;
 use std::fs;
 use std::io::Write;
-use crate::utils::rand::random_string;
-use crate::utils::file::TempFile;
+use utils::rand::random_string;
+use utils::file::TempFile;
 
 
 pub fn create_genesis_txn_file_for_test_pool(nodes_count: Option<u8>) -> TempFile {

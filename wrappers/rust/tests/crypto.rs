@@ -7,13 +7,13 @@ extern crate futures;
 #[macro_use]
 mod utils;
 
-use crate::indy::crypto;
-use crate::indy::wallet;
+use indy::crypto;
+use indy::wallet;
 
 #[allow(unused_imports)]
 use futures::Future;
 
-use crate::utils::constants::DEFAULT_CREDENTIALS;
+use utils::constants::DEFAULT_CREDENTIALS;
 
 macro_rules! safe_wallet_create {
     ($x:ident) => {

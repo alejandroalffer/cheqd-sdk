@@ -7,10 +7,10 @@ extern crate indyrs as indy;
 #[macro_use]
 pub mod utils;
 
-use crate::utils::constants::{DID_1};
-use crate::utils::setup::{Setup, SetupConfig};
-use crate::indy::ErrorCode;
-use crate::indy::pool;
+use utils::constants::{DID_1};
+use utils::setup::{Setup, SetupConfig};
+use indy::ErrorCode;
+use indy::pool;
 #[allow(unused_imports)]
 use futures::Future;
 
@@ -215,8 +215,8 @@ mod test_pool_create_config {
     use super::*;
 
     use std::fs;
-    use crate::utils::file::TempFile;
-    use crate::utils::pool::{PoolList, test_pool_name, test_genesis_config};
+    use utils::file::TempFile;
+    use utils::pool::{PoolList, test_pool_name, test_genesis_config};
 
     #[inline]
     pub fn assert_pool_exists(name: &str) {
@@ -320,7 +320,7 @@ mod test_delete_config {
 
     use futures::future::Future;
 
-    use crate::utils::pool::{PoolList, create_default_pool};
+    use utils::pool::{PoolList, create_default_pool};
 
     const NON_EXISTENT_NAME: &str = "a_pool_name_which_does_not_exist";
 
@@ -380,7 +380,7 @@ mod test_delete_config {
 mod test_set_protocol_version {
     use super::*;
 
-    use crate::indy::ledger;
+    use indy::ledger;
     use serde_json;
 
     const VALID_VERSIONS: [usize; 2] = [1, 2];
@@ -395,7 +395,7 @@ mod test_set_protocol_version {
     #[test]
     /* Set all available protocol versions. */
     fn set_all_valid_versions() {
-        for &version in VALID_VERSIONS.iter() {
+        for &version in VALID_VERSIONS.into_iter() {
             let result = pool::set_protocol_version(version).wait();
             assert_eq!((), result.unwrap());
             assert_protocol_version_set(version);
@@ -427,7 +427,7 @@ There aren't tests for failure because I'm not sure how it would fail.
 mod test_pool_list {
     use super::*;
 
-    use crate::utils::pool::{PoolList, create_default_pool};
+    use utils::pool::{PoolList, create_default_pool};
 
     #[test]
     fn list_pool() {

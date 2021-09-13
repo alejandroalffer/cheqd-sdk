@@ -1,22 +1,22 @@
-use crate::{ErrorCode, IndyError};
+use {ErrorCode, IndyError};
 
 use std::ffi::CString;
 use std::ptr::null;
 
 use futures::Future;
 
-use crate::utils::callbacks::{ClosureHandler, ResultHandler};
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
-use crate::ffi::anoncreds;
-use crate::ffi::{ResponseStringStringCB,
+use ffi::anoncreds;
+use ffi::{ResponseStringStringCB,
           ResponseI32UsizeCB,
           ResponseStringStringStringCB,
           ResponseStringCB,
           ResponseI32CB,
           ResponseEmptyCB,
           ResponseBoolCB};
-use crate::{CommandHandle, WalletHandle, SearchHandle, BlobStorageReaderHandle, TailsWriterHandle};
-use crate::ffi::BlobStorageReaderCfgHandle;
+use {CommandHandle, WalletHandle, SearchHandle, BlobStorageReaderHandle, TailsWriterHandle};
+use ffi::BlobStorageReaderCfgHandle;
 
 /*
 These functions wrap the Ursa algorithm as documented in this paper:

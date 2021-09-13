@@ -47,7 +47,7 @@ use std::ffi::CStr;
 
 use failure::{Backtrace, Fail};
 
-pub use crate::ffi::{
+pub use ffi::{
     RecordHandle,
     TailWriterHandle,
     BlobStorageReaderHandle,
