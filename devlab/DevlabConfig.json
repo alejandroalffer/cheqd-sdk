@@ -10,10 +10,7 @@
         "9701-9708:9701-9708",
         "5678-5679:5678-5679"
       ],
-      "run_opts": [
-        "-e",
-        "TAA_ENABLE=true"
-      ],
+      "run_opts": [],
       "post_up_scripts": ["/devlab/scripts/vdr_pool_health.py -w"],
       "status_script": "/devlab/scripts/vdr_pool_health.py"
     }
