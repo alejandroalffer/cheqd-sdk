@@ -212,7 +212,10 @@ impl CheqdPoolService {
 
         let mut resp: HttpResponse = client.send(req).await?;
         let resp_str = resp.body_string().await?;
-        let resp = R::Response::from_string(resp_str)?;
+        let resp = R::Response::from_string(resp_str).to_indy(
+            IndyErrorKind::InvalidStructure,
+            "Error was raised while converting tendermint_rpc::request::Request into string"
+        )?;
 
         Ok(resp)
     }

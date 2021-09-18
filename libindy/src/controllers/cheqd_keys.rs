@@ -48,7 +48,10 @@ impl CheqdKeysController {
         let key = self.cheqd_keys_service.new_random(&alias)?;
         self.store_key(wallet_handle, &key).await?;
         let key_info = self.cheqd_keys_service.get_info(&key)?;
-        let key_info = serde_json::to_string(&key_info)?;
+        let key_info = serde_json::to_string(&key_info).to_indy(
+            IndyErrorKind::InvalidState,
+            "Cannot serialize structure KeyInfo"
+        )?;
         trace!("add_random < {:?}", key_info);
         Ok(key_info)
     }
@@ -65,7 +68,10 @@ impl CheqdKeysController {
             .new_from_mnemonic(&alias, mnemonic)?;
         self.store_key(wallet_handle, &key).await?;
         let key_info = self.cheqd_keys_service.get_info(&key)?;
-        let key_info = serde_json::to_string(&key_info)?;
+        let key_info = serde_json::to_string(&key_info).to_indy(
+            IndyErrorKind::InvalidState,
+            "Cannot serialize structure KeyInfo"
+        )?;
         trace!("add_from_mnemonic < {:?}", key_info);
         Ok(key_info)
     }
@@ -74,7 +80,10 @@ impl CheqdKeysController {
         trace!("get_info > alias {:?}", alias);
         let key = self.load_key(wallet_handle, alias).await?;
         let key_info = self.cheqd_keys_service.get_info(&key)?;
-        let key_info = serde_json::to_string(&key_info)?;
+        let key_info = serde_json::to_string(&key_info).to_indy(
+            IndyErrorKind::InvalidState,
+            "Cannot serialize structure KeyInfo"
+        )?;
         trace!("get_info < {:?}", key_info);
         Ok(key_info)
     }
@@ -106,7 +115,10 @@ impl CheqdKeysController {
             keys.push(key_info);
         }
 
-        let result = serde_json::to_string(&keys)?;
+        let result = serde_json::to_string(&keys).to_indy(
+            IndyErrorKind::InvalidState,
+            "Cannot serialize structure KeyInfo"
+        )?;
 
         trace!("get_list_keys < {:?}", result);
 

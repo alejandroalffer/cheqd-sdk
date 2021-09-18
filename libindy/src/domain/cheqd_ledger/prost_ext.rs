@@ -1,4 +1,4 @@
-use indy_api_types::errors::IndyResult;
+use indy_api_types::errors::{IndyResult, IndyResultExt, IndyErrorKind};
 use prost::Message;
 
 pub trait ProstMessageExt {
@@ -14,7 +14,10 @@ impl<T> ProstMessageExt for T
 {
     fn to_bytes(&self) -> IndyResult<Vec<u8>> {
         let mut bytes = Vec::new();
-        Message::encode(self, &mut bytes)?;
+        Message::encode(self, &mut bytes).to_indy(
+            IndyErrorKind::InvalidStructure,
+            "Protobuf Message object cannot be encoded into the bytes vector"
+        )?;
         Ok(bytes)
     }
 
@@ -22,7 +25,11 @@ impl<T> ProstMessageExt for T
         where
             Self: Sized,
     {
-        Ok(Self::decode(bytes)?)
+        let decoded = Self::decode(bytes).to_indy(
+            IndyErrorKind::InvalidStructure,
+            "Protobuf Bytes cannot be decoded into the Message object"
+        )?;
+        Ok(decoded)
     }
 }
 

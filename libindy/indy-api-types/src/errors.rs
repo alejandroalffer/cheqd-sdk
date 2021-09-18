@@ -121,22 +121,6 @@ pub enum IndyErrorKind {
     PaymentExtraFunds,
     #[fail(display = "The transaction is not allowed to a requester")]
     TransactionNotAllowed,
-    #[fail(display = "ABCI error from tendermint endpoint")]
-    ABCIError,
-    #[fail(display = "Cosmos RPC error")]
-    CosmosRPCError,
-    #[fail(display = "Error from eyre Report")]
-    EyreError,
-    #[fail(display = "Signature error from k256")]
-    K256SignatureError,
-    #[fail(display = "Error while using serde module")]
-    SerdeJSONError,
-    #[fail(display = "Error from https client")]
-    HTTPClientError,
-    #[fail(display = "Protobuf encode error")]
-    ProstEncodeError,
-    #[fail(display = "Protobuf decode error")]
-    ProstDecodeError,
     #[fail(display = "Query account does not exist")]
     QueryAccountDoesNotexist,
 }
@@ -275,64 +259,35 @@ impl From<log::SetLoggerError> for IndyError {
 #[cfg(feature = "cheqd")]
 impl From<eyre::Report> for IndyError {
     fn from(err: eyre::Report) -> IndyError {
-        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::EyreError);
+        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::InvalidStructure);
         for err_item in err.chain().rev() {
             indy_error = indy_error.extend(err_item.to_string());
         }
-        indy_error
+        IndyError::from_msg(
+            IndyErrorKind::InvalidStructure,
+            format!("There was an error on the Cosmos side while requesting non-existing account. Errors are: {}",
+                    indy_error.to_string()).to_string())
     }
 }
 
-#[cfg(feature = "cheqd")]
-impl From<cosmrs::rpc::Error> for IndyError {
-    fn from(err: cosmrs::rpc::Error) -> Self {
-        err.context(IndyErrorKind::CosmosRPCError).into()
-    }
-}
-
+// This error is used only for converting string to Path object.
 #[cfg(feature = "cheqd")]
 impl From<cosmrs::tendermint::Error> for IndyError {
     fn from(err: cosmrs::tendermint::Error) -> Self {
-        err.into()
-    }
-}
-
-#[cfg(feature = "cheqd")]
-impl From<k256::ecdsa::Error> for IndyError {
-    fn from(err: k256::ecdsa::Error) -> Self {
-        err.context(IndyErrorKind::K256SignatureError).into()
-    }
-}
-
-#[cfg(feature = "cheqd")]
-impl From<serde_json::Error> for IndyError {
-    fn from(err: serde_json::Error) -> Self {
-        err.context(IndyErrorKind::SerdeJSONError).into()
+        IndyError::from_msg(
+            IndyErrorKind::InvalidStructure,
+            "There was an error while converting string into cosmrs::tendermint::abci::Path")
     }
 }
 
 #[cfg(feature = "cheqd")]
 impl From<http_client::http_types::Error> for IndyError {
     fn from(err: http_client::http_types::Error) -> Self {
-        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::HTTPClientError);
+        let mut indy_error: IndyError = IndyError::from(IndyErrorKind::IOError);
         for err_item in err.into_inner().chain().rev() {
             indy_error = indy_error.extend(err_item.to_string());
         }
         indy_error
-    }
-}
-
-#[cfg(feature = "cheqd")]
-impl From<prost::EncodeError> for IndyError {
-    fn from(err: prost::EncodeError) -> Self {
-        err.context(IndyErrorKind::ProstEncodeError).into()
-    }
-}
-
-#[cfg(feature = "cheqd")]
-impl From<prost::DecodeError> for IndyError {
-    fn from(err: prost::DecodeError) -> Self {
-        err.context(IndyErrorKind::ProstDecodeError).into()
     }
 }
 
@@ -427,13 +382,13 @@ impl From<sqlx::Error> for IndyError {
     }
 }
 
-// ToDo: For now we don't have any specified ABCI errors from tendermin endpoint and from cosmos too
+// ToDo: For now we don't have any specified ABCI errors from tendermint endpoint and from cosmos too
 // That's why we use this general approach.
 // But in the future, in case of adding special ABCI codes it has to be mapped into ErrorCodes.
 impl From<cosmrs::rpc::endpoint::broadcast::tx_commit::TxResult> for IndyError {
     fn from(result: cosmrs::rpc::endpoint::broadcast::tx_commit::TxResult) -> IndyError {
         IndyError::from_msg(
-            IndyErrorKind::ABCIError,
+            IndyErrorKind::InvalidStructure,
             format!(
                     "check_tx: error code: {}, log: {}",
                     result.code.value(),
@@ -551,14 +506,6 @@ impl From<IndyErrorKind> for ErrorCode {
             }
             IndyErrorKind::PaymentExtraFunds => ErrorCode::PaymentExtraFundsError,
             IndyErrorKind::TransactionNotAllowed => ErrorCode::TransactionNotAllowedError,
-            IndyErrorKind::ABCIError => ErrorCode::ABCIError,
-            IndyErrorKind::CosmosRPCError => ErrorCode::CosmosRPCError,
-            IndyErrorKind::EyreError => ErrorCode::EyreError,
-            IndyErrorKind::K256SignatureError => ErrorCode::K256SignatureError,
-            IndyErrorKind::SerdeJSONError => ErrorCode::SerdeJSONError,
-            IndyErrorKind::HTTPClientError => ErrorCode::HTTPClientError,
-            IndyErrorKind::ProstEncodeError => ErrorCode::ProstEncodeError,
-            IndyErrorKind::ProstDecodeError => ErrorCode::ProstDecodeError,
             IndyErrorKind::QueryAccountDoesNotexist => ErrorCode::QueryAccountDoesNotexistError,
         }
     }
