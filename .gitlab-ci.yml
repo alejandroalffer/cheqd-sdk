@@ -7,6 +7,7 @@ stages:
   - test
   - package
   - publish
+  - release
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -39,5 +40,4 @@ include:
   - '/ci/jobs/ios.yml'
   - '/ci/jobs/macos.yml'
   - '/ci/jobs/android.yml'
-
-
+  - '/ci/jobs/python-wrapper.yml'

@@ -435,7 +435,7 @@ async def parse_payment_response(payment_method: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("parse_payment_response: >>> wallet_handle: %r, payment_method: %r, resp_json: %r",
+    logger.debug("parse_payment_response: >>> payment_method: %r, resp_json: %r",
                  payment_method,
                  resp_json)
 
