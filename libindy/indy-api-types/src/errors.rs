@@ -273,7 +273,7 @@ impl From<eyre::Report> for IndyError {
 // This error is used only for converting string to Path object.
 #[cfg(feature = "cheqd")]
 impl From<cosmrs::tendermint::Error> for IndyError {
-    fn from() -> Self {
+    fn from(_err: cosmrs::tendermint::Error) -> Self {
         IndyError::from_msg(
             IndyErrorKind::InvalidStructure,
             "There was an error while converting string into cosmrs::tendermint::abci::Path")
