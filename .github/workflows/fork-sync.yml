@@ -9,10 +9,11 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Sync repo
+      - name: Checkout repo
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.GH_TOKEN }}
+      - Name: Sync repo with upstream
         run: |
           git remote -v
           git remote add upstream
