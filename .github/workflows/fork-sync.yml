@@ -11,9 +11,9 @@ jobs:
     steps:
       - name: Download repo
         uses: actions/checkout@v1
-          with:
-            repository: cheqd/cheqd-sdk
-            token: ${{ secrets.GH_TOKEN }}
+        with:
+          repository: cheqd/cheqd-sdk
+          token: ${{ secrets.GH_TOKEN }}
       - name: Sync fork
         run: |
           cd cheqd-sdk
