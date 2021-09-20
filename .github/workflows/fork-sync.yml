@@ -15,6 +15,7 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
       - name: Sync repo with upstream
         run: |
+          git --version
           git remote -v
           git remote add upstream https://gitlab.com/evernym/verity/vdr-tools.git
           git remote -v
