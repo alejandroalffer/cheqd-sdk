@@ -73,7 +73,7 @@ publish-vdr-tools-python-wrapper:
     - popd
   only:
     refs:
-      - main@evernym/verity/verity-sdk
+      - main@evernym/verity/vdr-tools
 
 release-vdr-tools-python-wrapper:
   stage: release
@@ -92,4 +92,4 @@ release-vdr-tools-python-wrapper:
     - popd
   only:
     refs:
-      - tags@evernym/verity/verity-sdk
+      - tags@evernym/verity/vdr-tools
