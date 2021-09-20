@@ -76,7 +76,7 @@ lexical-core = "0.7.6"
 cosmrs = { version = "0.1.0", features = ["rpc"] }
 k256 = { version = "0.9.6", features = ["ecdsa-core", "ecdsa"] }
 uuid = { version = "0.7.4", default-features = false, features = ["v4"] }
-ursa = { version = "0.3.6", optional = true, git = "https://github.com/hyperledger/ursa.git", branch = "main" }
+ursa = { version = "0.3.7", optional = true}
 prost = "0.7.0"
 prost-types = "0.7.0"
 
