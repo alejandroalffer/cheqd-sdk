@@ -10,6 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: anatawa12/fork-sync-all-branches@v1
-        with:
-          github_token: ${{ secrets.GH_TOKEN }}
+    steps:
+      - name: Sync fork
+        run: |
+          git clone https://oauth2:${{ secrets.GH_TOKEN }}@git@github.com:cheqd/cheqd-sdk.git
+          cd cheqd-sdk
+          git remote -v
+          git remote add upstream
+          git remote -v
+          git fetch upstream
+          git checkout cheqd
+          git merge upstream/cheqd
+          git push
