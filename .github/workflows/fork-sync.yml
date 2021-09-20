@@ -9,14 +9,11 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Download repo
-        uses: actions/checkout@v1
+      - name: Sync repo
+        uses: actions/checkout@v2
         with:
-          repository: cheqd/cheqd-sdk
           token: ${{ secrets.GH_TOKEN }}
-      - name: Sync fork
         run: |
-          cd cheqd-sdk
           git remote -v
           git remote add upstream
           git remote -v
