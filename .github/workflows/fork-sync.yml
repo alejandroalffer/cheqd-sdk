@@ -8,8 +8,6 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-
-    steps:
     steps:
       - name: Sync fork
         run: |
