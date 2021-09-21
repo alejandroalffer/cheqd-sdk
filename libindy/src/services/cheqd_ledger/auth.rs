@@ -60,7 +60,10 @@ impl CheqdLedgerService {
 
     fn build_signer_info(public_key: &str, sequence_number: u64) -> IndyResult<SignerInfo> {
         let public_key = rust_base58::FromBase58::from_base58(public_key)?;
-        let public_key = k256::ecdsa::VerifyingKey::from_sec1_bytes(&public_key)?;
+        let public_key = k256::ecdsa::VerifyingKey::from_sec1_bytes(&public_key).to_indy(
+            IndyErrorKind::InvalidStructure,
+            "Error was raised while creating verifying key object k256::ecdsa::VerifyingKey"
+        )?;
         let public_key: PublicKey = public_key.into();
 
         let signer_info = SignerInfo::single_direct(Some(public_key), sequence_number);

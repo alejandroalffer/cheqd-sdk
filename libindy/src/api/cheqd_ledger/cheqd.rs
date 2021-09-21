@@ -5,6 +5,19 @@ use libc::c_char;
 use crate::Locator;
 use crate::services::CommandMetric;
 
+/// Build MsgCreateNym
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// did: String with DID,
+/// creator: DID of a creator,
+/// verkey: string with verification key,
+/// alias: human representation of DID,
+/// role: role of this user,
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_cheqd_build_msg_create_nym(
     command_handle: CommandHandle,
@@ -69,6 +82,15 @@ pub extern "C" fn indy_cheqd_ledger_cheqd_build_msg_create_nym(
     res
 }
 
+/// Parse response after creating a NYM
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// commit_resp: Response after sending request for creating NYM
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_cheqd_parse_msg_create_nym_resp(
     command_handle: CommandHandle,
@@ -120,6 +142,20 @@ pub extern "C" fn indy_cheqd_ledger_cheqd_parse_msg_create_nym_resp(
     res
 }
 
+/// Build MsgUpdateNym
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// did: String with DID,
+/// creator: DID of a creator,
+/// verkey: string with verification key,
+/// alias: human representation of DID,
+/// role: role of this user,
+/// id: index of previously created NYM
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_cheqd_build_msg_update_nym(
     command_handle: CommandHandle,
@@ -184,6 +220,15 @@ pub extern "C" fn indy_cheqd_ledger_cheqd_build_msg_update_nym(
     res
 }
 
+/// Parse response after updating a NYM
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// commit_resp: Response after sending request for updating NYM
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_cheqd_parse_msg_update_nym_resp(
     command_handle: CommandHandle,
@@ -235,6 +280,16 @@ pub extern "C" fn indy_cheqd_ledger_cheqd_parse_msg_update_nym_resp(
     res
 }
 
+/// Build MsgDeleteNym
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// creator: DID of a creator,
+/// id: index of NYM for delete.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_cheqd_build_msg_delete_nym(
     command_handle: CommandHandle,
@@ -289,6 +344,15 @@ pub extern "C" fn indy_cheqd_ledger_cheqd_build_msg_delete_nym(
     res
 }
 
+/// Parse response after deleting a NYM
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// commit_resp: Response after sending request for deleting NYM
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_cheqd_parse_msg_delete_nym_resp(
     command_handle: CommandHandle,
@@ -340,6 +404,15 @@ pub extern "C" fn indy_cheqd_ledger_cheqd_parse_msg_delete_nym_resp(
     res
 }
 
+/// Build request for getting NYM
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// id: index of NYM for request
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_cheqd_build_query_get_nym(
     command_handle: CommandHandle,
@@ -378,6 +451,15 @@ pub extern "C" fn indy_cheqd_ledger_cheqd_build_query_get_nym(
     res
 }
 
+/// Parse response after sending request for getting NYM
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// query_resp: Response after sending request for getting NYM
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Success or error message.
 #[no_mangle]
 pub extern "C" fn indy_cheqd_ledger_cheqd_parse_query_get_nym_resp(
     command_handle: CommandHandle,
@@ -426,6 +508,7 @@ pub extern "C" fn indy_cheqd_ledger_cheqd_parse_query_get_nym_resp(
     debug!("indy_cheqd_ledger_cheqd_parse_query_get_nym_resp < {:?}", res);
     res
 }
+
 /// Builds a GET_ALL_NYM request.
 ///
 /// #Params

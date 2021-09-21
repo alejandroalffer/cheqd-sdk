@@ -143,3 +143,9 @@ package-libindy-ubuntu16:
   image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
   dependencies:
     - build-libindy-ubuntu16-release
+
+package-libindy-ubuntu18:
+  extends: .package-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-ubuntu18-release

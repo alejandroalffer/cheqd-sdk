@@ -1,5 +1,5 @@
 use indy_api_types::IndyError;
-use indy_api_types::errors::{IndyErrorKind, IndyResult};
+use indy_api_types::errors::{IndyErrorKind, IndyResult, IndyResultExt};
 use cosmrs::rpc;
 use prost::Message;
 
@@ -24,11 +24,15 @@ pub fn check_proofs(
     {
         ex
     } else {
+        let proof_op_1_str = serde_json::to_string(proof_op_1).to_indy(
+            IndyErrorKind::InvalidState,
+            "Cannot serialize object with proof for outer `ics23:simple` tendermint tree"
+        )?;
         return Err(IndyError::from_msg(
             IndyErrorKind::InvalidStructure,
             format!(
                 "Commitment proof has an incorrect format {}",
-                serde_json::to_string(proof_op_1)?
+                proof_op_1_str
             ),
         ));
     };
@@ -57,11 +61,15 @@ pub fn check_proofs(
     };
 
     if !is_proof_correct {
+        let proof_op_0_str = serde_json::to_string(proof_op_0).to_indy(
+            IndyErrorKind::InvalidState,
+            "Cannot serialize object with proof for inner ival tree"
+        )?;
         return Err(IndyError::from_msg(
             IndyErrorKind::InvalidStructure,
             format!(
                 "Commitment proof 0 is incorrect {}",
-                serde_json::to_string(proof_op_0)?
+                proof_op_0_str
             ),
         ));
     }
@@ -81,11 +89,15 @@ pub fn check_proofs(
         &proof_op_1.key, // key for the outer tree
         &proof_0_root, // inner tree root hash in the outer tree (should exist)
     ) {
+        let proof_op_1_str = serde_json::to_string(proof_op_1).to_indy(
+            IndyErrorKind::InvalidState,
+            "Cannot serialize object with proof for outer `ics23:simple` tendermint tree"
+        )?;
         return Err(IndyError::from_msg(
             IndyErrorKind::InvalidStructure,
             format!(
                 "Commitment proof 1 is incorrect {}",
-                serde_json::to_string(proof_op_1)?
+                proof_op_1_str
             ),
         ));
     }
