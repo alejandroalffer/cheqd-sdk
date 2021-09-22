@@ -351,8 +351,8 @@ impl NonSecretsController {
     }
 }
 
-#[serde(rename_all = "camelCase")]
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SearchRecords {
     pub total_count: Option<usize>,
     pub records: Option<Vec<WalletRecord>>,
