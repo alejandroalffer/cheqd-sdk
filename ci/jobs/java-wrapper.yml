@@ -1,7 +1,7 @@
 .test-libindy-java-wrapper:
   stage: test
   services:
-    - name: registry.gitlab.com/evernym/containers/indy-pool:1.9.2_1.0.2
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
