@@ -1,5 +1,5 @@
 use crate::controllers::CheqdLedgerController;
-use indy_api_types::errors::IndyResult;
+use indy_api_types::errors::{IndyResult, IndyErrorKind, IndyResultExt};
 use crate::domain::cheqd_ledger::cosmos_ext::{CosmosSignDocExt, CosmosMsgExt};
 use cosmrs::tx::Msg;
 use cosmrs::rpc::endpoint::abci_query::Response as QueryResponse;
@@ -49,7 +49,10 @@ impl CheqdLedgerController {
         let query = self
             .cheqd_ledger_service
             .auth_build_query_account(address)?;
-        let json = serde_json::to_string(&query)?;
+        let json = serde_json::to_string(&query).to_indy(
+            IndyErrorKind::InvalidState,
+            "Cannot serialize structure for Query account request"
+        )?;
         trace!("auth_build_query_account < {:?}", query);
         Ok(json)
     }
@@ -62,11 +65,17 @@ impl CheqdLedgerController {
             "auth_parse_query_account_resp > resp {:?}",
             resp_json
         );
-        let resp: QueryResponse = serde_json::from_str(resp_json)?;
+        let resp: QueryResponse = serde_json::from_str(resp_json).to_indy(
+            IndyErrorKind::InvalidStructure,
+            "Cannot deserialize Response for QueryAccount request"
+        )?;
         let result = self
             .cheqd_ledger_service
             .auth_parse_query_account_resp(&resp)?;
-        let json_result = serde_json::to_string(&result)?;
+        let json_result = serde_json::to_string(&result).to_indy(
+            IndyErrorKind::InvalidState,
+            "Cannot serialize QueryAccountResponse object after requesting QueryAccount object"
+        )?;
         trace!("auth_parse_query_account_resp < {:?}", json_result);
         Ok(json_result)
     }

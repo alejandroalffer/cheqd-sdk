@@ -5,6 +5,22 @@ use crate::Locator;
 use indy_utils::ctypes;
 use libc::c_char;
 
+/// Add information about pool
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// alias: name of a pool
+/// rpc_address: address for making remote calls
+/// chain_id: name of network
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - err: Error code.
+///   Structure with PoolInfo
+///
+/// #Errors
+/// Common*
 #[no_mangle]
 pub extern "C" fn indy_cheqd_pool_add(
     command_handle: CommandHandle,
@@ -60,6 +76,20 @@ pub extern "C" fn indy_cheqd_pool_add(
     res
 }
 
+/// Get pool config
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// alias: name of a pool
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - err: Error code.
+///   Structure with PoolInfo
+///
+/// #Errors
+/// Common*
 #[no_mangle]
 pub extern "C" fn indy_cheqd_pool_get_config(
     command_handle: CommandHandle,
@@ -155,6 +185,22 @@ pub extern "C" fn indy_cheqd_pool_get_all_config(
     res
 }
 
+/// Send broadcast transaction to the whole pool
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// pool_alias: name of a pool
+/// signed_tx_raw: signed transaction in the raw format
+/// signed_tx_len: length of signed transaction
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - err: Error code.
+///   Structure TxCommitResponse
+///
+/// #Errors
+/// Common*
 #[no_mangle]
 pub extern "C" fn indy_cheqd_pool_broadcast_tx_commit(
     command_handle: CommandHandle,
@@ -199,14 +245,14 @@ pub extern "C" fn indy_cheqd_pool_broadcast_tx_commit(
     };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, pool_info) = prepare_result!(res, String::new());
+        let (err, tx_commit_response) = prepare_result!(res, String::new());
         debug!(
             "indy_cheqd_pool_broadcast_tx_commit ? err {:?} tx_commit_response {:?}",
-            err, pool_info
+            err, tx_commit_response
         );
 
-        let pool_info = ctypes::string_to_cstring(pool_info);
-        cb(command_handle, err, pool_info.as_ptr())
+        let tx_commit_response = ctypes::string_to_cstring(tx_commit_response);
+        cb(command_handle, err, tx_commit_response.as_ptr())
     };
 
     locator
@@ -218,6 +264,21 @@ pub extern "C" fn indy_cheqd_pool_broadcast_tx_commit(
     res
 }
 
+/// Send general ABCI request
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// alias: name of a pool
+/// req_json: string of ABCI query in json format
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - err: Error code.
+///   SResponse with result of ABCI query
+///
+/// #Errors
+/// Common*
 #[no_mangle]
 pub extern "C" fn indy_cheqd_pool_abci_query(
     command_handle: CommandHandle,
@@ -266,6 +327,20 @@ pub extern "C" fn indy_cheqd_pool_abci_query(
     res
 }
 
+/// Request ABCI information
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// pool_alias: name of a pool
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - err: Error code.
+///   General response with information about pool state
+///
+/// #Errors
+/// Common*
 #[no_mangle]
 pub extern "C" fn indy_cheqd_pool_abci_info(
     command_handle: CommandHandle,

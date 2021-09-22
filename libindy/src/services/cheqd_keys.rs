@@ -3,7 +3,7 @@
 use cosmrs::crypto::secp256k1::EcdsaSigner;
 use cosmrs::crypto::secp256k1::SigningKey as CosmosSigningKey;
 use cosmrs::tx::{Raw, SignDoc};
-use indy_api_types::errors::IndyResult;
+use indy_api_types::errors::{IndyResult, IndyResultExt, IndyErrorKind};
 use k256::ecdsa::signature::rand_core::OsRng;
 use k256::ecdsa::SigningKey;
 use rand::rngs::StdRng;
@@ -21,7 +21,10 @@ impl CheqdKeysService {
     }
 
     fn bytes_to_signing_key(bytes: &[u8]) -> IndyResult<SigningKey> {
-        Ok(SigningKey::from_bytes(bytes)?)
+        Ok(SigningKey::from_bytes(bytes).to_indy(
+                IndyErrorKind::InvalidStructure,
+                "Error was raised while converting bytes of key into the k256::ecdsa::SigningKey object"
+            )?)
     }
 
     fn bytes_to_cosmos_signing_key(bytes: &[u8]) -> IndyResult<CosmosSigningKey> {
