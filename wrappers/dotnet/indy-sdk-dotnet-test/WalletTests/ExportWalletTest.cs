@@ -14,18 +14,20 @@ namespace Hyperledger.Indy.Test.WalletTests
         {
             await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             await wallet.ExportAsync(EXPORT_CONFIG_JSON);
-           
-            Assert.IsTrue(Directory.Exists(EXPORT_PATH));
+            Assert.IsTrue(File.Exists(EXPORT_PATH));
+            File.Delete(EXPORT_PATH);
         }
 
         [TestMethod]
         public async Task TestExportWalletWorksForExistsPath()
         {
-            Directory.CreateDirectory(EXPORT_PATH);
+            File.Create(EXPORT_PATH);
 
-            var ex = await Assert.ThrowsExceptionAsync<InvalidWalletException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
                 wallet.ExportAsync(EXPORT_CONFIG_JSON)
             );
+            
+            File.Delete(EXPORT_PATH);
         }
     }
 }

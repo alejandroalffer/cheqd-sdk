@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Hyperledger.Indy.Test.LedgerTests
 {
@@ -36,18 +37,25 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestBuildNymRequestWorksForOnlyOptionalFields()
         {
-            var expectedResult = string.Format("\"identifier\":\"{0}\"," +
-                    "\"operation\":{{" +
-                    "\"alias\":\"{1}\"," +
-                    "\"dest\":\"{2}\"," +
-                    "\"role\":\"2\"," + 
-                    "\"type\":\"1\"," +                    
-                    "\"verkey\":\"{3}\"" +
-                    "}}", DID, _alias, _dest, VERKEY_TRUSTEE);
+            // var expectedResult = string.Format("\"identifier\":\"{0}\"," +
+            //         "\"operation\":{{" +
+            //         "\"alias\":\"{1}\"," +
+            //         "\"dest\":\"{2}\"," +
+            //         "\"role\":\"2\"," + 
+            //         "\"type\":\"1\"," +                    
+            //         "\"verkey\":\"{3}\"" +
+            //         "}}", DID, _alias, _dest, VERKEY_TRUSTEE);
 
             var nymRequest = await Ledger.BuildNymRequestAsync(DID, _dest, VERKEY_TRUSTEE, _alias, _role);
 
-            Assert.IsTrue(nymRequest.Contains(expectedResult));
+            var jNymRequest = JObject.Parse(nymRequest);
+            
+            Assert.IsTrue(jNymRequest.GetValue("identifier").ToString().Equals(DID));
+            Assert.IsTrue(jNymRequest.GetValue("alias").ToString().Equals(_alias));
+            Assert.IsTrue(jNymRequest.GetValue("dest").ToString().Equals(_dest));
+            Assert.IsTrue(jNymRequest.GetValue("role").ToString().Equals("2"));
+            Assert.IsTrue(jNymRequest.GetValue("type").ToString().Equals("1"));
+            Assert.IsTrue(jNymRequest.GetValue("verkey").ToString().Equals(VERKEY_TRUSTEE));
         }
 
         [TestMethod]
