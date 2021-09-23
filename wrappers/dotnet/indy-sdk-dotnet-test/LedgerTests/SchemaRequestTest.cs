@@ -34,7 +34,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestBuildSchemaRequestWorksWithoutSignature()
         {
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(DID, SCHEMA_DATA);
@@ -43,7 +42,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestSchemaRequestWorks()
         {
             await PostEntitiesAsync();

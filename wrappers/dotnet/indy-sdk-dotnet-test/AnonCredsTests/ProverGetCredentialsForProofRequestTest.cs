@@ -214,7 +214,6 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestProverGetCredentialsForProofRequestWorksForEmptyRequest()
         {
             var proofRequest = "{\"nonce\":\"123432421212\"," +

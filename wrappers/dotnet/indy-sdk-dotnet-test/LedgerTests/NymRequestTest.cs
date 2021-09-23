@@ -35,7 +35,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
         } 
 
         [TestMethod]
-        [Ignore]
         public async Task TestBuildNymRequestWorksForOnlyOptionalFields()
         {
             // var expectedResult = string.Format("\"identifier\":\"{0}\"," +
@@ -70,7 +69,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestBuildGetNymRequestWorksForDefaultSubmitter()
         {
              await Ledger.BuildGetNymRequestAsync(null, _dest);
@@ -104,7 +102,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestSendNymRequestsWorksForOptionalFields()
         {
             var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
@@ -155,7 +152,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestSendNymRequestsWorksForUnknownSigner()
         {
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee9\"}";
@@ -171,7 +167,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestNymRequestsWorks()
         {
             var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);

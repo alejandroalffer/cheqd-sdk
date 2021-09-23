@@ -9,7 +9,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
     public class PoolConfigRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
     {
         [TestMethod]
-        [Ignore]
         public async Task TestBuildPoolConfigRequestWorks()
         {
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +

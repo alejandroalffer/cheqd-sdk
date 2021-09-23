@@ -18,7 +18,6 @@ namespace Hyperledger.Indy.Test.DidTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestGetEndpointForDidWorksFromLedger()
         {
             var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
@@ -36,7 +35,6 @@ namespace Hyperledger.Indy.Test.DidTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestGetEndpointForDidWorksForUnknownDid()
         {
             var ex = await Assert.ThrowsExceptionAsync<InvalidStateException>(() =>

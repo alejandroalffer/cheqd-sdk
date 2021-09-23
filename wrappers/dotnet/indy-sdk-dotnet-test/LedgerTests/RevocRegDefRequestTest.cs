@@ -9,7 +9,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
     public class RevocRegDefRequestTest : LedgerIntegrationTestBase
     {
         [TestMethod]
-        [Ignore]
         public async Task TestBuildRevocRegDefRequestWorks()
         {
             var expectedResult =
