@@ -59,6 +59,7 @@ test-libindy-dotnet-wrapper-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
+  allow_failure: true
 
 # - Jobs : Publish - ##
 publish-libindy-dotnet-wrapper:
