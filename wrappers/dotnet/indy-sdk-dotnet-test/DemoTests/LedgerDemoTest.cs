@@ -13,6 +13,7 @@ namespace Hyperledger.Indy.Test.DemoTests
     public class LedgerDemoTest : IndyIntegrationTestBase
     {
         [TestMethod]
+        [Ignore]
         public async Task TestLedgerDemo()
         {
             // 1. Create ledger config from genesis txn file

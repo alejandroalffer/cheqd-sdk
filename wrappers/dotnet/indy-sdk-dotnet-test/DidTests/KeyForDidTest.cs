@@ -23,6 +23,7 @@ namespace Hyperledger.Indy.Test.DidTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestKeyForDidWorksForTheirDid()
         {
             var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, DID_MY1, VERKEY_MY1);
@@ -34,6 +35,7 @@ namespace Hyperledger.Indy.Test.DidTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestKeyForDidWorksForGetKeyFromLedger()
         {
             var result = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);

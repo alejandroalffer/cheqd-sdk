@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <AssemblyName>Hyperledger.Indy.Sdk.Test</AssemblyName>
     <RootNamespace>Hyperledger.Indy.Test</RootNamespace>
     <StartupObject>Hyperledger.Indy.Test.Program</StartupObject>
