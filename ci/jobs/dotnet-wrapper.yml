@@ -67,7 +67,7 @@ publish-libindy-dotnet-wrapper:
   extends: .net-common
   only:
     refs:
-      - main@evernym/verity/verity-sdk
+      - main@evernym/verity/vdr-tools
   script:
     - pushd wrappers/dotnet/indy-sdk-dotnet
     - ../ci/publish.sh
@@ -84,4 +84,4 @@ release-libindy-dotnet-wrapper:
     - popd
   only:
     refs:
-      - tags@evernym/verity/verity-sdk
+      - tags@evernym/verity/vdr-tools
