@@ -19,6 +19,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
         
         [TestMethod]
+        [Ignore]
         public async Task TestSubmitActionWorksForGetValidatorInfo()
         {
             var getValidatorInfoRequest = await Ledger.BuildGetValidatorInfoRequestAsync(did);
@@ -27,6 +28,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestSubmitActionWorksForPoolRestart()
         {
             var poolRestartRequest = await Ledger.BuildPoolRestartRequestAsync(did, "cancel", null);

@@ -80,7 +80,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
 
             await Crypto.CreateKeyAsync(wallet, MY1_IDENTITY_KEY_JSON);
 
-            await Assert.ThrowsExceptionAsync<InvalidStructureException>(async () => await Crypto.PackMessageAsync(
+            await Assert.ThrowsExceptionAsync<InvalidParameterException>(async () => await Crypto.PackMessageAsync(
                 wallet, receiversArray.ToString(), null, Encoding.UTF8.GetBytes(message)));
         }
 
@@ -101,7 +101,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
         public async Task TestUnpackMessageErrorsWithInvalidStructure()
         {
             const string packedMessage = "gibberish";
-            await Assert.ThrowsExceptionAsync<InvalidStructureException>(async () => await Crypto.UnpackMessageAsync(
+            await Assert.ThrowsExceptionAsync<InvalidParameterException>(async () => await Crypto.UnpackMessageAsync(
                 wallet, Encoding.UTF8.GetBytes(packedMessage)));
         }
 

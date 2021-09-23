@@ -14,6 +14,7 @@ namespace Hyperledger.Indy.Test.DidTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestSetEndpointForDidWorksForReplace()
         {
             await Did.SetEndpointForDidAsync(wallet, DID, ENDPOINT, VERKEY);
