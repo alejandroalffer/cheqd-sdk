@@ -66,4 +66,4 @@ release-libindy-java-wrapper:
     refs:
       - tags@evernym/verity/vdr-tools
   script:
-    - wrappers/java/ci/publish.sh
+    - wrappers/java/ci/release.sh
