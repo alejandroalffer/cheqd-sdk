@@ -2,32 +2,25 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.hyperledger</groupId>
-	<artifactId>indy</artifactId>
+	<groupId>com.evernym.vdrtools</groupId>
+	<artifactId>vdr-tools</artifactId>
 	<packaging>jar</packaging>
-	<version>1.15.0</version>
-	<name>indy</name>
-	<description>This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects),
-		which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org).
-		The major artifact of the SDK is a c-callable library.
+	<version>0.0.1</version>
+	<name>VDR Tools</name>
+	<description>The official Java Wrapper for Evernym VDR Tools. Currently under construction.
 	</description>
 	<licenses>
 		<license>
-			<name>MIT/Apache-2.0</name>
+			<name>Apache-2.0</name>
 			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
 
-	<issueManagement>
-		<url>https://github.com/hyperledger/indy-sdk/issues</url>
-		<system>GitHub Issues</system>
-	</issueManagement>
-
 	<scm>
-		<url>https://github.com/hyperledger/indy-sdk</url>
-		<connection>scm:git:git://github.com/hyperledger/indy-sdk.git</connection>
-		<developerConnection>scm:git:git@github.com:hyperledger/indy-sdk.git</developerConnection>
+		<url>https://github.com/evernym/vdr-tools</url>
+		<connection>scm:git:git://github.com/evernym/vdr-tools.git</connection>
+		<developerConnection>scm:git:git://github.com/evernym/vdr-tools.git</developerConnection>
 	</scm>
 
 	<properties>

@@ -2,7 +2,7 @@
   "name": "@evernym/vdr-tools",
   "author": "Evernym, Inc. <dev@evernym.com>",
   "version": "0.0.1",
-  "description": "Native bindings for vdr tools",
+  "description": "Native bindings for vdr tools. Currently under construction.",
   "author": "Evernym",
   "license": "Apache-2.0",
   "repository": {
