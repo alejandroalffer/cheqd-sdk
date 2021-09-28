@@ -4,8 +4,8 @@
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>VDR.Tools</AssemblyName>
     <RootNamespace>VDR.Tools</RootNamespace>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <Version>0.0.1</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>0.0.0</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Authors>Evernym</Authors>
     <Company>Evernym</Company>
@@ -19,8 +19,8 @@ Please note that to function the C-Callable library and its dependencies must be
     <PackageTags>Evernym</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageIconUrl></PackageIconUrl>
-    <AssemblyVersion>0.0.1</AssemblyVersion>
-    <FileVersion>0.0.1</FileVersion>
+    <AssemblyVersion>0.0.0-SNAPSHOT</AssemblyVersion>
+    <FileVersion>0.0.0-SNAPSHOT</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup>

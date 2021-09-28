@@ -1,0 +1,74 @@
+.dockerbuild-libindy:
+  extends: .kaniko_large
+  variables:
+    KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
+    - if: $CI_COMMIT_REF_NAME == "docker-.*" || $CI_COMMIT_REF_NAME == "android-.*"
+      when: always
+
+.build-libindy:
+  extends: .tags_compute_xlarge
+  stage: build
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - libindy/target/${BUILD_TYPE}/libindy.so
+      - libnullpay/target/${BUILD_TYPE}/libnullpay.so
+      - cli/target/${BUILD_TYPE}/indy-cli
+  services:
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
+      alias: pool_network
+  timeout: 3h
+  script:
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    # - libindy/ci/scripts/lint.sh
+    # - cli/ci/scripts/lint.sh
+    - libindy/ci/scripts/build.sh ${BUILD_TYPE}
+    - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+#    - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
+#    - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+#    - cli/ci/scripts/build.sh ${BUILD_TYPE}
+#    - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
+
+.package-libindy:
+  extends: .tags_large
+  stage: package
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - libindy/target/debian/*.deb
+      - libnullpay/target/debian/*.deb
+      - cli/target/debian/*.deb
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
+  script:
+    - libindy/ci/scripts/package.sh ${CI_PIPELINE_IID}
+#    - libnullpay/ci/scripts/package.sh ${CI_PIPELINE_IID}
+#    - cli/ci/scripts/package.sh ${CI_PIPELINE_IID}
+
+publish-libindy:
+  extends: .tags_large
+  stage: publish
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - package-libindy-ubuntu16
+    - package-libindy-ubuntu18
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
+      when: always
+  script:
+    - mkdir -p ${CI_PROJECT_DIR}/output
+    - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output
+#    - cp libnullpay/target/debian/*.deb ${CI_PROJECT_DIR}/output
+#    - cp cli/target/debian/*.deb ${CI_PROJECT_DIR}/output
+    - ls -al ${CI_PROJECT_DIR}/output/
+    - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" vdr-tools*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" vdr-tools*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+#    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+#    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+#    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+#    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload

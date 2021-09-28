@@ -8,6 +8,11 @@
     - docker-machine
     - micro
 
+.tags_large:
+  tags:
+    - docker-machine
+    - micro
+
 .kaniko_micro:
   extends: .tags_micro
   image:

@@ -15,7 +15,7 @@
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/python/lib
-    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/python/lib
+#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/python/lib
     - wrappers/python/ci/test.sh ${TEST_POOL_IP}
 
 test-vdr-tools-python-wrapper-from-branch:
