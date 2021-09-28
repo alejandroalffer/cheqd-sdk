@@ -45,3 +45,4 @@ include:
   - '/ci/jobs/android.yml'
   - '/ci/jobs/nodejs-wrapper.yml'
   - '/ci/jobs/python-wrapper.yml'
+  - '/ci/jobs/libindy.yml'

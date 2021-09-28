@@ -9,7 +9,7 @@
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/nodejs/lib
-    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/nodejs/lib
+#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/nodejs/lib
     - wrappers/nodejs/ci/test.sh ${TEST_POOL_IP}
 
 test-vdr-tools-nodejs-wrapper-from-branch:

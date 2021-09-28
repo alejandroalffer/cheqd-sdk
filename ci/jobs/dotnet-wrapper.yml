@@ -17,7 +17,7 @@
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/dotnet/lib
-    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/dotnet/lib
+#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/dotnet/lib
     - wrappers/dotnet/ci/test.sh ${TEST_POOL_IP}
 
 test-libindy-dotnet-wrapper-from-branch:
