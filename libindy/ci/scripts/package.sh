@@ -12,11 +12,6 @@ BUILD_NUM=$1
 
 set -eux
 
-ls -a
-pwd
-ls libindy/
-ls /builds/evernym/verity/vdr-tools/libindy/target/debug/
-
 PACKAGE_TYPE=$(lsb_release -cs)
 # REVISION=$(git rev-parse HEAD | cut -c 1-7)
 VERSION=${CI_COMMIT_TAG:-0.0.1}~${BUILD_NUM}-${PACKAGE_TYPE}  # TODO: Autodetect main part
