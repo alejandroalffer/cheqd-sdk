@@ -1,14 +1,4 @@
 #!/bin/bash
-
-if [ $# -ne 2 ]
-  then
-    echo "ERROR: Incorrect number of arguments"
-    echo "Usage:"
-    echo "$0 <branch> <pipeline uid>"
-    exit 1
-fi
-
-
 function release() {
   MODULE_DIR=$1
 
