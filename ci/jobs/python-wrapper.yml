@@ -84,7 +84,7 @@ release-vdr-tools-python-wrapper:
   script:
     - pushd wrappers/python
     - export RELEASE_VERSION=`echo $CI_COMMIT_TAG | cut -c2-`                   # pull version from tag name
-    - echo "VERSION = '$RELEASE_VERSION'" > wrappers/python/version.py               # set version to tagged version
+    - echo "VERSION = '$RELEASE_VERSION'" > version.py               # set version to tagged version
     - echo "$RELEASE_VERSION"
     - pip3 install --upgrade keyrings.alt
     - python3 setup.py sdist
