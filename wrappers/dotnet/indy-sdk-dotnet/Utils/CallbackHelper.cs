@@ -1,4 +1,6 @@
 ﻿using System.Threading.Tasks;
+using System;
+using System.Runtime.InteropServices;
 
 #if __IOS__
 using ObjCRuntime;
@@ -8,6 +10,26 @@ namespace Hyperledger.Indy.Utils
 {
     internal static class CallbackHelper
     {
+        [DllImport(Consts.NATIVE_LIB_NAME)]
+        internal static extern void indy_get_current_error(out IntPtr s);
+
+        /// <summary>
+        /// Retrieves the most recent Indy error message.
+        /// </summary>
+        internal static string GetCurrentError()
+        {
+            IntPtr s = IntPtr.Zero;
+            indy_get_current_error(out s);
+            if (s == IntPtr.Zero) 
+            {
+                return "Error retrieving Indy error message";
+            }
+            else 
+            {
+                return Marshal.PtrToStringAnsi((IntPtr)s);
+            }
+        }
+
         /// <summary>
         /// Delegate for callbacks that only include the success or failure of command execution.
         /// </summary>
@@ -52,7 +74,7 @@ namespace Hyperledger.Indy.Utils
         public static void CheckResult(int result)
         {
             if (result != (int)ErrorCode.Success)
-                throw IndyException.FromSdkError(result);
+                throw new IndyException(GetCurrentError(), result);
         }
 
         /// <summary>
@@ -67,7 +89,7 @@ namespace Hyperledger.Indy.Utils
         {
             if (errorCode != (int)ErrorCode.Success)
             {
-                taskCompletionSource.SetException(IndyException.FromSdkError(errorCode));
+                taskCompletionSource.SetException(new IndyException(GetCurrentError(), errorCode));
                 return false;
             }
 
@@ -82,7 +104,7 @@ namespace Hyperledger.Indy.Utils
         public static void CheckCallback(int errorCode)
         {
             if (errorCode != (int)ErrorCode.Success)
-                throw IndyException.FromSdkError(errorCode);
+                throw new IndyException(GetCurrentError(), errorCode);
         }
     }
 }
