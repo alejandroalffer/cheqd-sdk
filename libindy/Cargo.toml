@@ -1,11 +1,11 @@
 [package]
-name = "libindy"
-version = "1.95.0"
-authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
+name = "vdr-tools"
+version = "0.0.1"
+authors = ["Evernym"]
 edition = "2018"
 
-description = "This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects), which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org). The major artifact of the SDK is a c-callable library."
-license = "MIT/Apache-2.0"
+description = "A library that facilitates building standards compliant and interoperable solutions for self-sovereign identity by abstracting the operations for interacting with a verifiable data registry as defined by Hyperledger Aries."
+license = "Apache-2.0"
 build = "build.rs"
 
 [lib]
@@ -107,35 +107,35 @@ priority = "optional"
 maintainer-scripts = "./debian"
 changelog = "./debian/changelog"
 
-[package.metadata.deb.variants.libindy-xenial]
-provides = "libindy (= 1.95.0)"
-name = "libindy"
+[package.metadata.deb.variants.vdr-tools-xenial]
+provides = "vdr-tools (= 0.0.1)"
+name = "vdr-tools"
 depends = "libzmq5, libsodium18, libssl1.0.0"
 assets = [
     ["target/release/libindy.so", "usr/lib/", "644"],
 ]
 
-[package.metadata.deb.variants.libindy-bionic]
-provides = "libindy (= 1.95.0)"
-name = "libindy"
+[package.metadata.deb.variants.vdr-tools-bionic]
+provides = "vdr-tools (= 0.0.1)"
+name = "vdr-tools"
 depends = "libzmq5, libsodium23, libssl1.1"
 assets = [
     ["target/release/libindy.so", "usr/lib/", "644"],
 ]
 
-[package.metadata.deb.variants.libindy-dev-xenial]
-provides = "libindy-dev (= 1.95.0)"
-name = "libindy-dev"
-depends = "libindy (= 1.95.0)"
+[package.metadata.deb.variants.vdr-tools-dev-xenial]
+provides = "vdr-tools-dev (= 0.0.1)"
+name = "vdr-tools-dev"
+depends = "vdr-tools (= 0.0.1)"
 assets = [
     ["include/*.h", "usr/include/indy/", "644"],
     ["target/release/libindy.a", "usr/lib/", "644"],
 ]
 
-[package.metadata.deb.variants.libindy-dev-bionic]
-provides = "libindy-dev (= 1.95.0)"
-name = "libindy-dev"
-depends = "libindy (= 1.95.0)"
+[package.metadata.deb.variants.vdr-tools-dev-bionic]
+provides = "vdr-tools-dev (= 0.0.1)"
+name = "vdr-tools-dev"
+depends = "vdr-tools (= 0.0.1)"
 assets = [
     ["include/*.h", "usr/include/indy/", "644"],
     ["target/release/libindy.a", "usr/lib/", "644"],

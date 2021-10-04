@@ -14,14 +14,7 @@ set -eux
 
 PACKAGE_TYPE=$(lsb_release -cs)
 # REVISION=$(git rev-parse HEAD | cut -c 1-7)
-VERSION=1.95.0~${BUILD_NUM}-${PACKAGE_TYPE}  # TODO: Autodetect main part
-
+VERSION=${CI_COMMIT_TAG:-0.0.1}~${BUILD_NUM}-${PACKAGE_TYPE}  # TODO: Autodetect main part
 pushd libindy
-cp Cargo.toml Cargo.toml.backup
-sed -i -E -e "/provides = \"libindy \(= [(,),0-9,.]+\)\"/a conflicts = \"libindy\"" Cargo.toml
-sed -i -E -e "s/provides = \"libindy \(= [(,),0-9,.]+\)\"/provides = \"libindy \(= ${VERSION}\)\"/g" Cargo.toml
-sed -i -E -e "s/name = \"libindy\"/name = \"libindy-async\"/g" Cargo.toml
-sed -i -E -e "/maintainer-scripts = \".\/debian\"/d" Cargo.toml
-cargo deb --no-build --deb-version ${VERSION} --variant libindy-${PACKAGE_TYPE}
-mv -f Cargo.toml.backup Cargo.toml
+cargo deb --no-build --deb-version ${VERSION} --variant vdr-tools-${PACKAGE_TYPE}
 popd

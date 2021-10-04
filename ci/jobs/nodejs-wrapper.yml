@@ -9,7 +9,7 @@
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/nodejs/lib
-    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/nodejs/lib
+#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/nodejs/lib
     - wrappers/nodejs/ci/test.sh ${TEST_POOL_IP}
 
 test-vdr-tools-nodejs-wrapper-from-branch:
@@ -75,7 +75,7 @@ release-vdr-tools-nodejs-wrapper:
   image: registry.gitlab.com/evernym/containers/build-verity-sdk:134b350a
   script:
     - pushd wrappers/nodejs
-    - sed -i 's!@evernym/cdr-tools!cdr-tools!' package.json
+    - sed -i 's!@evernym/vdr-tools!vdr-tools!' package.json
     - export RELEASE_VERSION=`echo $CI_COMMIT_TAG | cut -c2-`                       # pull version from tag name
     - npm version --no-git-tag-version $RELEASE_VERSION                             # set version to tagged version
     - echo '//registry.npmjs.org/:_authToken=${NPM_AUTH_TOKEN}' > .npmrc            # set rc file to use auth token
