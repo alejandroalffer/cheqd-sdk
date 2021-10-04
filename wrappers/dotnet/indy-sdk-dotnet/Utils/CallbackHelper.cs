@@ -1,6 +1,8 @@
 ﻿using System.Threading.Tasks;
 using System;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 #if __IOS__
 using ObjCRuntime;
@@ -26,7 +28,9 @@ namespace Hyperledger.Indy.Utils
             }
             else 
             {
-                return Marshal.PtrToStringAnsi((IntPtr)s);
+                var json = Marshal.PtrToStringAnsi((IntPtr)s);
+                var obj = JObject.Parse(json);
+                return obj["message"].ToString();
             }
         }
 
