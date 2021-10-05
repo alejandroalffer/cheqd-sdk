@@ -1,5 +1,5 @@
 [package]
-name = "vdr-tools"
+name = "libvdrtools"
 version = "0.0.1"
 authors = ["Evernym"]
 edition = "2018"
@@ -107,35 +107,35 @@ priority = "optional"
 maintainer-scripts = "./debian"
 changelog = "./debian/changelog"
 
-[package.metadata.deb.variants.vdr-tools-xenial]
-provides = "vdr-tools (= 0.0.1)"
-name = "vdr-tools"
+[package.metadata.deb.variants.libvdrtools-xenial]
+provides = "libvdrtools (= 0.0.1)"
+name = "libvdrtools"
 depends = "libzmq5, libsodium18, libssl1.0.0"
 assets = [
     ["target/release/libindy.so", "usr/lib/", "644"],
 ]
 
-[package.metadata.deb.variants.vdr-tools-bionic]
-provides = "vdr-tools (= 0.0.1)"
-name = "vdr-tools"
+[package.metadata.deb.variants.libvdrtools-bionic]
+provides = "libvdrtools (= 0.0.1)"
+name = "libvdrtools"
 depends = "libzmq5, libsodium23, libssl1.1"
 assets = [
     ["target/release/libindy.so", "usr/lib/", "644"],
 ]
 
-[package.metadata.deb.variants.vdr-tools-dev-xenial]
-provides = "vdr-tools-dev (= 0.0.1)"
-name = "vdr-tools-dev"
-depends = "vdr-tools (= 0.0.1)"
+[package.metadata.deb.variants.libvdrtools-dev-xenial]
+provides = "libvdrtools-dev (= 0.0.1)"
+name = "libvdrtools-dev"
+depends = "libvdrtools (= 0.0.1)"
 assets = [
     ["include/*.h", "usr/include/indy/", "644"],
     ["target/release/libindy.a", "usr/lib/", "644"],
 ]
 
-[package.metadata.deb.variants.vdr-tools-dev-bionic]
-provides = "vdr-tools-dev (= 0.0.1)"
-name = "vdr-tools-dev"
-depends = "vdr-tools (= 0.0.1)"
+[package.metadata.deb.variants.libvdrtools-dev-bionic]
+provides = "libvdrtools-dev (= 0.0.1)"
+name = "libvdrtools-dev"
+depends = "libvdrtools (= 0.0.1)"
 assets = [
     ["include/*.h", "usr/include/indy/", "644"],
     ["target/release/libindy.a", "usr/lib/", "644"],
