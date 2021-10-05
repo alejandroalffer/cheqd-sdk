@@ -212,6 +212,20 @@ public abstract class LibIndy {
 		int indy_set_runtime_config(String config);
 		int indy_get_current_error(PointerByReference error);
 
+
+
+		// VDR calls
+		// TODO this functions are not implemented yet
+		int indy_vdr_register_indy_ledger(int command_handle, String namespace_list, String genesis_txn_data, String taa_config, Callback cb);
+		int indy_vdr_register_cheqd_ledger(int command_handle, String namespace_list, String chain_id, String node_addrs_list, Callback cb);
+		int indy_vdr_ping(int command_handle, String namespace_list, Callback cb);
+		int indy_vdr_cleanup(int command_handle, Callback cb);
+
+		int indy_vdr_resolve_did(int command_handle, String fqdid, String cache_options, Callback cb);
+		int indy_vdr_resolve_schema(int command_handle, String fqschema, String cache_options, Callback cb);
+		int indy_vdr_resolve_cred_def(int command_handle, String fqcreddef, String cache_options, Callback cb);
+
+
 		interface BoolCallback extends Callback {
 			void callback(int xcommand_handle, int err, IndyBool valid);
 		}
