@@ -1,5 +1,5 @@
 {
-  "name": "@evernym/libvdrtools",
+  "name": "@evernym/vdr-tools",
   "author": "Evernym, Inc. <dev@evernym.com>",
   "version": "0.0.0-SNAPSHOT",
   "description": "Native bindings for vdr tools. Currently under construction.",

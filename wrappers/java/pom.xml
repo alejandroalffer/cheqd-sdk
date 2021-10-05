@@ -3,7 +3,7 @@
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.evernym.vdrtools</groupId>
-	<artifactId>libvdrtools</artifactId>
+	<artifactId>vdr-tools</artifactId>
 	<packaging>jar</packaging>
 	<version>0.0.1</version>
 	<name>VDR Tools</name>

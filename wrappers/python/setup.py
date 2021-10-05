@@ -6,7 +6,7 @@ TEST_DEPS = [
 ]
 
 setup(
-    name='libvdrtools',
+    name='vdr-tools',
     version=VERSION,
     packages=['indy'],
     url='https://github.com/evernym/vdr-tools',
