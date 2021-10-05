@@ -1,5 +1,5 @@
 ﻿using System;
-using VDR.Tools.Logging;
+using Hyperledger.Indy.Logging;
 using static Hyperledger.Indy.Utils.NativeMethods;
 
 #if __IOS__
