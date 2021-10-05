@@ -25,7 +25,7 @@ variables:
   indyFullDebVersion: "1.16.0~170" # DEB package name
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
-  DEV_BASE_VERSION: "0.0.1"
+  DEV_BASE_VERSION: "0.0.2"
   DEV_VERSION: '$DEV_BASE_VERSION-$CI_PIPELINE_IID'
 
 workflow:
