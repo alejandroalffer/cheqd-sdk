@@ -5,12 +5,10 @@
     /// </summary>
     public class PoolLedgerTerminatedException : IndyException
     {
-        const string message = "The pool ledger was terminated.";
-
         /// <summary>
         /// Initializes a new PoolLedgerTerminatedException.
         /// </summary>
-        internal PoolLedgerTerminatedException() : base(message, (int)ErrorCode.PoolLedgerTerminated)
+        internal PoolLedgerTerminatedException(string message) : base(message, (int)ErrorCode.PoolLedgerTerminated)
         {
 
         }

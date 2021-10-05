@@ -5,12 +5,10 @@
     /// </summary>
     public class CredentialRevokedException : IndyException
     {
-        const string message = "The credential has been revoked.";
-
         /// <summary>
         /// Initializes a new CredentialRevokedException.
         /// </summary>
-        internal CredentialRevokedException() : base(message, (int)ErrorCode.AnoncredsCredentialRevoked)
+        internal CredentialRevokedException(string message) : base(message, (int)ErrorCode.AnoncredsCredentialRevoked)
         {
 
         }

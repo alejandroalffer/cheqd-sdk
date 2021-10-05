@@ -5,12 +5,10 @@
     /// </summary>
     public class PoolIncompatibleProtocolVersionException : IndyException
     {
-        const string message = "The pool genesis transactions are not compatible with protocol version.";
-
         /// <summary>
         /// Initializes a new PoolIncompatibleProtocolVersionException.
         /// </summary>
-        internal PoolIncompatibleProtocolVersionException() : base(message, (int)ErrorCode.PoolIncompatibleProtocolVersionError)
+        internal PoolIncompatibleProtocolVersionException(string message) : base(message, (int)ErrorCode.PoolIncompatibleProtocolVersionError)
         {
 
         }

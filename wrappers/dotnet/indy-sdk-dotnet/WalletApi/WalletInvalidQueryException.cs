@@ -5,12 +5,10 @@
     /// </summary>
     public class WalletInvalidQueryException : IndyException
     {
-        const string message = "The wallet query provided was invalid.";
-
         /// <summary>
         /// Initializes a new WalletInvalidQueryException.
         /// </summary>
-        internal WalletInvalidQueryException() : base(message, (int)ErrorCode.WalletQueryError)
+        internal WalletInvalidQueryException(string message) : base(message, (int)ErrorCode.WalletQueryError)
         {
 
         }
