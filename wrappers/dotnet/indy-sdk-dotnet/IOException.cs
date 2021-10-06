@@ -5,12 +5,10 @@
     /// </summary>
     public class IOException : IndyException
     {
-        const string message = "An IO error occurred.";
-
         /// <summary>
         /// Initializes a new IOException.
         /// </summary>
-        internal IOException() : base(message, (int)ErrorCode.CommonIOError)
+        internal IOException(string message) : base(message, (int)ErrorCode.CommonIOError)
         {
 
         }
