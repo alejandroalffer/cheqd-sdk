@@ -1,7 +1,7 @@
 #![warn(dead_code)]
 
 use crate::{ErrorCode, IndyError};
-use crate::ffi::{WalletHandle, CommandHandle};
+use crate::ffi::{VdrHandle, WalletHandle, CommandHandle};
 
 use libc::c_char;
 
@@ -17,6 +17,7 @@ lazy_static! {
     static ref CALLBACKS_SLICE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<Vec<u8>, IndyError>>>> = Default::default();
     static ref CALLBACKS_HANDLE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<CommandHandle, IndyError>>>> = Default::default();
     static ref CALLBACKS_WALLETHANDLE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<WalletHandle, IndyError>>>> = Default::default();
+    static ref CALLBACKS_VDRHANDLE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<VdrHandle, IndyError>>>> = Default::default();
     static ref CALLBACKS_BOOL: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<bool, IndyError>>>> = Default::default();
     static ref CALLBACKS_STR_SLICE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, Vec<u8>), IndyError>>>> = Default::default();
     static ref CALLBACKS_HANDLE_USIZE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(CommandHandle, usize), IndyError>>>> = Default::default();
@@ -69,6 +70,8 @@ impl ClosureHandler {
     cb_ec!(cb_ec_handle(handle:CommandHandle)->CommandHandle, CALLBACKS_HANDLE, handle);
 
     cb_ec!(cb_ec_wallethandle(handle:WalletHandle)->WalletHandle, CALLBACKS_WALLETHANDLE, handle);
+
+    cb_ec!(cb_ec_vdrhandle(handle:VdrHandle)->VdrHandle, CALLBACKS_VDRHANDLE, handle);
 
     cb_ec!(cb_ec_handle_usize(handle:CommandHandle, u: usize)->(CommandHandle, usize), CALLBACKS_HANDLE_USIZE, (handle, u));
 
@@ -133,6 +136,7 @@ impl ResultHandler {
     result_handler!(empty(()), CALLBACKS_EMPTY);
     result_handler!(handle(CommandHandle), CALLBACKS_HANDLE);
     result_handler!(wallethandle(WalletHandle), CALLBACKS_WALLETHANDLE);
+    result_handler!(vdrhandle(VdrHandle), CALLBACKS_VDRHANDLE);
     result_handler!(slice(Vec<u8>), CALLBACKS_SLICE);
     result_handler!(bool(bool), CALLBACKS_BOOL);
     result_handler!(str(String), CALLBACKS_STR);

@@ -32,6 +32,7 @@ pub mod pool;
 pub mod wallet;
 pub mod cache;
 pub mod metrics;
+pub mod vdr;
 mod utils;
 
 use std::ffi::CString;
@@ -55,6 +56,7 @@ pub use crate::ffi::{
     PoolHandle,
     SearchHandle,
     StorageHandle,
+    VdrHandle,
     INVALID_WALLET_HANDLE,
     INVALID_POOL_HANDLE,
     INVALID_COMMAND_HANDLE
