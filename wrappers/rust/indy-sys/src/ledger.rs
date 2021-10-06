@@ -1,6 +1,6 @@
 use super::*;
 
-use {CString, CommandHandle, Error, PoolHandle, WalletHandle};
+use crate::{CString, CommandHandle, Error, PoolHandle, WalletHandle};
 
 extern "C" {
     pub fn indy_sign_and_submit_request(
