@@ -7,12 +7,19 @@ import com.evernym.vdrtools.ParamGuard;
 import com.sun.jna.Callback;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 
-public class VDR extends IndyJava.API {
+public class VDR extends IndyJava.API implements AutoCloseable {
 
-    private VDR() {
+    private final int vdrHandle;
 
+    private VDR(int vdrHandle) {
+        this.vdrHandle = vdrHandle;
+    }
+
+    public int getVdrHandle() {
+        return vdrHandle;
     }
 
     private static Callback stringCb = new Callback() {
@@ -40,8 +47,35 @@ public class VDR extends IndyJava.API {
         }
     };
 
+    private static Callback createVdrCb = new Callback() {
 
-    public static CompletableFuture<Void> registerIndyLedger(
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, int vdr_handle) {
+
+            CompletableFuture<VDR> future = (CompletableFuture<VDR>) removeFuture(xcommand_handle);
+            if (!checkResult(future, err)) return;
+
+            VDR result = new VDR(vdr_handle);
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<VDR> createVDR() throws IndyException {
+        CompletableFuture<VDR> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibIndy.api.indy_vdr_create(
+                commandHandle,
+                createVdrCb
+        );
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+    private static CompletableFuture<Void> registerIndyLedger(
+            VDR vdr,
             String namespaceList,
             String genesisTxnData,
             String taaConfig
@@ -53,8 +87,11 @@ public class VDR extends IndyJava.API {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
+        int handle = vdr.getVdrHandle();
+
         int result = LibIndy.api.indy_vdr_register_indy_ledger(
                 commandHandle,
+                handle,
                 namespaceList,
                 genesisTxnData,
                 taaConfig,
@@ -65,7 +102,8 @@ public class VDR extends IndyJava.API {
         return future;
     }
 
-    public static CompletableFuture<Void> registerCheqdLedger(
+    private static CompletableFuture<Void> registerCheqdLedger(
+            VDR vdr,
             String namespaceList,
             String chainId,
             String nodeAddrList
@@ -77,8 +115,11 @@ public class VDR extends IndyJava.API {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
+        int handle = vdr.getVdrHandle();
+
         int result = LibIndy.api.indy_vdr_register_cheqd_ledger(
                 commandHandle,
+                handle,
                 namespaceList,
                 chainId,
                 nodeAddrList,
@@ -89,7 +130,8 @@ public class VDR extends IndyJava.API {
         return future;
     }
 
-    public static CompletableFuture<String> ping(
+    private static CompletableFuture<String> ping(
+            VDR vdr,
             String namespaceList
     ) throws IndyException {
         ParamGuard.notNull(namespaceList, "namespaceList");
@@ -97,8 +139,11 @@ public class VDR extends IndyJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
+        int handle = vdr.getVdrHandle();
+
         int result = LibIndy.api.indy_vdr_ping(
                 commandHandle,
+                handle,
                 namespaceList,
                 stringCb);
 
@@ -107,12 +152,16 @@ public class VDR extends IndyJava.API {
         return future;
     }
 
-    public static CompletableFuture<Void> cleanup() throws IndyException {
+    private static CompletableFuture<Void> cleanup(
+            VDR vdr
+    ) throws IndyException {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
+        int handle = vdr.getVdrHandle();
         int result = LibIndy.api.indy_vdr_cleanup(
                 commandHandle,
+                handle,
                 voidCb);
 
         checkResult(future, result);
@@ -120,10 +169,8 @@ public class VDR extends IndyJava.API {
         return future;
     }
 
-    // Write functions
-    // Todo: move to corresponding classes
-
-    public static CompletableFuture<String> resolveDID(
+    private static CompletableFuture<String> resolveDID(
+            VDR vdr,
             String fqDID,
             String cacheOptions
     ) throws IndyException {
@@ -133,8 +180,11 @@ public class VDR extends IndyJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
+        int handle = vdr.getVdrHandle();
+
         int result = LibIndy.api.indy_vdr_resolve_did(
                 commandHandle,
+                handle,
                 fqDID,
                 cacheOptions,
                 stringCb);
@@ -144,7 +194,8 @@ public class VDR extends IndyJava.API {
         return future;
     }
 
-    public static CompletableFuture<String> resolveSchema(
+    private static CompletableFuture<String> resolveSchema(
+            VDR vdr,
             String fqSchema,
             String cacheOptions
     ) throws IndyException {
@@ -154,8 +205,11 @@ public class VDR extends IndyJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
+        int handle = vdr.getVdrHandle();
+
         int result = LibIndy.api.indy_vdr_resolve_schema(
                 commandHandle,
+                handle,
                 fqSchema,
                 cacheOptions,
                 stringCb);
@@ -165,7 +219,8 @@ public class VDR extends IndyJava.API {
         return future;
     }
 
-    public static CompletableFuture<String> resloveCredDef(
+    private static CompletableFuture<String> resloveCredDef(
+            VDR vdr,
             String fqCredDef,
             String cacheOptions
     ) throws IndyException {
@@ -175,8 +230,11 @@ public class VDR extends IndyJava.API {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
+        int handle = vdr.getVdrHandle();
+
         int result = LibIndy.api.indy_vdr_resolve_cred_def(
                 commandHandle,
+                handle,
                 fqCredDef,
                 cacheOptions,
                 stringCb);
@@ -184,5 +242,59 @@ public class VDR extends IndyJava.API {
         checkResult(future, result);
 
         return future;
+    }
+
+
+    public CompletableFuture<Void> registerIndyLedger(
+            String namespaceList,
+            String genesisTxnData,
+            String taaConfig
+    ) throws IndyException {
+        return registerIndyLedger(this, namespaceList, genesisTxnData, taaConfig);
+    }
+
+
+    public CompletableFuture<Void> registerCheqdLedger(
+            String namespaceList,
+            String chainId,
+            String nodeAddrList
+    ) throws IndyException {
+        return registerCheqdLedger(this, namespaceList, chainId, nodeAddrList);
+    }
+
+    public CompletableFuture<String> ping(
+            String namespaceList
+    ) throws IndyException {
+        return ping(this, namespaceList);
+    }
+
+    public CompletableFuture<Void> cleanup() throws IndyException {
+        return cleanup(this);
+    }
+
+    public CompletableFuture<String> resolveDID(
+            String fqDID,
+            String cacheOptions
+    ) throws IndyException {
+        return resolveDID(this, fqDID, cacheOptions);
+    }
+
+    public CompletableFuture<String> resolveSchema(
+            String fqSchema,
+            String cacheOptions
+    ) throws IndyException {
+        return resolveSchema(this, fqSchema, cacheOptions);
+    }
+
+    public CompletableFuture<String> resloveCredDef(
+            String fqCredDef,
+            String cacheOptions
+    ) throws IndyException {
+        return resloveCredDef(this, fqCredDef, cacheOptions);
+    }
+
+    @Override
+    public void close() throws InterruptedException, ExecutionException, IndyException {
+        cleanup().get();
     }
 }
