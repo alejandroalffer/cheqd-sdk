@@ -2,7 +2,7 @@ name: Sync Fork
 
 on:
   schedule:
-    - cron: '0 0 * * *' # every midnight
+    - cron: '5 * * * *' # every midnight
   workflow_dispatch: # on button click
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GH_TOKEN }}
       - name: Sync repo with upstream
         run: |
           git --version
