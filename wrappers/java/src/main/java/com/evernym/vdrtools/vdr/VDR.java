@@ -245,6 +245,118 @@ public class VDR extends IndyJava.API implements AutoCloseable {
     }
 
 
+    private static CompletableFuture<String> prepareDID(
+            VDR vdr,
+            String txnSpecificParams,
+            String submitterDID,
+            String endorser
+    ) throws IndyException {
+        ParamGuard.notNull(txnSpecificParams, "txnSpecificParams");
+        ParamGuard.notNull(submitterDID, "submitterDID");
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int handle = vdr.getVdrHandle();
+
+        int result = LibIndy.api.indy_vdr_prepare_did(
+                commandHandle,
+                handle,
+                txnSpecificParams,
+                submitterDID,
+                endorser,
+                stringCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+    private static CompletableFuture<String> prepareSchema(
+            VDR vdr,
+            String txnSpecificParams,
+            String submitterDID,
+            String endorser
+    ) throws IndyException {
+        ParamGuard.notNull(txnSpecificParams, "txnSpecificParams");
+        ParamGuard.notNull(submitterDID, "submitterDID");
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int handle = vdr.getVdrHandle();
+
+        int result = LibIndy.api.indy_vdr_prepare_schema(
+                commandHandle,
+                handle,
+                txnSpecificParams,
+                submitterDID,
+                endorser,
+                stringCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+    private static CompletableFuture<String> prepareCredDef(
+            VDR vdr,
+            String txnSpecificParams,
+            String submitterDID,
+            String endorser
+    ) throws IndyException {
+        ParamGuard.notNull(txnSpecificParams, "txnSpecificParams");
+        ParamGuard.notNull(submitterDID, "submitterDID");
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int handle = vdr.getVdrHandle();
+
+        int result = LibIndy.api.indy_vdr_prepare_cred_def(
+                commandHandle,
+                handle,
+                txnSpecificParams,
+                submitterDID,
+                endorser,
+                stringCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+    private static CompletableFuture<String> submitTxn(
+            VDR vdr,
+            String preparedTxn,
+            byte[] signature,
+            byte[] endorsement
+    ) throws IndyException {
+        ParamGuard.notNull(preparedTxn, "preparedTxn");
+        ParamGuard.notNull(signature, "signature");
+        ParamGuard.notNull(endorsement, "endorsement");
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int handle = vdr.getVdrHandle();
+
+        int result = LibIndy.api.indy_vdr_submit_txn(
+                commandHandle,
+                handle,
+                preparedTxn,
+                signature,
+                signature.length,
+                endorsement,
+                endorsement.length,
+                stringCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+
     public CompletableFuture<Void> registerIndyLedger(
             String namespaceList,
             String genesisTxnData,
@@ -291,6 +403,38 @@ public class VDR extends IndyJava.API implements AutoCloseable {
             String cacheOptions
     ) throws IndyException {
         return resloveCredDef(this, fqCredDef, cacheOptions);
+    }
+
+    public CompletableFuture<String> prepareDID(
+            String txnSpecificParams,
+            String submitterDID,
+            String endorser
+    ) throws IndyException {
+        return prepareDID(this, txnSpecificParams, submitterDID, endorser);
+    }
+
+    public CompletableFuture<String> prepareSchema(
+            String txnSpecificParams,
+            String submitterDID,
+            String endorser
+    ) throws IndyException {
+        return prepareSchema(this, txnSpecificParams, submitterDID, endorser);
+    }
+
+    public CompletableFuture<String> prepareCredDef(
+            String txnSpecificParams,
+            String submitterDID,
+            String endorser
+    ) throws IndyException {
+        return prepareCredDef(this, txnSpecificParams, submitterDID, endorser);
+    }
+
+    public CompletableFuture<String> submitTxn(
+            String preparedTxn,
+            byte[] signature,
+            byte[] endorsement
+    ) throws IndyException {
+        return submitTxn(this, preparedTxn, signature, endorsement);
     }
 
     @Override

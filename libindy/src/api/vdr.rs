@@ -87,3 +87,53 @@ pub extern "C" fn indy_vdr_resolve_cred_def(
 ) -> ErrorCode {
     unimplemented!();
 }
+
+#[no_mangle]
+pub extern "C" fn indy_vdr_prepare_did(
+    command_handle: CommandHandle,
+    handle: VdrHandle,
+    txn_specific_params: *const c_char,
+    submitter_did: *const c_char,
+    endorser: *const c_char,
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, prepared_txn: *const c_char)>,
+) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern "C" fn indy_vdr_prepare_schema(
+    command_handle: CommandHandle,
+    handle: VdrHandle,
+    txn_specific_params: *const c_char,
+    submitter_did: *const c_char,
+    endorser: *const c_char,
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, prepared_txn: *const c_char)>,
+) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern "C" fn indy_vdr_prepare_cred_def(
+    command_handle: CommandHandle,
+    handle: VdrHandle,
+    txn_specific_params: *const c_char,
+    submitter_did: *const c_char,
+    endorser: *const c_char,
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, prepared_txn: *const c_char)>,
+) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern "C" fn indy_vdr_submit_txn(
+    command_handle: CommandHandle,
+    handle: VdrHandle,
+    prepared_txn: *const c_char,
+    signature_raw: *const u8,
+    signature_len: u32,
+    endorsement_raw: *const u8,
+    endorsement_len: u32,
+    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, status: *const c_char)>,
+) -> ErrorCode {
+    unimplemented!();
+}
