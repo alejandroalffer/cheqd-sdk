@@ -42,6 +42,7 @@ build-libindy-ubuntu16-from-latest:
     refs:
       - /^docker-.*/
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 build-libindy-ubuntu16-release:
   extends: .build-libindy
@@ -51,6 +52,7 @@ build-libindy-ubuntu16-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 build-libindy-ubuntu18-from-branch:
   extends: .build-libindy
@@ -70,6 +72,7 @@ build-libindy-ubuntu18-from-latest:
     refs:
       - /^docker-.*/
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 build-libindy-ubuntu18-release:
   extends: .build-libindy
@@ -79,7 +82,7 @@ build-libindy-ubuntu18-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
-
+      - tags@evernym/verity/vdr-tools
 
 ## - Jobs : Package - ##
 

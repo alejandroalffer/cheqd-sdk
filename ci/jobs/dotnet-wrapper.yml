@@ -45,7 +45,7 @@ test-libindy-dotnet-wrapper-from-latest:
     refs:
       - /^docker-.*/
       - main@evernym/verity/vdr-tools
-      - stable@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
   allow_failure: true
 
 test-libindy-dotnet-wrapper-release:
@@ -59,6 +59,7 @@ test-libindy-dotnet-wrapper-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
   allow_failure: true
 
 # - Jobs : Publish - ##

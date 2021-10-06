@@ -33,7 +33,7 @@ test-libindy-java-wrapper-from-latest:
     refs:
       - /^docker-.*/
       - main@evernym/verity/vdr-tools
-      - stable@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 test-libindy-java-wrapper-release:
   extends: .test-libindy-java-wrapper
@@ -46,6 +46,7 @@ test-libindy-java-wrapper-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 # - Jobs : Publish - ##
 publish-libindy-java-wrapper:

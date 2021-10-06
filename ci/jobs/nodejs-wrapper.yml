@@ -36,7 +36,7 @@ test-vdr-tools-nodejs-wrapper-from-latest:
     refs:
       - /^docker-.*/
       - main@evernym/verity/vdr-tools
-      - stable@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 test-libindy-nodejs-wrapper-release:
   extends: .test-vdr-tools-nodejs-wrapper
@@ -49,6 +49,7 @@ test-libindy-nodejs-wrapper-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 publish-vdr-tools-nodejs-wrapper:
   stage: publish
