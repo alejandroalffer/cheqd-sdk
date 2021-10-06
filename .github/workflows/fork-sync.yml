@@ -22,6 +22,6 @@ jobs:
           git remote -v
           git fetch upstream
           git checkout cheqd
-          git merge upstream/cheqd --no-commit --allow-unrelated-histories
+          git merge upstream/cheqd --allow-unrelated-histories
           git push
 
