@@ -22,5 +22,5 @@ jobs:
           git fetch upstream
           git checkout cheqd
           git merge upstream/cheqd --allow-unrelated-histories
-          git push --allow-unrelated-histories
+          git push
 
