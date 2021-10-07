@@ -40,13 +40,5 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 AnonCreds.IssuerCreateAndStoreCredentialDefAsync(wallet, issuerDid, schema, "EmptyKeys", null, defaultCredentialDefinitionConfig)
             );
         }
-
-        [TestMethod]
-        public async Task TestIssuerCreateAndStoreCredentialDefWorksForDuplicate()
-        {
-            var ex = await Assert.ThrowsExceptionAsync<CredentialDefinitionAlreadyExistsException>(() =>
-                AnonCreds.IssuerCreateAndStoreCredentialDefAsync(wallet, issuerDid, gvtSchema, tag, null, defaultCredentialDefinitionConfig)
-            );
-        }
     }
 }
