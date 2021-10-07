@@ -37,8 +37,8 @@
     expire_in: 1 week
     paths:
       - libindy/target/debian/*.deb
-      - libnullpay/target/debian/*.deb
-      - cli/target/debian/*.deb
+#      - libnullpay/target/debian/*.deb
+#      - cli/target/debian/*.deb
   rules:
     - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_TAG)
   script:
@@ -62,8 +62,8 @@ publish-libindy:
 #    - cp cli/target/debian/*.deb ${CI_PROJECT_DIR}/output
     - ls -al ${CI_PROJECT_DIR}/output/
     - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
-    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*xenial.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
-    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*bionic.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
 #    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
 #    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
 #    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
@@ -85,5 +85,5 @@ release-libindy:
     #    - cp cli/target/debian/*.deb ${CI_PROJECT_DIR}/output
     - ls -al ${CI_PROJECT_DIR}/output/
     - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
-    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*xenial.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
-    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*bionic.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
