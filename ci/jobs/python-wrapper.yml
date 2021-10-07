@@ -42,7 +42,7 @@ test-vdr-tools-python-wrapper-from-latest:
     refs:
       - /^docker-.*/
       - main@evernym/verity/vdr-tools
-      - stable@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 test-libindy-python-wrapper-release:
   extends: .test-vdr-tools-python-wrapper
@@ -55,6 +55,7 @@ test-libindy-python-wrapper-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 publish-vdr-tools-python-wrapper:
   stage: publish

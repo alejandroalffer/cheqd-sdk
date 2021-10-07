@@ -18,6 +18,7 @@ echo "URL: $URL"
 echo 'info:'
 pwd
 ls -al
+find "./output" -type f -name ${FILENAME}
 echo 'end info'
 
 find "./output" -type f -name ${FILENAME} -exec curl -u $CREDENTIALS -X POST $URL -F 'file=@{}' \;

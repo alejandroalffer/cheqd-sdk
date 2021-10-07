@@ -4,9 +4,7 @@
     KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
   rules:
     - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
-      when: always
     - if: $CI_COMMIT_REF_NAME == "docker-.*" || $CI_COMMIT_REF_NAME == "android-.*"
-      when: always
 
 .build-libindy:
   extends: .tags_compute_xlarge
@@ -39,11 +37,10 @@
     expire_in: 1 week
     paths:
       - libindy/target/debian/*.deb
-      - libnullpay/target/debian/*.deb
-      - cli/target/debian/*.deb
+#      - libnullpay/target/debian/*.deb
+#      - cli/target/debian/*.deb
   rules:
     - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && ($CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_TAG)
-      when: always
   script:
     - libindy/ci/scripts/package.sh ${CI_COMMIT_TAG:-$DEV_BASE_VERSION~$CI_PIPELINE_IID}
 #    - libnullpay/ci/scripts/package.sh ${CI_PIPELINE_IID}
@@ -58,7 +55,6 @@ publish-libindy:
     - package-libindy-ubuntu18
   rules:
     - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
-      when: always
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output
@@ -66,8 +62,8 @@ publish-libindy:
 #    - cp cli/target/debian/*.deb ${CI_PROJECT_DIR}/output
     - ls -al ${CI_PROJECT_DIR}/output/
     - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
-    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*xenial.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
-    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*bionic.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
 #    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
 #    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libnullpay*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
 #    - vcx/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" indy-cli*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
@@ -82,7 +78,6 @@ release-libindy:
     - package-libindy-ubuntu18
   rules:
     - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_TAG
-      when: always
   script:
     - mkdir -p ${CI_PROJECT_DIR}/output
     - cp libindy/target/debian/*.deb ${CI_PROJECT_DIR}/output
@@ -90,5 +85,5 @@ release-libindy:
     #    - cp cli/target/debian/*.deb ${CI_PROJECT_DIR}/output
     - ls -al ${CI_PROJECT_DIR}/output/
     - export KRAKEN_CREDENTIALS=${KRK_USERNAME}:${KRK_PASSWORD}
-    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*xenial.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
-    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*bionic.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*xenial*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
+    - libindy/ci/scripts/publish.sh "${KRAKEN_CREDENTIALS}" libvdrtools*bionic*.deb https://kraken.corp.evernym.com/repo/agency_dev/upload
