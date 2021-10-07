@@ -38,12 +38,12 @@ workflow:
 
 include:
   - '/ci/jobs/common.yml'
-  - '/ci/jobs/java-wrapper.yml'
+#  - '/ci/jobs/java-wrapper.yml'
   - '/ci/jobs/dotnet-wrapper.yml'
   - '/ci/jobs/ubuntu.yml'
-  - '/ci/jobs/ios.yml'
-  - '/ci/jobs/macos.yml'
-  - '/ci/jobs/android.yml'
-  - '/ci/jobs/nodejs-wrapper.yml'
-  - '/ci/jobs/python-wrapper.yml'
+#  - '/ci/jobs/ios.yml'
+#  - '/ci/jobs/macos.yml'
+#  - '/ci/jobs/android.yml'
+#  - '/ci/jobs/nodejs-wrapper.yml'
+#  - '/ci/jobs/python-wrapper.yml'
   - '/ci/jobs/libindy.yml'
