@@ -4,7 +4,7 @@ use futures::Future;
 
 use crate::{ErrorCode, IndyError};
 use crate::{CommandHandle, VdrHandle};
-use crate::ffi::{ResponseEmptyCB, ResponseStringCB, ResponseVdrHandleCB};
+use crate::ffi::{ResponseEmptyCB, ResponsePreparedTxnCB, ResponseStringCB, ResponseVdrHandleCB};
 use crate::ffi::vdr;
 use crate::utils::callbacks::{ClosureHandler, ResultHandler};
 
@@ -138,15 +138,15 @@ fn _vdr_resolve_cred_def(command_handle: CommandHandle, vdr_handle: VdrHandle, f
     })
 }
 
-pub fn vdr_prepare_did(vdr_handle: VdrHandle, txn_specific_params: &str, submitter_did: &str, endorser: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
-    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+pub fn vdr_prepare_did(vdr_handle: VdrHandle, txn_specific_params: &str, submitter_did: &str, endorser: &str) -> Box<dyn Future<Item=(String, String, Vec<u8>, String), Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_preparedtxnhandle();
 
     let err = _vdr_prepare_did(command_handle, vdr_handle, txn_specific_params, submitter_did, endorser, cb);
 
-    ResultHandler::str(command_handle, err, receiver)
+    ResultHandler::preparedtxnhandle(command_handle, err, receiver)
 }
 
-fn _vdr_prepare_did(command_handle: CommandHandle, vdr_handle: VdrHandle, txn_specific_params: &str, submitter_did: &str, endorser: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _vdr_prepare_did(command_handle: CommandHandle, vdr_handle: VdrHandle, txn_specific_params: &str, submitter_did: &str, endorser: &str, cb: Option<ResponsePreparedTxnCB>) -> ErrorCode {
     let txn_specific_params = c_str!(txn_specific_params);
     let submitter_did = c_str!(submitter_did);
     let endorser = c_str!(endorser);
@@ -156,15 +156,15 @@ fn _vdr_prepare_did(command_handle: CommandHandle, vdr_handle: VdrHandle, txn_sp
     })
 }
 
-pub fn vdr_prepare_schema(vdr_handle: VdrHandle, txn_specific_params: &str, submitter_schema: &str, endorser: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
-    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+pub fn vdr_prepare_schema(vdr_handle: VdrHandle, txn_specific_params: &str, submitter_schema: &str, endorser: &str) -> Box<dyn Future<Item=(String, String, Vec<u8>, String), Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_preparedtxnhandle();
 
     let err = _vdr_prepare_schema(command_handle, vdr_handle, txn_specific_params, submitter_schema, endorser, cb);
 
-    ResultHandler::str(command_handle, err, receiver)
+    ResultHandler::preparedtxnhandle(command_handle, err, receiver)
 }
 
-fn _vdr_prepare_schema(command_handle: CommandHandle, vdr_handle: VdrHandle, txn_specific_params: &str, submitter_schema: &str, endorser: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _vdr_prepare_schema(command_handle: CommandHandle, vdr_handle: VdrHandle, txn_specific_params: &str, submitter_schema: &str, endorser: &str, cb: Option<ResponsePreparedTxnCB>) -> ErrorCode {
     let txn_specific_params = c_str!(txn_specific_params);
     let submitter_schema = c_str!(submitter_schema);
     let endorser = c_str!(endorser);
@@ -174,15 +174,15 @@ fn _vdr_prepare_schema(command_handle: CommandHandle, vdr_handle: VdrHandle, txn
     })
 }
 
-pub fn vdr_prepare_cred_def(vdr_handle: VdrHandle, txn_specific_params: &str, submitter_cred_def: &str, endorser: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
-    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+pub fn vdr_prepare_cred_def(vdr_handle: VdrHandle, txn_specific_params: &str, submitter_cred_def: &str, endorser: &str) -> Box<dyn Future<Item=(String, String, Vec<u8>, String), Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_preparedtxnhandle();
 
     let err = _vdr_prepare_cred_def(command_handle, vdr_handle, txn_specific_params, submitter_cred_def, endorser, cb);
 
-    ResultHandler::str(command_handle, err, receiver)
+    ResultHandler::preparedtxnhandle(command_handle, err, receiver)
 }
 
-fn _vdr_prepare_cred_def(command_handle: CommandHandle, vdr_handle: VdrHandle, txn_specific_params: &str, submitter_cred_def: &str, endorser: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _vdr_prepare_cred_def(command_handle: CommandHandle, vdr_handle: VdrHandle, txn_specific_params: &str, submitter_cred_def: &str, endorser: &str, cb: Option<ResponsePreparedTxnCB>) -> ErrorCode {
     let txn_specific_params = c_str!(txn_specific_params);
     let submitter_cred_def = c_str!(submitter_cred_def);
     let endorser = c_str!(endorser);
@@ -192,20 +192,41 @@ fn _vdr_prepare_cred_def(command_handle: CommandHandle, vdr_handle: VdrHandle, t
     })
 }
 
-pub fn vdr_submit_txn(vdr_hanlde: VdrHandle, prepared_txn: &str, signature: &[u8], endorsement: &[u8]) -> Box<dyn Future<Item=String, Error=IndyError>> {
+pub fn vdr_submit_txn(
+    vdr_hanlde: VdrHandle,
+    context: &str,
+    signature_spec: &str,
+    bytes_to_sign: &[u8],
+    endorsement_spec: &str,
+    signature: &[u8],
+    endorsement: &[u8],
+) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _vdr_submit_txn(command_handle, vdr_hanlde, prepared_txn, signature, endorsement, cb);
+    let err = _vdr_submit_txn(command_handle, vdr_hanlde, context, signature_spec, bytes_to_sign, endorsement_spec, signature, endorsement, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _vdr_submit_txn(command_handle: CommandHandle, vdr_hanlde: VdrHandle, prepared_txn: &str, signature: &[u8], endorsement: &[u8], cb: Option<ResponseStringCB>) -> ErrorCode {
-    let prepared_txn = c_str!(prepared_txn);
+fn _vdr_submit_txn(
+    command_handle: CommandHandle,
+    vdr_hanlde: VdrHandle,
+    context: &str,
+    signature_spec: &str,
+    bytes_to_sign: &[u8],
+    endorsement_spec: &str,
+    signature: &[u8],
+    endorsement: &[u8],
+    cb: Option<ResponseStringCB>,
+) -> ErrorCode {
+    let context = c_str!(context);
+    let signature_spec = c_str!(signature_spec);
+    let endorsement_spec = c_str!(endorsement_spec);
 
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_submit_txn(command_handle, vdr_hanlde, prepared_txn.as_ptr(),
-                                 signature.as_ptr() as *const u8, signature.len() as u32,
+        vdr::indy_vdr_submit_txn(command_handle, vdr_hanlde, context.as_ptr(), signature_spec.as_ptr(),
+                                 bytes_to_sign.as_ptr() as *const u8, bytes_to_sign.len() as u32,
+                                 endorsement_spec.as_ptr(), signature.as_ptr() as *const u8, signature.len() as u32,
                                  endorsement.as_ptr() as *const u8, endorsement.len() as u32, cb)
     })
 }

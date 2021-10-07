@@ -56,6 +56,7 @@ pub type ResponseBoolCB = extern fn(xcommand_handle: CommandHandle, err: Error, 
 pub type ResponseI32CB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle);
 pub type ResponseWalletHandleCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: WalletHandle);
 pub type ResponseVdrHandleCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: VdrHandle);
+pub type ResponsePreparedTxnCB = extern fn(xcommand_handle: CommandHandle, err: Error, context: CString, signature_spec: CString, bytes_to_sign_raw: BString, bytes_to_sign_len: u32, endorsement_spec: CString);
 pub type ResponseI32UsizeCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle, total_count: usize);
 pub type ResponseStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString);
 pub type ResponseStringStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString, str2: CString);

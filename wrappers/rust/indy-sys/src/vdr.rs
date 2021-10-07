@@ -69,7 +69,7 @@ extern "C" {
         txn_specific_params: CString,
         submitter_did: CString,
         endorser: CString,
-        cb: Option<ResponseStringCB>,
+        cb: Option<ResponsePreparedTxnCB>,
     ) -> Error;
     
     pub fn indy_vdr_prepare_schema(
@@ -78,7 +78,7 @@ extern "C" {
         txn_specific_params: CString,
         submitter_did: CString,
         endorser: CString,
-        cb: Option<ResponseStringCB>,
+        cb: Option<ResponsePreparedTxnCB>,
     ) -> Error;
 
     pub fn indy_vdr_prepare_cred_def(
@@ -87,13 +87,17 @@ extern "C" {
         txn_specific_params: CString,
         submitter_did: CString,
         endorser: CString,
-        cb: Option<ResponseStringCB>,
+        cb: Option<ResponsePreparedTxnCB>,
     ) -> Error;
 
     pub fn indy_vdr_submit_txn(
         command_handle: CommandHandle,
         handle: VdrHandle,
-        prepared_txn: CString,
+        context: CString,
+        signature_spec: CString,
+        bytes_to_sign_raw: BString,
+        bytes_to_sign_len: u32,
+        endorsement_spec: CString,
         signature_raw: BString,
         signature_len: u32,
         endorsement_raw: BString,

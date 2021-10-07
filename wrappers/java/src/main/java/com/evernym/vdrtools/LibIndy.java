@@ -229,7 +229,7 @@ public abstract class LibIndy {
 		int indy_vdr_prepare_did(int command_handle, int vdr_handle, String txn_specific_params, String submitter_did, String endorser, Callback cb);
 		int indy_vdr_prepare_schema(int command_handle, int vdr_handle, String txn_specific_params, String submitter_did, String endorser, Callback cb);
 		int indy_vdr_prepare_cred_def(int command_handle, int vdr_handle, String txn_specific_params, String submitter_did, String endorser, Callback cb);
-		int indy_vdr_submit_txn(int command_handle, int vdr_handle, String prepared_txn, byte[] signature_raw, int signature_len, byte[] endorsement_raw, int endorsement_len, Callback cb);
+		int indy_vdr_submit_txn(int command_handle, int vdr_handle, String context, String signature_spec, byte[] bytes_to_sign_raw, int bytes_to_sign_len, String endorsement_spec, byte[] signature_raw, int signature_len, byte[] endorsement_raw, int endorsement_len, Callback cb);
 
 
 		interface BoolCallback extends Callback {

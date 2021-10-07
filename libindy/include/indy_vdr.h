@@ -65,7 +65,13 @@ extern indy_error_t indy_vdr_prepare_did(indy_handle_t command_handle,
                                          const char *  txn_specific_params,
                                          const char *  submitter_did,
                                          const char *  endorser,
-                                         void          (*cb)(indy_handle_t command_handle_, indy_error_t err, const char *const prepared_txn)
+                                         void          (*cb)(indy_handle_t     command_handle_,
+                                                             indy_error_t      err,
+                                                             const char *const context,
+                                                             const char *const signature_spec,
+                                                             const indy_u8_t*  bytes_to_sign_raw,
+                                                             indy_u32_t        bytes_to_sign_len,
+                                                             const char *const endorsement_spec)                                        );
                                         );
 
 extern indy_error_t indy_vdr_prepare_schema(indy_handle_t command_handle,
@@ -73,7 +79,13 @@ extern indy_error_t indy_vdr_prepare_schema(indy_handle_t command_handle,
                                             const char *  txn_specific_params,
                                             const char *  submitter_did,
                                             const char *  endorser,
-                                            void          (*cb)(indy_handle_t command_handle_, indy_error_t err, const char *const prepared_txn)
+                                            void          (*cb)(indy_handle_t     command_handle_,
+                                                                indy_error_t      err,
+                                                                const char *const context,
+                                                                const char *const signature_spec,
+                                                                const indy_u8_t*  bytes_to_sign_raw,
+                                                                indy_u32_t        bytes_to_sign_len,
+                                                                const char *const endorsement_spec)
                                            );
 
 extern indy_error_t indy_vdr_prepare_cred_def(indy_handle_t command_handle,
@@ -81,12 +93,22 @@ extern indy_error_t indy_vdr_prepare_cred_def(indy_handle_t command_handle,
                                               const char *  txn_specific_params,
                                               const char *  submitter_did,
                                               const char *  endorser,
-                                              void          (*cb)(indy_handle_t command_handle_, indy_error_t err, const char *const prepared_txn)
+                                              void          (*cb)(indy_handle_t     command_handle_,
+                                                                  indy_error_t      err,
+                                                                  const char *const context,
+                                                                  const char *const signature_spec,
+                                                                  const indy_u8_t*  bytes_to_sign_raw,
+                                                                  indy_u32_t        bytes_to_sign_len,
+                                                                  const char *const endorsement_spec)
                                              );
 
 extern indy_error_t indy_vdr_submit_txn(indy_handle_t      command_handle,
                                         indy_handle_t      handle,
-                                        const char *       prepared_txn,
+                                        const char *       context,
+                                        const char *       signature_spec,
+                                        const indy_u8_t*   bytes_to_sign_raw,
+                                        indy_u32_t         bytes_to_sign_len,
+                                        const char *       endorsement_spec,
                                         const indy_u8_t*   signature_raw,
                                         indy_u32_t         signature_len,
                                         const indy_u8_t*   endorsement_raw,

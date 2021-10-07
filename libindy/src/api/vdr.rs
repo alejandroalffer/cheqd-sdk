@@ -172,7 +172,9 @@ pub extern "C" fn indy_vdr_ping(
 
         debug!("indy_vdr_ping ? err {:?} status_list {:?}", err, status_list);
 
-        cb(command_handle, err, status_list)
+        let status_list = ctypes::string_to_cstring(status_list);
+
+        cb(command_handle, err, status_list.as_ptr())
     };
 
     // locator.executor.spawn_ok_instrumented(CommandMetric::VdrCommandPing, action, cb);
@@ -256,7 +258,9 @@ pub extern "C" fn indy_vdr_resolve_did(
 
         debug!("indy_vdr_resolve_did ? err {:?} diddoc {:?}", err, diddoc);
 
-        cb(command_handle, err, diddoc)
+        let diddoc = ctypes::string_to_cstring(diddoc);
+
+        cb(command_handle, err, diddoc.as_ptr())
     };
 
     // locator.executor.spawn_ok_instrumented(CommandMetric::VdrCommandResolveDid, action, cb);
@@ -303,7 +307,9 @@ pub extern "C" fn indy_vdr_resolve_schema(
 
         debug!("indy_vdr_resolve_schema ? err {:?} schema {:?}", err, schema);
 
-        cb(command_handle, err, schema)
+        let schema = ctypes::string_to_cstring(schema);
+
+        cb(command_handle, err, schema.as_ptr())
     };
 
     // locator.executor.spawn_ok_instrumented(CommandMetric::VdrCommandResolveSchema, action, cb);
@@ -350,7 +356,9 @@ pub extern "C" fn indy_vdr_resolve_cred_def(
 
         debug!("indy_vdr_resolve_cred_def ? err {:?} cred_def {:?}", err, cred_def);
 
-        cb(command_handle, err, cred_def)
+        let cred_def = ctypes::string_to_cstring(cred_def);
+
+        cb(command_handle, err, cred_def.as_ptr())
     };
 
     // locator.executor.spawn_ok_instrumented(CommandMetric::VdrCommandResolveCredDef, action, cb);
@@ -367,8 +375,14 @@ pub extern "C" fn indy_vdr_prepare_did(
     txn_specific_params: *const c_char,
     submitter_did: *const c_char,
     endorser: *const c_char,
-    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, prepared_txn: *const c_char)>,
-) -> ErrorCode {
+    cb: Option<extern "C" fn(
+        command_handle_: CommandHandle,
+        err: ErrorCode,
+        context: *const c_char,
+        signature_spec: *const c_char,
+        bytes_to_sign_raw: *const u8,
+        bytes_to_sign_len: u32,
+        endorsement_spec: *const c_char)>, ) -> ErrorCode {
     debug!(
         "indy_vdr_prepare_did > handle {:?} txn_specific_params {:?} submitter_did {:?} endorser {:?}",
         handle, txn_specific_params, submitter_did, endorser
@@ -395,11 +409,20 @@ pub extern "C" fn indy_vdr_prepare_did(
     // };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, prepared_txn) = prepare_result!(res, String::new());
+        let (err, (context, signature_spec, bytes_to_sign, endorsement_spec)) = prepare_result!(
+            res, String::new(), String::new(), Vec::new(), String::new()
+        );
 
-        debug!("indy_vdr_prepare_did ? err {:?} prepared_txn {:?}", err, prepared_txn);
+        debug!(
+            "indy_vdr_prepare_did ? err {:?} context {:?} signature_spec {:?} bytes_to_sign {:?} endorsement_spec {:?}",
+            err, context, signature_spec, bytes_to_sign, endorsement_spec);
 
-        cb(command_handle, err, prepared_txn)
+        let context = ctypes::string_to_cstring(context);
+        let signature_spec = ctypes::string_to_cstring(signature_spec);
+        let (bytes_data, bytes_len) = ctypes::vec_to_pointer(&bytes_to_sign);
+        let endorsement_spec = ctypes::string_to_cstring(endorsement_spec);
+
+        cb(command_handle, err, context.as_ptr(), signature_spec.as_ptr(), bytes_data, bytes_len, endorsement_spec.as_ptr())
     };
 
     // locator.executor.spawn_ok_instrumented(CommandMetric::VdrCommandPrepareDid, action, cb);
@@ -416,8 +439,14 @@ pub extern "C" fn indy_vdr_prepare_schema(
     txn_specific_params: *const c_char,
     submitter_did: *const c_char,
     endorser: *const c_char,
-    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, prepared_txn: *const c_char)>,
-) -> ErrorCode {
+    cb: Option<extern "C" fn(
+        command_handle_: CommandHandle,
+        err: ErrorCode,
+        context: *const c_char,
+        signature_spec: *const c_char,
+        bytes_to_sign_raw: *const u8,
+        bytes_to_sign_len: u32,
+        endorsement_spec: *const c_char)>, ) -> ErrorCode {
     debug!(
         "indy_vdr_prepare_schema > handle {:?} txn_specific_params {:?} submitter_did {:?} endorser {:?}",
         handle, txn_specific_params, submitter_did, endorser
@@ -444,11 +473,20 @@ pub extern "C" fn indy_vdr_prepare_schema(
     // };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, prepared_txn) = prepare_result!(res, String::new());
+        let (err, (context, signature_spec, bytes_to_sign, endorsement_spec)) = prepare_result!(
+            res, String::new(), String::new(), Vec::new(), String::new()
+        );
 
-        debug!("indy_vdr_prepare_schema ? err {:?} prepared_txn {:?}", err, prepared_txn);
+        debug!(
+            "indy_vdr_prepare_schema ? err {:?} context {:?} signature_spec {:?} bytes_to_sign {:?} endorsement_spec {:?}",
+            err, context, signature_spec, bytes_to_sign, endorsement_spec);
 
-        cb(command_handle, err, prepared_txn)
+        let context = ctypes::string_to_cstring(context);
+        let signature_spec = ctypes::string_to_cstring(signature_spec);
+        let (bytes_data, bytes_len) = ctypes::vec_to_pointer(&bytes_to_sign);
+        let endorsement_spec = ctypes::string_to_cstring(endorsement_spec);
+
+        cb(command_handle, err, context.as_ptr(), signature_spec.as_ptr(), bytes_data, bytes_len, endorsement_spec.as_ptr())
     };
 
     // locator.executor.spawn_ok_instrumented(CommandMetric::VdrCommandPrepareSchema, action, cb);
@@ -465,7 +503,14 @@ pub extern "C" fn indy_vdr_prepare_cred_def(
     txn_specific_params: *const c_char,
     submitter_did: *const c_char,
     endorser: *const c_char,
-    cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, prepared_txn: *const c_char)>,
+    cb: Option<extern "C" fn(
+        command_handle_: CommandHandle,
+        err: ErrorCode,
+        context: *const c_char,
+        signature_spec: *const c_char,
+        bytes_to_sign_raw: *const u8,
+        bytes_to_sign_len: u32,
+        endorsement_spec: *const c_char)>,
 ) -> ErrorCode {
     debug!(
         "indy_vdr_prepare_cred_def > handle {:?} txn_specific_params {:?} submitter_did {:?} endorser {:?}",
@@ -493,11 +538,20 @@ pub extern "C" fn indy_vdr_prepare_cred_def(
     // };
 
     let cb = move |res: IndyResult<_>| {
-        let (err, prepared_txn) = prepare_result!(res, String::new());
+        let (err, (context, signature_spec, bytes_to_sign, endorsement_spec)) = prepare_result!(
+            res, String::new(), String::new(), Vec::new(), String::new()
+        );
 
-        debug!("indy_vdr_prepare_cred_def ? err {:?} prepared_txn {:?}", err, prepared_txn);
+        debug!(
+            "indy_vdr_prepare_cred_def ? err {:?} context {:?} signature_spec {:?} bytes_to_sign {:?} endorsement_spec {:?}",
+            err, context, signature_spec, bytes_to_sign, endorsement_spec);
 
-        cb(command_handle, err, prepared_txn)
+        let context = ctypes::string_to_cstring(context);
+        let signature_spec = ctypes::string_to_cstring(signature_spec);
+        let (bytes_data, bytes_len) = ctypes::vec_to_pointer(&bytes_to_sign);
+        let endorsement_spec = ctypes::string_to_cstring(endorsement_spec);
+
+        cb(command_handle, err, context.as_ptr(), signature_spec.as_ptr(), bytes_data, bytes_len, endorsement_spec.as_ptr())
     };
 
     //locator.executor.spawn_ok_instrumented(CommandMetric::VdrCommandPrepareCredDef, action, cb);
@@ -511,7 +565,11 @@ pub extern "C" fn indy_vdr_prepare_cred_def(
 pub extern "C" fn indy_vdr_submit_txn(
     command_handle: CommandHandle,
     handle: VdrHandle,
-    prepared_txn: *const c_char,
+    context: *const c_char,
+    signature_spec: *const c_char,
+    bytes_to_sign_raw: *const u8,
+    bytes_to_sign_len: u32,
+    endorsement_spec: *const c_char,
     signature_raw: *const u8,
     signature_len: u32,
     endorsement_raw: *const u8,
@@ -519,11 +577,11 @@ pub extern "C" fn indy_vdr_submit_txn(
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: ErrorCode, status: *const c_char)>,
 ) -> ErrorCode {
     debug!(
-        "indy_vdr_submit_txn > handle {:?} prepared_txn {:?} signature_raw {:?} signature_len {:?} endorsement_raw {:?} endorsement_len {:?}",
-        handle, prepared_txn, signature_raw, signature_len, endorsement_raw, endorsement_len
+        "indy_vdr_submit_txn > handle {:?} context {:?} signature_spec {:?} bytes_to_sign_raw {:?} bytes_to_sign_len {:?} endorsement_spec {:?}  signature_raw {:?} signature_len {:?} endorsement_raw {:?} endorsement_len {:?}",
+        handle, context, signature_spec, bytes_to_sign_raw, bytes_to_sign_len, endorsement_spec, signature_raw, signature_len, endorsement_raw, endorsement_len
     );
 
-    check_useful_c_str!(prepared_txn, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(context, ErrorCode::CommonInvalidParam3);
     check_useful_c_byte_array!(
         signature_raw,
         signature_len,
@@ -539,8 +597,8 @@ pub extern "C" fn indy_vdr_submit_txn(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     debug!(
-        "indy_vdr_submit_txn ? handle {:?} prepared_txn {:?} signature_raw {:?} signature_len {:?} endorsement_raw {:?} endorsement_len {:?}",
-        handle, prepared_txn, signature_raw, signature_len, endorsement_raw, endorsement_len
+        "indy_vdr_submit_txn ? handle {:?} context {:?} signature_spec {:?} bytes_to_sign_raw {:?} bytes_to_sign_len {:?} endorsement_spec {:?}  signature_raw {:?} signature_len {:?} endorsement_raw {:?} endorsement_len {:?}",
+        handle, context, signature_spec, bytes_to_sign_raw, bytes_to_sign_len, endorsement_spec, signature_raw, signature_len, endorsement_raw, endorsement_len
     );
 
     let locator = Locator::instance();
@@ -558,7 +616,9 @@ pub extern "C" fn indy_vdr_submit_txn(
 
         debug!("indy_vdr_submit_txn ? err {:?} status {:?}", err, status);
 
-        cb(command_handle, err, status)
+        let status = ctypes::string_to_cstring(status);
+
+        cb(command_handle, err, status.as_ptr())
     };
 
     //locator.executor.spawn_ok_instrumented(CommandMetric::VdrCommandSubmitTxn, action, cb);

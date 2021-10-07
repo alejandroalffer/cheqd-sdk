@@ -5,6 +5,7 @@ import com.evernym.vdrtools.IndyJava;
 import com.evernym.vdrtools.LibIndy;
 import com.evernym.vdrtools.ParamGuard;
 import com.sun.jna.Callback;
+import com.sun.jna.Pointer;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -56,6 +57,22 @@ public class VDR extends IndyJava.API implements AutoCloseable {
             if (!checkResult(future, err)) return;
 
             VDR result = new VDR(vdr_handle);
+            future.complete(result);
+        }
+    };
+
+    private static Callback prepareTxnCb = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, String context, String signature_spec, Pointer bytes_to_sign_raw, int bytes_to_sign_len, String endorsement_spec) {
+
+            CompletableFuture<VdrResults.PreparedTxnResult> future = (CompletableFuture<VdrResults.PreparedTxnResult>) removeFuture(xcommand_handle);
+            if (!checkResult(future, err)) return;
+
+            byte[] bytes = new byte[bytes_to_sign_len];
+            bytes_to_sign_raw.read(0, bytes, 0, bytes_to_sign_len);
+
+            VdrResults.PreparedTxnResult result = new VdrResults.PreparedTxnResult(context, signature_spec, bytes, endorsement_spec);
             future.complete(result);
         }
     };
@@ -245,7 +262,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
     }
 
 
-    private static CompletableFuture<String> prepareDID(
+    private static CompletableFuture<VdrResults.PreparedTxnResult> prepareDID(
             VDR vdr,
             String txnSpecificParams,
             String submitterDID,
@@ -254,7 +271,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         ParamGuard.notNull(txnSpecificParams, "txnSpecificParams");
         ParamGuard.notNull(submitterDID, "submitterDID");
 
-        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<VdrResults.PreparedTxnResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int handle = vdr.getVdrHandle();
@@ -272,7 +289,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         return future;
     }
 
-    private static CompletableFuture<String> prepareSchema(
+    private static CompletableFuture<VdrResults.PreparedTxnResult> prepareSchema(
             VDR vdr,
             String txnSpecificParams,
             String submitterDID,
@@ -281,7 +298,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         ParamGuard.notNull(txnSpecificParams, "txnSpecificParams");
         ParamGuard.notNull(submitterDID, "submitterDID");
 
-        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<VdrResults.PreparedTxnResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int handle = vdr.getVdrHandle();
@@ -299,7 +316,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         return future;
     }
 
-    private static CompletableFuture<String> prepareCredDef(
+    private static CompletableFuture<VdrResults.PreparedTxnResult> prepareCredDef(
             VDR vdr,
             String txnSpecificParams,
             String submitterDID,
@@ -308,7 +325,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         ParamGuard.notNull(txnSpecificParams, "txnSpecificParams");
         ParamGuard.notNull(submitterDID, "submitterDID");
 
-        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<VdrResults.PreparedTxnResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int handle = vdr.getVdrHandle();
@@ -328,7 +345,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
     private static CompletableFuture<String> submitTxn(
             VDR vdr,
-            String preparedTxn,
+            VdrResults.PreparedTxnResult preparedTxn,
             byte[] signature,
             byte[] endorsement
     ) throws IndyException {
@@ -344,7 +361,11 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         int result = LibIndy.api.indy_vdr_submit_txn(
                 commandHandle,
                 handle,
-                preparedTxn,
+                preparedTxn.getContext(),
+                preparedTxn.getSignatureSpec(),
+                preparedTxn.getBytesToSign(),
+                preparedTxn.getBytesToSign().length,
+                preparedTxn.getEndorsementSpec(),
                 signature,
                 signature.length,
                 endorsement,
@@ -405,7 +426,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         return resloveCredDef(this, fqCredDef, cacheOptions);
     }
 
-    public CompletableFuture<String> prepareDID(
+    public CompletableFuture<VdrResults.PreparedTxnResult> prepareDID(
             String txnSpecificParams,
             String submitterDID,
             String endorser
@@ -413,7 +434,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         return prepareDID(this, txnSpecificParams, submitterDID, endorser);
     }
 
-    public CompletableFuture<String> prepareSchema(
+    public CompletableFuture<VdrResults.PreparedTxnResult> prepareSchema(
             String txnSpecificParams,
             String submitterDID,
             String endorser
@@ -421,7 +442,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         return prepareSchema(this, txnSpecificParams, submitterDID, endorser);
     }
 
-    public CompletableFuture<String> prepareCredDef(
+    public CompletableFuture<VdrResults.PreparedTxnResult> prepareCredDef(
             String txnSpecificParams,
             String submitterDID,
             String endorser
@@ -430,7 +451,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
     }
 
     public CompletableFuture<String> submitTxn(
-            String preparedTxn,
+            VdrResults.PreparedTxnResult preparedTxn,
             byte[] signature,
             byte[] endorsement
     ) throws IndyException {
