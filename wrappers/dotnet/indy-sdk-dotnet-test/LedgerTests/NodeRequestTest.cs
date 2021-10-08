@@ -76,18 +76,18 @@ namespace Hyperledger.Indy.Test.LedgerTests
             );
         }
 
-        [TestMethod]
-        public async Task TestSendNodeRequestWorksForWrongRole()
-        {
-            var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
-            var did = didResult.Did;
-
-            var nodeRequest = await Ledger.BuildNodeRequestAsync(did, did, _data);
-
-            var response = await Ledger.SignAndSubmitRequestAsync(pool, wallet, did, nodeRequest);
-            CheckResponseType(response, "REJECT");
-            
-        }
+        // [TestMethod]
+        // public async Task TestSendNodeRequestWorksForWrongRole()
+        // {
+        //     var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+        //     var did = didResult.Did;
+        //
+        //     var nodeRequest = await Ledger.BuildNodeRequestAsync(did, did, _data);
+        //
+        //     var response = await Ledger.SignAndSubmitRequestAsync(pool, wallet, did, nodeRequest);
+        //     CheckResponseType(response, "REJECT");
+        //     
+        // }
 
         [TestMethod]
         public async Task TestSendNodeRequestWorksForNewSteward()
