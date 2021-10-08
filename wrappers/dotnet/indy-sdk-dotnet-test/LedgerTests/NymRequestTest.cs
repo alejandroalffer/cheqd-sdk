@@ -53,12 +53,12 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var jNymRequest = JObject.Parse(nymRequest);
             
-            Assert.IsTrue(jNymRequest.GetValue("identifier").ToString().Equals(DID));
-            Assert.IsTrue(jNymRequest.GetValue("alias").ToString().Equals(_alias));
-            Assert.IsTrue(jNymRequest.GetValue("dest").ToString().Equals(_dest));
-            Assert.IsTrue(jNymRequest.GetValue("role").ToString().Equals("2"));
-            Assert.IsTrue(jNymRequest.GetValue("type").ToString().Equals("1"));
-            Assert.IsTrue(jNymRequest.GetValue("verkey").ToString().Equals(VERKEY_TRUSTEE));
+            Assert.IsTrue(jNymRequest["identifier"].ToString().Equals(DID));
+            Assert.IsTrue(jNymRequest["operation"]["alias"].ToString().Equals(_alias));
+            Assert.IsTrue(jNymRequest["operation"]["dest"].ToString().Equals(_dest));
+            Assert.IsTrue(jNymRequest["operation"]["role"].ToString().Equals("2"));
+            Assert.IsTrue(jNymRequest["operation"]["type"].ToString().Equals("1"));
+            Assert.IsTrue(jNymRequest["operation"]["verkey"].ToString().Equals(VERKEY_TRUSTEE));
         }
 
         [TestMethod]
