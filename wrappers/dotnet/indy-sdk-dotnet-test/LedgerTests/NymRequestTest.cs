@@ -18,20 +18,23 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestBuildNymRequestWorksForOnlyRequiredFields()
         {
-            var expectedResult = string.Format("\"identifier\":\"{0}\",\"operation\":{{\"dest\":\"{1}\",\"type\":\"1\"}}", DID, _dest);
-
             var nymRequest = await Ledger.BuildNymRequestAsync(DID, _dest, null, null, null);
+            var jNymRequest = JObject.Parse(nymRequest);
 
-            Assert.IsTrue(nymRequest.Contains(expectedResult));
+            Assert.IsTrue(jNymRequest["identifier"].ToString().Equals(DID));
+            Assert.IsTrue(jNymRequest["operation"]["dest"].ToString().Equals(_dest));
         }
 
         [TestMethod]
         public async Task TestBuildNymRequestWorksForEmptyRole()
         {
-            var expectedResult = string.Format("\"identifier\":\"{0}\",\"operation\":{{\"dest\":\"{1}\",\"role\":null,\"type\":\"1\"}}", DID, _dest);
+            // var expectedResult = string.Format("\"identifier\":\"{0}\",\"operation\":{{\"dest\":\"{1}\",\"role\":null,\"type\":\"1\"}}", DID, _dest);
 
             var nymRequest = await Ledger.BuildNymRequestAsync(DID, _dest, null, null, string.Empty);
-            Assert.IsTrue(nymRequest.Contains(expectedResult));
+            var jNymRequest = JObject.Parse(nymRequest);
+            
+            Assert.IsTrue(jNymRequest["identifier"].ToString().Equals(DID));
+            Assert.IsTrue(jNymRequest["operation"]["dest"].ToString().Equals(_dest));
         } 
 
         [TestMethod]
