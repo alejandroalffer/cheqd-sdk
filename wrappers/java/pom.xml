@@ -164,6 +164,12 @@
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<gpgArguments> <!-- Not totally sure why this is needed but it stops gpg from launching prompt for passphrase -->
+						<arg>--pinentry-mode</arg>
+						<arg>loopback</arg>
+					</gpgArguments>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
