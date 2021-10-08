@@ -3,12 +3,12 @@ use super::*;
 use crate::{BString, CString, CommandHandle, Error};
 
 extern "C" {
-    pub fn indy_vdr_create(
+    pub fn vdr_create(
         command_handle: CommandHandle,
         cb: Option<ResponseVdrHandleCB>,
     ) -> Error;
     
-    pub fn indy_vdr_register_indy_ledger(
+    pub fn vdr_register_indy_ledger(
         command_handle: CommandHandle,
         handle: VdrHandle,
         namespace_list: CString,
@@ -17,7 +17,7 @@ extern "C" {
         cb: Option<ResponseEmptyCB>,
     ) -> Error;
     
-    pub fn indy_vdr_register_cheqd_ledger(
+    pub fn vdr_register_cheqd_ledger(
         command_handle: CommandHandle,
         handle: VdrHandle,
         namespace_list: CString,
@@ -26,20 +26,20 @@ extern "C" {
         cb: Option<ResponseEmptyCB>,
     ) -> Error;
     
-    pub fn indy_vdr_ping(
+    pub fn vdr_ping(
         command_handle: CommandHandle,
         handle: VdrHandle,
         namespace_list: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
     
-    pub fn indy_vdr_cleanup(
+    pub fn vdr_cleanup(
         command_handle: CommandHandle,
         handle: VdrHandle,
         cb: Option<ResponseEmptyCB>,
     ) -> Error;
     
-    pub fn indy_vdr_resolve_did(
+    pub fn vdr_resolve_did(
         command_handle: CommandHandle,
         handle: VdrHandle,
         fqdid: CString,
@@ -47,7 +47,7 @@ extern "C" {
         cb: Option<ResponseStringCB>,
     ) -> Error;
     
-    pub fn indy_vdr_resolve_schema(
+    pub fn vdr_resolve_schema(
         command_handle: CommandHandle,
         handle: VdrHandle,
         fqdid: CString,
@@ -55,7 +55,7 @@ extern "C" {
         cb: Option<ResponseStringCB>,
     ) -> Error;
     
-    pub fn indy_vdr_resolve_cred_def(
+    pub fn vdr_resolve_cred_def(
         command_handle: CommandHandle,
         handle: VdrHandle,
         fqcreddef: CString,
@@ -63,7 +63,7 @@ extern "C" {
         cb: Option<ResponseStringCB>,
     ) -> Error;
     
-    pub fn indy_vdr_prepare_did(
+    pub fn vdr_prepare_did(
         command_handle: CommandHandle,
         handle: VdrHandle,
         txn_specific_params: CString,
@@ -72,7 +72,7 @@ extern "C" {
         cb: Option<ResponsePreparedTxnCB>,
     ) -> Error;
     
-    pub fn indy_vdr_prepare_schema(
+    pub fn vdr_prepare_schema(
         command_handle: CommandHandle,
         handle: VdrHandle,
         txn_specific_params: CString,
@@ -81,7 +81,7 @@ extern "C" {
         cb: Option<ResponsePreparedTxnCB>,
     ) -> Error;
 
-    pub fn indy_vdr_prepare_cred_def(
+    pub fn vdr_prepare_cred_def(
         command_handle: CommandHandle,
         handle: VdrHandle,
         txn_specific_params: CString,
@@ -90,7 +90,7 @@ extern "C" {
         cb: Option<ResponsePreparedTxnCB>,
     ) -> Error;
 
-    pub fn indy_vdr_submit_txn(
+    pub fn vdr_submit_txn(
         command_handle: CommandHandle,
         handle: VdrHandle,
         context: CString,

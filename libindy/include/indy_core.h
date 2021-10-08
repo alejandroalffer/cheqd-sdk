@@ -16,6 +16,6 @@
 #include "indy_non_secrets.h"
 #include "indy_logger.h"
 #include "indy_cache.h"
-#include "indy_vdr.h"
+#include "vdr.h"
 
 #endif

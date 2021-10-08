@@ -18,7 +18,7 @@ pub fn vdr_create() -> Box<dyn Future<Item=VdrHandle, Error=IndyError>> {
 
 fn _vdr_create(command_handle: CommandHandle, cb: Option<ResponseVdrHandleCB>) -> ErrorCode {
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_create(command_handle, cb)
+        vdr::vdr_create(command_handle, cb)
     })
 }
 
@@ -35,7 +35,7 @@ fn _vdr_register_indy_ledger(command_handle: CommandHandle, vdr_handle: VdrHandl
     let genesis_txn_data = c_str!(genesis_txn_data);
     let taa_config = c_str!(taa_config);
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_register_indy_ledger(command_handle, vdr_handle, namespace_list.as_ptr(), genesis_txn_data.as_ptr(), taa_config.as_ptr(), cb)
+        vdr::vdr_register_indy_ledger(command_handle, vdr_handle, namespace_list.as_ptr(), genesis_txn_data.as_ptr(), taa_config.as_ptr(), cb)
     })
 }
 
@@ -53,7 +53,7 @@ fn _vdr_register_cheqd_ledger(command_handle: CommandHandle, vdr_handle: VdrHand
     let node_addrs_list = c_str!(node_addrs_list);
 
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_register_indy_ledger(command_handle, vdr_handle, namespace_list.as_ptr(), chain_id.as_ptr(), node_addrs_list.as_ptr(), cb)
+        vdr::vdr_register_indy_ledger(command_handle, vdr_handle, namespace_list.as_ptr(), chain_id.as_ptr(), node_addrs_list.as_ptr(), cb)
     })
 }
 
@@ -69,7 +69,7 @@ fn _vdr_ping(command_handle: CommandHandle, vdr_handle: VdrHandle, namespace_lis
     let namespace_list = c_str!(namespace_list);
 
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_ping(command_handle, vdr_handle, namespace_list.as_ptr(), cb)
+        vdr::vdr_ping(command_handle, vdr_handle, namespace_list.as_ptr(), cb)
     })
 }
 
@@ -83,7 +83,7 @@ pub fn vdr_cleanup(vdr_handle: VdrHandle) -> Box<dyn Future<Item=(), Error=IndyE
 
 fn _vdr_cleanup(command_handle: CommandHandle, vdr_handle: VdrHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_cleanup(command_handle, vdr_handle, cb)
+        vdr::vdr_cleanup(command_handle, vdr_handle, cb)
     })
 }
 
@@ -100,7 +100,7 @@ fn _vdr_resolve_did(command_handle: CommandHandle, vdr_handle: VdrHandle, fqdid:
     let cache_options = c_str!(cache_options);
 
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_resolve_did(command_handle, vdr_handle, fqdid.as_ptr(), cache_options.as_ptr(), cb)
+        vdr::vdr_resolve_did(command_handle, vdr_handle, fqdid.as_ptr(), cache_options.as_ptr(), cb)
     })
 }
 
@@ -117,7 +117,7 @@ fn _vdr_resolve_schema(command_handle: CommandHandle, vdr_handle: VdrHandle, fqs
     let cache_options = c_str!(cache_options);
 
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_resolve_schema(command_handle, vdr_handle, fqschema.as_ptr(), cache_options.as_ptr(), cb)
+        vdr::vdr_resolve_schema(command_handle, vdr_handle, fqschema.as_ptr(), cache_options.as_ptr(), cb)
     })
 }
 
@@ -134,7 +134,7 @@ fn _vdr_resolve_cred_def(command_handle: CommandHandle, vdr_handle: VdrHandle, f
     let cache_options = c_str!(cache_options);
 
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_resolve_cred_def(command_handle, vdr_handle, fqcreddef.as_ptr(), cache_options.as_ptr(), cb)
+        vdr::vdr_resolve_cred_def(command_handle, vdr_handle, fqcreddef.as_ptr(), cache_options.as_ptr(), cb)
     })
 }
 
@@ -152,7 +152,7 @@ fn _vdr_prepare_did(command_handle: CommandHandle, vdr_handle: VdrHandle, txn_sp
     let endorser = c_str!(endorser);
 
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_prepare_did(command_handle, vdr_handle, txn_specific_params.as_ptr(), submitter_did.as_ptr(), endorser.as_ptr(), cb)
+        vdr::vdr_prepare_did(command_handle, vdr_handle, txn_specific_params.as_ptr(), submitter_did.as_ptr(), endorser.as_ptr(), cb)
     })
 }
 
@@ -170,7 +170,7 @@ fn _vdr_prepare_schema(command_handle: CommandHandle, vdr_handle: VdrHandle, txn
     let endorser = c_str!(endorser);
 
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_prepare_schema(command_handle, vdr_handle, txn_specific_params.as_ptr(), submitter_schema.as_ptr(), endorser.as_ptr(), cb)
+        vdr::vdr_prepare_schema(command_handle, vdr_handle, txn_specific_params.as_ptr(), submitter_schema.as_ptr(), endorser.as_ptr(), cb)
     })
 }
 
@@ -188,7 +188,7 @@ fn _vdr_prepare_cred_def(command_handle: CommandHandle, vdr_handle: VdrHandle, t
     let endorser = c_str!(endorser);
 
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_prepare_cred_def(command_handle, vdr_handle, txn_specific_params.as_ptr(), submitter_cred_def.as_ptr(), endorser.as_ptr(), cb)
+        vdr::vdr_prepare_cred_def(command_handle, vdr_handle, txn_specific_params.as_ptr(), submitter_cred_def.as_ptr(), endorser.as_ptr(), cb)
     })
 }
 
@@ -224,7 +224,7 @@ fn _vdr_submit_txn(
     let endorsement_spec = c_str!(endorsement_spec);
 
     ErrorCode::from(unsafe {
-        vdr::indy_vdr_submit_txn(command_handle, vdr_hanlde, context.as_ptr(), signature_spec.as_ptr(),
+        vdr::vdr_submit_txn(command_handle, vdr_hanlde, context.as_ptr(), signature_spec.as_ptr(),
                                  bytes_to_sign.as_ptr() as *const u8, bytes_to_sign.len() as u32,
                                  endorsement_spec.as_ptr(), signature.as_ptr() as *const u8, signature.len() as u32,
                                  endorsement.as_ptr() as *const u8, endorsement.len() as u32, cb)

@@ -81,7 +81,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         CompletableFuture<VDR> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibIndy.api.indy_vdr_create(
+        int result = LibIndy.api.vdr_create(
                 commandHandle,
                 createVdrCb
         );
@@ -106,7 +106,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
         int handle = vdr.getVdrHandle();
 
-        int result = LibIndy.api.indy_vdr_register_indy_ledger(
+        int result = LibIndy.api.vdr_register_indy_ledger(
                 commandHandle,
                 handle,
                 namespaceList,
@@ -134,7 +134,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
         int handle = vdr.getVdrHandle();
 
-        int result = LibIndy.api.indy_vdr_register_cheqd_ledger(
+        int result = LibIndy.api.vdr_register_cheqd_ledger(
                 commandHandle,
                 handle,
                 namespaceList,
@@ -158,7 +158,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
         int handle = vdr.getVdrHandle();
 
-        int result = LibIndy.api.indy_vdr_ping(
+        int result = LibIndy.api.vdr_ping(
                 commandHandle,
                 handle,
                 namespaceList,
@@ -176,7 +176,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         int commandHandle = addFuture(future);
 
         int handle = vdr.getVdrHandle();
-        int result = LibIndy.api.indy_vdr_cleanup(
+        int result = LibIndy.api.vdr_cleanup(
                 commandHandle,
                 handle,
                 voidCb);
@@ -199,7 +199,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
         int handle = vdr.getVdrHandle();
 
-        int result = LibIndy.api.indy_vdr_resolve_did(
+        int result = LibIndy.api.vdr_resolve_did(
                 commandHandle,
                 handle,
                 fqDID,
@@ -224,7 +224,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
         int handle = vdr.getVdrHandle();
 
-        int result = LibIndy.api.indy_vdr_resolve_schema(
+        int result = LibIndy.api.vdr_resolve_schema(
                 commandHandle,
                 handle,
                 fqSchema,
@@ -249,7 +249,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
         int handle = vdr.getVdrHandle();
 
-        int result = LibIndy.api.indy_vdr_resolve_cred_def(
+        int result = LibIndy.api.vdr_resolve_cred_def(
                 commandHandle,
                 handle,
                 fqCredDef,
@@ -276,7 +276,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
         int handle = vdr.getVdrHandle();
 
-        int result = LibIndy.api.indy_vdr_prepare_did(
+        int result = LibIndy.api.vdr_prepare_did(
                 commandHandle,
                 handle,
                 txnSpecificParams,
@@ -303,7 +303,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
         int handle = vdr.getVdrHandle();
 
-        int result = LibIndy.api.indy_vdr_prepare_schema(
+        int result = LibIndy.api.vdr_prepare_schema(
                 commandHandle,
                 handle,
                 txnSpecificParams,
@@ -330,7 +330,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
         int handle = vdr.getVdrHandle();
 
-        int result = LibIndy.api.indy_vdr_prepare_cred_def(
+        int result = LibIndy.api.vdr_prepare_cred_def(
                 commandHandle,
                 handle,
                 txnSpecificParams,
@@ -358,7 +358,7 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
         int handle = vdr.getVdrHandle();
 
-        int result = LibIndy.api.indy_vdr_submit_txn(
+        int result = LibIndy.api.vdr_submit_txn(
                 commandHandle,
                 handle,
                 preparedTxn.getContext(),
