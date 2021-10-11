@@ -71,6 +71,7 @@
 							<gpgArguments> <!-- Not totally sure why this is needed but it stops gpg from launching prompt for passphrase -->
 								<arg>--pinentry-mode</arg>
 								<arg>loopback</arg>
+								<arg>--no-tty</arg>
 							</gpgArguments>
 						</configuration>
 					</plugin>
@@ -150,38 +151,6 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-gpg-plugin</artifactId>
-				<version>3.0.1</version>
-				<executions>
-					<execution>
-						<id>sign-artifacts</id>
-						<phase>verify</phase>
-						<goals>
-							<goal>sign</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<gpgArguments> <!-- Not totally sure why this is needed but it stops gpg from launching prompt for passphrase -->
-						<arg>--pinentry-mode</arg>
-						<arg>loopback</arg>
-						<arg>--no-tty</arg>
-					</gpgArguments>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.sonatype.plugins</groupId>
-				<artifactId>nexus-staging-maven-plugin</artifactId>
-				<version>1.6.8</version>
-				<extensions>true</extensions>
-				<configuration>
-					<serverId>ossrh</serverId>
-					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
-					<autoReleaseAfterClose>true</autoReleaseAfterClose>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
