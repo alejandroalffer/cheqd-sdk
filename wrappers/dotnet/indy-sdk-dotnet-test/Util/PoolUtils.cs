@@ -45,7 +45,7 @@ namespace Hyperledger.Indy.Test
             stream.Close();
         }
 
-        public static string CreatePoolLedgerConfig()
+        public async static Task<string> CreatePoolLedgerConfig()
         {
             var poolName = Guid.NewGuid().ToString();
 
@@ -64,7 +64,7 @@ namespace Hyperledger.Indy.Test
 
         public static async Task<Pool> CreateAndOpenPoolLedgerAsync()
         {
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
             var openPoolLedgerConfig = "{\"refresh_on_open\":true}";
 
             return await Pool.OpenPoolLedgerAsync(poolName, openPoolLedgerConfig);
