@@ -10,7 +10,7 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestDeletePoolWorks()
         {
-            var poolName = await PoolUtils.CreatePoolLedgerConfig();
+            var poolName = PoolUtils.CreatePoolLedgerConfig();
             await Pool.DeletePoolLedgerConfigAsync(poolName);
         }
 

@@ -45,7 +45,7 @@ namespace Hyperledger.Indy.Test
             stream.Close();
         }
 
-        public async static string CreatePoolLedgerConfig()
+        public static string CreatePoolLedgerConfig()
         {
             var poolName = Guid.NewGuid().ToString();
 
