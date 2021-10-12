@@ -71,7 +71,6 @@
 							<gpgArguments> <!-- Not totally sure why this is needed but it stops gpg from launching prompt for passphrase -->
 								<arg>--pinentry-mode</arg>
 								<arg>loopback</arg>
-								<arg>--no-tty</arg>
 							</gpgArguments>
 						</configuration>
 					</plugin>
