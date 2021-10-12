@@ -60,30 +60,29 @@ test-libindy-dotnet-wrapper-release:
     refs:
       - main@evernym/verity/vdr-tools
       - tags@evernym/verity/vdr-tools
-  allow_failure: true
 
 # - Jobs : Publish - ##
-#publish-libindy-dotnet-wrapper:
-#  stage: publish
-#  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
-#  extends: .net-common
-#  only:
-#    refs:
-#      - main@evernym/verity/vdr-tools
-#  script:
-#    - pushd wrappers/dotnet/indy-sdk-dotnet
-#    - ../ci/publish.sh
-#    - popd
-#
-# # -- Jobs : Release - ##
-#release-libindy-dotnet-wrapper:
-#  stage: release
-#  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
-#  extends: .net-common
-#  script:
-#    - pushd wrappers/dotnet/indy-sdk-dotnet
-#    - ../ci/release.sh
-#    - popd
-#  only:
-#    refs:
-#      - tags@evernym/verity/vdr-tools
+publish-libindy-dotnet-wrapper:
+  stage: publish
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  extends: .net-common
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+  script:
+    - pushd wrappers/dotnet/indy-sdk-dotnet
+    - ../ci/publish.sh
+    - popd
+
+ # -- Jobs : Release - ##
+release-libindy-dotnet-wrapper:
+  stage: release
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  extends: .net-common
+  script:
+    - pushd wrappers/dotnet/indy-sdk-dotnet
+    - ../ci/release.sh
+    - popd
+  only:
+    refs:
+      - tags@evernym/verity/vdr-tools
