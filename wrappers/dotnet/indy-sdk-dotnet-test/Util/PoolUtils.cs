@@ -53,7 +53,7 @@ namespace Hyperledger.Indy.Test
             return poolName;
         }
 
-        public async static void CreatePoolLedgerConfig(string poolName)
+        public async static Task CreatePoolLedgerConfig(string poolName)
         {
             var genesisTxnFile = CreateGenesisTxnFile("temp.txn");
             var path = Path.GetFullPath(genesisTxnFile.Name).Replace('\\', '/');
