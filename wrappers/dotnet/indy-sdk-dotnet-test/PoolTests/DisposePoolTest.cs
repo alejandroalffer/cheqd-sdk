@@ -29,19 +29,6 @@ namespace Hyperledger.Indy.Test.PoolTests
         }
 
         [TestMethod]
-        public async Task PoolWithSameNameCanBeOpenedAfterDispose()
-        {
-            var poolName = await PoolUtils.CreatePoolLedgerConfig();
-
-            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
-            pool.Dispose();
-
-            using (var newPool = await Pool.OpenPoolLedgerAsync(poolName, null))
-            {
-            }
-        }
-
-        [TestMethod]
         public async Task ClosingDisposedPoolStillProvidesSDKError()
         {
             var poolName = await PoolUtils.CreatePoolLedgerConfig();
