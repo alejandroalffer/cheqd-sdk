@@ -5,7 +5,7 @@
 	<groupId>com.evernym.vdrtools</groupId>
 	<artifactId>vdr-tools</artifactId>
 	<packaging>jar</packaging>
-	<version>0.0.1</version>
+	<version>0.0.2</version>
 	<name>VDR Tools</name>
 	<description>The official Java Wrapper for Evernym VDR Tools. Currently under construction.
 	</description>
@@ -36,7 +36,7 @@
 			</activation>
 			<properties>
 				<gpg.skip>false</gpg.skip>
-				<gpg.passphrase>${env.OSSHR_GPG_PASSPHRASE}</gpg.passphrase>
+				<gpg.passphrase>${env.OSSRH_GPG_PASSPHRASE}</gpg.passphrase>
 				<gpg.keyname>${env.OSSRH_GPG_SIGNING_KEY_NAME}</gpg.keyname>
 				<repository.id>ossrh</repository.id>
 				<repository.url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</repository.url>
