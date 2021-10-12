@@ -13,11 +13,10 @@ namespace Hyperledger.Indy.Test.DemoTests
     public class LedgerDemoTest : IndyIntegrationTestBase
     {
         [TestMethod]
-        [Ignore]
         public async Task TestLedgerDemo()
         {
             // 1. Create ledger config from genesis txn file
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
             var pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
 
             // 2. Create and Open My Wallet

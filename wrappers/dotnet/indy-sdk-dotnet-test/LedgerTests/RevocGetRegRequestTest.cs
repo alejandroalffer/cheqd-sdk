@@ -10,17 +10,16 @@ namespace Hyperledger.Indy.Test.LedgerTests
     public class RevocGetRegRequestTest : LedgerIntegrationTestBase
     {
         [TestMethod]
-        [Ignore]
         public async Task TestBuildGetRevocRegRequestWorks()
         {
             var expectedResult =
                 "\"operation\":{" +
                 "\"type\":\"116\"," +
-                "\"revocRegDefId\":\"RevocRegID\"," +
+                $"\"revocRegDefId\":\"{revRegDefId}\"," +
                 "\"timestamp\":100" +
                 "}";
 
-            var request = await Ledger.BuildGetRevocRegRequestAsync(DID, "RevocRegID", 100);
+            var request = await Ledger.BuildGetRevocRegRequestAsync(DID, revRegDefId, 100);
 
             Assert.IsTrue(request.Replace("\\s+", "").Contains(expectedResult.Replace("\\s+", "")));
         }

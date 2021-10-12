@@ -8,13 +8,12 @@ namespace Hyperledger.Indy.Test.LedgerTests
     public class RevocRegEntryRequestTest : LedgerIntegrationTestBase
     {
         [TestMethod]
-        [Ignore]
         public async Task TestBuildRevocRegEntryRequestWorks()
         {
             var expectedResult =
                 "\"operation\":{" +
                         "\"type\":\"114\"," +
-                        "\"revocRegDefId\":\"RevocRegID\"," +
+                        $"\"revocRegDefId\":\"{revRegDefId}\"," +
                         "\"revocDefType\":\"CL_ACCUM\"," +
                         "\"value\":{\"accum\":\"1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000\"}" +
                         "}";
@@ -24,7 +23,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
                 "            \"accum\": \"1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000\"\n" +
                 "        }}";
 
-            var request = await Ledger.BuildRevocRegEntryRequestAsync(DID, "RevocRegID", "CL_ACCUM", value);
+            var request = await Ledger.BuildRevocRegEntryRequestAsync(DID, revRegDefId, "CL_ACCUM", value);
             Assert.IsTrue(request.Replace("\\s+", "").Contains(expectedResult.Replace("\\s+", "")));
         }
     }

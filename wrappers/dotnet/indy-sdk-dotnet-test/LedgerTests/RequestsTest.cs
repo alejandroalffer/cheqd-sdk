@@ -10,7 +10,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
     public class RequestsTest : IndyIntegrationTestWithPoolAndSingleWallet
     {
         [TestMethod]
-        [Ignore]
         public async Task TestSubmitRequestWorks()
         {
             var request = "{\"reqId\":1491566332010860,\n" +
@@ -35,7 +34,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestSignAndSubmitRequestWorks()
         {
             var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);

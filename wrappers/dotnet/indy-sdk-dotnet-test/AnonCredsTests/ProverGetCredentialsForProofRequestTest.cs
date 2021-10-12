@@ -214,7 +214,6 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestProverGetCredentialsForProofRequestWorksForEmptyRequest()
         {
             var proofRequest = "{\"nonce\":\"123432421212\"," +
@@ -224,12 +223,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{}" +
                 "             }";
 
-            var credentialsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(wallet, proofRequest);
-
-            var credentials = JObject.Parse(credentialsJson);
-
-            Assert.AreEqual(0, ((JObject)credentials["attrs"]).Count);
-            Assert.AreEqual(0, ((JObject)credentials["predicates"]).Count);
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
+                AnonCreds.ProverGetCredentialsForProofReqAsync(wallet, proofRequest)
+            );
         }
 
         [TestMethod]

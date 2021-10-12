@@ -10,7 +10,6 @@ namespace Hyperledger.Indy.Test.DemoTests
     public class ReplaceKeysDemoTest : IndyIntegrationTestWithPoolAndSingleWallet
     {   
         [TestMethod]
-        [Ignore]
         public async Task TestReplaceKeysDemoWorks()
         {
             // 1. Create My Did
@@ -43,7 +42,6 @@ namespace Hyperledger.Indy.Test.DemoTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestReplaceKeysWithoutNymTransaction()
         {
             // 1. Create My Did

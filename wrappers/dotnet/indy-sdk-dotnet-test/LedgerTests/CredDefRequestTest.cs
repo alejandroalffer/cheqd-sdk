@@ -13,7 +13,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         {
             var data = "{\n" +
                 "        \"ver\": \"1.0\",\n" +
-                "        \"id\": \"cred_def_id\",\n" +
+                "        \"id\": \"NcYxiDXkpYi6ov5FcYDi1e:3:CL:1\",\n" +
                 "        \"schemaId\": \"1\",\n" +
                 "        \"type\": \"CL\",\n" +
                 "        \"tag\": \"TAG_1\",\n" +
