@@ -49,7 +49,7 @@ namespace Hyperledger.Indy.Test
         {
             var poolName = Guid.NewGuid().ToString();
 
-            CreatePoolLedgerConfig(poolName);
+            await CreatePoolLedgerConfig(poolName);
             return poolName;
         }
 
