@@ -5,9 +5,7 @@
     /// </summary>
     public class IncompatiblePaymentMethodsException : IndyException
     {
-        const string message = "Information passed to libindy is incompatible.";
-
-        internal IncompatiblePaymentMethodsException() : base(message, (int)ErrorCode.PaymentIncompatibleMethodsError)
+        internal IncompatiblePaymentMethodsException(string message) : base(message, (int)ErrorCode.PaymentIncompatibleMethodsError)
         {
         }
     }

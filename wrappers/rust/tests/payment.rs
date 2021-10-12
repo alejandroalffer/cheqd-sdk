@@ -6,7 +6,7 @@ extern crate byteorder;
 
 #[macro_use]
 mod utils;
-use utils::wallet::Wallet;
+use crate::utils::wallet::Wallet;
 
 mod low_tests {
     use super::*;

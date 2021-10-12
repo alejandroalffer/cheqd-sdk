@@ -42,6 +42,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestIssuerCreateAndStoreCredentialDefWorksForDuplicate()
         {
             var ex = await Assert.ThrowsExceptionAsync<CredentialDefinitionAlreadyExistsException>(() =>

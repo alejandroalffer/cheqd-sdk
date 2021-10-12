@@ -5,12 +5,10 @@
     /// </summary>
     public class LedgerConsensusException : IndyException
     {
-        const string message = "No consensus was reached during the ledger operation";
-
         /// <summary>
         /// Initializes a new LedgerConsensusException.
         /// </summary>
-        internal LedgerConsensusException() : base(message, (int)ErrorCode.LedgerNoConsensusError)
+        internal LedgerConsensusException(string message) : base(message, (int)ErrorCode.LedgerNoConsensusError)
         {
 
         }

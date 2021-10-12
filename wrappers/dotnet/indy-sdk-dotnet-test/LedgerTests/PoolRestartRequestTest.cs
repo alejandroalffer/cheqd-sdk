@@ -21,6 +21,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestBuildPoolRestartRequestWorksForCancelAction()
         {
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +

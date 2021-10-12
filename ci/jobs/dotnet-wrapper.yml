@@ -1,0 +1,89 @@
+.net-common:
+  tags:
+    - docker-machine
+    - large
+  before_script:
+    - pushd /usr/share/dotnet/sdk/3.1.404/Sdks/Microsoft.NET.Sdk.WindowsDesktop/targets
+    - mv Microsoft.WinFx.props Microsoft.WinFX.props      # This is a workaround to a bug in the .net 3.1 version being used
+    - mv Microsoft.WinFx.targets Microsoft.WinFX.targets
+    - popd
+
+.test-libindy-dotnet-wrapper:
+  extends: .net-common
+  stage: test
+  services:
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
+      alias: pool_network
+  script:
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/dotnet/lib
+#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/dotnet/lib
+    - wrappers/dotnet/ci/test.sh ${TEST_POOL_IP}
+
+test-libindy-dotnet-wrapper-from-branch:
+  extends: .test-libindy-dotnet-wrapper
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  dependencies:
+    - build-libindy-ubuntu18-from-branch
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'debug'
+  only:
+    refs:
+      - /^docker-.*/
+  allow_failure: true
+
+test-libindy-dotnet-wrapper-from-latest:
+  extends: .test-libindy-dotnet-wrapper
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  dependencies:
+    - build-libindy-ubuntu18-from-latest
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'debug'
+  except:
+    refs:
+      - /^docker-.*/
+      - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
+  allow_failure: true
+
+test-libindy-dotnet-wrapper-release:
+  extends: .test-libindy-dotnet-wrapper
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  dependencies:
+    - build-libindy-ubuntu18-release
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'release'
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
+  allow_failure: true
+
+# - Jobs : Publish - ##
+publish-libindy-dotnet-wrapper:
+  stage: publish
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  extends: .net-common
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+  script:
+    - pushd wrappers/dotnet/indy-sdk-dotnet
+    - ../ci/publish.sh
+    - popd
+
+ # -- Jobs : Release - ##
+release-libindy-dotnet-wrapper:
+  stage: release
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  extends: .net-common
+  script:
+    - pushd wrappers/dotnet/indy-sdk-dotnet
+    - ../ci/release.sh
+    - popd
+  only:
+    refs:
+      - tags@evernym/verity/vdr-tools

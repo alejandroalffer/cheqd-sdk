@@ -5,12 +5,10 @@
     /// </summary>
     public class PoolConfigNotCreatedException : IndyException
     {
-        const string message = "The requested pool cannot be opened because it does not have an existing configuration.";
-
         /// <summary>
         /// Initializes a new PoolConfigNotCreatedException.
         /// </summary>
-        internal PoolConfigNotCreatedException() : base(message, (int)ErrorCode.PoolLedgerNotCreatedError)
+        internal PoolConfigNotCreatedException(string message) : base(message, (int)ErrorCode.PoolLedgerNotCreatedError)
         {
 
         }

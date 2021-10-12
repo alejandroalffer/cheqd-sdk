@@ -5,12 +5,10 @@
     /// </summary>
     public class InvalidPoolException : IndyException
     {
-        const string message = "The pool is closed or invalid and cannot be used.";
-
         /// <summary>
         /// Initializes a new PoolClosedException.
         /// </summary>
-        internal InvalidPoolException() : base(message, (int)ErrorCode.PoolLedgerInvalidPoolHandle)
+        internal InvalidPoolException(string message) : base(message, (int)ErrorCode.PoolLedgerInvalidPoolHandle)
         {
 
         }

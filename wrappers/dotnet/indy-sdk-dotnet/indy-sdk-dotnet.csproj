@@ -1,26 +1,27 @@
 ﻿<Project Sdk="MSBuild.Sdk.Extras/2.0.54">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net452;xamarinios10</TargetFrameworks>
-    <AssemblyName>Hyperledger.Indy</AssemblyName>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <AssemblyName>vdr-tools</AssemblyName>
     <RootNamespace>Hyperledger.Indy</RootNamespace>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.11.1</Version>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Version>0.0.2</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Authors>Symon Rottem, Tomislav Markovski</Authors>
-    <Company>Hyperledger Indy</Company>
-    <Product>Hyperledger Indy SDK</Product>
-    <Description>.NET wrapper for the Hyperledger Indy SDK.
+    <Authors>Evernym</Authors>
+    <Company>Evernym</Company>
+    <Product>Vdr Tools</Product>
+    <Description>.NET wrapper for Evernym VDR Tools. Currently under construction.
 
-Please note that to function the C-Callable Hyperledger Indy SDK and its dependencies must be installed in the library/DLL search path - please see the project page for more information.</Description>
-    <PackageProjectUrl>https://github.com/hyperledger/indy-sdk</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/hyperledger/indy-sdk</RepositoryUrl>
+Please note that to function the C-Callable library and its dependencies must be installed in the library/DLL search path - please see the project page for more information.</Description>
+    <PackageProjectUrl>https://github.com/evernym/vdr-tools</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/evernym/vdr-tools</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>hyperledger indy sdk</PackageTags>
+    <PackageTags>Evernym</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageIconUrl></PackageIconUrl>
-    <AssemblyVersion>1.11.1</AssemblyVersion>
-    <FileVersion>1.11.1</FileVersion>
+    <AssemblyVersion>0.0.2.0</AssemblyVersion>
+    <FileVersion>0.0.2.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -33,6 +34,7 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
 
 </Project>

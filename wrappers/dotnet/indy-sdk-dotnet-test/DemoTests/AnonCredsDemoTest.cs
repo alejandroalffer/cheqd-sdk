@@ -175,6 +175,7 @@ namespace Hyperledger.Indy.Test.DemoTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestAnonCredsWorksForMultipleIssuerSingleProver()
         {
             var issuerGvtWallet = issuerWallet;

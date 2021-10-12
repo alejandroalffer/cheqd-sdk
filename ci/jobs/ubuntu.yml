@@ -1,0 +1,99 @@
+## - Jobs : Pre-Build - ##
+
+dockerbuild-libindy-ubuntu16:
+  stage: dockerbuild-pre
+  extends: .dockerbuild-libindy
+  variables:
+    DOCKERFILE_PATH: libindy/ci/ubuntu.dockerfile
+    DOCKER_IMAGE_NAME: libindy-ubuntu16
+  rules:
+    - changes:
+        - .gitlab-ci.yml
+        - libindy/ci/ubuntu.dockerfile
+
+dockerbuild-libindy-ubuntu18:
+  stage: dockerbuild-pre
+  extends: .dockerbuild-libindy
+  variables:
+    DOCKERFILE_PATH: libindy/ci/ubuntu18.dockerfile
+    DOCKER_IMAGE_NAME: libindy-ubuntu18
+  rules:
+    - changes:
+        - .gitlab-ci.yml
+        - libindy/ci/ubuntu18.dockerfile
+
+
+## - Jobs : Build - ##
+build-libindy-ubuntu16-from-branch:
+  extends: .build-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
+  variables:
+    BUILD_TYPE: 'debug'
+  only:
+    refs:
+      - /^docker-.*/
+
+build-libindy-ubuntu16-from-latest:
+  extends: .build-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  variables:
+    BUILD_TYPE: 'debug'
+  except:
+    refs:
+      - /^docker-.*/
+      - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
+
+build-libindy-ubuntu16-release:
+  extends: .build-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  variables:
+    BUILD_TYPE: 'release'
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
+
+build-libindy-ubuntu18-from-branch:
+  extends: .build-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:${CI_COMMIT_REF_SLUG}
+  variables:
+    BUILD_TYPE: 'debug'
+  only:
+    refs:
+      - /^docker-.*/
+
+build-libindy-ubuntu18-from-latest:
+  extends: .build-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  variables:
+    BUILD_TYPE: 'debug'
+  except:
+    refs:
+      - /^docker-.*/
+      - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
+
+build-libindy-ubuntu18-release:
+  extends: .build-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  variables:
+    BUILD_TYPE: 'release'
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
+
+## - Jobs : Package - ##
+
+package-libindy-ubuntu16:
+  extends: .package-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  dependencies:
+    - build-libindy-ubuntu16-release
+
+package-libindy-ubuntu18:
+  extends: .package-libindy
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-ubuntu18-release
