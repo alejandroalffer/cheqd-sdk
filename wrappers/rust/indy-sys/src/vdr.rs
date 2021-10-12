@@ -93,15 +93,21 @@ extern "C" {
     pub fn vdr_submit_txn(
         command_handle: CommandHandle,
         handle: VdrHandle,
-        context: CString,
+        namespace: CString,
         signature_spec: CString,
-        bytes_to_sign_raw: BString,
-        bytes_to_sign_len: u32,
-        endorsement_spec: CString,
+        txn_bytes_raw: BString,
+        txn_bytes_len: u32,
         signature_raw: BString,
         signature_len: u32,
-        endorsement_raw: BString,
-        endorsement_len: u32,
+        endorsement_spec: CString,
+        cb: Option<ResponseStringCB>,
+    ) -> Error;
+
+    pub fn vdr_submit_query(
+        command_handle: CommandHandle,
+        handle: VdrHandle,
+        namespace: CString,
+        query: CString,
         cb: Option<ResponseStringCB>,
     ) -> Error;
 }

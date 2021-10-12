@@ -64,15 +64,18 @@ public class VDR extends IndyJava.API implements AutoCloseable {
     private static Callback prepareTxnCb = new Callback() {
 
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int xcommand_handle, int err, String context, String signature_spec, Pointer bytes_to_sign_raw, int bytes_to_sign_len, String endorsement_spec) {
+        public void callback(int xcommand_handle, int err, String namespace, String signature_spec,Pointer txn_bytes_raw, int txn_bytes_len, Pointer bytes_to_sign_raw, int bytes_to_sign_len, String endorsement_spec) {
 
             CompletableFuture<VdrResults.PreparedTxnResult> future = (CompletableFuture<VdrResults.PreparedTxnResult>) removeFuture(xcommand_handle);
             if (!checkResult(future, err)) return;
 
-            byte[] bytes = new byte[bytes_to_sign_len];
-            bytes_to_sign_raw.read(0, bytes, 0, bytes_to_sign_len);
+            byte[] txnBytes = new byte[bytes_to_sign_len];
+            bytes_to_sign_raw.read(0, txnBytes, 0, bytes_to_sign_len);
 
-            VdrResults.PreparedTxnResult result = new VdrResults.PreparedTxnResult(context, signature_spec, bytes, endorsement_spec);
+            byte[] bytesToSign = new byte[bytes_to_sign_len];
+            bytes_to_sign_raw.read(0, bytesToSign, 0, bytes_to_sign_len);
+
+            VdrResults.PreparedTxnResult result = new VdrResults.PreparedTxnResult(namespace, signature_spec,txnBytes, bytesToSign, endorsement_spec);
             future.complete(result);
         }
     };
@@ -346,12 +349,10 @@ public class VDR extends IndyJava.API implements AutoCloseable {
     private static CompletableFuture<String> submitTxn(
             VDR vdr,
             VdrResults.PreparedTxnResult preparedTxn,
-            byte[] signature,
-            byte[] endorsement
+            byte[] signature
     ) throws IndyException {
         ParamGuard.notNull(preparedTxn, "preparedTxn");
         ParamGuard.notNull(signature, "signature");
-        ParamGuard.notNull(endorsement, "endorsement");
 
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
@@ -361,18 +362,42 @@ public class VDR extends IndyJava.API implements AutoCloseable {
         int result = LibIndy.api.vdr_submit_txn(
                 commandHandle,
                 handle,
-                preparedTxn.getContext(),
+                preparedTxn.getNamespace(),
                 preparedTxn.getSignatureSpec(),
-                preparedTxn.getBytesToSign(),
-                preparedTxn.getBytesToSign().length,
-                preparedTxn.getEndorsementSpec(),
+                preparedTxn.getTxnBytes(),
+                preparedTxn.getTxnBytes().length,
                 signature,
                 signature.length,
-                endorsement,
-                endorsement.length,
+                preparedTxn.getEndorsementSpec(),
                 stringCb);
 
         checkResult(future, result);
+
+        return future;
+    }
+
+    private static CompletableFuture<String> submitQuery(
+            VDR vdr,
+            String namespace,
+            String query
+    ) throws IndyException {
+        ParamGuard.notNull(namespace, "namespace");
+        ParamGuard.notNull(query, "query");
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int handle = vdr.getVdrHandle();
+
+        int result = LibIndy.api.vdr_submit_query(
+                commandHandle,
+                handle,
+                namespace,
+                query,
+                stringCb
+        );
+
+        checkResult(future,result);
 
         return future;
     }
@@ -452,10 +477,16 @@ public class VDR extends IndyJava.API implements AutoCloseable {
 
     public CompletableFuture<String> submitTxn(
             VdrResults.PreparedTxnResult preparedTxn,
-            byte[] signature,
-            byte[] endorsement
+            byte[] signature
     ) throws IndyException {
-        return submitTxn(this, preparedTxn, signature, endorsement);
+        return submitTxn(this, preparedTxn, signature);
+    }
+
+    public CompletableFuture<String> submitQuery(
+            String namespace,
+            String query
+    ) throws IndyException {
+        return submitQuery(this, namespace, query);
     }
 
     @Override

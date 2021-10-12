@@ -7,24 +7,30 @@ public final class VdrResults {
     }
 
     public static class PreparedTxnResult extends IndyJava.Result {
-        private String context;
+        private String namespace;
         private String signatureSpec;
+        private byte[] txnBytes;
         private byte[] bytesToSign;
         private String endorsementSpec;
 
-        public PreparedTxnResult(String context, String signatureSpec, byte[] bytesToSign, String endorsementSpec) {
-            this.context = context;
+        public PreparedTxnResult(String namespace, String signatureSpec, byte[] txnBytes, byte[] bytesToSign, String endorsementSpec) {
+            this.namespace = namespace;
             this.signatureSpec = signatureSpec;
+            this.txnBytes = txnBytes;
             this.bytesToSign = bytesToSign;
             this.endorsementSpec = endorsementSpec;
         }
 
-        public String getContext() {
-            return context;
+        public String getNamespace() {
+            return namespace;
         }
 
         public String getSignatureSpec() {
             return signatureSpec;
+        }
+
+        public byte[] getTxnBytes() {
+            return txnBytes;
         }
 
         public byte[] getBytesToSign() {
