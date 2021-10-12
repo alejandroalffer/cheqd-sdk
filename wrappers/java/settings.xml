@@ -7,8 +7,8 @@
         </server>
         <server>
             <id>ossrh</id>
-            <username>${env.OSSRH_ACCOUNT_USER}</username>
-            <password>${env.OSSRH_ACCOUNT_PASSWORD}</password>
+            <username>${env.OSSRH_USERNAME}</username>
+            <password>${env.OSSRH_PASSWORD}</password>
         </server>
         <server>
             <id>gitlab-maven</id>

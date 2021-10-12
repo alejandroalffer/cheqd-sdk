@@ -52,6 +52,8 @@ test-libindy-java-wrapper-release:
 publish-libindy-java-wrapper:
   stage: publish
   image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  variables:
+    MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
   extends: .tags_micro
   only:
     refs:
@@ -62,6 +64,8 @@ publish-libindy-java-wrapper:
 release-libindy-java-wrapper:
   stage: release
   image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  variables:
+    MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
   extends: .tags_micro
   only:
     refs:
