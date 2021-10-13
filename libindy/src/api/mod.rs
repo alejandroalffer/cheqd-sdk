@@ -11,6 +11,7 @@ pub mod payments;
 pub mod payments_v2;
 pub mod pairwise;
 pub mod pool;
+pub mod vdr;
 pub mod wallet;
 
 use indy_api_types::{errors::prelude::*, validation::Validatable, ErrorCode};

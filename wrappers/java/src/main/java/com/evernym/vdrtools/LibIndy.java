@@ -212,6 +212,26 @@ public abstract class LibIndy {
 		int indy_set_runtime_config(String config);
 		int indy_get_current_error(PointerByReference error);
 
+
+
+		// vdr.rs
+		int vdr_create(int command_handle, Callback cb);
+
+		int vdr_register_indy_ledger(int command_handle, int vdr_handle, String namespace_list, String genesis_txn_data, String taa_config, Callback cb);
+		int vdr_register_cheqd_ledger(int command_handle, int vdr_handle, String namespace_list, String chain_id, String node_addrs_list, Callback cb);
+		int vdr_ping(int command_handle, int vdr_handle, String namespace_list, Callback cb);
+		int vdr_cleanup(int command_handle, int vdr_handle, Callback cb);
+
+		int vdr_resolve_did(int command_handle, int vdr_handle, String fqdid, String cache_options, Callback cb);
+		int vdr_resolve_schema(int command_handle, int vdr_handle, String fqschema, String cache_options, Callback cb);
+		int vdr_resolve_cred_def(int command_handle, int vdr_handle, String fqcreddef, String cache_options, Callback cb);
+
+		int vdr_prepare_did(int command_handle, int vdr_handle, String txn_specific_params, String submitter_did, String endorser, Callback cb);
+		int vdr_prepare_schema(int command_handle, int vdr_handle, String txn_specific_params, String submitter_did, String endorser, Callback cb);
+		int vdr_prepare_cred_def(int command_handle, int vdr_handle, String txn_specific_params, String submitter_did, String endorser, Callback cb);
+		int vdr_submit_txn(int command_handle, int vdr_handle, String namespace, String signature_spec, byte[] txn_bytes_raw, int txn_bytes_len, byte[] signature_raw, int signature_len, String endorsement_spec, Callback cb);
+		int vdr_submit_query(int command_handle, int vdr_handle, String namespace, String query, Callback cb);
+
 		interface BoolCallback extends Callback {
 			void callback(int xcommand_handle, int err, IndyBool valid);
 		}

@@ -29,6 +29,9 @@ pub const INVALID_COMMAND_HANDLE : CommandHandle = 0;
 
 pub type StorageHandle = i32;
 
+pub type VdrHandle = i32;
+pub const INVALID_VDR_HANDLE : VdrHandle = 0;
+
 #[repr(transparent)]
 #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
 pub struct SearchHandle(pub i32);

@@ -16,6 +16,7 @@ pub mod wallet;
 pub mod logger;
 pub mod cache;
 pub mod metrics;
+pub mod vdr;
 
 use libc::{c_void, c_char};
 
@@ -33,6 +34,8 @@ pub const INVALID_POOL_HANDLE : PoolHandle = 0;
 
 pub type CommandHandle = i32;
 pub const INVALID_COMMAND_HANDLE : CommandHandle = 0;
+
+pub type VdrHandle = i32;
 
 //pub type Handle = i32;
 pub type IndyHandle = i32;
@@ -52,6 +55,8 @@ pub type ResponseEmptyCB = extern fn(xcommand_handle: CommandHandle, err: Error)
 pub type ResponseBoolCB = extern fn(xcommand_handle: CommandHandle, err: Error, bool1: bool);
 pub type ResponseI32CB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle);
 pub type ResponseWalletHandleCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: WalletHandle);
+pub type ResponseVdrHandleCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: VdrHandle);
+pub type ResponsePreparedTxnCB = extern fn(xcommand_handle: CommandHandle, err: Error, namespace: CString, signature_spec: CString, txn_bytes_raw: BString, txn_bytes_len: u32, bytes_to_sign_raw: BString, bytes_to_sign_len: u32, endorsement_spec: CString);
 pub type ResponseI32UsizeCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle, total_count: usize);
 pub type ResponseStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString);
 pub type ResponseStringStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString, str2: CString);
