@@ -21,6 +21,6 @@ ls -al
 find "./output" -type f -name ${FILENAME}
 echo 'end info'
 
-find "./output" -type f -name ${FILENAME} -exec curl -u $CREDENTIALS -X POST $URL -F 'file=@{}' \;
+find "./output" -type f -name ${FILENAME} -exec curl -u $CREDENTIALS -X POST $URL --upload-file {} \;
 
 
