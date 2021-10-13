@@ -24,7 +24,7 @@ force_full_interaction_tests = []
 sodium_static = []
 only_high_cases = []
 mysql_storage = []
-cheqd = ["indy-api-types/cheqd", "indy-sys/cheqd", "indy/cheqd", "indy-utils/cheqd"]
+cheqd = ["indy-api-types/cheqd", "indy-sys/cheqd", "indy/cheqd", "indy-utils/cheqd", "cosmrs"]
 
 # Causes the build to fail on all warnings
 fatal_warnings = []
@@ -73,7 +73,7 @@ http-client = "6.4.1"
 ics23 = "0.6.5"
 lexical-core = "0.7.6"
 
-cosmrs = { version = "0.1.0", features = ["rpc"] }
+cosmrs = { version = "0.1.0", features = ["rpc"], optional = true }
 k256 = { version = "0.9.6", features = ["ecdsa-core", "ecdsa"] }
 uuid = { version = "0.7.4", default-features = false, features = ["v4"] }
 ursa = { version = "0.3.7", optional = true}

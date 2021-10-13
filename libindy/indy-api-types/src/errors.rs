@@ -385,6 +385,7 @@ impl From<sqlx::Error> for IndyError {
 // ToDo: For now we don't have any specified ABCI errors from tendermint endpoint and from cosmos too
 // That's why we use this general approach.
 // But in the future, in case of adding special ABCI codes it has to be mapped into ErrorCodes.
+#[cfg(feature = "cheqd")]
 impl From<cosmrs::rpc::endpoint::broadcast::tx_commit::TxResult> for IndyError {
     fn from(result: cosmrs::rpc::endpoint::broadcast::tx_commit::TxResult) -> IndyError {
         IndyError::from_msg(

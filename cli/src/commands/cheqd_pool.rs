@@ -80,7 +80,7 @@ pub mod open_command {
             }
         };
 
-        trace!("execute <<");
+        trace!("execute << {:?}", res);
         res
     }
 }
@@ -109,10 +109,10 @@ pub mod close_command {
                 println_err!("Pool of other type is open. Please close it using corresponding command.");
                 Err(())
             }
-        }?;
+        };
 
-        trace!("execute <<");
-        Ok(res)
+        trace!("execute << {:?}", res);
+        res
     }
 }
 
