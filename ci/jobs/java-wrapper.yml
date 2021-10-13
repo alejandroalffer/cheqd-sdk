@@ -1,19 +1,19 @@
 .test-libindy-java-wrapper:
   stage: test
   services:
-    - name: registry.gitlab.com/evernym/containers/indy-pool:1.9.2_1.0.2
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
       alias: pool_network
   script:
     - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
     - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/java/lib
-    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
+#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/java/lib
     - wrappers/java/ci/test.sh ${TEST_POOL_IP}
 
 test-libindy-java-wrapper-from-branch:
   extends: .test-libindy-java-wrapper
-  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:${CI_COMMIT_REF_SLUG}
   dependencies:
-    - build-libindy-ubuntu16-from-branch
+    - build-libindy-ubuntu18-from-branch
   variables:
     PACKAGE_TYPE: 'xenial'
     BUILD_TYPE: 'debug'
@@ -23,9 +23,9 @@ test-libindy-java-wrapper-from-branch:
 
 test-libindy-java-wrapper-from-latest:
   extends: .test-libindy-java-wrapper
-  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
   dependencies:
-    - build-libindy-ubuntu16-from-latest
+    - build-libindy-ubuntu18-from-latest
   variables:
     PACKAGE_TYPE: 'xenial'
     BUILD_TYPE: 'debug'
@@ -33,27 +33,42 @@ test-libindy-java-wrapper-from-latest:
     refs:
       - /^docker-.*/
       - main@evernym/verity/vdr-tools
-      - stable@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 test-libindy-java-wrapper-release:
   extends: .test-libindy-java-wrapper
-  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:latest
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
   dependencies:
-    - build-libindy-ubuntu16-release
+    - build-libindy-ubuntu18-release
   variables:
     PACKAGE_TYPE: 'xenial'
     BUILD_TYPE: 'release'
   only:
     refs:
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 # - Jobs : Publish - ##
 publish-libindy-java-wrapper:
   stage: publish
-  image: registry.gitlab.com/evernym/containers/vcx-java/vcx-java:latest
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  variables:
+    MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
   extends: .tags_micro
-  rules:
-    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
-      when: always
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
   script:
-    - wrappers/java/ci/publish.sh ${CI_COMMIT_BRANCH} ${CI_PIPELINE_IID}
+    - wrappers/java/ci/publish.sh
+
+release-libindy-java-wrapper:
+  stage: release
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:f5b82f46
+  variables:
+    MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  extends: .tags_micro
+  only:
+    refs:
+      - tags@evernym/verity/vdr-tools
+  script:
+    - wrappers/java/ci/release.sh

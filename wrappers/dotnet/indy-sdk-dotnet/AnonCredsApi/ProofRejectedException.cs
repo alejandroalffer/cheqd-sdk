@@ -5,12 +5,10 @@
     /// </summary>
     public class ProofRejectedException : IndyException
     {
-        const string message = "The proof has been rejected.";
-
         /// <summary>
         /// Initializes a new ProofRejectedException.
         /// </summary>
-        internal ProofRejectedException() : base(message, (int)ErrorCode.AnoncredsProofRejected)
+        internal ProofRejectedException(string message) : base(message, (int)ErrorCode.AnoncredsProofRejected)
         {
 
         }

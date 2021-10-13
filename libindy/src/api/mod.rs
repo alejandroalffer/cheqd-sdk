@@ -11,6 +11,7 @@ pub mod payments;
 pub mod payments_v2;
 pub mod pairwise;
 pub mod pool;
+pub mod vdr;
 pub mod wallet;
 #[cfg(feature = "cheqd")]
 pub mod cheqd_ledger;

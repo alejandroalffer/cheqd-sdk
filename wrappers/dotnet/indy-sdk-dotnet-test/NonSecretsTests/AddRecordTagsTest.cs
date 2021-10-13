@@ -9,7 +9,7 @@ namespace Hyperledger.Indy.Test.NonSecretsTests
     public class AddRecordTagsTest : NonSecretsIntegrationTestBase
     {
         [TestMethod]
-        public async Task TestBuildAttribRequestWorksForRawData()
+        public async Task TestAddRecordTagsWorks()
         {
             await NonSecrets.AddRecordAsync(wallet, type, id, value, tagsEmpty);
 

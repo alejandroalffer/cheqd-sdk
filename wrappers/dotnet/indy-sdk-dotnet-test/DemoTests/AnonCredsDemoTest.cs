@@ -46,7 +46,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             await Pool.SetProtocolVersionAsync(PROTOCOL_VERSION);
 
             // Create and Open Pool
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
             pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
 
             // Issuer Create and Open Wallet

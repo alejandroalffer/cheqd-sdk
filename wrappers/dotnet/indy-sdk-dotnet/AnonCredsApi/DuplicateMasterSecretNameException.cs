@@ -5,12 +5,10 @@
     /// </summary>
     public class DuplicateMasterSecretNameException : IndyException
     {
-        const string message = "Another master-secret with the specified name already exists.";
-
         /// <summary>
         /// Initializes a new DuplicateMasterSecretNameException.
         /// </summary>
-        internal DuplicateMasterSecretNameException() : base(message, (int)ErrorCode.AnoncredsMasterSecretDuplicateNameError)
+        internal DuplicateMasterSecretNameException(string message) : base(message, (int)ErrorCode.AnoncredsMasterSecretDuplicateNameError)
         {
 
         }

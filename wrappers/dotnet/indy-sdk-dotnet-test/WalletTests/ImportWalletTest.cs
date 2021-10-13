@@ -1,8 +1,8 @@
-﻿using Hyperledger.Indy.DidApi;
+﻿using System.IO;
+using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
-
 namespace Hyperledger.Indy.Test.WalletTests
 {
     [TestClass]
@@ -28,13 +28,15 @@ namespace Hyperledger.Indy.Test.WalletTests
             wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
 
             var didWithMetaAfter = await Did.GetDidMetadataAsync(wallet, did);
-
+            
             Assert.AreEqual(didWithMetaBefore, didWithMetaAfter);
         }
 
         [TestMethod]
         public async Task TestImportWalletWorksForNotExists()
         {
+            File.Delete(EXPORT_PATH);
+            
             var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
                 Wallet.ImportAsync(WALLET_CONFIG, WALLET_CREDENTIALS, EXPORT_CONFIG_JSON)
             );

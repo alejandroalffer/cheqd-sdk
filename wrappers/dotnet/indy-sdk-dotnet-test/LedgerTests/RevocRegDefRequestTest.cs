@@ -14,7 +14,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var expectedResult =
                  "\"operation\":{" +
                          "\"type\":\"113\"," +
-                         "\"id\":\"RevocRegID\"," +
+                         $"\"id\":\"{revRegDefId}\"," +
                          "\"revocDefType\":\"CL_ACCUM\"," +
                          "\"tag\":\"TAG1\"," +
                          "\"credDefId\":\"CredDefID\"," +
@@ -28,8 +28,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
                          "}";
 
             var data = "{\n" +
-                    "        \"ver\": \"1.0\",\n" +
-                    "        \"id\": \"RevocRegID\",\n" +
+                    "        \"ver\": \"1.0\",\n" + 
+                    $"       \"id\": \"{revRegDefId}\",\n" +
                     "        \"revocDefType\": \"CL_ACCUM\",\n" +
                     "        \"tag\": \"TAG1\",\n" +
                     "        \"credDefId\": \"CredDefID\",\n" +

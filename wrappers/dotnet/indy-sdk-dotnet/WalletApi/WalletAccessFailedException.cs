@@ -5,12 +5,10 @@
     /// </summary>
     public class WalletAccessFailedException : IndyException
     {
-        const string message = "The wallet could not be opened because invalid credentials were provided.";
-
         /// <summary>
         /// Initializes a new WalletAccessFailedException.
         /// </summary>
-        internal WalletAccessFailedException() : base(message, (int)ErrorCode.WalletAccessFailed)
+        internal WalletAccessFailedException(string message) : base(message, (int)ErrorCode.WalletAccessFailed)
         {
 
         }

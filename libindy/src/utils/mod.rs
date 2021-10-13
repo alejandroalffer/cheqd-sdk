@@ -26,6 +26,8 @@ pub use indy_utils::wql;
 #[macro_use]
 pub mod qualifier;
 
+pub mod extensions;
+
 macro_rules! map (
     { $($key:expr => $value:expr),+ } => {
         {

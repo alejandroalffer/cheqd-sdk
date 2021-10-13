@@ -5,12 +5,10 @@
     /// </summary>
     public class WrongWalletForPoolException : IndyException
     {
-        const string message = "The wallet specified is not compatible with the open pool.";
-
         /// <summary>
         /// Initializes a new WrongWalletForPoolException.
         /// </summary>
-        internal WrongWalletForPoolException() : base(message, (int)ErrorCode.WalletIncompatiblePoolError)
+        internal WrongWalletForPoolException(string message) : base(message, (int)ErrorCode.WalletIncompatiblePoolError)
         {
 
         }

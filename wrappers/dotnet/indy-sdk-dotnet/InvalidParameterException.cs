@@ -20,20 +20,10 @@ namespace Hyperledger.Indy
         }
 
         /// <summary>
-        /// Builds the error message from the SDK error code.
-        /// </summary>
-        /// <param name="sdkErrorCode">Teh SDK error code.</param>
-        /// <returns>The error message.</returns>
-        private static string BuildMessage(int sdkErrorCode)
-        {
-            return string.Format("The value passed to parameter {0} is not valid.", GetParamIndex(sdkErrorCode));
-        }
-
-        /// <summary>
         /// Initializes a new InvalidParameterException from the specified SDK error code.
         /// </summary>
         /// <param name="sdkErrorCode">The SDK error code that specifies which parameter was invalid.</param>
-        internal InvalidParameterException(int sdkErrorCode) : base(BuildMessage(sdkErrorCode), sdkErrorCode)
+        internal InvalidParameterException(string message, int sdkErrorCode) : base(message, sdkErrorCode)
         {
             ParameterIndex = GetParamIndex(sdkErrorCode);
         }
@@ -43,5 +33,4 @@ namespace Hyperledger.Indy
         /// </summary>
         public int ParameterIndex { get; private set; }
     }
-
 }

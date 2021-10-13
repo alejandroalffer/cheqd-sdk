@@ -17,7 +17,7 @@ namespace Hyperledger.Indy.Test
         [TestInitialize]
         public async Task CreatePoolAndWallet()
         {
-            poolName = PoolUtils.CreatePoolLedgerConfig();
+            poolName = await PoolUtils.CreatePoolLedgerConfig();
             pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);

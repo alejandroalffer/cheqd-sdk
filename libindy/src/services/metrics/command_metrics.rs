@@ -250,4 +250,17 @@ pub enum CommandMetric {
     MetricsCommandCollectMetrics,
     // Exit
     Exit,
+    // VdrCommand
+    VdrCommandCreateVdr,
+    VdrCommandRegisterIndyLedger,
+    VdrCommandRegisterCheqdLedger,
+    VdrCommandPing,
+    VdrCommandCleanup,
+    VdrCommandResolveDid,
+    VdrCommandResolveSchema,
+    VdrCommandResolveCredDef,
+    VdrCommandPrepareDid,
+    VdrCommandPrepareSchema,
+    VdrCommandPrepareCredDef,
+    VdrCommandSubmitTxn,
 }

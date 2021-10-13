@@ -7,6 +7,7 @@ stages:
   - test
   - package
   - publish
+  - release
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -24,6 +25,8 @@ variables:
   indyFullDebVersion: "1.16.0~170" # DEB package name
   androidSovtokenArtifact: "libsovtoken_1.0.5-201912281255-e39929e_all.zip"
   iosSovtokenArtifact: "libsovtoken_1.0.5-201912281252-e39929e_all.zip"
+  DEV_BASE_VERSION: "0.0.2"
+  DEV_VERSION: '$DEV_BASE_VERSION-$CI_PIPELINE_IID'
 
 workflow:
   rules:
@@ -31,11 +34,16 @@ workflow:
     - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
       when: never
     - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
 
 include:
   - '/ci/jobs/common.yml'
   - '/ci/jobs/java-wrapper.yml'
+  - '/ci/jobs/dotnet-wrapper.yml'
   - '/ci/jobs/ubuntu.yml'
   - '/ci/jobs/ios.yml'
   - '/ci/jobs/macos.yml'
   - '/ci/jobs/android.yml'
+  - '/ci/jobs/nodejs-wrapper.yml'
+  - '/ci/jobs/python-wrapper.yml'
+  - '/ci/jobs/libindy.yml'

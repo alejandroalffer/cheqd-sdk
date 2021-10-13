@@ -5,9 +5,7 @@
     /// </summary>
     public class UnknownPaymentMethodException : IndyException
     {
-        const string message = "An unknown payment method was called.";
-
-        internal UnknownPaymentMethodException() : base(message, (int)ErrorCode.PaymentUnknownMethodError)
+        internal UnknownPaymentMethodException(string message) : base(message, (int)ErrorCode.PaymentUnknownMethodError)
         {
         }
     }

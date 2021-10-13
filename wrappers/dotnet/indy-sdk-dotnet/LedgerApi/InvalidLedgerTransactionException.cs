@@ -5,12 +5,10 @@
     /// </summary>
     public class InvalidLedgerTransactionException : IndyException
     {
-        const string message = "The ledger message is unknown or malformed.";
-
         /// <summary>
         /// Initializes a new InvalidLedgerTransactionException.
         /// </summary>
-        internal InvalidLedgerTransactionException() : base(message, (int)ErrorCode.LedgerInvalidTransaction)
+        internal InvalidLedgerTransactionException(string message) : base(message, (int)ErrorCode.LedgerInvalidTransaction)
         {
 
         }

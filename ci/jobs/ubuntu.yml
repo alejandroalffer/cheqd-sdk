@@ -1,13 +1,4 @@
 ## - Jobs : Pre-Build - ##
-.dockerbuild-libindy:
-  extends: .kaniko_large
-  variables:
-    KANIKO_ARGS: "--build-arg RUST_VER=${rustVersion} --build-arg LIBINDY_VER=${indyFullDebVersion} --build-arg LIBNULL_VER=${indyFullDebVersion} --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion}"
-  rules:
-    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
-      when: always
-    - if: $CI_COMMIT_REF_NAME == "docker-.*" || $CI_COMMIT_REF_NAME == "android-.*"
-      when: always
 
 dockerbuild-libindy-ubuntu16:
   stage: dockerbuild-pre
@@ -31,38 +22,6 @@ dockerbuild-libindy-ubuntu18:
         - .gitlab-ci.yml
         - libindy/ci/ubuntu18.dockerfile
 
-
-## - Jobs : Build - ##
-.build-libindy:
-  extends:
-    - .tags_compute_xlarge
-    - .cheqd-submodules
-  stage: build
-  artifacts:
-    expire_in: 1 week
-    paths:
-      - libindy/target/${BUILD_TYPE}/libindy.so
-      - libnullpay/target/${BUILD_TYPE}/libnullpay.so
-      - cli/target/${BUILD_TYPE}/indy-cli
-  services:
-    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
-      alias: pool_network
-    - name: ghcr.io/cheqd/cheqd-testnet:v0.1.19
-      alias: cheqd_pool_network
-  timeout: 3h
-  script:
-    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-    - export CHEQD_TEST_POOL_IP=$(getent ahostsv4 cheqd_pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
-    - export CHEQD_TEST_POOL_IP="http://$CHEQD_TEST_POOL_IP:26657"
-    # - libindy/ci/scripts/lint.sh
-    # - cli/ci/scripts/lint.sh
-    - libindy/ci/scripts/build.sh ${BUILD_TYPE}
-    - libindy/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
-    - libnullpay/ci/scripts/build.sh ${BUILD_TYPE}
-    - libnullpay/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
-    - cli/ci/scripts/build.sh ${BUILD_TYPE}
-    - cli/ci/scripts/test.sh ${BUILD_TYPE} ${TEST_POOL_IP}
-
 build-libindy-ubuntu16-from-branch:
   extends: .build-libindy
   image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu16:${CI_COMMIT_REF_SLUG}
@@ -81,6 +40,7 @@ build-libindy-ubuntu16-from-latest:
     refs:
       - /^docker-.*/
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 build-libindy-ubuntu16-release:
   extends: .build-libindy
@@ -90,6 +50,7 @@ build-libindy-ubuntu16-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 build-libindy-ubuntu18-from-branch:
   extends: .build-libindy
@@ -109,6 +70,7 @@ build-libindy-ubuntu18-from-latest:
     refs:
       - /^docker-.*/
       - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
 
 build-libindy-ubuntu18-release:
   extends: .build-libindy
@@ -118,25 +80,9 @@ build-libindy-ubuntu18-release:
   only:
     refs:
       - main@evernym/verity/vdr-tools
-
+      - tags@evernym/verity/vdr-tools
 
 ## - Jobs : Package - ##
-.package-libindy:
-  extends: .tags_micro
-  stage: package
-  artifacts:
-    expire_in: 1 week
-    paths:
-      - libindy/target/debian/*.deb
-      - libnullpay/target/debian/*.deb
-      - cli/target/debian/*.deb
-  rules:
-    - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
-      when: always
-  script:
-    - libindy/ci/scripts/package.sh ${CI_PIPELINE_IID}
-    - libnullpay/ci/scripts/package.sh ${CI_PIPELINE_IID}
-    - cli/ci/scripts/package.sh ${CI_PIPELINE_IID}
 
 package-libindy-ubuntu16:
   extends: .package-libindy
