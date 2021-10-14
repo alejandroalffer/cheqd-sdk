@@ -5,9 +5,7 @@
     /// </summary>
     public class PaymentOperationNotSupportedException : IndyException
     {
-        const string message = "Operation is not supported for payment method.";
-
-        internal PaymentOperationNotSupportedException() : base(message, (int)ErrorCode.PaymentOperationNotSupportedError)
+        internal PaymentOperationNotSupportedException(string message) : base(message, (int)ErrorCode.PaymentOperationNotSupportedError)
         {
         }
     }

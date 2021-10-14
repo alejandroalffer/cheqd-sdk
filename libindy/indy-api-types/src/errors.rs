@@ -144,15 +144,14 @@ impl Fail for IndyError {
 
 impl fmt::Display for IndyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut first = true;
+        let mut causes = <dyn Fail>::iter_chain(self.inner.as_ref());
 
-        for cause in Fail::iter_chain(self.inner.as_ref()) {
-            if first {
-                first = false;
-                writeln!(f, "Error: {}", cause)?;
-            } else {
-                writeln!(f, "  Caused by: {}", cause)?;
-            }
+        if let Some(cause) = causes.next() {
+            writeln!(f, "Error: {}", cause)?;
+        }
+
+        for cause in causes {
+            writeln!(f, "  Caused by: {}", cause)?;
         }
 
         Ok(())
@@ -296,7 +295,7 @@ impl From<UrsaCryptoError> for IndyError {
     fn from(err: UrsaCryptoError) -> Self {
         let message = format!(
             "UrsaCryptoError: {}",
-            Fail::iter_causes(&err)
+            <dyn Fail>::iter_causes(&err)
                 .map(|e| e.to_string())
                 .collect::<String>()
         );

@@ -12,7 +12,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
         protected static string schemaId;
         protected static string credDefId;
-        protected static string revRegDefId;
+        protected static string revRegDefId = "NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:CL_ACCUM:TAG_1";
 
         public async Task PostEntitiesAsync() 
         {

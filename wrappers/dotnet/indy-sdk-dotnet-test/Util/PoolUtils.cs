@@ -45,15 +45,15 @@ namespace Hyperledger.Indy.Test
             stream.Close();
         }
 
-        public static string CreatePoolLedgerConfig()
+        public async static Task<string> CreatePoolLedgerConfig()
         {
             var poolName = Guid.NewGuid().ToString();
 
-            CreatePoolLedgerConfig(poolName);
+            await CreatePoolLedgerConfig(poolName);
             return poolName;
         }
 
-        public async static void CreatePoolLedgerConfig(string poolName)
+        public async static Task CreatePoolLedgerConfig(string poolName)
         {
             var genesisTxnFile = CreateGenesisTxnFile("temp.txn");
             var path = Path.GetFullPath(genesisTxnFile.Name).Replace('\\', '/');
@@ -64,7 +64,7 @@ namespace Hyperledger.Indy.Test
 
         public static async Task<Pool> CreateAndOpenPoolLedgerAsync()
         {
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
             var openPoolLedgerConfig = "{\"refresh_on_open\":true}";
 
             return await Pool.OpenPoolLedgerAsync(poolName, openPoolLedgerConfig);

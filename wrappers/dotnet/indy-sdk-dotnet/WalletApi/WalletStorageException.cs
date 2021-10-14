@@ -5,12 +5,10 @@
     /// </summary>
     public class WalletStorageException : IndyException
     {
-        const string message = "A storage error occurred during the wallet operation.";
-
         /// <summary>
         /// Initializes a new WalletStorageException.
         /// </summary>
-        internal WalletStorageException() : base(message, (int)ErrorCode.WalletStorageError)
+        internal WalletStorageException(string message) : base(message, (int)ErrorCode.WalletStorageError)
         {
 
         }

@@ -5,12 +5,10 @@
     /// </summary>
     public class WalletNotFoundException : IndyException
     {
-        const string message = "The wallet does not exist.";
-
         /// <summary>
         /// Initializes a new WalletNotFoundException.
         /// </summary>
-        internal WalletNotFoundException() : base(message, (int)ErrorCode.WalletNotFoundError)
+        internal WalletNotFoundException(string message) : base(message, (int)ErrorCode.WalletNotFoundError)
         {
 
         }

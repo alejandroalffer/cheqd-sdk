@@ -10,7 +10,7 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestOpenPoolWorksForNullConfig()
         {
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
@@ -21,7 +21,7 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestOpenPoolWorksForConfig()
         {
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
 
             var config = "{\"timeout\":20,\"extended_timeout\":80}";
             var pool = await Pool.OpenPoolLedgerAsync(poolName, config);
@@ -34,7 +34,7 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestOpenPoolWorksForTwice()
         {
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
@@ -49,7 +49,7 @@ namespace Hyperledger.Indy.Test.PoolTests
         public async Task TestOpenPoolWorksForIncompatibleProtocolVersion()
         {
             await Pool.SetProtocolVersionAsync(PROTOCOL_VERSION);
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
