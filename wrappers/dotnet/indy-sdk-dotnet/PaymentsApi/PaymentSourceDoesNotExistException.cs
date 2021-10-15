@@ -5,9 +5,7 @@
     /// </summary>
     public class PaymentSourceDoesNotExistException : IndyException
     {
-        const string message = "No such source found.";
-
-        internal PaymentSourceDoesNotExistException() : base(message, (int)ErrorCode.PaymentSourceDoesNotExistError)
+        internal PaymentSourceDoesNotExistException(string message) : base(message, (int)ErrorCode.PaymentSourceDoesNotExistError)
         {
         }
     }

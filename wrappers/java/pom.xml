@@ -2,38 +2,82 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.hyperledger</groupId>
-	<artifactId>indy</artifactId>
+	<groupId>com.evernym.vdrtools</groupId>
+	<artifactId>vdr-tools</artifactId>
 	<packaging>jar</packaging>
-	<version>1.15.0</version>
-	<name>indy</name>
-	<description>This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects),
-		which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org).
-		The major artifact of the SDK is a c-callable library.
+	<version>0.0.2</version>
+	<name>VDR Tools</name>
+	<description>The official Java Wrapper for Evernym VDR Tools. Currently under construction.
 	</description>
 	<licenses>
 		<license>
-			<name>MIT/Apache-2.0</name>
+			<name>Apache-2.0</name>
 			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
 
-	<issueManagement>
-		<url>https://github.com/hyperledger/indy-sdk/issues</url>
-		<system>GitHub Issues</system>
-	</issueManagement>
-
 	<scm>
-		<url>https://github.com/hyperledger/indy-sdk</url>
-		<connection>scm:git:git://github.com/hyperledger/indy-sdk.git</connection>
-		<developerConnection>scm:git:git@github.com:hyperledger/indy-sdk.git</developerConnection>
+		<url>https://github.com/evernym/vdr-tools</url>
+		<connection>scm:git:git://github.com/evernym/vdr-tools.git</connection>
+		<developerConnection>scm:git:git://github.com/evernym/vdr-tools.git</developerConnection>
 	</scm>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<github.global.server>github</github.global.server>
 	</properties>
+
+	<profiles>
+		<profile>
+			<id>release</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<properties>
+				<gpg.skip>false</gpg.skip>
+				<gpg.passphrase>${env.OSSRH_GPG_PASSPHRASE}</gpg.passphrase>
+				<gpg.keyname>${env.OSSRH_GPG_SIGNING_KEY_NAME}</gpg.keyname>
+				<repository.id>ossrh</repository.id>
+				<repository.url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</repository.url>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.sonatype.plugins</groupId>
+						<artifactId>nexus-staging-maven-plugin</artifactId>
+						<version>1.6.8</version>
+						<extensions>true</extensions>
+						<configuration>
+							<serverId>ossrh</serverId>
+							<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+							<autoReleaseAfterClose>true</autoReleaseAfterClose>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>3.0.1</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<gpgArguments> <!-- Not totally sure why this is needed but it stops gpg from launching prompt for passphrase -->
+								<arg>--pinentry-mode</arg>
+								<arg>loopback</arg>
+							</gpgArguments>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 	<!--<distributionManagement>-->
 	<!--<snapshotRepository>-->
@@ -75,7 +119,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.18.1</version>
+				<version>2.22.2</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -107,31 +151,6 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!--<plugin>-->
-				<!--<groupId>org.apache.maven.plugins</groupId>-->
-				<!--<artifactId>maven-gpg-plugin</artifactId>-->
-				<!--<version>1.6</version>-->
-				<!--<executions>-->
-					<!--<execution>-->
-						<!--<id>sign-artifacts</id>-->
-						<!--<phase>verify</phase>-->
-						<!--<goals>-->
-							<!--<goal>sign</goal>-->
-						<!--</goals>-->
-					<!--</execution>-->
-				<!--</executions>-->
-			<!--</plugin>-->
-			<!--<plugin>-->
-				<!--<groupId>org.sonatype.plugins</groupId>-->
-				<!--<artifactId>nexus-staging-maven-plugin</artifactId>-->
-				<!--<version>1.6.8</version>-->
-				<!--<extensions>true</extensions>-->
-				<!--<configuration>-->
-					<!--<serverId>ossrh</serverId>-->
-					<!--<nexusUrl>https://oss.sonatype.org/</nexusUrl>-->
-					<!--<autoReleaseAfterClose>true</autoReleaseAfterClose>-->
-				<!--</configuration>-->
-			<!--</plugin>-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-deploy-plugin</artifactId>
@@ -163,12 +182,6 @@
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 			<version>2.5</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.bitcoinj</groupId>
-			<artifactId>bitcoinj-core</artifactId>
-			<version>0.14.4</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

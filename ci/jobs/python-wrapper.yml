@@ -1,0 +1,96 @@
+.python-common:
+  extends: .tags_micro
+  variables:
+    DEV_PYPI_VERSION: '$DEV_BASE_VERSION+$CI_COMMIT_SHORT_SHA'
+  before_script:
+    - echo "VERSION = '$DEV_PYPI_VERSION'" > wrappers/python/version.py
+
+.test-vdr-tools-python-wrapper:
+  extends:
+    - .tags_micro
+  stage: test
+  services:
+    - name: registry.gitlab.com/evernym/containers/indy-pool:1.12.3_1.0.8
+      alias: pool_network
+  script:
+    - export TEST_POOL_IP=$(getent ahostsv4 pool_network | grep STREAM | head -n 1 | awk '{ print $1 }')
+    - cp libindy/target/${BUILD_TYPE}/libindy.so wrappers/python/lib
+#    - cp libnullpay/target/${BUILD_TYPE}/libnullpay.so wrappers/python/lib
+    - wrappers/python/ci/test.sh ${TEST_POOL_IP}
+
+test-vdr-tools-python-wrapper-from-branch:
+  extends: .test-vdr-tools-python-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:${CI_COMMIT_REF_SLUG}
+  dependencies:
+    - build-libindy-ubuntu18-from-branch
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'debug'
+  only:
+    refs:
+      - /^docker-.*/
+
+test-vdr-tools-python-wrapper-from-latest:
+  extends: .test-vdr-tools-python-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-ubuntu18-from-latest
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'debug'
+  except:
+    refs:
+      - /^docker-.*/
+      - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
+
+test-libindy-python-wrapper-release:
+  extends: .test-vdr-tools-python-wrapper
+  image: ${CI_REGISTRY_IMAGE}/libindy-ubuntu18:latest
+  dependencies:
+    - build-libindy-ubuntu18-release
+  variables:
+    PACKAGE_TYPE: 'xenial'
+    BUILD_TYPE: 'release'
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+      - tags@evernym/verity/vdr-tools
+
+publish-vdr-tools-python-wrapper:
+  stage: publish
+  extends: .python-common
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:134b350a
+  variables:
+    TWINE_PASSWORD: '$CI_JOB_TOKEN'
+    TWINE_USERNAME: 'gitlab-ci-token'
+    TWINE_REPOSITORY_URL: '$CI_SERVER_URL/api/v4/projects/${CI_PROJECT_ID}/packages/pypi'
+  script:
+    - pushd wrappers/python
+    - pip3 install --upgrade keyrings.alt
+    - python3 setup.py sdist
+    - python3 -m twine upload --verbose --skip-existing dist/*
+    - popd
+  only:
+    refs:
+      - main@evernym/verity/vdr-tools
+
+release-vdr-tools-python-wrapper:
+  stage: release
+  extends: .python-common
+  image: registry.gitlab.com/evernym/containers/build-verity-sdk:134b350a
+  variables:
+    TWINE_PASSWORD: '$PYPI_PASSWORD'
+    TWINE_USERNAME: '$PYPI_USERNAME'
+  script:
+    - pushd wrappers/python
+    - export RELEASE_VERSION=`echo $CI_COMMIT_TAG | cut -c2-`                   # pull version from tag name
+    - echo "VERSION = '$RELEASE_VERSION'" > version.py               # set version to tagged version
+    - echo "$RELEASE_VERSION"
+    - pip3 install --upgrade keyrings.alt
+    - python3 setup.py sdist
+    - python3 -m twine upload --verbose --skip-existing dist/*
+    - popd
+  only:
+    refs:
+      - tags@evernym/verity/vdr-tools

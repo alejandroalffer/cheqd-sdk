@@ -5,12 +5,10 @@
     /// </summary>
     public class WalletExistsException : IndyException
     {
-        const string message = "A wallet with the specified name already exists.";
-
         /// <summary>
         /// Initializes a new WalletExistsException.
         /// </summary>
-        internal WalletExistsException() : base(message, (int)ErrorCode.WalletAlreadyExistsError)
+        internal WalletExistsException(string message) : base(message, (int)ErrorCode.WalletAlreadyExistsError)
         {
 
         }

@@ -5,12 +5,10 @@
     /// </summary>
     public class UnknownCryptoTypeException : IndyException
     {
-        const string message = "An unknown crypto format has been used for a DID entity key.";
-
         /// <summary>
         /// Initializes a new UnknownCryptoTypeException.
         /// </summary>
-        internal UnknownCryptoTypeException() : base(message, (int)ErrorCode.UnknownCryptoTypeError)
+        internal UnknownCryptoTypeException(string message) : base(message, (int)ErrorCode.UnknownCryptoTypeError)
         {
 
         }

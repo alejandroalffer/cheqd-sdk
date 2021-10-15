@@ -5,12 +5,10 @@
     /// </summary>
     public class CredentialDefinitionAlreadyExistsException : IndyException
     {
-        const string message = "The specified credential definition already exists.";
-
         /// <summary>
         /// Initializes a new CredDefAlreadyExistsException.
         /// </summary>
-        internal CredentialDefinitionAlreadyExistsException() : base(message, (int)ErrorCode.AnoncredsCredDefAlreadyExistsError)
+        internal CredentialDefinitionAlreadyExistsException(string message) : base(message, (int)ErrorCode.AnoncredsCredDefAlreadyExistsError)
         {
 
         }

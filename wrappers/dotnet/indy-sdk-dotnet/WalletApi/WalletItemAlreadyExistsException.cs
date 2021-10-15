@@ -6,10 +6,7 @@
     /// <seealso cref="Hyperledger.Indy.IndyException" />
     public class WalletItemAlreadyExistsException : IndyException
     {
-        private const string message =
-            "The specified item already exists in the wallet.";
-
-        internal WalletItemAlreadyExistsException() : base(message, (int)ErrorCode.WalletItemAlreadyExistsError)
+        internal WalletItemAlreadyExistsException(string message) : base(message, (int)ErrorCode.WalletItemAlreadyExistsError)
         {
         }
     }

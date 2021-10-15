@@ -15,11 +15,11 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var expectedResult =
                 "\"operation\":{" +
                         "\"type\":\"117\"," +
-                        "\"revocRegDefId\":\"RevocRegID\"," +
+                        $"\"revocRegDefId\":\"{revRegDefId}\"," +
                         "\"to\":100" +
                         "}";
 
-            var request = await Ledger.BuildGetRevocRegDeltaRequestAsync(DID, "RevocRegID", -1, 100);
+            var request = await Ledger.BuildGetRevocRegDeltaRequestAsync(DID, revRegDefId, -1, 100);
 
             Assert.IsTrue(request.Replace("\\s+", "").Contains(expectedResult.Replace("\\s+", "")));
         }

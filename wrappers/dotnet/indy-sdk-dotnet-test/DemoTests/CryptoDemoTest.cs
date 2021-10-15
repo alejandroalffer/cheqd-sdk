@@ -17,7 +17,7 @@ namespace Hyperledger.Indy.Test.DemoTests
         public async Task TestCryptoDemo()
         {
             //1. Create and Open Pool
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
             var pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
 
             //2. Create and Open My Wallet

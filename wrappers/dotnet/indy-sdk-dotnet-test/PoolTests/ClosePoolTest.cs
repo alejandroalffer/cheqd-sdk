@@ -36,7 +36,7 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestClosePoolWorksForReopenAfterClose()
         {
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
@@ -50,7 +50,7 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestAutoCloseWorks()
         {
-            var poolName = PoolUtils.CreatePoolLedgerConfig();
+            var poolName = await PoolUtils.CreatePoolLedgerConfig();
 
             using (var autoClosePool = await Pool.OpenPoolLedgerAsync(poolName, null))
             {

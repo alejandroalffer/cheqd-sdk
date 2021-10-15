@@ -5,9 +5,7 @@
     /// </summary>
     public class InsufficientFundsException : IndyException
     {
-        const string message = "Insufficient funds on inputs.";
-
-        internal InsufficientFundsException() : base(message, (int)ErrorCode.PaymentInsufficientFundsError)
+        internal InsufficientFundsException(string message) : base(message, (int)ErrorCode.PaymentInsufficientFundsError)
         {
         }
     }

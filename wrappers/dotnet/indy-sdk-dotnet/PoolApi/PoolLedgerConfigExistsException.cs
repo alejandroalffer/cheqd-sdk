@@ -5,12 +5,10 @@
     /// </summary>
     public class PoolLedgerConfigExistsException : IndyException
     {
-        const string message = "A pool ledger configuration already exists with the specified name.";
-
         /// <summary>
         /// Initializes a new PoolLedgerConfigExistsException.
         /// </summary>
-        internal PoolLedgerConfigExistsException() : base(message, (int)ErrorCode.PoolLedgerConfigAlreadyExistsError)
+        internal PoolLedgerConfigExistsException(string message) : base(message, (int)ErrorCode.PoolLedgerConfigAlreadyExistsError)
         {
 
         }

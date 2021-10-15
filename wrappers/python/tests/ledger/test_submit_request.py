@@ -103,7 +103,7 @@ async def test_schema_requests_works(pool_handle, wallet_handle, identity_my):
     await ledger.parse_get_schema_response(get_schema_response)
 
 
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
     (my_did, _) = identity_my
 

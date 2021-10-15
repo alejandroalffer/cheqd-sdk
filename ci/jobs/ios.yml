@@ -38,7 +38,6 @@ publish-libindy-ios:
     - build-libindy-ios
   rules:
     - if: $CI_PROJECT_NAMESPACE == "evernym/verity" && $CI_COMMIT_REF_NAME == "main"
-      when: always
   script:
     - >
       find libindy/ios_out/ -name "*.tar.gz" -exec

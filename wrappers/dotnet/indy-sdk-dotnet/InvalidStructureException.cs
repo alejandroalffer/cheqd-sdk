@@ -5,12 +5,10 @@
     /// </summary>
     public class InvalidStructureException : IndyException
     {
-        const string message = "A value being processed is not valid.";
-
         /// <summary>
         /// Initializes a new InvalidStructureException.
         /// </summary>
-        internal InvalidStructureException() : base(message, (int)ErrorCode.CommonInvalidStructure)
+        internal InvalidStructureException(string message) : base(message, (int)ErrorCode.CommonInvalidStructure)
         {
 
         }
