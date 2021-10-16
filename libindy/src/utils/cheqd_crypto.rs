@@ -9,14 +9,30 @@ pub fn check_proofs(
     // Decode state proofs
 
     // Decode proof for inner ival tree
-    let proof_op_0 = &result.response.proof.clone().unwrap().ops[0];
+    let proof_op_0 = &result.response.proof.clone().ok_or(
+        IndyError::from_msg(
+            IndyErrorKind::InvalidStructure,
+            "The proof for inner ival tree is absent but should be placed"
+        ))?;
+    let proof_op_0 = &proof_op_0.ops[0].clone();
     let proof_0_data_decoded =
-        ics23::CommitmentProof::decode(proof_op_0.data.as_slice()).unwrap();
+        ics23::CommitmentProof::decode(proof_op_0.data.as_slice()).to_indy(
+                IndyErrorKind::InvalidStructure,
+                "The proof for inner ival tree cannot be decoded into ics23::CommitmentProof"
+        )?;
 
     // Decode proof for outer `ics23:simple` tendermint tree)
-    let proof_op_1 = &result.response.proof.unwrap().ops[1];
+    let proof_op_1 = &result.response.proof.ok_or(
+        IndyError::from_msg(
+            IndyErrorKind::InvalidStructure,
+            "The proof for outer ics23:simple is absent but should be placed"
+        ))?;
+    let proof_op_1 = &proof_op_1.ops[1].clone();
     let proof_1_data_decoded =
-        ics23::CommitmentProof::decode(proof_op_1.data.as_slice()).unwrap();
+        ics23::CommitmentProof::decode(proof_op_1.data.as_slice()).to_indy(
+                IndyErrorKind::InvalidStructure,
+                "The proof for outer ics23:simple cannot be decoded into ics23::CommitmentProof"
+        )?;
 
     // Get a root hash for the inner ival tree from the outer tree proof
     let proof_1_existence = if let Some(ics23::commitment_proof::Proof::Exist(ex)) =
